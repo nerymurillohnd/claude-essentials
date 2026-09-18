@@ -28,12 +28,12 @@ jobs:
       - name: Unit tests
         run: npm test
 
-      - name: Regenerate marketplace catalog
+      - name: Regenerate marketplace catalog and issue forms
         run: npm run generate
 
       - name: Fail if generation changed tracked files
         run: |
-          if ! git diff --exit-code -- .claude-plugin/marketplace.json; then
+          if ! git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE; then
             echo "::error::Generated files are out of date — run 'npm run generate' and commit the result."
             exit 1
           fi

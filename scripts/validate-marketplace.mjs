@@ -96,11 +96,11 @@ function main() {
     }
   }
 
-  const metadataProblems = validateRepoMetadata(rootDir);
+  const metadataProblems = validateRepoMetadata(rootDir, pluginDirs);
   for (const problem of metadataProblems) console.error(`✗ ${problem}`);
   errors.push(...metadataProblems);
   if (metadataProblems.length === 0)
-    console.log("✓ .github/labels.json matches the taxonomy rules");
+    console.log("✓ .github/labels.json and issue forms pass metadata checks");
 
   if (errors.length > 0) {
     console.error(`\n${errors.length} problem(s) found.`);

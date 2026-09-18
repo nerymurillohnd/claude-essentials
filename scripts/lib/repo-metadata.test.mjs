@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { rootDir } from "./plugins.mjs";
-import { checkLabels, validateRepoMetadata } from "./repo-metadata.mjs";
+import { pluginDropdownOptions } from "./issue-forms.mjs";
+import { listPluginDirs, rootDir } from "./plugins.mjs";
+import { checkIssueForm, checkLabels, validateRepoMetadata } from "./repo-metadata.mjs";
 
 const ok = { name: "type: bug", color: "d73a4a", description: "Broken" };
 
@@ -39,6 +40,48 @@ test("checkLabels rejects an alias that collides with a label name or another al
   assert.ok(errors.some((e) => e.includes('alias "bug" is already an alias of another label')));
 });
 
-test("the committed .github/labels.json is valid", () => {
-  assert.deepEqual(validateRepoMetadata(rootDir), []);
+test("checkIssueForm reports unknown labels, missing keys, and a stale dropdown", () => {
+  const errors = checkIssueForm(
+    "bug-report.yml",
+    {
+      name: "Bug",
+      body: [
+        {
+          type: "dropdown",
+          id: "plugin",
+          attributes: { label: "Affected plugin", options: ["old"] },
+        },
+      ],
+      labels: ["type: bug", "nope"],
+    },
+    { labelNames: new Set(["type: bug"]), pluginNames: ["demo"] },
+  );
+  assert.deepEqual(errors, [
+    '.github/ISSUE_TEMPLATE/bug-report.yml: missing "description"',
+    '.github/ISSUE_TEMPLATE/bug-report.yml: label "nope" is not in .github/labels.json',
+    '.github/ISSUE_TEMPLATE/bug-report.yml: "plugin" dropdown is stale — run npm run generate',
+  ]);
+});
+
+test("checkIssueForm accepts a current form", () => {
+  const form = {
+    name: "Bug",
+    description: "d",
+    labels: "type: bug",
+    body: [
+      {
+        type: "dropdown",
+        id: "plugin",
+        attributes: { label: "Affected plugin", options: pluginDropdownOptions(["demo"]) },
+      },
+    ],
+  };
+  assert.deepEqual(
+    checkIssueForm("f.yml", form, { labelNames: new Set(["type: bug"]), pluginNames: ["demo"] }),
+    [],
+  );
+});
+
+test("the committed labels and issue forms are valid", () => {
+  assert.deepEqual(validateRepoMetadata(rootDir, listPluginDirs()), []);
 });

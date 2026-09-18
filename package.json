@@ -6,7 +6,7 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "generate": "node scripts/generate-marketplace.mjs",
+    "generate": "node scripts/generate-marketplace.mjs && node scripts/generate-issue-forms.mjs",
     "validate": "node scripts/validate-marketplace.mjs",
     "validate:claude": "node scripts/validate-claude.mjs",
     "check:versions": "node scripts/check-versions.mjs",
@@ -21,7 +21,8 @@
     "@biomejs/biome": "^2.5.14",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
-    "semver": "^7.8.5"
+    "semver": "^7.8.5",
+    "yaml": "^2.9.1"
   },
   "allowScripts": {
     "@anthropic-ai/claude-code@2.1.276": true

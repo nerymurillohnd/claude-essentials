@@ -1,6 +1,8 @@
 // Cross-checks repository metadata that automation depends on (ADR-0004).
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { parse } from "yaml";
+import { PLUGIN_FIELD_ID, PLUGIN_FIELD_LABEL, pluginDropdownOptions } from "./issue-forms.mjs";
 import {
   MAX_LABEL_DESCRIPTION,
   MAX_LABEL_NAME,
@@ -65,7 +67,46 @@ export function checkLabels(labels, required = REQUIRED_LABELS) {
   return errors;
 }
 
-export function validateRepoMetadata(rootDir) {
+export function checkIssueForm(file, form, { labelNames, pluginNames }) {
+  const where = `.github/ISSUE_TEMPLATE/${file}`;
+  const errors = [];
+  for (const key of ["name", "description", "body"]) {
+    if (!form?.[key]) errors.push(`${where}: missing "${key}"`);
+  }
+  const labels =
+    typeof form?.labels === "string"
+      ? form.labels.split(",").map((l) => l.trim())
+      : (form?.labels ?? []);
+  for (const label of labels) {
+    if (!labelNames.has(label))
+      errors.push(`${where}: label "${label}" is not in .github/labels.json`);
+  }
+  for (const item of form?.body ?? []) {
+    if (item?.id !== PLUGIN_FIELD_ID) continue;
+    if (item.attributes?.label !== PLUGIN_FIELD_LABEL) {
+      errors.push(
+        `${where}: the "${PLUGIN_FIELD_ID}" dropdown label must be "${PLUGIN_FIELD_LABEL}"`,
+      );
+    }
+    const expected = JSON.stringify(pluginDropdownOptions(pluginNames));
+    if (JSON.stringify(item.attributes?.options) !== expected) {
+      errors.push(`${where}: "${PLUGIN_FIELD_ID}" dropdown is stale — run npm run generate`);
+    }
+  }
+  return errors;
+}
+
+export function validateRepoMetadata(rootDir, pluginNames) {
   const labels = JSON.parse(readFileSync(join(rootDir, ".github", "labels.json"), "utf8"));
-  return checkLabels(labels);
+  const errors = checkLabels(labels);
+  const labelNames = new Set(labels.map((label) => label.name));
+  const formsDir = join(rootDir, ".github", "ISSUE_TEMPLATE");
+  const forms = readdirSync(formsDir)
+    .filter((file) => file.endsWith(".yml") && file !== "config.yml")
+    .sort();
+  for (const file of forms) {
+    const form = parse(readFileSync(join(formsDir, file), "utf8"));
+    errors.push(...checkIssueForm(file, form, { labelNames, pluginNames }));
+  }
+  return errors;
 }
