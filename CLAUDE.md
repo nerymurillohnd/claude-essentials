@@ -70,6 +70,42 @@ technical-debt ledgers — entries need a stable ID and evidence, not vibes),
 `audits/` (dated point-in-time review reports), `superpowers/` (design
 plans/specs from skill-driven work, kept after landing).
 
+## Reference documentation
+
+When scaffolding or reviewing a plugin, skill, agent, hook, or marketplace
+entry here, these are the priority live sources — not the only ones, but
+check these before a general web search:
+
+| Topic | URL |
+| --- | --- |
+| Skills | https://code.claude.com/docs/en/skills |
+| Skills (Agent SDK) | https://code.claude.com/docs/en/agent-sdk/skills |
+| Hooks guide | https://code.claude.com/docs/en/hooks-guide |
+| Hooks reference | https://code.claude.com/docs/en/hooks |
+| LSP servers | https://code.claude.com/docs/en/plugins-reference#lsp-servers |
+| LSP / code intelligence | https://code.claude.com/docs/en/discover-plugins#code-intelligence |
+| Marketplace — create/distribute | https://code.claude.com/docs/en/plugin-marketplaces |
+| Marketplace — discover/install | https://code.claude.com/docs/en/discover-plugins |
+| MCP | https://code.claude.com/docs/en/mcp |
+| MCP quickstart | https://code.claude.com/docs/en/mcp-quickstart |
+| Plugins — create | https://code.claude.com/docs/en/plugins |
+| Plugins — reference | https://code.claude.com/docs/en/plugins-reference |
+| Plugin evals | https://code.claude.com/docs/en/plugin-evals |
+| Plugin dependencies | https://code.claude.com/docs/en/plugin-dependencies |
+| Subagents | https://code.claude.com/docs/en/sub-agents |
+| Subagents (Agent SDK) | https://code.claude.com/docs/en/agent-sdk/subagents |
+| Changelog | https://code.claude.com/docs/en/changelog |
+| What's new (weekly digest) | https://code.claude.com/docs/en/whats-new |
+| Best practices | https://code.claude.com/docs/en/best-practices |
+
+**Always corroborate against the changelog.** Whatever the source of live
+data or retrieval — WebFetch, WebSearch, an MCP doc server, a cached read —
+before relying on it for a scaffolding or architecture decision in this repo,
+also check https://code.claude.com/docs/en/changelog for entries from the
+last 6 months. A page can describe current behavior accurately and still
+omit a recent breaking change; the changelog is the corroboration step, not
+a substitute for reading the doc itself.
+
 ## Conventions
 
 - Biome (`biome.json`) formats/lints all JSON/JS in this repo.
