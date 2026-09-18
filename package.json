@@ -10,6 +10,7 @@
     "validate": "node scripts/validate-marketplace.mjs",
     "validate:claude": "node scripts/validate-claude.mjs",
     "check:versions": "node scripts/check-versions.mjs",
+    "labels:sync": "node scripts/sync-labels.mjs",
     "test": "node --test \"scripts/**/*.test.mjs\"",
     "format": "biome format --write .",
     "lint": "biome lint .",
