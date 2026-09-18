@@ -10,8 +10,8 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Status:** Pending (partially mitigated 2026-09-18)
 - **Category:** quality
 - **Evidence:**
-  - **Confirmed facts:** `.claude/hooks/*.sh` (ADR-0002) pass `shellcheck -x` with every optional check enabled and `shfmt -d`, verified on 2026-09-18. Since the ADR-0002 amendment, the PostToolUse hook runs `shfmt -w` and `shellcheck -x` on every `.sh` or shell-shebang file Claude edits, and blocks on findings. `npm run check` runs only Biome, `generate`, and `validate`. `.github/workflows/ci.yml` installs only Node.
-  - **Inferences:** Edits that don't go through Claude's `Edit`/`Write` tools (a human editor, `sed`, a merge) can still regress a shell script without any gate noticing.
+  - **Confirmed facts:** `.claude/hooks/*.sh` (ADR-0002) pass `shellcheck -x` with every optional check enabled and `shfmt -d`, verified on 2026-09-18. Since the ADR-0002 amendment, the PostToolUse hook runs `shfmt -w` and `shellcheck -x` on every `.sh` or shell-shebang file Claude edits, and blocks on findings. Since the second amendment, that includes files changed by Claude's Bash commands. `npm run check` runs Biome, unit tests, `generate`, `validate`, and `validate:claude`, but no shell linter. `.github/workflows/ci.yml` installs Node and the Claude Code CLI, not ShellCheck or shfmt.
+  - **Inferences:** Edits that don't go through Claude's tools (a human editor, a merge, another program) can still regress a shell script without any gate noticing.
   - **Open questions:** Whether to pin the ShellCheck optional-check policy in a repo-local `.shellcheckrc`, so CI matches the maintainer's user-wide config, and how to install shfmt in CI.
 - **Impact / risk:** Silent breakage of the hooks, including ones that deny edits.
 - **Owner or responsible area:** `package.json` scripts, `.github/workflows/ci.yml`
