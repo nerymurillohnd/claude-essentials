@@ -2,7 +2,7 @@
   "name": "claude-essentials",
   "version": "0.0.0",
   "private": true,
-  "description": "A public marketplace of Claude Code plugins, skills, and agents.",
+  "description": "A public marketplace of Claude Code plugins, skills, and agents — install via /plugin marketplace add nerymurillohnd/claude-essentials.",
   "type": "module",
   "license": "MIT",
   "scripts": {

@@ -1,6 +1,54 @@
-node_modules/
+# Operating system files
 .DS_Store
-*.log
-.ruff_cache/
-__pycache__/
+Thumbs.db
+
+# Editor and local environment files
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+
+# Secrets and local environment — never commit these
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# Claude Code local/session state — .claude/settings.json (shared plugin-dev
+# config) stays tracked; personal overrides and session state do not.
 .claude/settings.local.json
+.claude/plugins/
+
+# Git worktree scratch space
+.worktrees/
+worktrees/
+
+# Node.js and web tooling
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Python tooling (scripts/ may grow Python utilities)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.basedpyright/
+.venv/
+
+# General build and diagnostics output
+*.log
+tmp/
+temp/
+.cache/

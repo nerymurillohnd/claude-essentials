@@ -1,7 +1,7 @@
 {
   "$schema": "../schemas/marketplace.schema.json",
   "name": "claude-essentials",
-  "description": "A public marketplace of Claude Code plugins, skills, and agents.",
+  "description": "A public marketplace of Claude Code plugins, skills, and agents — install via /plugin marketplace add nerymurillohnd/claude-essentials.",
   "owner": {
     "name": "Nery Samuel Murillo Tejada",
     "url": "https://github.com/nerymurillohnd"
