@@ -92,6 +92,11 @@ check these before a general web search:
 | Plugins — reference | https://code.claude.com/docs/en/plugins-reference |
 | Plugin evals | https://code.claude.com/docs/en/plugin-evals |
 | Plugin dependencies | https://code.claude.com/docs/en/plugin-dependencies |
+| Plugin lifecycle — install scopes | https://code.claude.com/docs/en/plugins-reference#plugin-installation-scopes |
+| Plugin lifecycle — caching and file resolution | https://code.claude.com/docs/en/plugins-reference#plugin-caching-and-file-resolution |
+| Plugin lifecycle — version management | https://code.claude.com/docs/en/plugins-reference#version-management |
+| Plugin lifecycle — version resolution and release channels | https://code.claude.com/docs/en/plugin-marketplaces#version-resolution-and-release-channels |
+| Plugin lifecycle — CLI (`validate`, `tag`, `update`, …) | https://code.claude.com/docs/en/plugins-reference#cli-commands-reference |
 | Subagents | https://code.claude.com/docs/en/sub-agents |
 | Subagents (Agent SDK) | https://code.claude.com/docs/en/agent-sdk/subagents |
 | Changelog | https://code.claude.com/docs/en/changelog |
@@ -106,9 +111,47 @@ last 6 months. A page can describe current behavior accurately and still
 omit a recent breaking change; the changelog is the corroboration step, not
 a substitute for reading the doc itself.
 
+There is no single "plugin lifecycle" page; the `Plugin lifecycle — *` rows
+above are the sections that together define it. Live docs win over anything
+in this repo, templates included.
+
+**Misaligned with live docs — see `DEBT-0002` in
+[pending-debt.md](docs/maintenance/pending-debt.md):** every
+`templates/plugin-*/.claude-plugin/plugin.json` hardcodes `"version":
+"0.1.0"`, which silently opts each new plugin into explicit-version pinning.
+The repo has no stated versioning strategy. Nothing tells authors that a
+pinned plugin reaches users only after a version bump. The CHANGELOG
+templates link tags as `{{VERSION}}` rather than the official
+`{plugin-name}--v{version}` convention. Don't copy that versioning setup into
+a new plugin until DEBT-0002 is resolved.
+
+## Project hooks
+
+`.claude/settings.json` wires three hooks from `.claude/hooks/` — see
+[ADR-0002](docs/decisions/adr-0002-project-hooks.md) before changing them.
+They are Claude Code wiring, kept separate from the project's Node tooling:
+idempotent Bash (`#!/usr/bin/env bash`, bash 3.2-compatible) that requires
+`jq` (and `curl` for the changelog) and no-ops without it.
+
+- **SessionStart** (`startup|clear`) — `session-start.sh` injects git,
+  toolchain, Claude CLI subcommands (with drift detection), debt ledgers,
+  `npm run validate` + `claude plugin validate .`, plugin release state, and
+  upstream changelog entries relevant to plugins/hooks since the last session.
+- **PreToolUse** (`Edit|Write`) — `guard-marketplace-catalog.sh` denies
+  edits that change the generated `plugins` array of `marketplace.json`.
+- **PostToolUse** (`Edit|Write`) — `post-edit.sh` runs local
+  `biome check --write` on the edited file and reminds once per session to
+  bump a plugin's version when editing an already-tagged release.
+
+Hook state and the changelog cache live in `.claude/.cache/hooks/`
+(gitignored). After editing a hook, run
+`shellcheck -x .claude/hooks/*.sh && shfmt -d .claude/hooks/*.sh` —
+`npm run check` doesn't cover them yet (DEBT-0003).
+
 ## Conventions
 
-- Biome (`biome.json`) formats/lints all JSON/JS in this repo.
+- Biome (`biome.json`) formats/lints all JSON/JS in this repo; ShellCheck and
+  shfmt (via `.editorconfig`) cover every `.sh` file.
 - `LICENSE`, `CODE_OF_CONDUCT.md`, and `SECURITY.md` follow their
   `templates/*-reusable-template.md` counterparts verbatim except for
   filled-in placeholders. Don't reformat the canonical MIT license text with
