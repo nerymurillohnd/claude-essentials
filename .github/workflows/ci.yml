@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# Claude Code CLI used by `claude plugin validate` / `claude plugin tag`. It is
+# installed on the runner only — never as a repo dependency (ADR-0003). Bump it
+# deliberately, in every workflow that sets it.
+env:
+  CLAUDE_CODE_VERSION: "2.1.276"
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -21,6 +27,11 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Install Claude Code CLI (pinned; CI runner only)
+        run: |
+          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version
 
       - name: Format & lint (Biome)
         run: npx biome check .
@@ -58,6 +69,11 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: Install Claude Code CLI (pinned; CI runner only)
+        run: |
+          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version
 
       - name: Enforce plugin version bumps (ADR-0003)
         env:

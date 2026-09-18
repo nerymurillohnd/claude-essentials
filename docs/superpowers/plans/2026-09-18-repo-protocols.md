@@ -35,6 +35,8 @@ GitHub REST API via `fetch`.
 
 **Spec:** [`docs/superpowers/specs/2026-09-18-repo-protocols-design.md`](../specs/2026-09-18-repo-protocols-design.md)
 
+> **Execution amendment (2026-09-18):** the `@anthropic-ai/claude-code` devDependency from Task 2 was removed at Nery's request. CI installs the CLI on the runner (`CLAUDE_CODE_VERSION` in the workflows), and `scripts/lib/claude-cli.mjs` runs `claude` from `PATH`. Tasks below still describe the original pin; the spec's "Official validation" section is authoritative.
+
 ## Global Constraints
 
 - All artifacts (code, docs, commit messages) are in **English**.

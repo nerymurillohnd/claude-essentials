@@ -17,14 +17,10 @@
     "check": "biome check . && npm test && npm run generate && npm run validate && npm run validate:claude"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-code": "2.1.276",
     "@biomejs/biome": "^2.5.14",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "semver": "^7.8.5",
     "yaml": "^2.9.1"
-  },
-  "allowScripts": {
-    "@anthropic-ai/claude-code@2.1.276": true
   }
 }

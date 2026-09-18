@@ -1,19 +1,13 @@
-// Runs the repo-pinned Claude Code CLI (devDependency @anthropic-ai/claude-code) so
-// local checks and CI use the same version; falls back to `claude` on PATH.
+// Runs the Claude Code CLI found on PATH: the maintainer's own install locally,
+// and the version CI installs on the runner (CLAUDE_CODE_VERSION in the
+// workflows). It is never a repo dependency (ADR-0003).
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { rootDir } from "./plugins.mjs";
 
 export const EMPTY_MARKETPLACE_WARNING = "Marketplace has no plugins defined";
 
-export function claudeBin(root = rootDir) {
-  const local = join(root, "node_modules", ".bin", "claude");
-  return existsSync(local) ? local : "claude";
-}
-
 export function runClaude(args, { cwd = rootDir } = {}) {
-  const result = spawnSync(claudeBin(), args, { cwd, encoding: "utf8" });
+  const result = spawnSync("claude", args, { cwd, encoding: "utf8" });
   if (result.error) throw result.error;
   return { status: result.status, stdout: result.stdout, stderr: result.stderr };
 }

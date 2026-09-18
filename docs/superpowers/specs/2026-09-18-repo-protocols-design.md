@@ -114,8 +114,12 @@ in each plugin's `CHANGELOG.md`.
 
 ### Official validation (DEBT-0001)
 
-- `@anthropic-ai/claude-code` is pinned as an exact devDependency, so local
-  checks and CI run the same validator.
+- CI installs a pinned Claude Code CLI on the runner only
+  (`CLAUDE_CODE_VERSION` in `ci.yml` and `tag-versions.yml`). Locally, the
+  scripts use the maintainer's own `claude` on `PATH`. *Amended 2026-09-18:*
+  the plan first pinned the CLI as a repo devDependency; Nery had it removed
+  so the repo never installs a second copy of Claude Code on a contributor's
+  machine.
 - `npm run validate:claude` runs `claude plugin validate --strict --json` on
   `.` and on every `plugins/<name>`. It tolerates only the empty-marketplace
   warning while `plugins/` is empty. It's part of `npm run check` and CI.
