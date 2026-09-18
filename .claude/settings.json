@@ -2,13 +2,20 @@
   "enabledPlugins": {
     "plugin-dev@claude-plugins-official": true
   },
+  "env": {
+    "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1"
+  },
   "permissions": {
     "allow": [
       "Bash(npm run generate)",
       "Bash(npm run validate)",
       "Bash(npm run format)",
       "Bash(npm run lint)",
-      "Bash(npm run check)"
+      "Bash(npm run check)",
+      "Bash(claude plugin validate *)",
+      "Bash(claude plugin list *)",
+      "Bash(claude plugin details *)",
+      "Bash(claude plugin marketplace list *)"
     ]
   },
   "hooks": {
