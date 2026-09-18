@@ -186,3 +186,29 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   "documented in CLAUDE.md" for a missing `jq` now reads: SessionStart prints
   the reason.
 - CI still doesn't lint shell scripts; DEBT-0003 stays open for that part.
+
+### Amendment — 2026-09-18: post-edit also gates edits made through Bash
+
+- Edits made with shell commands (`sed`, heredocs, scripts) bypassed the
+  PostToolUse `Edit|Write` gate, so Biome and ShellCheck only caught them later
+  in `npm run check` or CI. The matcher is now `Edit|Write|Bash`.
+- A Bash tool call carries no `file_path`, so a new PreToolUse hook,
+  `bash-stamp.sh` (matcher `Bash`), touches a per-session stamp in
+  `.claude/.cache/hooks/` before each command. After the command,
+  `post-edit.sh` lints every modified or new non-ignored repo file that is not
+  older than the stamp (`git ls-files --modified --others --exclude-standard`).
+  It uses the same shfmt + ShellCheck or `biome check --write` logic as for
+  `Edit`/`Write`, aggregates all blocking findings into one `decision:
+  "block"`, and caps a single command at 50 files.
+- Same-second changes are kept (`! stamp -nt file`), because bash 3.2 compares
+  whole seconds. Dirty files older than the stamp are left alone.
+- Verified 2026-09-18 in a scratch clone under bash 5.3.20 and 3.2.57, for
+  these cases, all passing:
+  - no stamp yet means no action;
+  - a dirty file older than the stamp is ignored;
+  - JS written by a command is auto-formatted;
+  - a shell script with a ShellCheck finding is blocked;
+  - the `Edit` path is unchanged.
+- Limits: a command that also commits its own edits (`git commit` in the same
+  call) leaves nothing modified to find, and parallel Bash calls share one
+  stamp. CI remains the authoritative gate (DEBT-0003 for shell).

@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# PostToolUse hook (Edit|Write): formats and lints the edited file — shfmt +
-# ShellCheck for shell scripts, `biome check --write` for everything else — and,
-# for edits under plugins/<name>/ that leave runtime files different from the tagged version,
+# PostToolUse hook (Edit|Write|Bash): formats and lints changed files — shfmt +
+# ShellCheck for shell scripts, `biome check --write` for everything else.
+# Edit/Write: lints tool_input.file_path. Bash: lints every modified or new
+# (non-ignored) repo file not older than the stamp bash-stamp.sh wrote when the
+# command started, so edits made through shell commands get the same gate.
+# For plugin files whose runtime content differs from the tagged version, it
 # reminds once per session that users only receive changes after a version bump.
 # Idempotent: formatting converges; the reminder state is keyed by session.
 # See docs/decisions/adr-0002-project-hooks.md.
@@ -13,29 +16,27 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/plugin-paths.sh"
 
 command -v jq >/dev/null 2>&1 || exit 0
 
+readonly MAX_BASH_FILES=50
+
 input="$(cat)"
 root="${CLAUDE_PROJECT_DIR:-$(jq -r '.cwd // empty' <<<"${input}")}"
 root="$(cd "${root:-${PWD}}" && pwd -P)"
-file_path="$(jq -r '.tool_input.file_path // empty' <<<"${input}")"
+tool_name="$(jq -r '.tool_name // empty' <<<"${input}")"
 session_id="$(jq -r '.session_id // empty' <<<"${input}")"
-[[ -n "${file_path}" && -f "${file_path}" ]] || exit 0
-
-dir="$(dirname "${file_path}")"
-dir="$(cd "${dir}" && pwd -P)"
-abs="${dir}/${file_path##*/}"
-case "${abs}" in
-"${root}"/*) rel="${abs#"${root}"/}" ;;
-*) exit 0 ;;
-esac
-case "/${rel}/" in
-*/node_modules/*) exit 0 ;;
-*) ;;
-esac
+state_dir="${root}/.claude/.cache/hooks"
 
 context=""
 block_reason=""
+# Set by lint_file for the file being processed.
+abs=""
+rel=""
+dir=""
 
 add_context() { context="${context:+${context}
+}$1"; }
+
+add_block() { block_reason="${block_reason:+${block_reason}
+
 }$1"; }
 
 # Prints "shell" for .sh files or files with an sh/bash shebang, else "biome".
@@ -61,7 +62,7 @@ lint_shell() {
     return 0
   fi
   if ! out="$(cd "${dir}" && shellcheck -x -f gcc "${abs}" 2>&1)"; then
-    block_reason="ShellCheck reported issues in ${rel} (fix them in code; don't disable checks without a narrow, justified inline directive):
+    add_block "ShellCheck reported issues in ${rel} (fix them in code; don't disable checks without a narrow, justified inline directive):
 ${out:0:4000}"
   fi
 }
@@ -73,20 +74,13 @@ lint_biome() {
     return 0
   fi
   if ! out="$(cd "${root}" && "${biome}" check --write --no-errors-on-unmatched --reporter=concise "${abs}" 2>&1)"; then
-    block_reason="Biome reported issues it could not auto-fix in ${rel}:
+    add_block "Biome reported issues it could not auto-fix in ${rel}:
 ${out:0:4000}"
   fi
 }
 
-kind="$(file_kind)"
-if [[ "${kind}" == shell ]]; then
-  lint_shell
-else
-  lint_biome
-fi
-
 plugin_reminder() {
-  local name rest manifest version runtime state_dir state_file
+  local name rest manifest version runtime state_file
   [[ "${rel}" == plugins/*/* ]] || return 0
   rest="${rel#plugins/}"
   name="${rest%%/*}"
@@ -98,7 +92,6 @@ plugin_reminder() {
   runtime="$(plugin_runtime_change "${root}" "${name}" "${name}--v${version}")"
   [[ -n "${runtime}" ]] || return 0
 
-  state_dir="${root}/.claude/.cache/hooks"
   state_file="${state_dir}/version-reminders.json"
   mkdir -p "${state_dir}"
   if ! jq -e --arg s "${session_id}" --arg n "${name}" \
@@ -111,10 +104,63 @@ plugin_reminder() {
   fi
 }
 
-reminder="$(plugin_reminder)"
-if [[ -n "${reminder}" ]]; then
-  context="${context:+${context}
-}${reminder}"
+# lint_file <path>: lints one file inside the project (skips anything outside it
+# or under node_modules) and adds the plugin version reminder when relevant.
+lint_file() {
+  local path="$1" kind reminder
+  [[ -f "${path}" ]] || return 0
+  dir="$(cd "$(dirname "${path}")" && pwd -P)"
+  abs="${dir}/${path##*/}"
+  case "${abs}" in
+  "${root}"/*) rel="${abs#"${root}"/}" ;;
+  *) return 0 ;;
+  esac
+  case "/${rel}/" in
+  */node_modules/*) return 0 ;;
+  *) ;;
+  esac
+  kind="$(file_kind)"
+  if [[ "${kind}" == shell ]]; then
+    lint_shell
+  else
+    lint_biome
+  fi
+  reminder="$(plugin_reminder)"
+  if [[ -n "${reminder}" ]]; then
+    add_context "${reminder}"
+  fi
+}
+
+# Prints repo files (modified tracked + new non-ignored) not older than $1.
+# `! stamp -nt file` keeps same-second changes, since bash 3.2 compares whole seconds.
+changed_since_stamp() {
+  local stamp="$1" file
+  git -C "${root}" ls-files -z --modified --others --exclude-standard 2>/dev/null |
+    while IFS= read -r -d '' file; do
+      if [[ -f "${root}/${file}" && ! "${stamp}" -nt "${root}/${file}" ]]; then
+        printf '%s\n' "${root}/${file}"
+      fi
+    done
+}
+
+if [[ "${tool_name}" == Bash ]]; then
+  stamp="${state_dir}/bash-stamp-${session_id//[^A-Za-z0-9_-]/_}"
+  [[ -n "${session_id}" && -f "${stamp}" ]] || exit 0
+  changed="$(changed_since_stamp "${stamp}" | sort -u)"
+  count=0
+  while IFS= read -r path; do
+    [[ -n "${path}" ]] || continue
+    count=$((count + 1))
+    if ((count > MAX_BASH_FILES)); then
+      add_context "More than ${MAX_BASH_FILES} files changed in this Bash command; only the first ${MAX_BASH_FILES} were linted — run \`npm run check\` and shellcheck/shfmt for the rest."
+      break
+    fi
+    lint_file "${path}"
+  done <<<"${changed}"
+else
+  file_path="$(jq -r '.tool_input.file_path // empty' <<<"${input}")"
+  [[ -n "${file_path}" ]] || exit 0
+  lint_file "${file_path}"
 fi
 
 [[ -n "${block_reason}" || -n "${context}" ]] || exit 0
