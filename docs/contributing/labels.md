@@ -13,7 +13,7 @@ drift on the next run.
 | `priority:` | `critical`, `high`, `low` | Maintainer | Issues |
 | `area:` | `plugins`, `catalog`, `ci`, `tooling`, `templates`, `docs`, `community` | Triage bot, from changed paths | PRs (and `area: catalog` on issues) |
 | `plugin:` | one per plugin, derived | Triage bot | Issues, PRs |
-| `release:` | `major`, `minor`, `patch`, `prerelease`, `initial`, `none` | Triage bot, computed with the same rules as `version-check` | PRs |
+| `bump:` | `major`, `minor`, `patch`, `prerelease`, `initial`, `none` | Triage bot, computed with the same rules as `version-check` | PRs |
 | `bump: deferred` | — | **Maintainer only** | PRs |
 | community | `good first issue`, `help wanted` | Maintainer | Issues |
 
