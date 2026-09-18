@@ -19,9 +19,9 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Review condition:** The next change to `.claude/hooks/`, or any CI workflow change.
 - **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md)
 
-### DEBT-0004 — GitHub Actions and the pinned Claude Code CLI are not auto-updated; actions use mutable major tags
+### DEBT-0004 — GitHub Actions use mutable major tags; the CI-pinned Claude Code CLI is not auto-updated
 
-- **Status:** Pending
+- **Status:** Pending (partially mitigated 2026-09-18: Dependabot alerts, security updates, and weekly version updates for `npm` and `github-actions` are enabled via `.github/dependabot.yml`)
 - **Category:** security, supply chain, compatibility
 - **Evidence:**
   - **Confirmed facts:**
@@ -31,11 +31,11 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
       `CLAUDE_CODE_VERSION: "2.1.276"` in `ci.yml` and `tag-versions.yml`. Both
       values must be bumped together; nothing checks that they agree or that
       the maintainer's local `claude` matches them.
-    - There's no Dependabot config for the `github-actions` or `npm` ecosystems.
+    - Since 2026-09-18, `.github/dependabot.yml` updates `npm` and `github-actions` weekly (grouped, 3-day cooldown, 7 days for majors, labels `type: maintenance` + `area: tooling`/`area: ci`). Dependabot can't see `CLAUDE_CODE_VERSION`.
   - **Inferences:** A compromised or force-moved action tag would run in jobs that hold write tokens. Validator and tag behavior from newer Claude Code releases, and security fixes in dev dependencies, only arrive through manual bumps.
-  - **Open questions:** Whether to pin actions by full commit SHA with Dependabot updates (the common hardening recommendation), and which labels Dependabot PRs get (`type: maintenance`, `area: ci` or `area: tooling`).
+  - **Open questions:** Whether to pin actions by full commit SHA (Dependabot keeps SHA pins with version comments updated), and how to keep `CLAUDE_CODE_VERSION` current and consistent across `ci.yml` and `tag-versions.yml`.
 - **Impact / risk:** Supply-chain exposure in privileged workflows, and silent drift from upstream validator changes.
 - **Owner or responsible area:** `.github/workflows/`, `.github/dependabot.yml`
-- **Next action:** Pin actions by SHA with version comments. Add `.github/dependabot.yml` for `github-actions` and `npm`, using taxonomy labels.
+- **Next action:** Pin actions by full SHA with version comments (Dependabot will maintain them). Add a check that both workflows set the same `CLAUDE_CODE_VERSION`.
 - **Review condition:** Any new workflow, the next action major release, or a Claude Code release that changes `plugin validate` or `plugin tag`.
 - **Related records:** [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md), [ADR-0004](../decisions/adr-0004-issue-and-label-protocol.md)

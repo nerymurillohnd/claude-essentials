@@ -101,7 +101,8 @@ script".
 | Label diff and rename logic | `npm test` (`labels.test.mjs`) | Pass, 2026-09-18 | Maintainer | Any change to `scripts/lib/labels.mjs` |
 | Sync plans the expected changes against the live repo | `npm run labels:sync` dry run | Pass, 2026-09-18 (renames `bug`, `enhancement`, `documentation`; creates the rest) | Maintainer | Before each `--apply --prune` |
 | Triage rules | `npm test` (`triage.test.mjs`) | Pass, 2026-09-18 | Maintainer | Any change to `scripts/lib/triage.mjs` |
-| Live triage labels a test issue and a PR | Rollout smoke test | pending — rollout | Maintainer | After rollout |
+| Live triage labels a PR | First real PRs after merge | Pass, 2026-09-18: PR #2 got `area: docs`, `area: tooling`, `bump: none` from the bot on `pull_request_target`; PR #3 likewise | Maintainer | Any change to `triage.yml` or `scripts/triage.mjs` |
+| Live triage labels an issue | First issue opened from a form | pending — first issue | Maintainer | First issue |
 
 ## More Information
 

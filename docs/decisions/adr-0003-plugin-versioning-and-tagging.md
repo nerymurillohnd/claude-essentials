@@ -115,7 +115,7 @@ Chosen option: "Explicit semver, enforced in CI, tagged by CI with
 | `check-versions` enforces the rule on real git history, including `claude plugin tag --dry-run` | Scratch-clone scenario (plan Task 4 Step 3) | Pass, 2026-09-18 | Maintainer | Any change to `scripts/check-versions.mjs` |
 | `tag-versions` tags exactly the untagged versions through `claude plugin tag` | `--dry-run` scenario (plan Task 5 Step 2) | Pass, 2026-09-18 | Maintainer | Any change to `scripts/tag-versions.mjs` |
 | The tagging workflow tags on merge | First plugin merge to `main` | pending — first plugin version | Maintainer | First plugin version |
-| Tags are immutable | Tag ruleset active (`gh api repos/{owner}/{repo}/rulesets`) | pending — rollout | Maintainer | After rollout |
+| Tags are immutable | Tag ruleset active (`gh api repos/{owner}/{repo}/rulesets`) | Active since 2026-09-18: ruleset "Immutable plugin version tags" (id 23654577), `update` + `deletion` on `refs/tags/*--v*`, `current_user_can_bypass: never` | Maintainer | Any ruleset change |
 
 ## More Information
 
