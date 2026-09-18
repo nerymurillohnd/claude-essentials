@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# PostToolUse hook (Edit|Write): runs `biome check --write` on the edited file
-# and, for edits under plugins/<name>/ whose current version is already tagged,
+# PostToolUse hook (Edit|Write): formats and lints the edited file — shfmt +
+# ShellCheck for shell scripts, `biome check --write` for everything else — and,
+# for edits under plugins/<name>/ whose current version is already tagged,
 # reminds once per session that users only receive changes after a version bump.
 # Idempotent: formatting converges; the reminder state is keyed by session.
 # See docs/decisions/adr-0002-project-hooks.md.
@@ -30,14 +31,54 @@ esac
 context=""
 block_reason=""
 
-biome="${root}/node_modules/.bin/biome"
-if [[ -x "${biome}" ]]; then
-  if ! biome_out="$(cd "${root}" && "${biome}" check --write --no-errors-on-unmatched --reporter=concise "${abs}" 2>&1)"; then
-    block_reason="Biome reported issues it could not auto-fix in ${rel}:
-${biome_out:0:4000}"
+add_context() { context="${context:+${context}
+}$1"; }
+
+# Prints "shell" for .sh files or files with an sh/bash shebang, else "biome".
+file_kind() {
+  local shebang=""
+  if [[ "${abs}" == *.sh ]]; then
+    echo shell
+    return 0
   fi
+  IFS= read -r shebang <"${abs}" || true
+  if [[ "${shebang}" =~ ^#!.*[/[:space:]](ba)?sh([[:space:]]|$) ]]; then echo shell; else echo biome; fi
+}
+
+lint_shell() {
+  local out
+  if command -v shfmt >/dev/null 2>&1; then
+    shfmt -w "${abs}" >/dev/null 2>&1 || true
+  else
+    add_context "shfmt is not installed — ${rel} was not formatted (brew install shfmt)."
+  fi
+  if ! command -v shellcheck >/dev/null 2>&1; then
+    add_context "ShellCheck is not installed — ${rel} was not linted (brew install shellcheck)."
+    return 0
+  fi
+  if ! out="$(cd "${dir}" && shellcheck -x -f gcc "${abs}" 2>&1)"; then
+    block_reason="ShellCheck reported issues in ${rel} (fix them in code; don't disable checks without a narrow, justified inline directive):
+${out:0:4000}"
+  fi
+}
+
+lint_biome() {
+  local out biome="${root}/node_modules/.bin/biome"
+  if [[ ! -x "${biome}" ]]; then
+    add_context "Biome is not installed locally (node_modules missing) — run \`npm install\`."
+    return 0
+  fi
+  if ! out="$(cd "${root}" && "${biome}" check --write --no-errors-on-unmatched --reporter=concise "${abs}" 2>&1)"; then
+    block_reason="Biome reported issues it could not auto-fix in ${rel}:
+${out:0:4000}"
+  fi
+}
+
+kind="$(file_kind)"
+if [[ "${kind}" == shell ]]; then
+  lint_shell
 else
-  context="Biome is not installed locally (node_modules missing) — run \`npm install\`."
+  lint_biome
 fi
 
 plugin_reminder() {

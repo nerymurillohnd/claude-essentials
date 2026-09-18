@@ -163,3 +163,26 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   DEBT-0003 (shell hooks not linted in CI).
 - Revisit when Claude Code changes SessionStart blocking semantics, the hook
   output cap, or plugin version resolution.
+
+### Amendment — 2026-09-18: shell lint enforced by the hook; hooks removed from CLAUDE.md
+
+- `post-edit.sh` now picks the linter by file kind. For `.sh` files, or files
+  with an `sh`/`bash` shebang, it runs `shfmt -w` and then `shellcheck -x`
+  (under the user-wide or repo rc), and returns `decision: "block"` with the
+  findings. Everything else still goes through `biome check --write`. A
+  missing `shfmt` or `shellcheck` adds a context note instead of failing.
+  This replaces the CLAUDE.md instruction "after editing a hook, run
+  shellcheck/shfmt". A rule that must always hold is enforced by a hook, not
+  written as an instruction, because CLAUDE.md is context rather than
+  enforced configuration ([memory docs](https://code.claude.com/docs/en/memory)).
+  Verified under bash 5.3.20 and 3.2.57: misformatted-but-clean scripts are
+  fixed silently, ShellCheck findings block (SC2086, SC2161), extensionless
+  shebang scripts are detected, non-shell text is ignored, and the Biome and
+  version-reminder paths are unchanged. The hook also blocked its own first
+  draft, on SC2310.
+- The "Project hooks" section was removed from CLAUDE.md. Hooks run from
+  `settings.json` whether or not Claude knows about them. This ADR, the script
+  headers, and `/hooks` are the documentation. The risk-table mitigation
+  "documented in CLAUDE.md" for a missing `jq` now reads: SessionStart prints
+  the reason.
+- CI still doesn't lint shell scripts; DEBT-0003 stays open for that part.

@@ -18,6 +18,7 @@ npm run validate  # schema-check marketplace.json + every plugin.json; cross-che
 npm run format    # biome format --write .
 npm run lint      # biome lint .
 npm run check     # format+lint check, then generate, then validate — the CI gate
+claude plugin validate .  # official manifest + skill/agent/command frontmatter validator (not in CI yet: DEBT-0001)
 ```
 
 Run `npm run check` before any commit touching `plugins/`, `schemas/`, or
@@ -60,6 +61,8 @@ against.
 **Adding a plugin:** copy one of `templates/plugin-bundle/`,
 `templates/plugin-skill-only/`, or `templates/plugin-agent-only/` into
 `plugins/<id>/` — see [docs/contributing/plugins.md](docs/contributing/plugins.md).
+Until DEBT-0002 is resolved, don't keep the templates' hardcoded
+`"version": "0.1.0"` without first deciding the versioning strategy.
 `templates/README.md` indexes every other reusable template (root README,
 plugin README, LICENSE, CHANGELOG, ADR, CODE_OF_CONDUCT, SECURITY,
 maintenance ledgers) and the path each gets copied to.
@@ -124,29 +127,6 @@ pinned plugin reaches users only after a version bump. The CHANGELOG
 templates link tags as `{{VERSION}}` rather than the official
 `{plugin-name}--v{version}` convention. Don't copy that versioning setup into
 a new plugin until DEBT-0002 is resolved.
-
-## Project hooks
-
-`.claude/settings.json` wires three hooks from `.claude/hooks/` — see
-[ADR-0002](docs/decisions/adr-0002-project-hooks.md) before changing them.
-They are Claude Code wiring, kept separate from the project's Node tooling:
-idempotent Bash (`#!/usr/bin/env bash`, bash 3.2-compatible) that requires
-`jq` (and `curl` for the changelog) and no-ops without it.
-
-- **SessionStart** (`startup|clear`) — `session-start.sh` injects git,
-  toolchain, Claude CLI subcommands (with drift detection), debt ledgers,
-  `npm run validate` + `claude plugin validate .`, plugin release state, and
-  upstream changelog entries relevant to plugins/hooks since the last session.
-- **PreToolUse** (`Edit|Write`) — `guard-marketplace-catalog.sh` denies
-  edits that change the generated `plugins` array of `marketplace.json`.
-- **PostToolUse** (`Edit|Write`) — `post-edit.sh` runs local
-  `biome check --write` on the edited file and reminds once per session to
-  bump a plugin's version when editing an already-tagged release.
-
-Hook state and the changelog cache live in `.claude/.cache/hooks/`
-(gitignored). After editing a hook, run
-`shellcheck -x .claude/hooks/*.sh && shfmt -d .claude/hooks/*.sh` —
-`npm run check` doesn't cover them yet (DEBT-0003).
 
 ## Conventions
 
