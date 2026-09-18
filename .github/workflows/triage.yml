@@ -1,0 +1,42 @@
+name: Triage
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: triage-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      # SECURITY: pull_request_target runs with a write token. This checks out the
+      # BASE branch (the event's default ref) and must never check out the PR head.
+      # scripts/triage.mjs reads PR content through the API as data only.
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # No dependency cache: a cache written by PR-controlled code must never be
+      # restored into a job that holds a write token.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - run: npm ci --ignore-scripts
+
+      - name: Apply triage labels (ADR-0004)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/triage.mjs
