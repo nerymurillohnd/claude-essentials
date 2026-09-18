@@ -8,9 +8,7 @@
       "Bash(npm run validate)",
       "Bash(npm run format)",
       "Bash(npm run lint)",
-      "Bash(npm run check)",
-      "WebSearch",
-      "WebFetch"
+      "Bash(npm run check)"
     ]
   },
   "enableWorkflows": true,
