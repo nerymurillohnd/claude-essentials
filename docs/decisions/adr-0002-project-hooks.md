@@ -209,6 +209,13 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   - JS written by a command is auto-formatted;
   - a shell script with a ShellCheck finding is blocked;
   - the `Edit` path is unchanged.
+- Follow-up fix: `bash-stamp.sh` first shipped without the executable bit
+  (git mode `100644`). Claude Code runs hook commands by path, so every call
+  failed with exit 126, as a non-blocking error, and the Bash gate never fired.
+  The scratch tests had missed it because they invoked the scripts through
+  `bash`. With mode `100755`, the gate was verified live on 2026-09-18 in the
+  running session: hook edits apply immediately. The stamp was written, and a
+  file written through Bash was auto-formatted by Biome.
 - Limits: a command that also commits its own edits (`git commit` in the same
   call) leaves nothing modified to find, and parallel Bash calls share one
   stamp. CI remains the authoritative gate (DEBT-0003 for shell).
