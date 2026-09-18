@@ -13,6 +13,7 @@ import {
   readJson,
   rootDir,
 } from "./lib/plugins.mjs";
+import { validateRepoMetadata } from "./lib/repo-metadata.mjs";
 
 const marketplacePath = join(rootDir, ".claude-plugin", "marketplace.json");
 
@@ -94,6 +95,12 @@ function main() {
       errors.push(name);
     }
   }
+
+  const metadataProblems = validateRepoMetadata(rootDir);
+  for (const problem of metadataProblems) console.error(`✗ ${problem}`);
+  errors.push(...metadataProblems);
+  if (metadataProblems.length === 0)
+    console.log("✓ .github/labels.json matches the taxonomy rules");
 
   if (errors.length > 0) {
     console.error(`\n${errors.length} problem(s) found.`);
