@@ -1,0 +1,41 @@
+name: Tag plugin versions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugins/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-versions
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      # Credentials are persisted on purpose: `claude plugin tag --push` pushes the
+      # version tag to origin with this job's contents:write token.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Validate before tagging
+        run: npm run validate && npm run validate:claude
+
+      - name: Tag untagged plugin versions with claude plugin tag (ADR-0003)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node scripts/tag-versions.mjs
