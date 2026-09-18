@@ -111,3 +111,18 @@ script".
 - Live docs checked 2026-09-18: issue forms syntax (labels that don't exist
   aren't applied; `type:` needs an organization), `actions/stale@v11` inputs.
 - Out of scope: actions pinned by SHA and Dependabot (DEBT-0004).
+
+### Amendment — 2026-09-18: surface-aware forms, schema validation, native controls reused
+
+- **Forms follow the plugin contract.**
+  - The bug report adds required **Surface** (Claude Code or Claude Cowork) and **Installed from** fields; local-checkout installs are marked unsupported, per the root README's support policy. It also adds an optional regression question, the last working version, and an `upload` element for logs and screenshots.
+  - The plugin proposal adds target surfaces, external requirements, trigger and non-trigger examples (future eval cases), a public-safety checkbox, and an Apache-2.0 contribution statement.
+  - The feature request adds an optional surface field.
+  - The `Affected plugin` field, its options, and every existing field `id` are unchanged, so the generator and the triage bot are unaffected.
+- **Structure is validated, not just labels.** GitHub publishes no schema for issue forms, so `schemas/github/` vendors SchemaStore's `github-issue-forms` and `github-issue-config` schemas, unmodified except for an added `$comment` with source and date. `npm run validate` checks every form and `config.yml` against them.
+- **Native platform features were checked before building anything** (2026-09-18):
+  - PR forms don't exist, so the PR template stays Markdown.
+  - Issue types remain unavailable for a user-owned repository: GraphQL returns `issueTypes: null` here, while `anthropics/claude-code` returns Task, Bug, and Feature. The `type:` labels stay.
+  - GitHub's own secret scanning, push protection, and private vulnerability reporting are enabled.
+  - `delete_branch_on_merge` is enabled.
+

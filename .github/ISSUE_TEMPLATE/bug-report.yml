@@ -12,7 +12,8 @@ body:
 
         - Search [existing issues](https://github.com/nerymurillohnd/claude-essentials/issues?q=is%3Aissue) first.
         - **Never report a security vulnerability here** — use a [private security advisory](https://github.com/nerymurillohnd/claude-essentials/security/advisories/new).
-        - Bugs in Claude Code itself belong in [anthropics/claude-code](https://github.com/anthropics/claude-code/issues).
+        - Bugs in Claude Code or Cowork themselves belong in [anthropics/claude-code](https://github.com/anthropics/claude-code/issues).
+        - This is a public repository: remove tokens, keys, private paths, and personal data from everything you paste or attach.
   - type: dropdown
     id: plugin
     attributes:
@@ -23,11 +24,32 @@ body:
         - Not sure
     validations:
       required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      description: Where the plugin was running. Plugins aren't used in Claude Chat.
+      options:
+        - Claude Code
+        - Claude Cowork
+    validations:
+      required: true
+  - type: dropdown
+    id: install-source
+    attributes:
+      label: Installed from
+      description: Only installs from the remote marketplace are supported.
+      options:
+        - Remote marketplace (nerymurillohnd/claude-essentials)
+        - Local checkout or --plugin-dir (unsupported — reproduce from the remote marketplace first)
+        - Other
+    validations:
+      required: true
   - type: input
     id: plugin-version
     attributes:
       label: Plugin version
-      description: From `claude plugin list --json` or the /plugin menu. Write "n/a" for catalog problems.
+      description: From `claude plugin list --json`, the /plugin menu, or the plugin page in Cowork. Write "n/a" for catalog problems.
       placeholder: 1.2.0
     validations:
       required: true
@@ -35,7 +57,7 @@ body:
     id: claude-code-version
     attributes:
       label: Claude Code version
-      description: Output of `claude --version`.
+      description: Output of `claude --version`. Write "n/a" for Cowork.
       placeholder: 2.1.276
     validations:
       required: true
@@ -73,18 +95,39 @@ body:
         2. ...
     validations:
       required: true
+  - type: dropdown
+    id: regression
+    attributes:
+      label: Is this a regression?
+      options:
+        - "Yes — it worked in an earlier plugin version"
+        - "No — it never worked"
+        - Not sure
+  - type: input
+    id: last-working-version
+    attributes:
+      label: Last working plugin version
+      description: Only if this is a regression.
+      placeholder: 1.1.0
   - type: textarea
     id: logs
     attributes:
       label: Relevant output
       description: Output of `claude --debug` or the /plugin Errors tab. Remove tokens, keys, and personal data first.
       render: shell
+  - type: upload
+    id: attachments
+    attributes:
+      label: Attachments
+      description: Screenshots or log files, if they help. Redact secrets and personal data first.
   - type: checkboxes
     id: checks
     attributes:
       label: Checklist
       options:
         - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I refreshed the marketplace and I'm on the latest version of the plugin.
           required: true
         - label: I removed secrets, tokens, and personal data from everything above.
           required: true

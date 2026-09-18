@@ -18,6 +18,15 @@ Blank issues are disabled, so every issue starts from a form:
 | Plugin proposal | `type: plugin-proposal`, `status: needs-triage` | A new plugin, standalone skill, or standalone agent |
 | Documentation problem | `type: docs`, `status: needs-triage` | Missing, wrong, or unclear docs |
 
+Bug reports also ask for the **Surface** (Claude Code or Claude Cowork) and
+where the plugin was **Installed from**. Only installs from the remote
+marketplace are supported, so reproduce there before reporting. Plugin
+proposals ask for target surfaces, external requirements, and one request that
+should trigger the plugin and one that shouldn't. Those become its eval cases.
+
+Every form and `config.yml` is validated against the vendored GitHub schemas in
+`schemas/github/` by `npm run validate`.
+
 The **Affected plugin** dropdown is generated from `plugins/` by
 `npm run generate`. When an issue is opened, the triage bot adds the matching
 `plugin: <name>` label, or `area: catalog` for installation and catalog

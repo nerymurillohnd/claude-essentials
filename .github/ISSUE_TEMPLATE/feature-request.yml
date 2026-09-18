@@ -18,6 +18,15 @@ body:
         - Not sure
     validations:
       required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      description: Where you'd use the improvement.
+      multiple: true
+      options:
+        - Claude Code
+        - Claude Cowork
   - type: textarea
     id: problem
     attributes:

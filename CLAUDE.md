@@ -71,6 +71,9 @@ manifest, marketplace, `hooks.json`, `.mcp.json`, `.lsp.json`,
 `monitors.json`), each with its docs source in `$comment`; they carry no repo
 policy, and `scripts/lib/claude-code-schemas.test.mjs` checks them against the
 docs' own examples. When live docs change, update them first.
+`schemas/github/` vendors SchemaStore's issue-form and issue-config schemas,
+unmodified except for a source `$comment` (GitHub publishes none); `npm run validate` checks every issue form
+against them.
 
 **Adding a plugin:** copy one of `templates/plugin-bundle/`,
 `templates/plugin-skill-only/`, or `templates/plugin-agent-only/` into
