@@ -35,6 +35,16 @@ export const AREA_RULES = Object.freeze([
 const MANAGED_PREFIXES = ["area: ", "plugin: ", "bump: "];
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+// Mirrors schemas/plugin.schema.json's "name" pattern/maxLength: a fork PR's
+// changed paths are attacker-controlled, so any name derived from them must be
+// validated before it is turned into a "plugin: <name>" label (ADR-0004).
+const PLUGIN_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const MAX_PLUGIN_NAME = 42;
+
+export function isValidPluginName(name) {
+  return PLUGIN_NAME_PATTERN.test(name) && name.length <= MAX_PLUGIN_NAME;
+}
+
 export function areaLabels(files) {
   return AREA_RULES.filter((rule) => files.some(rule.test))
     .map((rule) => rule.label)
@@ -42,7 +52,7 @@ export function areaLabels(files) {
 }
 
 export function pluginLabels(files) {
-  return pluginsTouched(files).map(pluginLabelName);
+  return pluginsTouched(files).filter(isValidPluginName).map(pluginLabelName);
 }
 
 export function formField(body, label) {

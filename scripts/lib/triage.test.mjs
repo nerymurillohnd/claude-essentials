@@ -7,6 +7,7 @@ import {
   authorReplyChanges,
   formField,
   issueLabels,
+  isValidPluginName,
   pluginLabels,
   reconcile,
 } from "./triage.mjs";
@@ -35,6 +36,27 @@ test("pluginLabels derives one label per touched plugin", () => {
     "plugin: a",
     "plugin: b",
   ]);
+});
+
+test("isValidPluginName accepts kebab-case names within the length limit", () => {
+  assert.equal(isValidPluginName("demo-skill"), true);
+  assert.equal(isValidPluginName("Demo-Skill"), false);
+  assert.equal(isValidPluginName("demo_skill"), false);
+  assert.equal(isValidPluginName("a".repeat(43)), false);
+  assert.equal(isValidPluginName("a".repeat(42)), true);
+});
+
+test("pluginLabels silently drops touched names that fail the plugin-name rule", () => {
+  const overlong = "a".repeat(43);
+  assert.deepEqual(
+    pluginLabels([
+      "plugins/demo-skill/x",
+      `plugins/${overlong}/x`,
+      "plugins/Bad_Name/x",
+      "plugins/good-one/y",
+    ]),
+    ["plugin: demo-skill", "plugin: good-one"],
+  );
 });
 
 const body = "### Affected plugin\n\ndemo-skill\n\n### Plugin version\n\n1.0.0\n";

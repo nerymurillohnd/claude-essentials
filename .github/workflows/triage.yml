@@ -14,7 +14,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: triage-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: "triage-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number }}"
   cancel-in-progress: true
 
 jobs:

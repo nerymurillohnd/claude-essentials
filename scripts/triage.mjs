@@ -11,6 +11,7 @@ import {
   areaLabels,
   authorReplyChanges,
   issueLabels,
+  isValidPluginName,
   pluginLabels,
   reconcile,
 } from "./lib/triage.mjs";
@@ -119,9 +120,12 @@ async function onPullRequest() {
   ];
   // Descriptions for plugin labels created here are placeholders: PR content
   // is untrusted, and labels.yml rewrites them from plugin.json after merge.
-  const extraDefs = pluginsTouched(changedFiles).map((name) =>
-    pluginLabel({ name, description: `Plugin ${name}` }),
-  );
+  // Names are validated first: an invalid name would make ensureLabels() throw
+  // before applying any label, and pluginLabelName() could exceed GitHub's
+  // 50-char label-name limit and be rejected with a 422 (ADR-0004).
+  const extraDefs = pluginsTouched(changedFiles)
+    .filter(isValidPluginName)
+    .map((name) => pluginLabel({ name, description: `Plugin ${name}` }));
   await apply(pr.number, reconcile(names(pr.labels), desired), extraDefs);
 }
 
