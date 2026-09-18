@@ -12,6 +12,10 @@ standard.
 
 ## Pull requests
 
+The `check` and `version-check` CI jobs must be green before a pull request
+can merge into `main`, and `main` can't be deleted or force-pushed (repository
+rulesets).
+
 ```bash
 npm install
 npm run check          # format, lint, unit tests, generate, validate — the CI gate
