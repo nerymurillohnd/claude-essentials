@@ -1,18 +1,19 @@
 <!--
-Before using this template:
+REFERENCE ONLY — not used in this repository.
 
-1. Do not assume MIT is the right license. Only use it when an authorized
-   decision picked it. Preserve any existing license unless that decision
-   explicitly permits changing it.
-2. Confirm the filename this repository/plugin/tooling actually expects —
-   don't assume LICENSE, LICENSE.md, or LICENSE.txt.
-3. Verify the actual copyright holder(s) and year from real records — don't
-   invent them. A plugin contributed by someone other than the marketplace
-   owner should carry that contributor's name here, not the marketplace's.
-4. Do not edit, reformat, summarize, or add conditions to the MIT terms below
-   — this is the canonical wording license-detection tooling (GitHub, SPDX)
-   matches against. Markdown headers/bold/blockquotes around it can weaken
-   that match.
+claude-essentials and every plugin under plugins/ are licensed Apache-2.0
+(ADR-0005); use templates/LICENSE-Apache-2.0-reusable-template.md. This MIT
+text is kept as a canonical reference, e.g. to recognize or compare
+third-party MIT-licensed material. Don't copy it into this repository.
+
+If you ever use it elsewhere:
+
+1. Only use MIT when an authorized decision picked it. Preserve any existing
+   license unless that decision explicitly permits changing it.
+2. Confirm the filename the target expects (LICENSE, LICENSE.md, LICENSE.txt).
+3. Verify the actual copyright holder(s) and year from real records.
+4. Do not edit, reformat, summarize, or add conditions to the MIT terms below.
+   This is the canonical wording that license detection (GitHub, SPDX) matches.
 -->
 
 MIT License

@@ -4,7 +4,7 @@
   "private": true,
   "description": "A public marketplace of Claude Code plugins, skills, and agents — install via /plugin marketplace add nerymurillohnd/claude-essentials.",
   "type": "module",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "scripts": {
     "generate": "node scripts/generate-marketplace.mjs && node scripts/generate-issue-forms.mjs",
     "validate": "node scripts/validate-marketplace.mjs",

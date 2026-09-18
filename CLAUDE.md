@@ -143,9 +143,14 @@ immutable (tag ruleset).
 
 - Biome (`biome.json`) formats/lints all JSON/JS in this repo; ShellCheck and
   shfmt (via `.editorconfig`) cover every `.sh` file.
-- `LICENSE`, `CODE_OF_CONDUCT.md`, and `SECURITY.md` follow their
+- The repo and every plugin are Apache-2.0
+  ([ADR-0005](docs/decisions/adr-0005-apache-2-0-license.md)): each `LICENSE`
+  (no extension) is the verbatim text from
+  `templates/LICENSE-Apache-2.0-reusable-template.md`, and `plugin.json`
+  `license` is `"Apache-2.0"`. The MIT template is reference-only.
+- `CODE_OF_CONDUCT.md` and `SECURITY.md` follow their
   `templates/*-reusable-template.md` counterparts verbatim except for
-  filled-in placeholders. Don't reformat the canonical MIT license text with
+  filled-in placeholders. Never reformat license text with
   headers/bold/blockquotes — that weakens GitHub/SPDX license detection.
 - `main`: PR merges need green `check` + `version-check`; `main` can't be
   deleted or force-pushed (rulesets). Label PRs from `.github/labels.json`.
