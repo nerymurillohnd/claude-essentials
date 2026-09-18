@@ -101,3 +101,9 @@ without addressing any driver better than Apache-2.0.
 | No MIT reference outside the reference template and dated plans | `git grep -n -E "MIT\|LICENSE\.md"` | Clean, 2026-09-18 | Maintainer | Any docs/template change |
 | Validator enforces license coherence | Planned `npm run validate` check | pending — publication-contract phase | Maintainer | When implemented |
 | GitHub detects Apache-2.0 | `gh api repos/nerymurillohnd/claude-essentials --jq .license.spdx_id` | pending — after merge | Maintainer | After merge |
+
+### Amendment — 2026-09-18: license detection confirmed
+
+- After [PR #6](https://github.com/nerymurillohnd/claude-essentials/pull/6) merged, `gh api repos/nerymurillohnd/claude-essentials --jq .license.spdx_id` returns `Apache-2.0`. The Confirmation row "GitHub detects Apache-2.0" is satisfied.
+- Still pending: the validator check for license coherence (canonical `LICENSE` hash plus `plugin.json` SPDX). It's phase 1 of the [spec-alignment design](../superpowers/specs/2026-09-18-marketplace-spec-alignment-design.md).
+

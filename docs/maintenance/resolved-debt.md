@@ -68,3 +68,16 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 - **Residual risk / follow-up:** Dependabot can't bump `CLAUDE_CODE_VERSION`, because it's an env value, so it's bumped by hand in both workflows at once; validation enforces that they match.
 - **Related records:** [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md), [ADR-0004](../decisions/adr-0004-issue-and-label-protocol.md)
 - **Superseded by:** none
+
+### DEBT-0005 — 2026-09-18 — The `main` status-check ruleset no longer lets admins bypass it
+
+- **Original pending record:** none. Found and fixed the same day, so it never had a pending entry.
+- **Resolved debt:** The repo-protocols plan specified "no bypass actors" for `main`. The live ruleset "Require green checks to merge into main" (id 23655894) was created with the repository admin role as a bypass actor in mode `always`. That let the only maintainer push straight to `main`, or merge a red PR, without `check` or `version-check`. `version-check` runs only on `pull_request` events, so any direct push to `main` needed that bypass.
+- **Resolution:** On 2026-09-18, `bypass_actors` was set to `[]` with `gh api -X PUT repos/nerymurillohnd/claude-essentials/rulesets/23655894`. The ruleset's name, target, enforcement, conditions, and rules are unchanged; a diff before the change confirmed that only `bypass_actors` would differ. All three rulesets now have no bypass actors.
+- **Positive verification:** The ruleset reads back `enforcement=active`, `bypass=[]`, `current_user_can_bypass=never`. `gh api repos/nerymurillohnd/claude-essentials/rules/branches/main` returns `deletion`, `non_fast_forward`, `required_status_checks`.
+- **Negative verification:** The maintainer's `current_user_can_bypass` is `never`. A direct push to `main` was not attempted: it would be rejected now, and attempting it would itself be the prohibited action.
+- **Owner or responsible area:** GitHub repository rulesets
+- **Residual risk / follow-up:** If GitHub Actions can't run, nothing can merge. The remedy is a deliberate, audited, temporary ruleset edit — never a standing bypass. Every change to `main` goes through a PR, including docs-only changes.
+- **Related records:** [repo-protocols plan](../superpowers/plans/2026-09-18-repo-protocols.md), [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md)
+- **Superseded by:** none
+
