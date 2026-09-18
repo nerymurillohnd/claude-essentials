@@ -1,0 +1,20 @@
+{
+  "name": "claude-essentials",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A public marketplace of Claude Code plugins, skills, and agents.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "generate": "node scripts/generate-marketplace.mjs",
+    "validate": "node scripts/validate-marketplace.mjs",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "check": "biome check . && npm run generate && npm run validate"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

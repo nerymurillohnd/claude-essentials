@@ -1,0 +1,13 @@
+{
+  "$schema": "../schemas/marketplace.schema.json",
+  "name": "claude-essentials",
+  "description": "A public marketplace of Claude Code plugins, skills, and agents.",
+  "owner": {
+    "name": "Nery Samuel Murillo Tejada",
+    "url": "https://github.com/nerymurillohnd"
+  },
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": []
+}

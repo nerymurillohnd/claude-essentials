@@ -1,0 +1,12 @@
+{
+  "name": "REPLACE-WITH-PLUGIN-NAME",
+  "displayName": "Replace With Plugin Name",
+  "version": "0.1.0",
+  "description": "One sentence: what this plugin does and why someone would install it.",
+  "author": {
+    "name": "Your Name"
+  },
+  "license": "MIT",
+  "keywords": ["replace", "with", "keywords"],
+  "kind": "bundle"
+}

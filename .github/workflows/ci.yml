@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Format & lint (Biome)
+        run: npx biome check .
+
+      - name: Regenerate marketplace catalog
+        run: npm run generate
+
+      - name: Fail if generation changed tracked files
+        run: |
+          if ! git diff --exit-code -- .claude-plugin/marketplace.json; then
+            echo "::error::.claude-plugin/marketplace.json is out of date — run 'npm run generate' and commit the result."
+            exit 1
+          fi
+
+      - name: Validate marketplace + plugin manifests
+        run: npm run validate

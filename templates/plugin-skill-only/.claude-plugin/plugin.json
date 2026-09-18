@@ -1,0 +1,12 @@
+{
+  "name": "REPLACE-WITH-SKILL-NAME",
+  "displayName": "Replace With Skill Name",
+  "version": "0.1.0",
+  "description": "One sentence: what this skill does and why someone would install it on its own.",
+  "author": {
+    "name": "Your Name"
+  },
+  "license": "MIT",
+  "keywords": ["replace", "with", "keywords"],
+  "kind": "skill-only"
+}

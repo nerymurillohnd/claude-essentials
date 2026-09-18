@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/nerymurillohnd/claude-essentials/schemas/plugin.schema.json",
+  "title": "Claude Code plugin.json",
+  "description": "Schema for a plugin's .claude-plugin/plugin.json manifest. Field set follows https://code.claude.com/docs/en/plugins-reference.md — intentionally covers only fields this marketplace's tooling relies on; unknown extra fields are tolerated for forward-compatibility.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["name", "description"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Unique kebab-case identifier, matches the plugin's directory name."
+    },
+    "displayName": { "type": "string" },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Required by this repo's own convention (stricter than upstream) so the generated marketplace catalog always has a description."
+    },
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "url": { "type": "string", "format": "uri" }
+      }
+    },
+    "homepage": { "type": "string", "format": "uri" },
+    "repository": { "type": "string" },
+    "license": { "type": "string" },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "kind": {
+      "type": "string",
+      "enum": ["bundle", "skill-only", "agent-only"],
+      "description": "Non-upstream, catalog-only hint (see docs/decisions/adr-0001-marketplace-distribution-model.md) so the generator/README can label single-component plugins distinctly from multi-component bundles. Ignored by Claude Code itself."
+    },
+    "commands": {
+      "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+    },
+    "agents": {
+      "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+    },
+    "skills": {
+      "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+    },
+    "hooks": {},
+    "mcpServers": {},
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

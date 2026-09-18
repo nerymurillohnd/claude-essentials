@@ -1,0 +1,12 @@
+{
+  "name": "REPLACE-WITH-AGENT-NAME",
+  "displayName": "Replace With Agent Name",
+  "version": "0.1.0",
+  "description": "One sentence: what this agent does and why someone would install it on its own.",
+  "author": {
+    "name": "Your Name"
+  },
+  "license": "MIT",
+  "keywords": ["replace", "with", "keywords"],
+  "kind": "agent-only"
+}
