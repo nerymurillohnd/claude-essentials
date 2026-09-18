@@ -36,3 +36,35 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 - **Residual risk / follow-up:** The live tagging workflow and tag ruleset stay unverified until the first plugin version (ADR-0003 Confirmation).
 - **Related records:** [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md), [ADR-0002](../decisions/adr-0002-project-hooks.md)
 - **Superseded by:** none
+
+### DEBT-0003 — 2026-09-18 — Shell scripts are linted by `npm run check` and CI
+
+- **Original pending record:** DEBT-0003 in [pending-debt.md](pending-debt.md) (removed on resolution; see git history).
+- **Resolved debt:** Only Claude's own edits were linted, by the PostToolUse hook. `npm run check` and CI had no shell linter, so edits by a person, another program, or a merge could regress the hooks unnoticed.
+- **Resolution:**
+  - A repo-local `.shellcheckrc` mirrors the maintainer's policy: the same ten optional checks, and no global disables.
+  - `npm run lint:sh` (`scripts/lint-shell.mjs`) runs `shellcheck -x` and `shfmt -d` on every tracked shell script. It finds them with the hook's rule: `.sh` files, plus files with an `sh`/`bash` shebang (`scripts/lib/shell-files.mjs`).
+  - `lint:sh` is part of `npm run check`.
+  - The CI `check` job installs ShellCheck 0.11.0 and shfmt 3.14.1 from their official releases, verifies each download with `sha256sum --check`, and then runs `lint:sh`.
+- **Positive verification:** All 5 hook scripts pass under the repo rc. Unit tests cover shell-script detection (`shell-files.test.mjs`). The SHA-256 of both downloads was verified locally against GitHub's asset digests.
+- **Negative verification:** A tracked script containing `echo $1` makes `lint:sh` fail with SC2086.
+- **Owner or responsible area:** `.shellcheckrc`, `scripts/lint-shell.mjs`, `.github/workflows/ci.yml`
+- **Residual risk / follow-up:** The tool versions in CI are bumped by hand, together with their checksums. Contributors need ShellCheck and shfmt installed locally.
+- **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md)
+- **Superseded by:** none
+
+### DEBT-0004 — 2026-09-18 — Actions pinned by SHA, Dependabot enabled, Claude Code CLI pin kept consistent
+
+- **Original pending record:** DEBT-0004 in [pending-debt.md](pending-debt.md) (removed on resolution; see git history).
+- **Resolved debt:** Workflows that hold write tokens referenced actions by mutable major tags. Nothing updated the actions or the npm dev dependencies. The `CLAUDE_CODE_VERSION` pins could drift apart between workflows, and from the maintainer's local CLI, without anyone noticing.
+- **Resolution:**
+  - Every `uses:` in `.github/workflows/` is pinned to a full commit SHA, with a version comment: `actions/checkout` v7.0.1, `actions/setup-node` v7.0.0, `actions/stale` v11.0.0.
+  - `.github/dependabot.yml` updates `npm` and `github-actions` weekly. Dependabot also maintains SHA pins that carry a version comment. Alerts and security updates are enabled.
+  - `npm run validate` fails if two workflows that install Claude Code set different values of `CLAUDE_CODE_VERSION`, if one sets none, or if a value isn't canonical semver.
+  - `npm run validate:claude` prints a note when the local `claude` differs from CI's pin.
+- **Positive verification:** `actionlint` is clean. `npm run validate` passes on the real workflows (both at 2.1.276). The unit tests for `checkClaudeCodeVersions` pass.
+- **Negative verification:** The unit tests confirm a missing pin, a `v`-prefixed pin, and diverging pins are each reported.
+- **Owner or responsible area:** `.github/workflows/`, `.github/dependabot.yml`, `scripts/lib/repo-metadata.mjs`
+- **Residual risk / follow-up:** Dependabot can't bump `CLAUDE_CODE_VERSION`, because it's an env value, so it's bumped by hand in both workflows at once; validation enforces that they match.
+- **Related records:** [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md), [ADR-0004](../decisions/adr-0004-issue-and-label-protocol.md)
+- **Superseded by:** none

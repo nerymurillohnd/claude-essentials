@@ -16,9 +16,13 @@ The `check` and `version-check` CI jobs must be green before a pull request
 can merge into `main`, and `main` can't be deleted or force-pushed (repository
 rulesets).
 
+Local prerequisites: Node 24, [ShellCheck](https://www.shellcheck.net/) and
+[shfmt](https://github.com/mvdan/sh) (`brew install shellcheck shfmt`), and the
+[Claude Code](https://code.claude.com/docs) CLI on `PATH`.
+
 ```bash
 npm install
-npm run check          # format, lint, unit tests, generate, validate — the CI gate
+npm run check          # format, lint, shell lint, unit tests, generate, validate — the CI gate
 npm run check:versions  # plugin version-bump rules against origin/main
 ```
 

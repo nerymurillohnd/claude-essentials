@@ -3,9 +3,22 @@
 // marketplace manifest and on EVERY plugin: validating the marketplace root does not
 // check plugin contents (skills, agents, commands, hooks). Resolves DEBT-0001.
 // The only tolerated finding is the empty-marketplace warning while plugins/ is empty.
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { parse } from "yaml";
 import { collectFindings, EMPTY_MARKETPLACE_WARNING, runClaude } from "./lib/claude-cli.mjs";
 import { listPluginDirs, pluginsDir, rootDir } from "./lib/plugins.mjs";
+
+// CI pins the CLI (DEBT-0004); locally `claude` is whatever the maintainer runs.
+// A mismatch is not an error, but results may differ from CI, so say so.
+const ciVersion = parse(readFileSync(join(rootDir, ".github", "workflows", "ci.yml"), "utf8"))?.env
+  ?.CLAUDE_CODE_VERSION;
+const localVersion = runClaude(["--version"]).stdout.trim().split(/\s+/)[0];
+if (ciVersion && localVersion && localVersion !== String(ciVersion)) {
+  console.log(
+    `note: local claude ${localVersion} differs from CI's CLAUDE_CODE_VERSION ${ciVersion}; results may differ from CI`,
+  );
+}
 
 const pluginNames = listPluginDirs();
 const targets = [".", ...pluginNames.map((name) => relative(rootDir, join(pluginsDir, name)))];

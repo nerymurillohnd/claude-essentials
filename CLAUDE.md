@@ -17,7 +17,8 @@ npm run generate  # rebuild .claude-plugin/marketplace.json's plugins[] from plu
 npm run validate  # schema-check marketplace.json + every plugin.json; cross-check disk <-> catalog
 npm run format    # biome format --write .
 npm run lint      # biome lint .
-npm run check     # format+lint, tests, generate, validate, validate:claude — the CI gate
+npm run check     # format+lint, lint:sh, tests, generate, validate, validate:claude — the CI gate
+npm run lint:sh   # ShellCheck (.shellcheckrc) + shfmt -d on every tracked shell script
 npm test                # node:test unit tests for scripts/lib (part of npm run check)
 npm run validate:claude # `claude plugin validate --strict` (claude on PATH; CI pins CLAUDE_CODE_VERSION) on the marketplace + every plugin
 npm run check:versions  # plugin version-bump rules vs origin/main; add -- --verify-tag for claude plugin tag --dry-run (CI job version-check)

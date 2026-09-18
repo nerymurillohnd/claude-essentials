@@ -2,7 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { pluginDropdownOptions } from "./issue-forms.mjs";
 import { listPluginDirs, rootDir } from "./plugins.mjs";
-import { checkIssueForm, checkLabels, validateRepoMetadata } from "./repo-metadata.mjs";
+import {
+  checkClaudeCodeVersions,
+  checkIssueForm,
+  checkLabels,
+  validateRepoMetadata,
+} from "./repo-metadata.mjs";
 
 const ok = { name: "type: bug", color: "d73a4a", description: "Broken" };
 
@@ -84,4 +89,31 @@ test("checkIssueForm accepts a current form", () => {
 
 test("the committed labels and issue forms are valid", () => {
   assert.deepEqual(validateRepoMetadata(rootDir, listPluginDirs()), []);
+});
+
+const INSTALL = 'npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"';
+
+test("checkClaudeCodeVersions accepts one canonical version across workflows", () => {
+  assert.deepEqual(
+    checkClaudeCodeVersions([
+      { file: "ci.yml", source: INSTALL, version: "2.1.276" },
+      { file: "tag-versions.yml", source: INSTALL, version: "2.1.276" },
+      { file: "labels.yml", source: "npm ci", version: undefined },
+    ]),
+    [],
+  );
+});
+
+test("checkClaudeCodeVersions reports a missing, non-canonical, or diverging pin", () => {
+  const errors = checkClaudeCodeVersions([
+    { file: "ci.yml", source: INSTALL, version: "2.1.276" },
+    { file: "tag-versions.yml", source: INSTALL, version: "2.1.280" },
+    { file: "other.yml", source: INSTALL, version: undefined },
+    { file: "odd.yml", source: INSTALL, version: "v2.1.276" },
+  ]);
+  assert.ok(
+    errors.some((e) => e.includes("other.yml") && e.includes("sets no CLAUDE_CODE_VERSION")),
+  );
+  assert.ok(errors.some((e) => e.includes("odd.yml") && e.includes("canonical semver")));
+  assert.ok(errors.some((e) => e.includes("must all be equal")));
 });

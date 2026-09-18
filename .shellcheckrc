@@ -1,0 +1,18 @@
+# Repository ShellCheck policy (DEBT-0003). Mirrors the maintainer's global policy
+# so local runs, the PostToolUse hook, and CI (ShellCheck 0.11.0) agree. A
+# repo-local rc takes precedence over ~/.config/shellcheckrc.
+# No global SCxxxx disables: resolve exceptions with narrow inline directives.
+
+external-sources=true
+source-path=SCRIPTDIR
+
+enable=add-default-case
+enable=avoid-negated-conditions
+enable=avoid-nullary-conditions
+enable=check-extra-masked-returns
+enable=check-set-e-suppressed
+enable=check-unassigned-uppercase
+enable=deprecate-which
+enable=quote-safe-variables
+enable=require-variable-braces
+enable=useless-use-of-cat

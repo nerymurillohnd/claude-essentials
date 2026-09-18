@@ -100,7 +100,9 @@ function main() {
   for (const problem of metadataProblems) console.error(`✗ ${problem}`);
   errors.push(...metadataProblems);
   if (metadataProblems.length === 0)
-    console.log("✓ .github/labels.json and issue forms pass metadata checks");
+    console.log(
+      "✓ labels, issue forms, and workflow CLAUDE_CODE_VERSION pins pass metadata checks",
+    );
 
   if (errors.length > 0) {
     console.error(`\n${errors.length} problem(s) found.`);

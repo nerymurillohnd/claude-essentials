@@ -219,3 +219,8 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
 - Limits: a command that also commits its own edits (`git commit` in the same
   call) leaves nothing modified to find, and parallel Bash calls share one
   stamp. CI remains the authoritative gate (DEBT-0003 for shell).
+
+- Resolved 2026-09-18 (DEBT-0003): `npm run check` and CI now lint every
+  tracked shell script (`npm run lint:sh`, repo-local `.shellcheckrc`, pinned
+  ShellCheck 0.11.0 and shfmt 3.14.1 in CI), so hook edits made outside
+  Claude are gated too.

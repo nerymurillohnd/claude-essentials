@@ -96,6 +96,31 @@ export function checkIssueForm(file, form, { labelNames, pluginNames }) {
   return errors;
 }
 
+const CANONICAL_SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+
+// Every workflow that installs the Claude Code CLI must pin the same canonical
+// version in its top-level env (DEBT-0004), so CI jobs can't drift apart.
+export function checkClaudeCodeVersions(workflows) {
+  const errors = [];
+  const pinned = workflows.filter((w) => w.source.includes("@anthropic-ai/claude-code@"));
+  for (const { file, version } of pinned) {
+    const where = `.github/workflows/${file}`;
+    if (version === undefined) {
+      errors.push(`${where} installs Claude Code but sets no CLAUDE_CODE_VERSION in env`);
+    } else if (!CANONICAL_SEMVER.test(String(version))) {
+      errors.push(
+        `${where}: CLAUDE_CODE_VERSION must be canonical semver, got ${JSON.stringify(version)}`,
+      );
+    }
+  }
+  const versions = new Set(pinned.map((w) => w.version).filter((v) => v !== undefined));
+  if (versions.size > 1) {
+    const list = pinned.map((w) => `${w.file}=${w.version}`).join(", ");
+    errors.push(`CLAUDE_CODE_VERSION values must all be equal across workflows (${list})`);
+  }
+  return errors;
+}
+
 export function validateRepoMetadata(rootDir, pluginNames) {
   const labels = JSON.parse(readFileSync(join(rootDir, ".github", "labels.json"), "utf8"));
   const errors = checkLabels(labels);
@@ -108,5 +133,14 @@ export function validateRepoMetadata(rootDir, pluginNames) {
     const form = parse(readFileSync(join(formsDir, file), "utf8"));
     errors.push(...checkIssueForm(file, form, { labelNames, pluginNames }));
   }
+  const workflowsDir = join(rootDir, ".github", "workflows");
+  const workflows = readdirSync(workflowsDir)
+    .filter((file) => file.endsWith(".yml"))
+    .sort()
+    .map((file) => {
+      const source = readFileSync(join(workflowsDir, file), "utf8");
+      return { file, source, version: parse(source)?.env?.CLAUDE_CODE_VERSION };
+    });
+  errors.push(...checkClaudeCodeVersions(workflows));
   return errors;
 }
