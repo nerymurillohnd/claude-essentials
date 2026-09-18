@@ -17,15 +17,18 @@ npm run generate  # rebuild .claude-plugin/marketplace.json's plugins[] from plu
 npm run validate  # schema-check marketplace.json + every plugin.json; cross-check disk <-> catalog
 npm run format    # biome format --write .
 npm run lint      # biome lint .
-npm run check     # format+lint check, then generate, then validate — the CI gate
-claude plugin validate .  # official manifest + skill/agent/command frontmatter validator (not in CI yet: DEBT-0001)
+npm run check     # format+lint, tests, generate, validate, validate:claude — the CI gate
+npm test                # node:test unit tests for scripts/lib (part of npm run check)
+npm run validate:claude # `claude plugin validate --strict` (claude on PATH; CI pins CLAUDE_CODE_VERSION) on the marketplace + every plugin
+npm run check:versions  # plugin version-bump rules vs origin/main; add -- --verify-tag for claude plugin tag --dry-run (CI job version-check)
+npm run labels:sync     # dry-run diff of GitHub labels vs .github/labels.json (--apply/--prune are outward-facing)
 ```
 
 Run `npm run check` before any commit touching `plugins/`, `schemas/`, or
-`scripts/`. There's no separate unit-test suite in this repo —
-`scripts/validate-marketplace.mjs` (via `npm run validate`) is the closest
-thing to a test; run it alone after editing a single plugin manifest when you
-don't also need formatting/lint.
+`scripts/`. Unit tests live next to the modules they test
+(`scripts/lib/*.test.mjs`); `npm run validate` checks manifests, labels, and
+issue forms. Run validate alone after editing a single plugin manifest when
+you don't also need formatting/lint.
 
 CI (`.github/workflows/ci.yml`) runs the same `npm run check` pipeline and
 additionally fails if `npm run generate` produces a diff that wasn't
@@ -38,8 +41,9 @@ committed.
 proposing anything that touches it.** Claude Code's marketplace mechanism
 only distributes *plugins* (`/plugin install <name>@claude-essentials`) —
 there's no separate mechanism for a bare skill or bare agent. This repo ships
-three shapes through that one mechanism, distinguished by a catalog-only
-`kind` field in each plugin's manifest (Claude Code itself ignores `kind`):
+three shapes through that one mechanism. The shape ("kind") is derived from the
+plugin's files and must match its README's `**Kind:**` line — never declared in
+`plugin.json`, so `claude plugin validate --strict` passes (ADR-0001 amendment):
 
 - `bundle` — multiple skills/agents/commands/hooks working together
 - `skill-only` — a plugin wrapping exactly one skill, nothing else
@@ -61,8 +65,6 @@ against.
 **Adding a plugin:** copy one of `templates/plugin-bundle/`,
 `templates/plugin-skill-only/`, or `templates/plugin-agent-only/` into
 `plugins/<id>/` — see [docs/contributing/plugins.md](docs/contributing/plugins.md).
-Until DEBT-0002 is resolved, don't keep the templates' hardcoded
-`"version": "0.1.0"` without first deciding the versioning strategy.
 `templates/README.md` indexes every other reusable template (root README,
 plugin README, LICENSE, CHANGELOG, ADR, CODE_OF_CONDUCT, SECURITY,
 maintenance ledgers) and the path each gets copied to.
@@ -118,15 +120,17 @@ There is no single "plugin lifecycle" page; the `Plugin lifecycle — *` rows
 above are the sections that together define it. Live docs win over anything
 in this repo, templates included.
 
-**Misaligned with live docs — see `DEBT-0002` in
-[pending-debt.md](docs/maintenance/pending-debt.md):** every
-`templates/plugin-*/.claude-plugin/plugin.json` hardcodes `"version":
-"0.1.0"`, which silently opts each new plugin into explicit-version pinning.
-The repo has no stated versioning strategy. Nothing tells authors that a
-pinned plugin reaches users only after a version bump. The CHANGELOG
-templates link tags as `{{VERSION}}` rather than the official
-`{plugin-name}--v{version}` convention. Don't copy that versioning setup into
-a new plugin until DEBT-0002 is resolved.
+**Versioning, issues, and labels:** plugins use explicit semver. Every change
+to a plugin's runtime files (anything Claude loads; README/docs/LICENSE/CHANGELOG
+and `plugin.json` metadata are exempt) bumps `version` and adds a dated CHANGELOG entry, and
+CI tags `{name}--v{version}` on merge
+([ADR-0003](docs/decisions/adr-0003-plugin-versioning-and-tagging.md),
+[versioning.md](docs/contributing/versioning.md)). Issue forms, triage, and the
+label taxonomy follow
+[ADR-0004](docs/decisions/adr-0004-issue-and-label-protocol.md). Labels live in
+`.github/labels.json`, never in the GitHub UI. Generated artifacts:
+`marketplace.json` `plugins[]` and the issue forms' **Affected plugin**
+dropdown, both from `npm run generate`.
 
 ## Conventions
 

@@ -49,3 +49,22 @@ Starter layouts for all three shapes live in `templates/`.
   through a marketplace, this ADR should be revisited and the `kind: skill-only`
   / `kind: agent-only` plugins could be migrated to that mechanism without
   changing anything from the installer's perspective.
+
+### Amendment — 2026-09-18: kind is derived from the plugin's files, not declared
+
+- The `kind` field in `plugin.json` is removed from the schema and the
+  templates. On 2026-09-18, with Claude Code 2.1.276, `claude plugin validate
+  --strict` reported `Unknown field 'kind'` for every plugin. That made the
+  official strict validator unusable in CI (DEBT-0001).
+- `npm run validate` now derives the kind from what a plugin ships:
+  - exactly one `skills/<name>/SKILL.md` and no other component is
+    `skill-only`;
+  - exactly one `agents/<name>.md` and no other component is `agent-only`;
+  - anything else is `bundle`, including declared custom component paths,
+    commands, hooks, MCP or LSP servers, output styles, and monitors.
+- The plugin README's `**Kind:**` line must match the derived kind. So a
+  "skill-only" plugin that grows a second component now fails validation.
+  The old manifest field never enforced that.
+- The three shapes, their templates, and the distribution decision above are
+  unchanged. See [ADR-0003](adr-0003-plugin-versioning-and-tagging.md) and
+  the [spec](../superpowers/specs/2026-09-18-repo-protocols-design.md) (D5).

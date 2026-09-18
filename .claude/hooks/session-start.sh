@@ -5,6 +5,10 @@
 # fails the session. See docs/decisions/adr-0002-project-hooks.md.
 set -uo pipefail
 
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/plugin-paths.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/plugin-paths.sh"
+
 readonly CHANGELOG_URL="https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md"
 readonly CHANGELOG_DOCS_URL="https://code.claude.com/docs/en/changelog"
 readonly CHANGELOG_TTL_SECONDS=86400
@@ -215,22 +219,27 @@ check_catalog() {
 
 release_lines=""
 collect_release() {
-  local dir name version tag dirty
+  local dir name version tag dirty runtime
   for dir in plugins/*/; do
     [[ -d "${dir}" ]] || continue
     name="$(basename "${dir}")"
     version="$(jq -r '.version // empty' "${dir}.claude-plugin/plugin.json" 2>/dev/null)"
     if [[ -z "${version}" ]]; then
-      release_lines+="- ${name}: no version (commit-SHA versioning)"$'\n'
+      release_lines+="- ${name}: NO version — violates ADR-0003 (explicit semver required)"$'\n'
       continue
     fi
     tag="${name}--v${version}"
     dirty="$(git status --porcelain -- "plugins/${name}" 2>/dev/null)"
     if ! git rev-parse -q --verify "refs/tags/${tag}" >/dev/null 2>&1; then
-      release_lines+="- ${name}@${version}: untagged (release pending: \`claude plugin tag\`)"$'\n'
+      release_lines+="- ${name}@${version}: untagged (the Tag plugin versions workflow tags it on merge to main; run \`git fetch --tags\` if already merged)"$'\n'
+      continue
+    fi
+    runtime="$(plugin_runtime_change "${PWD}" "${name}" "${tag}")"
+    if [[ -n "${runtime}" ]]; then
+      release_lines+="- ${name}@${version}: runtime files CHANGED since ${tag} without a version bump (first: ${runtime})"$'\n'
+      warn "${name}: runtime files changed since ${tag} without a version bump"
     elif [[ -n "${dirty}" ]] || ! git diff --quiet "${tag}" HEAD -- "plugins/${name}" 2>/dev/null; then
-      release_lines+="- ${name}@${version}: CHANGED since ${tag} without a version bump"$'\n'
-      warn "${name} changed since ${tag} without a version bump"
+      release_lines+="- ${name}@${version}: docs/metadata changed since ${tag} (no bump needed; note notable changes under [Unreleased])"$'\n'
     else
       release_lines+="- ${name}@${version}: matches ${tag}"$'\n'
     fi
