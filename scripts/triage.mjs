@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createClient, RAW, resolveRepo, resolveToken } from "./lib/github.mjs";
 import { pluginLabel } from "./lib/labels.mjs";
-import { listPluginDirs, readJson, rootDir } from "./lib/plugins.mjs";
+import { listPluginDirs, manifestPath, readJson, rootDir } from "./lib/plugins.mjs";
 import {
   areaLabels,
   authorReplyChanges,
@@ -30,11 +30,17 @@ async function ensureLabels(labelNames, extraDefs) {
     if (await client.request("GET", `${repoPath}/labels/${enc(name)}`)) continue;
     const def = defs.get(name);
     if (!def) throw new Error(`Label "${name}" is not in the taxonomy`);
-    await client.request("POST", `${repoPath}/labels`, {
-      name: def.name,
-      color: def.color,
-      description: def.description,
-    });
+    try {
+      await client.request("POST", `${repoPath}/labels`, {
+        name: def.name,
+        color: def.color,
+        description: def.description,
+      });
+    } catch (error) {
+      // 422: a concurrent run created it first. Anything else, or still missing, is real.
+      const created = await client.request("GET", `${repoPath}/labels/${enc(name)}`);
+      if (!String(error.message).includes("→ 422") || !created) throw error;
+    }
   }
 }
 
@@ -64,8 +70,12 @@ async function jsonAt(path, ref) {
 async function onIssue() {
   const { issue } = event;
   const current = names(issue.labels);
-  const add = issueLabels(issue.body, listPluginDirs()).filter((label) => !current.includes(label));
-  if (add.length > 0) await apply(issue.number, { add, remove: [] });
+  const pluginNames = listPluginDirs();
+  const add = issueLabels(issue.body, pluginNames).filter((label) => !current.includes(label));
+  // Base-checkout manifests are trusted, so a plugin label labels.yml hasn't
+  // synced yet can be created with its real description.
+  const defs = pluginNames.map((name) => pluginLabel(readJson(manifestPath(name))));
+  if (add.length > 0) await apply(issue.number, { add, remove: [] }, defs);
 }
 
 async function onIssueComment() {

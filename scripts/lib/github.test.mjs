@@ -32,6 +32,12 @@ test("paginate follows pages until a short page", async () => {
   assert.equal(fetchImpl.calls[0].init.headers.Authorization, "Bearer t");
 });
 
+test("request treats DELETE of an already-removed resource as success", async () => {
+  const fetchImpl = fakeFetch([{ status: 404, body: { message: "Label does not exist" } }]);
+  const client = createClient({ token: "t", repo: "o/r", fetchImpl });
+  assert.equal(await client.request("DELETE", "/repos/o/r/issues/1/labels/x"), null);
+});
+
 test("request maps 204 and GET 404 to null, returns raw text, throws otherwise", async () => {
   const fetchImpl = fakeFetch([
     { status: 204 },

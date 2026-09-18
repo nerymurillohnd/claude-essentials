@@ -25,7 +25,8 @@ export function createClient({
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     if (response.status === 204) return null;
-    if (response.status === 404 && method === "GET") return null;
+    // GET of a missing resource and DELETE of an already-gone one are not errors.
+    if (response.status === 404 && (method === "GET" || method === "DELETE")) return null;
     if (!response.ok)
       throw new Error(`${method} ${path} → ${response.status} ${await response.text()}`);
     return accept.includes("raw") ? response.text() : response.json();
