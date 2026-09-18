@@ -1,10 +1,14 @@
-# audits
+# 🔎 audits
 
-Dated, point-in-time review reports about the state of this repository —
-dependency audits, repository-hygiene reviews, security reviews, etc.
+[← docs](../README.md)
 
-Naming convention: `YYYY-MM-DD-short-topic.md`.
+> Dated, point-in-time review reports about the state of this repository.
 
-An audit is a snapshot, not a living document. If it surfaces action items,
-record them in [`docs/maintenance/pending-debt.md`](../maintenance/pending-debt.md)
-rather than editing the audit after the fact.
+| Convention | Rule |
+| --- | --- |
+| **Scope** | Dependency audits, repository-hygiene reviews, security reviews, docs-drift checks |
+| **Naming** | `YYYY-MM-DD-short-topic.md` |
+| **Lifecycle** | A snapshot, not a living document — never edited after the fact |
+| **Action items** | Recorded in [`../maintenance/pending-debt.md`](../maintenance/pending-debt.md) with a stable ID and evidence |
+
+_No audits published yet._

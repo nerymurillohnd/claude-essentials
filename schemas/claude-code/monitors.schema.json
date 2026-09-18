@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/nerymurillohnd/claude-essentials/schemas/claude-code/monitors.schema.json",
+  "title": "Claude Code plugin monitors/monitors.json",
+  "description": "Complete skeleton of a plugin's monitors/monitors.json: background processes whose stdout lines reach Claude as notifications. Mirrors the official plugins reference; no repo-specific policy.",
+  "$comment": "Source: https://code.claude.com/docs/en/plugins-reference#monitors (verified 2026-09-18 against Claude Code 2.1.277). Declared in plugin.json under experimental.monitors. Commands may use ${CLAUDE_PLUGIN_ROOT}, ${CLAUDE_PLUGIN_DATA}, ${CLAUDE_PROJECT_DIR} and env vars, but never ${user_config.*}.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["name", "command", "description"],
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Unique within the plugin; prevents duplicate processes on reload."
+      },
+      "command": {
+        "type": "string",
+        "minLength": 1,
+        "description": "Persistent background shell command run in the session working directory."
+      },
+      "description": {
+        "type": "string",
+        "description": "Shown in the task panel and notification summaries."
+      },
+      "when": {
+        "type": "string",
+        "pattern": "^(always|on-skill-invoke:.+)$",
+        "description": "\"always\" (default) or \"on-skill-invoke:<skill-name>\"."
+      }
+    }
+  }
+}

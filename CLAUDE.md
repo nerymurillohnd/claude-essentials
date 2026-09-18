@@ -65,7 +65,12 @@ array. A plugin's manifest `name` must equal its directory name under
 `plugins/`; both the generator and `scripts/validate-marketplace.mjs` enforce
 this and fail the build otherwise. `schemas/marketplace.schema.json` and
 `schemas/plugin.schema.json` are the source of truth both scripts validate
-against.
+against — they encode *this repo's* contract. `schemas/claude-code/` holds
+separate, upstream-faithful skeletons of every documented field (plugin
+manifest, marketplace, `hooks.json`, `.mcp.json`, `.lsp.json`,
+`monitors.json`), each with its docs source in `$comment`; they carry no repo
+policy, and `scripts/lib/claude-code-schemas.test.mjs` checks them against the
+docs' own examples. When live docs change, update them first.
 
 **Adding a plugin:** copy one of `templates/plugin-bundle/`,
 `templates/plugin-skill-only/`, or `templates/plugin-agent-only/` into
@@ -143,9 +148,14 @@ immutable (tag ruleset).
 
 - Biome (`biome.json`) formats/lints all JSON/JS in this repo; ShellCheck and
   shfmt (via `.editorconfig`) cover every `.sh` file.
-- `LICENSE`, `CODE_OF_CONDUCT.md`, and `SECURITY.md` follow their
+- The repo and every plugin are Apache-2.0
+  ([ADR-0005](docs/decisions/adr-0005-apache-2-0-license.md)): each `LICENSE`
+  (no extension) is the verbatim text from
+  `templates/LICENSE-Apache-2.0-reusable-template.md`, and `plugin.json`
+  `license` is `"Apache-2.0"`. The MIT template is reference-only.
+- `CODE_OF_CONDUCT.md` and `SECURITY.md` follow their
   `templates/*-reusable-template.md` counterparts verbatim except for
-  filled-in placeholders. Don't reformat the canonical MIT license text with
+  filled-in placeholders. Never reformat license text with
   headers/bold/blockquotes — that weakens GitHub/SPDX license detection.
 - `main`: PR merges need green `check` + `version-check`; `main` can't be
   deleted or force-pushed (rulesets). Label PRs from `.github/labels.json`.

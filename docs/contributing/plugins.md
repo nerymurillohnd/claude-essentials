@@ -42,7 +42,13 @@ component paths in `plugin.json` makes a plugin a bundle.
   for frontmatter fields (`name`, `description`, `tools`, `model`, `color`, ...).
 - Commands, hooks, MCP servers: see [plugins.md](https://code.claude.com/docs/en/plugins.md).
 
-Add a plugin-level `README.md` explaining what it does and why.
+Fill in the plugin's `README.md` (already copied from the shape). It follows the
+[master plugin README](../../templates/plugin-README-reusable-template.md):
+15 required sections in a fixed order. A section that doesn't apply still
+says so explicitly ("None — this plugin ships no agents."). **What it does not
+do**, **Security**, and **Limitations** are never optional. Compatibility may
+mark a surface ✅ only after installing from the remote marketplace on that
+surface.
 
 ## 4. Regenerate and validate the catalog
 

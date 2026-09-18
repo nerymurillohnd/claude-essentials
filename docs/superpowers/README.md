@@ -1,11 +1,13 @@
-# superpowers
+# 🦸 superpowers
 
-Design artifacts produced while working on this repo with the
-`superpowers:brainstorming` / `superpowers:writing-plans` skills, kept for
-historical record after the work lands.
+[← docs](../README.md)
 
-- `plans/` — implementation plans (`superpowers:writing-plans` output)
-- `specs/` — design specs written before planning
+> Design artifacts produced with the `superpowers:brainstorming` and
+> `superpowers:writing-plans` skills, kept as a historical record after the work lands.
 
-Naming convention: `YYYY-MM-DD-short-topic.md`, matching the corresponding
-plan/spec pair when both exist.
+| Folder | Contents |
+| --- | --- |
+| [`specs/`](specs/) | Design specs, written before planning |
+| [`plans/`](plans/) | Implementation plans (`superpowers:writing-plans` output) |
+
+**Naming:** `YYYY-MM-DD-short-topic.md`. A plan and its spec share the same date and topic.

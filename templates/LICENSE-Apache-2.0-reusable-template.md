@@ -1,3 +1,27 @@
+<!--
+Reusable Apache License 2.0 template. This is the license claude-essentials and
+every plugin under plugins/ use (ADR-0005).
+
+Before using this template:
+
+1. Copy ONLY the license text below this comment. Delete this comment. The
+   result must be byte-identical to https://www.apache.org/licenses/LICENSE-2.0.txt
+   (SHA-256 cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30).
+2. Name the file LICENSE, without an extension. That's what GitHub/SPDX
+   detection expects, and it's the convention of Anthropic's own plugin
+   marketplaces. Markdown would also mangle the text's indentation.
+3. Do not fill in the "[yyyy] [name of copyright owner]" placeholders in the
+   APPENDIX. The appendix is instructions for per-file notices, not part of
+   the terms. Editing it weakens license detection.
+4. Copyright holders belong in per-file headers (the APPENDIX boilerplate) or in
+   an optional NOTICE file, never inside LICENSE. If you add a NOTICE, every
+   redistribution must keep it (Section 4(d)), so only add one on purpose.
+5. Verify the actual copyright holder(s) from real records. A plugin contributed
+   by someone other than the marketplace owner is licensed by that contributor
+   under Section 5. Don't attribute their work to the marketplace owner.
+6. The plugin.json "license" field must be the SPDX identifier "Apache-2.0".
+-->
+
 
                                  Apache License
                            Version 2.0, January 2004
