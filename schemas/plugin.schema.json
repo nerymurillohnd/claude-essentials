@@ -5,17 +5,19 @@
   "description": "Schema for a plugin's .claude-plugin/plugin.json manifest. Field set follows https://code.claude.com/docs/en/plugins-reference.md — intentionally covers only fields this marketplace's tooling relies on; unknown extra fields are tolerated for forward-compatibility.",
   "type": "object",
   "additionalProperties": true,
-  "required": ["name", "description"],
+  "required": ["name", "description", "version"],
   "properties": {
     "name": {
       "type": "string",
       "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-      "description": "Unique kebab-case identifier, matches the plugin's directory name."
+      "maxLength": 42,
+      "description": "Unique kebab-case identifier, matches the plugin's directory name. Max 42 characters so the derived GitHub label \"plugin: <name>\" stays within GitHub's 50-character limit (ADR-0004)."
     },
     "displayName": { "type": "string" },
     "version": {
       "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-((0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?$",
+      "description": "Required by this repo (ADR-0003): explicit semver without build metadata. Bump on every user-facing change; CI tags {name}--v{version} on merge."
     },
     "description": {
       "type": "string",
@@ -37,11 +39,6 @@
     "keywords": {
       "type": "array",
       "items": { "type": "string" }
-    },
-    "kind": {
-      "type": "string",
-      "enum": ["bundle", "skill-only", "agent-only"],
-      "description": "Non-upstream, catalog-only hint (see docs/decisions/adr-0001-marketplace-distribution-model.md) so the generator/README can label single-component plugins distinctly from multi-component bundles. Ignored by Claude Code itself."
     },
     "commands": {
       "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]

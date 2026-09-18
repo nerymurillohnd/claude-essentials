@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
 # PostToolUse hook (Edit|Write): formats and lints the edited file — shfmt +
 # ShellCheck for shell scripts, `biome check --write` for everything else — and,
-# for edits under plugins/<name>/ whose current version is already tagged,
+# for edits under plugins/<name>/ that leave runtime files different from the tagged version,
 # reminds once per session that users only receive changes after a version bump.
 # Idempotent: formatting converges; the reminder state is keyed by session.
 # See docs/decisions/adr-0002-project-hooks.md.
 set -euo pipefail
+
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/plugin-paths.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/plugin-paths.sh"
 
 command -v jq >/dev/null 2>&1 || exit 0
 
@@ -82,7 +86,7 @@ else
 fi
 
 plugin_reminder() {
-  local name rest manifest version state_dir state_file
+  local name rest manifest version runtime state_dir state_file
   [[ "${rel}" == plugins/*/* ]] || return 0
   rest="${rel#plugins/}"
   name="${rest%%/*}"
@@ -91,6 +95,8 @@ plugin_reminder() {
   version="$(jq -r '.version // empty' "${manifest}" 2>/dev/null)" || return 0
   [[ -n "${version}" ]] || return 0
   git -C "${root}" rev-parse -q --verify "refs/tags/${name}--v${version}" >/dev/null 2>&1 || return 0
+  runtime="$(plugin_runtime_change "${root}" "${name}" "${name}--v${version}")"
+  [[ -n "${runtime}" ]] || return 0
 
   state_dir="${root}/.claude/.cache/hooks"
   state_file="${state_dir}/version-reminders.json"
@@ -101,7 +107,7 @@ plugin_reminder() {
       ($old[0] // {}) as $o
       | {session: $s, plugins: ((if $o.session == $s then $o.plugins else [] end) + [$n])}
     ' >"${state_file}.tmp" && mv "${state_file}.tmp" "${state_file}"
-    printf '%s' "plugins/${name} pins \"version\": \"${version}\" in plugin.json and ${name}--v${version} is already tagged. Claude Code uses that version as the update cache key, so installed users will not receive this change until plugin.json's version is bumped (semver) with a CHANGELOG.md entry and the release is tagged with \`claude plugin tag plugins/${name}\`."
+    printf '%s' "plugins/${name} has runtime changes since ${name}--v${version} (first: ${runtime}). Installed users will not receive them until plugin.json's version is bumped (semver, see docs/contributing/versioning.md) with a matching \"## [X.Y.Z] - YYYY-MM-DD\" CHANGELOG.md entry; version-check enforces this in CI and the Tag plugin versions workflow tags the new version on merge. README/docs/LICENSE/CHANGELOG and plugin.json metadata need no bump."
   fi
 }
 

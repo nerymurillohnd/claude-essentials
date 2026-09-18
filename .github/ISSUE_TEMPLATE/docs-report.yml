@@ -1,0 +1,25 @@
+name: Documentation problem
+description: Something in the docs or a plugin README is missing, wrong, or unclear.
+title: "[Docs]: "
+labels:
+  - "type: docs"
+  - "status: needs-triage"
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Where
+      description: URL or repository path of the page.
+      placeholder: docs/contributing/plugins.md
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested fix

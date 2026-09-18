@@ -22,7 +22,7 @@ Copy these to the path noted, replace placeholders, delete the instructional com
 | [`root-README-recommended-template.md`](root-README-recommended-template.md) | `README.md` | The shape the live root README follows |
 | [`plugin-README-reusable-template.md`](plugin-README-reusable-template.md) | `plugins/<id>/README.md` | Per-plugin README (already baked into each shape above) |
 | [`adr-template.md`](adr-template.md) | `docs/decisions/adr-NNNN-*.md` | A new Architecture Decision Record |
-| [`CHANGELOG-reusable-template.md`](CHANGELOG-reusable-template.md) | `CHANGELOG.md` | Keep-a-Changelog-style changelog (already baked into each plugin shape) |
+| [`CHANGELOG-reusable-template.md`](CHANGELOG-reusable-template.md) | `CHANGELOG.md` | Keep-a-Changelog-style changelog (already baked into each plugin shape; tags follow `{plugin-name}--v{version}`, see [versioning.md](../docs/contributing/versioning.md)) |
 | [`LICENSE-reusable-template.md`](LICENSE-reusable-template.md) | `LICENSE.md` | Canonical, unmodified MIT text |
 | [`CODE_OF_CONDUCT-reusable-template.md`](CODE_OF_CONDUCT-reusable-template.md) | `CODE_OF_CONDUCT.md` | Contributor Covenant 2.1 |
 | [`SECURITY-reusable-template.md`](SECURITY-reusable-template.md) | `SECURITY.md` | Vulnerability reporting policy |

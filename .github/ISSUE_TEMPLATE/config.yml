@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question or share an idea
+    url: https://github.com/nerymurillohnd/claude-essentials/discussions/categories/q-a
+    about: Usage questions and open-ended ideas go to Discussions, not issues.
+  - name: Report a security vulnerability
+    url: https://github.com/nerymurillohnd/claude-essentials/security/advisories/new
+    about: Report privately. Never open a public issue for an unpatched vulnerability.
+  - name: Bug in Claude Code itself
+    url: https://github.com/anthropics/claude-code/issues
+    about: Problems with Claude Code (not with a plugin from this marketplace) belong upstream.

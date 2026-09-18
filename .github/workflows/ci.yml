@@ -4,32 +4,82 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+# Claude Code CLI used by `claude plugin validate` / `claude plugin tag`. It is
+# installed on the runner only — never as a repo dependency (ADR-0003). Bump it
+# deliberately, in every workflow that sets it.
+env:
+  CLAUDE_CODE_VERSION: "2.1.276"
 
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
 
       - run: npm ci
 
+      - name: Install Claude Code CLI (pinned; CI runner only)
+        run: |
+          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version
+
       - name: Format & lint (Biome)
         run: npx biome check .
 
-      - name: Regenerate marketplace catalog
+      - name: Unit tests
+        run: npm test
+
+      - name: Regenerate marketplace catalog and issue forms
         run: npm run generate
 
       - name: Fail if generation changed tracked files
         run: |
-          if ! git diff --exit-code -- .claude-plugin/marketplace.json; then
-            echo "::error::.claude-plugin/marketplace.json is out of date — run 'npm run generate' and commit the result."
+          if ! git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE; then
+            echo "::error::Generated files are out of date — run 'npm run generate' and commit the result."
             exit 1
           fi
 
       - name: Validate marketplace + plugin manifests
         run: npm run validate
+
+      - name: Validate with Claude Code (official, --strict)
+        run: npm run validate:claude
+
+  version-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Claude Code CLI (pinned; CI runner only)
+        run: |
+          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+          claude --version
+
+      - name: Enforce plugin version bumps (ADR-0003)
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          DEFERRED: "${{ contains(github.event.pull_request.labels.*.name, 'bump: deferred') }}"
+        run: |
+          args=(--base "origin/${BASE_REF}" --verify-tag)
+          if [[ "${DEFERRED}" == "true" ]]; then args+=(--deferred); fi
+          node scripts/check-versions.mjs "${args[@]}"

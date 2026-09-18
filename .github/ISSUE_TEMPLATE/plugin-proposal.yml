@@ -1,0 +1,57 @@
+name: Plugin proposal
+description: Propose a new plugin, standalone skill, or standalone agent for this marketplace.
+title: "[Proposal]: "
+labels:
+  - "type: plugin-proposal"
+  - "status: needs-triage"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Every distributable here is a plugin — a standalone skill or agent ships as a single-component plugin ([ADR-0001](https://github.com/nerymurillohnd/claude-essentials/blob/main/docs/decisions/adr-0001-marketplace-distribution-model.md)).
+  - type: input
+    id: name
+    attributes:
+      label: Proposed plugin name
+      description: kebab-case, at most 42 characters.
+      placeholder: my-plugin
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Shape
+      options:
+        - bundle (several skills/agents/commands/hooks)
+        - skill-only (exactly one skill)
+        - agent-only (exactly one subagent)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem it solves
+      description: Who needs this and what do they do today without it?
+    validations:
+      required: true
+  - type: textarea
+    id: components
+    attributes:
+      label: Components
+      description: Skills, agents, commands, hooks, or MCP servers it would contain, and what each does.
+    validations:
+      required: true
+  - type: textarea
+    id: effects
+    attributes:
+      label: Effects and permissions
+      description: Files it writes, commands it runs, network access, hooks that block or modify tool calls.
+    validations:
+      required: true
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'm willing to open a pull request for this plugin.

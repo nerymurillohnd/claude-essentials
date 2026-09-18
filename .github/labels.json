@@ -1,0 +1,155 @@
+[
+  {
+    "name": "type: bug",
+    "color": "d73a4a",
+    "description": "A plugin or the marketplace does not behave as documented",
+    "aliases": ["bug"]
+  },
+  {
+    "name": "type: feature",
+    "color": "a2eeef",
+    "description": "New capability or improvement for an existing plugin or the marketplace",
+    "aliases": ["enhancement"]
+  },
+  {
+    "name": "type: plugin-proposal",
+    "color": "bfd4f2",
+    "description": "Proposal for a new plugin, skill, or agent"
+  },
+  {
+    "name": "type: docs",
+    "color": "0075ca",
+    "description": "Documentation is missing, wrong, or unclear",
+    "aliases": ["documentation"]
+  },
+  {
+    "name": "type: maintenance",
+    "color": "c5def5",
+    "description": "Tooling, CI, dependencies, or refactors with no user-visible change"
+  },
+  {
+    "name": "type: security",
+    "color": "b60205",
+    "description": "Security hardening — report vulnerabilities privately (SECURITY.md)"
+  },
+  {
+    "name": "status: needs-triage",
+    "color": "fbca04",
+    "description": "Awaiting maintainer triage"
+  },
+  {
+    "name": "status: needs-info",
+    "color": "d876e3",
+    "description": "Waiting on the author; closes as not planned after 21 days without a reply"
+  },
+  {
+    "name": "status: accepted",
+    "color": "0e8a16",
+    "description": "Triaged and accepted; open for work"
+  },
+  {
+    "name": "status: blocked",
+    "color": "e99695",
+    "description": "Blocked by an upstream change or another issue"
+  },
+  {
+    "name": "status: stale",
+    "color": "cfd3d7",
+    "description": "No author reply for 14 days; closes in 7 more"
+  },
+  {
+    "name": "priority: critical",
+    "color": "b60205",
+    "description": "Breaks installs or loses data; fix before anything else"
+  },
+  {
+    "name": "priority: high",
+    "color": "d93f0b",
+    "description": "Important; next in line"
+  },
+  {
+    "name": "priority: low",
+    "color": "c2e0c6",
+    "description": "Nice to have"
+  },
+  {
+    "name": "area: plugins",
+    "color": "1d76db",
+    "description": "Changes under plugins/"
+  },
+  {
+    "name": "area: catalog",
+    "color": "1d76db",
+    "description": "Marketplace catalog, schemas, and catalog generation"
+  },
+  {
+    "name": "area: ci",
+    "color": "1d76db",
+    "description": "GitHub Actions workflows"
+  },
+  {
+    "name": "area: tooling",
+    "color": "1d76db",
+    "description": "Repo scripts, npm config, and Claude Code project hooks"
+  },
+  {
+    "name": "area: templates",
+    "color": "1d76db",
+    "description": "Reusable templates under templates/"
+  },
+  {
+    "name": "area: docs",
+    "color": "1d76db",
+    "description": "Documentation under docs/ and root Markdown files"
+  },
+  {
+    "name": "area: community",
+    "color": "1d76db",
+    "description": "Issue forms, PR template, labels, and community health files"
+  },
+  {
+    "name": "bump: major",
+    "color": "b60205",
+    "description": "Computed: PR bumps a plugin's MAJOR version (breaking change)"
+  },
+  {
+    "name": "bump: minor",
+    "color": "fbca04",
+    "description": "Computed: PR bumps a plugin's MINOR version (new capability)"
+  },
+  {
+    "name": "bump: patch",
+    "color": "0e8a16",
+    "description": "Computed: PR bumps a plugin's PATCH version (fix)"
+  },
+  {
+    "name": "bump: prerelease",
+    "color": "d4c5f9",
+    "description": "Computed: PR bumps a plugin to a prerelease version"
+  },
+  {
+    "name": "bump: initial",
+    "color": "0052cc",
+    "description": "Computed: PR adds a new plugin at its first version"
+  },
+  {
+    "name": "bump: none",
+    "color": "ededed",
+    "description": "Computed: PR changes no plugin version"
+  },
+  {
+    "name": "bump: deferred",
+    "color": "f9d0c4",
+    "description": "Maintainer-applied: runtime files changed without a bump; reaches users with the next bump"
+  },
+  {
+    "name": "good first issue",
+    "color": "7057ff",
+    "description": "Good for newcomers"
+  },
+  {
+    "name": "help wanted",
+    "color": "008672",
+    "description": "Extra attention is needed"
+  }
+]

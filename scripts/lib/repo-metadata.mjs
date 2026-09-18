@@ -1,0 +1,112 @@
+// Cross-checks repository metadata that automation depends on (ADR-0004).
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { parse } from "yaml";
+import { PLUGIN_FIELD_ID, PLUGIN_FIELD_LABEL, pluginDropdownOptions } from "./issue-forms.mjs";
+import {
+  MAX_LABEL_DESCRIPTION,
+  MAX_LABEL_NAME,
+  PLUGIN_LABEL_PREFIX,
+  REQUIRED_LABELS,
+} from "./labels.mjs";
+
+const COLOR = /^[0-9a-f]{6}$/;
+
+export function checkLabels(labels, required = REQUIRED_LABELS) {
+  if (!Array.isArray(labels)) return [".github/labels.json must be a JSON array"];
+  const errors = [];
+  const seen = new Set();
+  // First pass: every label name, so an alias can be checked against names that appear
+  // later in the array too (diffLabels matches aliases across the whole desired set).
+  const allNames = new Set(
+    labels
+      .filter((label) => typeof label?.name === "string" && label.name !== "")
+      .map((label) => label.name.toLowerCase()),
+  );
+  const seenAliases = new Set();
+  for (const label of labels) {
+    if (typeof label?.name !== "string" || label.name === "") {
+      errors.push('.github/labels.json: every label needs a non-empty "name"');
+      continue;
+    }
+    const where = `.github/labels.json "${label.name}"`;
+    const key = label.name.toLowerCase();
+    if (seen.has(key)) errors.push(`${where}: duplicate (label names are case-insensitive)`);
+    seen.add(key);
+    if (label.name.length > MAX_LABEL_NAME)
+      errors.push(`${where}: name longer than ${MAX_LABEL_NAME}`);
+    if (label.name.startsWith(PLUGIN_LABEL_PREFIX)) {
+      errors.push(
+        `${where}: "${PLUGIN_LABEL_PREFIX}*" labels are derived from plugins/; don't list them`,
+      );
+    }
+    if (!COLOR.test(label.color ?? ""))
+      errors.push(`${where}: color must be 6 lowercase hex digits`);
+    const description = label.description ?? "";
+    if (description.length < 1 || description.length > MAX_LABEL_DESCRIPTION) {
+      errors.push(`${where}: description must be 1–${MAX_LABEL_DESCRIPTION} characters`);
+    }
+    const aliases = label.aliases ?? [];
+    if (!aliases.every((alias) => typeof alias === "string")) {
+      errors.push(`${where}: aliases must be strings`);
+    } else {
+      for (const alias of aliases) {
+        const aliasKey = alias.toLowerCase();
+        if (allNames.has(aliasKey)) errors.push(`${where}: alias "${alias}" is also a label name`);
+        if (seenAliases.has(aliasKey)) {
+          errors.push(`${where}: alias "${alias}" is already an alias of another label`);
+        }
+        seenAliases.add(aliasKey);
+      }
+    }
+  }
+  for (const name of required) {
+    if (!seen.has(name.toLowerCase()))
+      errors.push(`.github/labels.json: "${name}" is required by automation`);
+  }
+  return errors;
+}
+
+export function checkIssueForm(file, form, { labelNames, pluginNames }) {
+  const where = `.github/ISSUE_TEMPLATE/${file}`;
+  const errors = [];
+  for (const key of ["name", "description", "body"]) {
+    if (!form?.[key]) errors.push(`${where}: missing "${key}"`);
+  }
+  const labels =
+    typeof form?.labels === "string"
+      ? form.labels.split(",").map((l) => l.trim())
+      : (form?.labels ?? []);
+  for (const label of labels) {
+    if (!labelNames.has(label))
+      errors.push(`${where}: label "${label}" is not in .github/labels.json`);
+  }
+  for (const item of form?.body ?? []) {
+    if (item?.id !== PLUGIN_FIELD_ID) continue;
+    if (item.attributes?.label !== PLUGIN_FIELD_LABEL) {
+      errors.push(
+        `${where}: the "${PLUGIN_FIELD_ID}" dropdown label must be "${PLUGIN_FIELD_LABEL}"`,
+      );
+    }
+    const expected = JSON.stringify(pluginDropdownOptions(pluginNames));
+    if (JSON.stringify(item.attributes?.options) !== expected) {
+      errors.push(`${where}: "${PLUGIN_FIELD_ID}" dropdown is stale — run npm run generate`);
+    }
+  }
+  return errors;
+}
+
+export function validateRepoMetadata(rootDir, pluginNames) {
+  const labels = JSON.parse(readFileSync(join(rootDir, ".github", "labels.json"), "utf8"));
+  const errors = checkLabels(labels);
+  const labelNames = new Set(labels.map((label) => label.name));
+  const formsDir = join(rootDir, ".github", "ISSUE_TEMPLATE");
+  const forms = readdirSync(formsDir)
+    .filter((file) => file.endsWith(".yml") && file !== "config.yml")
+    .sort();
+  for (const file of forms) {
+    const form = parse(readFileSync(join(formsDir, file), "utf8"));
+    errors.push(...checkIssueForm(file, form, { labelNames, pluginNames }));
+  }
+  return errors;
+}

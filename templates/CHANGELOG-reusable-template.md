@@ -70,6 +70,14 @@ only when the project uses versioned changelog entries. -->
 COMPARE LINKS — add only when hosted on a platform that supports diff URLs
 (e.g. GitHub). Point [Unreleased] at the latest real release.
 
+For a plugin in claude-essentials, tags are "{plugin-name}--v{version}"
+(ADR-0003) — never bare versions, which would collide across plugins:
+
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/{{PLUGIN_NAME}}--v{{LATEST_VERSION}}...HEAD
+[{{VERSION}}]: https://github.com/nerymurillohnd/claude-essentials/compare/{{PLUGIN_NAME}}--v{{PREVIOUS_VERSION}}...{{PLUGIN_NAME}}--v{{VERSION}}
+
+For a standalone project with one version line, use its own tag scheme:
+
 [Unreleased]: https://github.com/{{owner}}/{{repo}}/compare/{{LATEST_TAG}}...HEAD
 [{{VERSION}}]: https://github.com/{{owner}}/{{repo}}/compare/{{PREVIOUS_TAG}}...{{VERSION}}
 -->

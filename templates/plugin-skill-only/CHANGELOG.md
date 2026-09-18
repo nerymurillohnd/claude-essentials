@@ -8,6 +8,13 @@ dates (`YYYY-MM-DD`).
 
 ## [Unreleased]
 
+<!--
+Every change to runtime files (skills, agents, commands, hooks, MCP/LSP config,
+plugin.json components) bumps "version" in .claude-plugin/plugin.json
+and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
+{plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
+-->
+
 ## [0.1.0] - {{YYYY-MM-DD}}
 
 ### Added

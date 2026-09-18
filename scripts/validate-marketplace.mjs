@@ -2,14 +2,19 @@
 // Validates .claude-plugin/marketplace.json and every plugins/*/.claude-plugin/plugin.json
 // against schemas/*.schema.json, and cross-checks that every plugin listed in the
 // marketplace catalog actually exists on disk (and vice versa).
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
+import {
+  checkPluginKind,
+  listPluginDirs,
+  manifestPath,
+  readJson,
+  rootDir,
+} from "./lib/plugins.mjs";
+import { validateRepoMetadata } from "./lib/repo-metadata.mjs";
 
-const rootDir = fileURLToPath(new URL("..", import.meta.url));
-const pluginsDir = join(rootDir, "plugins");
 const marketplacePath = join(rootDir, ".claude-plugin", "marketplace.json");
 
 const ajv = new Ajv({ allErrors: true, strict: false });
@@ -17,21 +22,6 @@ addFormats(ajv);
 
 function loadSchema(name) {
   return JSON.parse(readFileSync(join(rootDir, "schemas", name), "utf8"));
-}
-
-function loadJson(path) {
-  return JSON.parse(readFileSync(path, "utf8"));
-}
-
-function listPluginDirs() {
-  try {
-    return readdirSync(pluginsDir)
-      .filter((entry) => statSync(join(pluginsDir, entry)).isDirectory())
-      .sort();
-  } catch (error) {
-    if (error.code === "ENOENT") return [];
-    throw error;
-  }
 }
 
 function reportErrors(label, errors) {
@@ -47,7 +37,7 @@ function main() {
   const marketplaceSchema = ajv.compile(loadSchema("marketplace.schema.json"));
   const pluginSchema = ajv.compile(loadSchema("plugin.schema.json"));
 
-  const marketplace = loadJson(marketplacePath);
+  const marketplace = readJson(marketplacePath);
   if (!marketplaceSchema(marketplace)) {
     reportErrors(".claude-plugin/marketplace.json", marketplaceSchema.errors);
     errors.push("marketplace.json");
@@ -60,10 +50,9 @@ function main() {
   const diskNames = new Set(pluginDirs);
 
   for (const name of pluginDirs) {
-    const manifestPath = join(pluginsDir, name, ".claude-plugin", "plugin.json");
     let manifest;
     try {
-      manifest = loadJson(manifestPath);
+      manifest = readJson(manifestPath(name));
     } catch (error) {
       console.error(
         `✗ plugins/${name}: cannot read/parse .claude-plugin/plugin.json (${error.message})`,
@@ -83,7 +72,13 @@ function main() {
       errors.push(name);
       continue;
     }
-    console.log(`✓ plugins/${name}/.claude-plugin/plugin.json matches schema`);
+    const kindProblem = checkPluginKind(name, manifest);
+    if (kindProblem) {
+      console.error(`✗ ${kindProblem}`);
+      errors.push(name);
+      continue;
+    }
+    console.log(`✓ plugins/${name}/.claude-plugin/plugin.json matches schema and README Kind`);
   }
 
   for (const name of catalogNames) {
@@ -100,6 +95,12 @@ function main() {
       errors.push(name);
     }
   }
+
+  const metadataProblems = validateRepoMetadata(rootDir, pluginDirs);
+  for (const problem of metadataProblems) console.error(`✗ ${problem}`);
+  errors.push(...metadataProblems);
+  if (metadataProblems.length === 0)
+    console.log("✓ .github/labels.json and issue forms pass metadata checks");
 
   if (errors.length > 0) {
     console.error(`\n${errors.length} problem(s) found.`);

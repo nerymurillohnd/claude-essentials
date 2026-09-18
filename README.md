@@ -79,7 +79,8 @@ components.
 | --- | --- |
 | Choose or install a plugin | This README and the plugin catalog above. |
 | Understand plugin behavior | The plugin's `README.md`, then its `SKILL.md` or agent file. |
-| Contribute or maintain packages | [docs/contributing/plugins.md](docs/contributing/plugins.md). |
+| Contribute or maintain packages | [CONTRIBUTING.md](CONTRIBUTING.md), then [plugins.md](docs/contributing/plugins.md) and [versioning.md](docs/contributing/versioning.md). |
+| Report a problem or propose a plugin | [Issue forms](https://github.com/nerymurillohnd/claude-essentials/issues/new/choose) — see [issues.md](docs/contributing/issues.md). |
 | Review decisions | [docs/decisions/](docs/decisions/). |
 | Review maintenance status | [docs/maintenance/](docs/maintenance/). |
 
@@ -90,19 +91,20 @@ npm install
 npm run check
 ```
 
-For a plugin change, update its manifest, README, and changelog together,
-then run `npm run check`. The catalog is generated from validated package
-manifests — don't hand-edit generated metadata.
+For a plugin change, bump its `version`, add a dated CHANGELOG entry, and
+update its README together. Then run `npm run check` and
+`npm run check:versions`. The catalog is generated from validated package
+manifests, so don't hand-edit generated metadata. Releases are tagged by CI
+on merge.
 
-See [docs/contributing/plugins.md](docs/contributing/plugins.md) for the full
-walkthrough.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full walkthrough.
 
 ## ❓ FAQ
 
 <details>
 <summary>Can I install just one skill, or just one agent?</summary>
 
-Yes — look for `kind: skill-only` or `kind: agent-only` in the catalog table.
+Yes — look for `skill-only` or `agent-only` in the catalog's Kind column.
 Installing that plugin gives you exactly that one component, nothing else.
 See [ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md) for
 why this is a plugin either way.
@@ -123,6 +125,7 @@ a public issue for an unpatched one.
 ## 🆘 Support and project links
 
 - [Issues](https://github.com/nerymurillohnd/claude-essentials/issues)
+- [Discussions](https://github.com/nerymurillohnd/claude-essentials/discussions)
 - [Security policy](SECURITY.md)
 - [Code of Conduct](CODE_OF_CONDUCT.md)
 - [MIT License](LICENSE)

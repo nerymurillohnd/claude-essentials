@@ -5,38 +5,6 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
-### DEBT-0001 — Official `claude plugin validate` is not part of the CI gate
-
-- **Status:** Pending
-- **Category:** quality, compatibility
-- **Evidence:**
-  - **Confirmed facts:** Claude Code 2.1.276 ships `claude plugin validate <path>` (with `--strict` and `--json`), which checks marketplace and plugin manifests plus skill, agent, and command frontmatter. `npm run check` and `.github/workflows/ci.yml` run only the repo's Ajv schema validation (`scripts/validate-marketplace.mjs`). On 2026-09-18, `claude plugin validate .` passes with one warning ("Marketplace has no plugins defined").
-  - **Inferences:** The repo schemas can drift from Claude Code's own manifest rules, for example unrecognized fields that the runtime tolerates but `--strict` flags. That drift would go unnoticed until a user install fails.
-  - **Open questions:** Whether CI can install the `claude` CLI without authentication for `plugin validate`, and whether `--strict` would reject the catalog-only `kind` field (ADR-0001).
-- **Impact / risk:** A plugin that passes `npm run check` could still be rejected or partially loaded by Claude Code for users.
-- **Owner or responsible area:** `package.json` scripts, `.github/workflows/ci.yml`
-- **Next action:** Add the first plugin, run `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict` locally, and decide how to handle `kind`. Then add the command to `npm run check` and CI.
-- **Review condition:** The first plugin lands under `plugins/`, or the SessionStart snapshot reports a `claude plugin validate` failure.
-- **Related records:** [ADR-0001](../decisions/adr-0001-marketplace-distribution-model.md), [ADR-0002](../decisions/adr-0002-project-hooks.md)
-
-### DEBT-0002 — Plugin versioning in templates is misaligned with live Claude Code docs
-
-- **Status:** Pending — needs a versioning-strategy decision (ADR)
-- **Category:** compatibility, distribution correctness
-- **Evidence:**
-  - **Confirmed facts:**
-    - `templates/plugin-bundle`, `templates/plugin-skill-only`, and `templates/plugin-agent-only` each set `"version": "0.1.0"` in `.claude-plugin/plugin.json`. Nothing in `README.md`, `docs/contributing/plugins.md`, or `templates/README.md` states a versioning strategy or its consequence.
-    - Live docs, checked 2026-09-18 ([version management](https://code.claude.com/docs/en/plugins-reference#version-management), [version resolution](https://code.claude.com/docs/en/plugin-marketplaces#version-resolution-and-release-channels)): Claude Code uses the resolved version as the update cache key. With an explicit `version`, "pushing new commits without bumping it has no effect" for installed users. Omitting `version` in a git-hosted marketplace falls back to the commit SHA. The docs recommend explicit versions for "published plugins with stable release cycles" and commit-SHA versions for plugins "under active development". They warn against setting `version` in both `plugin.json` and the marketplace entry.
-    - Live docs ([tag plugin releases](https://code.claude.com/docs/en/plugin-dependencies#tag-plugin-releases-for-version-resolution)): dependency constraints resolve only against tags named `{plugin-name}--v{version}` that match `plugin.json`'s `version`, created with `claude plugin tag`.
-    - `templates/CHANGELOG-reusable-template.md` builds compare links from `{{PREVIOUS_TAG}}...{{VERSION}}`. That is a bare version tag, which in this multi-plugin repo would collide across plugins and doesn't match the official convention.
-  - **Inferences:** A contributor copying a template gets version pinning by default without knowing it. Content edits merged without a bump never reach installed users, and nothing but the new PostToolUse and SessionStart hooks (ADR-0002) warns about it.
-  - **Open questions:** Which strategy this marketplace adopts: explicit semver with `claude plugin tag` releases (needed if other plugins will declare version constraints on ours), or commit-SHA versioning (every merge to `main` ships).
-- **Impact / risk:** Silent non-delivery of fixes to installed users, or broken dependency resolution for downstream plugins.
-- **Owner or responsible area:** `templates/plugin-*`, `templates/CHANGELOG-reusable-template.md`, `docs/contributing/plugins.md`
-- **Next action:** Record the strategy in an ADR. Align the templates' `version` field, the CHANGELOG tag links (`{plugin-name}--v{version}`), and the contributing guide to it. Then have `npm run check` enforce it.
-- **Review condition:** Before the first plugin is added under `plugins/`.
-- **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md), DEBT-0001
-
 ### DEBT-0003 — Shell scripts are not linted by `npm run check` or CI
 
 - **Status:** Pending (partially mitigated 2026-09-18)
@@ -50,3 +18,24 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Next action:** Add a repo-local `.shellcheckrc` that mirrors the enabled optional checks, plus a `lint:sh` step (`shellcheck -x` + `shfmt -d`) to `npm run check` and CI.
 - **Review condition:** The next change to `.claude/hooks/`, or any CI workflow change.
 - **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md)
+
+### DEBT-0004 — GitHub Actions and the pinned Claude Code CLI are not auto-updated; actions use mutable major tags
+
+- **Status:** Pending
+- **Category:** security, supply chain, compatibility
+- **Evidence:**
+  - **Confirmed facts:**
+    - On 2026-09-18, every workflow uses `actions/checkout@v7`, `actions/setup-node@v7`, and `actions/stale@v11` (first-party, referenced by major tag).
+    - `triage.yml`, `labels.yml`, and `tag-versions.yml` hold write tokens.
+    - The Claude Code CLI is installed on CI runners only, pinned by
+      `CLAUDE_CODE_VERSION: "2.1.276"` in `ci.yml` and `tag-versions.yml`. Both
+      values must be bumped together; nothing checks that they agree or that
+      the maintainer's local `claude` matches them.
+    - There's no Dependabot config for the `github-actions` or `npm` ecosystems.
+  - **Inferences:** A compromised or force-moved action tag would run in jobs that hold write tokens. Validator and tag behavior from newer Claude Code releases, and security fixes in dev dependencies, only arrive through manual bumps.
+  - **Open questions:** Whether to pin actions by full commit SHA with Dependabot updates (the common hardening recommendation), and which labels Dependabot PRs get (`type: maintenance`, `area: ci` or `area: tooling`).
+- **Impact / risk:** Supply-chain exposure in privileged workflows, and silent drift from upstream validator changes.
+- **Owner or responsible area:** `.github/workflows/`, `.github/dependabot.yml`
+- **Next action:** Pin actions by SHA with version comments. Add `.github/dependabot.yml` for `github-actions` and `npm`, using taxonomy labels.
+- **Review condition:** Any new workflow, the next action major release, or a Claude Code release that changes `plugin validate` or `plugin tag`.
+- **Related records:** [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md), [ADR-0004](../decisions/adr-0004-issue-and-label-protocol.md)

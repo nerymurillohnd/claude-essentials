@@ -6,15 +6,21 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "generate": "node scripts/generate-marketplace.mjs",
+    "generate": "node scripts/generate-marketplace.mjs && node scripts/generate-issue-forms.mjs",
     "validate": "node scripts/validate-marketplace.mjs",
+    "validate:claude": "node scripts/validate-claude.mjs",
+    "check:versions": "node scripts/check-versions.mjs",
+    "labels:sync": "node scripts/sync-labels.mjs",
+    "test": "node --test \"scripts/**/*.test.mjs\"",
     "format": "biome format --write .",
     "lint": "biome lint .",
-    "check": "biome check . && npm run generate && npm run validate"
+    "check": "biome check . && npm test && npm run generate && npm run validate && npm run validate:claude"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
     "ajv": "^8.20.0",
-    "ajv-formats": "^3.0.1"
+    "ajv-formats": "^3.0.1",
+    "semver": "^7.8.5",
+    "yaml": "^2.9.1"
   }
 }
