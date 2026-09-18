@@ -38,6 +38,8 @@ Add the marketplace and install the plugin you need:
 /plugin list
 ```
 
+`main` exposes the current catalog and is the supported installation reference.
+
 Read the linked plugin README before installing a plugin with hooks, file
 writes, network access, or other side effects.
 
@@ -58,6 +60,8 @@ for current host, marketplace, manifest, and distribution behavior.
 | Path | Role |
 | --- | --- |
 | `.claude-plugin/marketplace.json` | Generated catalog — do not hand-edit `plugins[]`. |
+| `SECURITY.md` | Vulnerability reporting channel and scope. |
+| `CODE_OF_CONDUCT.md` | Community standards and enforcement. |
 | `plugins/<plugin-id>/` | Self-contained distributable plugin packages. |
 | `plugins/*/.claude-plugin/plugin.json` | Authored plugin identity, version, and component declarations. |
 | `docs/` | Architecture, contributor, and decision documentation. |
@@ -111,9 +115,16 @@ No, unless the plugin's own README says otherwise. Read each plugin's
 permissions/boundaries section before installing.
 </details>
 
+## 🔒 Security
+
+Report a vulnerability privately — see [SECURITY.md](SECURITY.md). Don't open
+a public issue for an unpatched one.
+
 ## 🆘 Support and project links
 
 - [Issues](https://github.com/nerymurillohnd/claude-essentials/issues)
+- [Security policy](SECURITY.md)
+- [Code of Conduct](CODE_OF_CONDUCT.md)
 - [MIT License](LICENSE)
 
 claude-essentials is community-maintained and is not an official Anthropic

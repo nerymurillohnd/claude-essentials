@@ -6,29 +6,30 @@
   block for each verified resolution.
 
   Preserve resolved entries as dated historical records. If a later change
-  invalidates a resolution, keep the original entry and create a new pending
-  item that links back to it.
+  invalidates a resolution, keep the original entry and open a new pending
+  item that links back to it — don't rewrite history.
 -->
 
 # Resolved Debt
 
-Move maintenance items here only after the corrective change is complete and
-its verification has passed.
+## Purpose
 
-Entries below are dated historical resolutions. When a later repository,
-service, or operational change supersedes one, keep the historical record and
-track the current follow-up in the pending-debt ledger.
+An auditable history of maintenance/technical debt that's been corrected and
+verified — what was wrong, what changed, and the evidence supporting closure.
+Doesn't replace `pending-debt.md`; entries move here from there.
 
 ## Resolved Items
 
-- {YYYY-MM-DD} — {Short resolution title}
-  - **Resolved debt:** {Identify the original limitation, risk, or follow-up
-    item. Link to its prior record when available.}
-  - **Resolution:** {Describe the corrective change and the resulting state.}
-  - **Verification:** {List the commands, tests, reviews, revisions, external
-    checks, or dated evidence that confirm the resolution.}
-  - **Owner or responsible area:** {Person, team, system, or repository area}
-  - **Related records:** {Optional links to issues, audits, plans, ADRs,
-    incidents, pull requests, commits, or external records}
-  - **Superseded by:** {Optional link to a newer pending item or decision when
-    this historical resolution no longer describes the current state}
+### {{DEBT-ID}} — {{YYYY-MM-DD}} — {{Short resolution title}}
+
+- **Original pending record:** {{Link to the pending-debt.md entry this closes, or "none".}}
+- **Resolved debt:** {{The original limitation, risk, or follow-up item.}}
+- **Resolution:** {{The corrective change and the resulting state.}}
+- **Positive verification:** {{Evidence the fix actually works — commands, tests, review.}}
+- **Negative verification:** {{Evidence the original failure/risk no longer reproduces — not just that the new path works.}}
+- **Owner or responsible area:** {{Person, team, system, or repository area}}
+- **Residual risk / follow-up:** {{Anything left over, or "none".}}
+- **Related records:** {{Links to issues, ADRs, PRs, or "none".}}
+- **Superseded by:** {{Link to a newer item when this resolution no longer describes the current state, or "none".}}
+
+<!-- Duplicate the {{DEBT-ID}} block above for each additional resolution. -->

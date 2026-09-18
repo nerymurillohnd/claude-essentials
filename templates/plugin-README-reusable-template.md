@@ -36,6 +36,8 @@ Add the marketplace (once) and install the plugin:
 /plugin install {{plugin-id}}@claude-essentials
 ```
 
+Installation is complete when: {{observable success signal — e.g. "`/plugin list` shows {{plugin-id}} as enabled."}}
+
 Then, in a project, ask Claude:
 
 ```text
@@ -83,15 +85,23 @@ precedence over static compatibility claims in this file.
 
 ## 🔐 Behavior and boundaries
 
-### Permissions
+### Installation effects
 
-| Access or effect | What this plugin may do                                      |
+Installing this plugin: {{effect on Claude Code's own managed state — e.g. "registers a skill and an MCP server config; nothing else."}}
+
+Installing this plugin does **not** by itself: {{what stays untouched in the target project until the skill/agent/hook actually runs.}}
+
+### Runtime effects on a target project
+
+Once installed, using this plugin may:
+
+| Access or effect | What it may do                                                |
 | ----------------- | -------------------------------------------------------------- |
 | Read              | {{Exact paths, payloads, or project data read.}}              |
 | Write             | {{Exact files or target scope written; say "none" if none.}}  |
 | Process           | {{Commands or servers started; say "none" if none.}}          |
 | Network           | {{Destinations and purpose; say "not used" if none.}}         |
-| Authentication    | {{Install/first-use behavior; say "not required" if none.}}   |
+| Authentication    | {{First-use behavior; say "not required" if none.}}            |
 
 ### Human approval boundaries
 
@@ -111,18 +121,29 @@ enabling it in a critical repository.}}
 
 ## ✅ Verification
 
-Maintainers can run the canonical repository checks from the marketplace root:
+### Consumer smoke test
+
+From {{a stated working directory}}, after installing:
+
+```text
+{{one verified prompt or command a user can run to confirm this works}}
+```
+
+Expected result: {{observable outcome}}.
+
+### Maintainer checks
+
+From the marketplace root:
 
 ```bash
 npm run check
 ```
 
-{{Add one consumer smoke test that is runnable from an explicitly stated working
-directory.}}
-
 ## 🚧 Known limitations
 
-- {{Known limitation 1 and the observable symptom.}}
+| Limitation | Observable symptom | Safe recovery |
+| --- | --- | --- |
+| {{Known limitation 1.}} | {{What the user sees.}} | {{What to do about it.}} |
 
 ## ❓ FAQ
 
@@ -138,6 +159,7 @@ directory.}}
 - [Changelog](CHANGELOG.md)
 - [claude-essentials marketplace](../../README.md)
 - [Issues](https://github.com/nerymurillohnd/claude-essentials/issues)
+- [Security policy](../../SECURITY.md)
 - [License](LICENSE.md)
 
 ## 📄 License

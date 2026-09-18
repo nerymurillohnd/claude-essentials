@@ -17,6 +17,8 @@ date: YYYY-MM-DD
 decision-makers: List everyone who participated in the decision.
 consulted: List subject-matter experts whose input was actively sought.
 informed: List people who should receive updates without participating directly.
+supersedes: ADR-NNNN or none
+superseded-by: ADR-NNNN or none
 
 ---
 
@@ -55,13 +57,25 @@ decision drivers and resolves the stated problem}.
 - Bad, because {negative consequence or trade-off}
 - {Additional consequence}
 
+<!-- Optional: remove this table when the decision carries no material risk. -->
+
+### Risks and mitigations
+
+| Risk | Likelihood or condition | Impact | Mitigation or response | Owner |
+| --- | --- | --- | --- | --- |
+| {Risk} | {Likelihood or triggering condition} | {Impact} | {Mitigation} | {Owner} |
+
 <!-- Optional: remove this section when no confirmation mechanism exists. -->
 
 ### Confirmation
 
-{Describe how implementation or compliance will be verified. Name automated
-checks, reviews, fitness functions, operational evidence, responsible parties,
-and review conditions where applicable.}
+{Describe how implementation or compliance will be verified overall.} Name
+automated checks, reviews, or operational evidence per claim below — mark
+planned evidence as pending, don't present it as already observed.
+
+| Criterion or claim | Verification method | Evidence or result | Responsible party | Review condition |
+| --- | --- | --- | --- | --- |
+| {What must be true} | {Command, review, or check} | {Result, or "pending"} | {Who} | {When to re-check} |
 
 <!-- Optional: remove this section when the options are already sufficiently documented. -->
 

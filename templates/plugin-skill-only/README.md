@@ -17,6 +17,8 @@
 /plugin install {{plugin-id}}@claude-essentials
 ```
 
+Installation is complete when: {{observable success signal.}}
+
 Claude invokes it automatically when {{triggering condition}}, or you can run
 it directly:
 
@@ -32,11 +34,33 @@ it directly:
 
 ## 🔐 Behavior and boundaries
 
+### Installation effects
+
+Installing this plugin: {{effect on Claude Code's own managed state — usually just "registers the skill."}}
+
+### Runtime effects on a target project
+
 | Access or effect | What this skill may do |
 | --- | --- |
 | Read | {{Exact paths, payloads, or project data read.}} |
 | Write | {{Exact files or target scope written; say "none" if none.}} |
 | Network | {{Destinations and purpose; say "not used" if none.}} |
+
+## ✅ Verification
+
+### Consumer smoke test
+
+```text
+{{one verified prompt to confirm this works}}
+```
+
+Expected result: {{observable outcome}}.
+
+## 🚧 Known limitations
+
+| Limitation | Observable symptom | Safe recovery |
+| --- | --- | --- |
+| {{Known limitation 1.}} | {{What the user sees.}} | {{What to do about it.}} |
 
 ## 🔁 Update, disable, or remove
 

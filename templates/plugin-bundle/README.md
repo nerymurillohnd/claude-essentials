@@ -22,6 +22,8 @@
 /plugin install {{plugin-id}}@claude-essentials
 ```
 
+Installation is complete when: {{observable success signal.}}
+
 ```text
 {{One canonical example prompt or action.}}
 ```
@@ -35,11 +37,41 @@
 
 ## 🔐 Behavior and boundaries
 
-| Access or effect | What this plugin may do |
+### Installation effects
+
+Installing this plugin: {{effect on Claude Code's own managed state.}}
+
+Installing this plugin does **not** by itself: {{what stays untouched until it actually runs.}}
+
+### Runtime effects on a target project
+
+| Access or effect | What it may do |
 | --- | --- |
 | Read | {{Exact paths, payloads, or project data read.}} |
 | Write | {{Exact files or target scope written; say "none" if none.}} |
 | Network | {{Destinations and purpose; say "not used" if none.}} |
+
+## ✅ Verification
+
+### Consumer smoke test
+
+```text
+{{one verified prompt or command to confirm this works}}
+```
+
+Expected result: {{observable outcome}}.
+
+### Maintainer checks
+
+```bash
+npm run check
+```
+
+## 🚧 Known limitations
+
+| Limitation | Observable symptom | Safe recovery |
+| --- | --- | --- |
+| {{Known limitation 1.}} | {{What the user sees.}} | {{What to do about it.}} |
 
 ## 🔁 Update, disable, or remove
 
