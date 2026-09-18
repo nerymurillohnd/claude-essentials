@@ -8,9 +8,10 @@
   "scripts": {
     "generate": "node scripts/generate-marketplace.mjs",
     "validate": "node scripts/validate-marketplace.mjs",
+    "test": "node --test \"scripts/**/*.test.mjs\"",
     "format": "biome format --write .",
     "lint": "biome lint .",
-    "check": "biome check . && npm run generate && npm run validate"
+    "check": "biome check . && npm test && npm run generate && npm run validate"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",

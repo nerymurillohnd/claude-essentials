@@ -2,30 +2,16 @@
 // Regenerates the `plugins` array in .claude-plugin/marketplace.json from
 // each plugins/<name>/.claude-plugin/plugin.json on disk, so the catalog
 // never drifts from what actually exists in plugins/.
-import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { listPluginDirs, manifestPath, pluginsDir, rootDir } from "./lib/plugins.mjs";
 
-const rootDir = fileURLToPath(new URL("..", import.meta.url));
-const pluginsDir = join(rootDir, "plugins");
 const marketplacePath = join(rootDir, ".claude-plugin", "marketplace.json");
 
-function listPluginDirs() {
-  try {
-    return readdirSync(pluginsDir)
-      .filter((entry) => statSync(join(pluginsDir, entry)).isDirectory())
-      .sort();
-  } catch (error) {
-    if (error.code === "ENOENT") return [];
-    throw error;
-  }
-}
-
 function readPluginManifest(pluginName) {
-  const manifestPath = join(pluginsDir, pluginName, ".claude-plugin", "plugin.json");
   let manifest;
   try {
-    manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    manifest = JSON.parse(readFileSync(manifestPath(pluginName), "utf8"));
   } catch (error) {
     if (error.code === "ENOENT") {
       throw new Error(`plugins/${pluginName} has no .claude-plugin/plugin.json`);
