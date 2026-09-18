@@ -1,6 +1,7 @@
 // Cross-checks repository metadata that automation depends on (ADR-0004).
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import Ajv from "ajv";
 import { parse } from "yaml";
 import { PLUGIN_FIELD_ID, PLUGIN_FIELD_LABEL, pluginDropdownOptions } from "./issue-forms.mjs";
 import {
@@ -11,6 +12,22 @@ import {
 } from "./labels.mjs";
 
 const COLOR = /^[0-9a-f]{6}$/;
+
+// GitHub publishes no schema for issue forms; schemas/github/ vendors SchemaStore's
+// (see each file's $comment). Structure only — repo rules stay in checkIssueForm.
+export function issueFormValidators(rootDir) {
+  const ajv = new Ajv({ allErrors: true, strict: false });
+  const load = (name) =>
+    JSON.parse(readFileSync(join(rootDir, "schemas", "github", `${name}.schema.json`), "utf8"));
+  return { form: ajv.compile(load("issue-forms")), config: ajv.compile(load("issue-config")) };
+}
+
+export function checkSchema(file, data, validate) {
+  if (validate(data)) return [];
+  return validate.errors.map(
+    (err) => `.github/ISSUE_TEMPLATE/${file}: ${err.instancePath || "/"} ${err.message}`,
+  );
+}
 
 export function checkLabels(labels, required = REQUIRED_LABELS) {
   if (!Array.isArray(labels)) return [".github/labels.json must be a JSON array"];
@@ -129,10 +146,14 @@ export function validateRepoMetadata(rootDir, pluginNames) {
   const forms = readdirSync(formsDir)
     .filter((file) => file.endsWith(".yml") && file !== "config.yml")
     .sort();
+  const validators = issueFormValidators(rootDir);
   for (const file of forms) {
     const form = parse(readFileSync(join(formsDir, file), "utf8"));
+    errors.push(...checkSchema(file, form, validators.form));
     errors.push(...checkIssueForm(file, form, { labelNames, pluginNames }));
   }
+  const config = parse(readFileSync(join(formsDir, "config.yml"), "utf8"));
+  errors.push(...checkSchema("config.yml", config, validators.config));
   const workflowsDir = join(rootDir, ".github", "workflows");
   const workflows = readdirSync(workflowsDir)
     .filter((file) => file.endsWith(".yml"))

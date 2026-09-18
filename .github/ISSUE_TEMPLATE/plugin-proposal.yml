@@ -9,11 +9,13 @@ body:
     attributes:
       value: |
         Every distributable here is a plugin — a standalone skill or agent ships as a single-component plugin ([ADR-0001](https://github.com/nerymurillohnd/claude-essentials/blob/main/docs/decisions/adr-0001-marketplace-distribution-model.md)).
+
+        Accepted plugins follow the [plugin README contract](https://github.com/nerymurillohnd/claude-essentials/blob/main/templates/plugin-README-reusable-template.md): they state what they do **not** do, their security effects, and their limitations.
   - type: input
     id: name
     attributes:
       label: Proposed plugin name
-      description: kebab-case, at most 42 characters.
+      description: kebab-case, at most 42 characters. It becomes the skill namespace (`/name:skill`).
       placeholder: my-plugin
     validations:
       required: true
@@ -26,6 +28,17 @@ body:
         - skill-only (exactly one skill)
         - agent-only (exactly one subagent)
         - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: surfaces
+    attributes:
+      label: Target surfaces
+      description: LSP servers, monitors, and `bin/` executables work in Claude Code only.
+      multiple: true
+      options:
+        - Claude Code
+        - Claude Cowork
     validations:
       required: true
   - type: textarea
@@ -49,9 +62,32 @@ body:
       description: Files it writes, commands it runs, network access, hooks that block or modify tool calls.
     validations:
       required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: External requirements
+      description: Binaries, services, accounts, or credentials a user needs. Write "none" if it needs nothing beyond Claude.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: How to verify it works
+      description: One natural request that should trigger it and one unrelated request that should not. These become its eval cases.
+      placeholder: |
+        Should trigger: "..."
+        Should not trigger: "..."
+  - type: checkboxes
+    id: public-safety
+    attributes:
+      label: Public-repository safety
+      options:
+        - label: The proposal contains no secrets, private paths, customer data, or internal endpoints.
+          required: true
   - type: checkboxes
     id: contribution
     attributes:
       label: Contribution
       options:
         - label: I'm willing to open a pull request for this plugin.
+        - label: Anything I contribute is licensed under Apache-2.0, like the rest of this repository (Section 5).

@@ -56,7 +56,7 @@ plugin/marketplace schemas lag the docs and are not used as the source.
 | Evals | None | `evals/` in every template; validator requires ≥1 positive and ≥1 negative case when skills exist | 2 |
 | Root README catalog | Hand-written placeholder | Generated table (Plugin, Description, Claude Code, Cowork, Requirements) between markers | 2 |
 | Requirements script | No convention | `scripts/check-requirements.sh` template; validator enforces exec bit + runs it with `--check-only` in CI | 2 |
-| Secret / private-content scanning | `.gitignore` only | Pinned gitleaks in CI + `.gitleaks.toml`; repo content scanner for private paths and denylisted terms | 3 |
+| Secret / private-content scanning | GitHub-native secret scanning + push protection + private vulnerability reporting (all enabled, verified 2026-09-18) | Repo content scanner for private paths and denylisted terms only — GitHub's non-provider/custom patterns need a paid org plan; gitleaks dropped as redundant with native push protection | 3 |
 | `CODEOWNERS` | Missing | Added (see risk R6) | 3 |
 | `SECURITY.md`, `CONTRIBUTING.md` | Partial vs §15 | Full §15 content | 3 |
 | `.claude/rules/`, skills, agents | None | §5 below | 4 |
@@ -74,7 +74,7 @@ back CI, `npm run check`, hooks, and skills.
 | Eval suite shape | `scripts/lib/evals.mjs` | `new-plugin`, `plugin-preflight` | `check` |
 | License coherence | schema `license: "Apache-2.0"` + LICENSE text hash | — | `check` |
 | No private content | `.github/public-content.json` (patterns) + `scripts/lib/public-content.mjs` | PostToolUse on `plugins/**`, `templates/**` | `check` |
-| No secrets | `.gitleaks.toml` | `plugin-preflight` (if gitleaks installed) | new `secrets` job, pinned + checksummed |
+| No secrets | GitHub secret scanning + push protection (native) | — | enforced by GitHub on every push |
 | Version / changelog / tag | existing `version-plan.mjs` | existing hooks | `version-check` |
 | Eval cost ceiling | PreToolUse Bash guard | blocks `claude plugin eval` without `--max-cost-usd` and `--no-publish` | n/a |
 
@@ -148,7 +148,7 @@ each plugin and on third-party plugin PRs.
 0. **Done on `chore/relicense-apache-2.0`**: ADR-0005 (Apache-2.0), relicense, Apache/MIT templates, upstream skeleton schemas + tests.
 1. **Foundation**: ADR-0006 (scope + publication standard), repo contract schemas layered on `schemas/claude-code/`, `renames: null` fix, license check in validator, CLI pin bump.
 2. **Templates and validators**: 15-heading README, evals skeletons, check-requirements template, generated root catalog, validator modules + tests.
-3. **Security**: gitleaks job, content scanner, CODEOWNERS, SECURITY.md/CONTRIBUTING.md to §15, `.gitignore` for `**/evals/results/`.
+3. **Security**: content scanner (private paths/terms only), CODEOWNERS, SECURITY.md to §15, `.gitignore` for `**/evals/results/`. No gitleaks: GitHub-native push protection already blocks provider secrets (revised 2026-09-18).
 4. **Local automation**: rules, skills, agents, hooks, saved workflow.
 5. **Consolidation**: slim CLAUDE.md, docs index, DEBT entries (CI evals, per-component Cowork matrix, unverified spec claims).
 

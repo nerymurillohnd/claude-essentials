@@ -6,6 +6,8 @@ import {
   checkClaudeCodeVersions,
   checkIssueForm,
   checkLabels,
+  checkSchema,
+  issueFormValidators,
   validateRepoMetadata,
 } from "./repo-metadata.mjs";
 
@@ -116,4 +118,25 @@ test("checkClaudeCodeVersions reports a missing, non-canonical, or diverging pin
   );
   assert.ok(errors.some((e) => e.includes("odd.yml") && e.includes("canonical semver")));
   assert.ok(errors.some((e) => e.includes("must all be equal")));
+});
+
+test("issue forms and config.yml are checked against the vendored GitHub schemas", () => {
+  const { form, config } = issueFormValidators(rootDir);
+  const base = {
+    name: "X",
+    description: "d",
+    body: [{ type: "markdown", attributes: { value: "hi" } }],
+  };
+  assert.deepEqual(checkSchema("x.yml", base, form), []);
+  const upload = {
+    ...base,
+    body: [{ type: "upload", id: "files", attributes: { label: "Files" } }],
+  };
+  assert.deepEqual(checkSchema("x.yml", upload, form), []);
+  const unknownType = { ...base, body: [{ type: "slider", attributes: { label: "S" } }] };
+  assert.ok(checkSchema("x.yml", unknownType, form).length > 0);
+  const noOptions = { ...base, body: [{ type: "dropdown", id: "d", attributes: { label: "D" } }] };
+  assert.ok(checkSchema("x.yml", noOptions, form).length > 0);
+  assert.deepEqual(checkSchema("config.yml", { blank_issues_enabled: false }, config), []);
+  assert.ok(checkSchema("config.yml", { blank_issues_enabled: "no" }, config).length > 0);
 });

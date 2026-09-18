@@ -9,8 +9,8 @@ body:
     id: location
     attributes:
       label: Where
-      description: URL or repository path of the page.
-      placeholder: docs/contributing/plugins.md
+      description: URL or repository path of the page, plus the section if it's a plugin README (for example "Security" or "Compatibility").
+      placeholder: plugins/<plugin-id>/README.md — Compatibility
     validations:
       required: true
   - type: textarea

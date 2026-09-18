@@ -31,4 +31,6 @@ npm run check:versions  # plugin version-bump rules against origin/main
   A change to anything Claude loads at runtime bumps the plugin's version and adds a CHANGELOG entry; docs-only changes don't.
 - Labels are applied automatically. See [docs/contributing/labels.md](docs/contributing/labels.md).
 
+Contributions are licensed under [Apache-2.0](LICENSE), like the rest of the repository (Section 5). The pull request template's public-repository safety checklist applies to every PR.
+
 Participation is governed by the [Code of Conduct](CODE_OF_CONDUCT.md).
