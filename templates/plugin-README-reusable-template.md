@@ -4,7 +4,9 @@
   Copy this file to plugins/{{plugin-id}}/README.md, replace every
   placeholder, and delete rows/sections that don't apply to this plugin's
   kind (bundle / skill-only / agent-only — see
-  ../docs/decisions/adr-0001-marketplace-distribution-model.md).
+  ../docs/decisions/adr-0001-marketplace-distribution-model.md). The **Kind:**
+  line below must match the kind `npm run validate` derives from the plugin's
+  files.
 -->
 
 # {{Emoji}} {{Display Name}}

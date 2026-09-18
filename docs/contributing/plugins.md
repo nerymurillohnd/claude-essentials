@@ -18,14 +18,21 @@ cp -R templates/plugin-skill-only plugins/my-new-skill
 
 ## 2. Fill in `.claude-plugin/plugin.json`
 
-Required fields: `name` (must equal the directory name, kebab-case) and
-`description`. See `schemas/plugin.schema.json` for the full field list, and
+Required fields: `name` (must equal the directory name, kebab-case, at most 42
+characters), `description`, and `version` (explicit semver; new plugins usually
+start at `0.1.0`, see [versioning.md](versioning.md)). See
+`schemas/plugin.schema.json` for the full field list, and
 [plugins-reference.md](https://code.claude.com/docs/en/plugins-reference.md)
 for everything Claude Code itself understands (author, license, keywords,
 component paths, hooks, mcpServers, dependencies, ...).
 
-Set `kind` to `bundle`, `skill-only`, or `agent-only` to match the template you
-started from.
+Don't declare a `kind`. `npm run validate` derives it from what the plugin
+ships, and it must match the `**Kind:**` line in the plugin's README:
+exactly one `skills/<name>/SKILL.md` and nothing else is `skill-only`, exactly
+one `agents/<name>.md` and nothing else is `agent-only`, and anything else is
+`bundle` ([ADR-0001](../decisions/adr-0001-marketplace-distribution-model.md)).
+Single-component plugins must use the default layout; declaring custom
+component paths in `plugin.json` makes a plugin a bundle.
 
 ## 3. Write the actual skill/agent/command content
 
@@ -49,6 +56,15 @@ npm run check       # both, plus biome format/lint
 catalog — don't hand-edit the `plugins` array in `.claude-plugin/marketplace.json`,
 it will just get overwritten.
 
-## 5. Open a PR
+## 5. Date the CHANGELOG entry
 
-CI runs `npm run check` on every PR. It must pass before merge.
+Replace `{{YYYY-MM-DD}}` in `CHANGELOG.md` with today's date. `version-check`
+requires a `## [X.Y.Z] - YYYY-MM-DD` entry matching `version`.
+
+## 6. Open a PR
+
+Fill in the pull request template. CI runs `npm run check` and
+`version-check`, and both must pass before merge. After merge, the new
+version reaches users through the marketplace (`/plugin update` or
+auto-update), and the `Tag plugin versions` workflow tags `<name>--v<version>`
+with `claude plugin tag`. See [versioning.md](versioning.md).

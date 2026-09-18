@@ -116,7 +116,7 @@ walkthrough.
 <details>
 <summary>Can I install just one skill, or just one agent?</summary>
 
-Yes — look for `kind: skill-only` or `kind: agent-only` in the catalog table.
+Yes — look for `skill-only` or `agent-only` in the catalog's Kind column.
 Installing that plugin gives you exactly that one component, nothing else.
 See [ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md) for
 why this is a plugin either way.
