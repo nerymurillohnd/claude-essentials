@@ -3,7 +3,15 @@
     "plugin-dev@claude-plugins-official": true
   },
   "permissions": {
-    "allow": ["Bash(npm run *)", "WebSearch", "WebFetch"]
+    "allow": [
+      "Bash(npm run generate)",
+      "Bash(npm run validate)",
+      "Bash(npm run format)",
+      "Bash(npm run lint)",
+      "Bash(npm run check)",
+      "WebSearch",
+      "WebFetch"
+    ]
   },
   "enableWorkflows": true,
   "todoFeatureEnabled": true,
