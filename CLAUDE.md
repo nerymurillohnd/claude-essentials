@@ -35,6 +35,10 @@ CI (`.github/workflows/ci.yml`) runs the same `npm run check` pipeline and
 additionally fails if `npm run generate` produces a diff that wasn't
 committed.
 
+`npm run check` needs ShellCheck, shfmt, and `claude` on `PATH`. Claude Code is
+never a repo dependency: CI installs the version pinned by `CLAUDE_CODE_VERSION`
+in `ci.yml` and `tag-versions.yml` (`npm run validate` keeps them equal).
+
 ## Architecture
 
 **Distribution model — read
@@ -131,7 +135,9 @@ label taxonomy follow
 [ADR-0004](docs/decisions/adr-0004-issue-and-label-protocol.md). Labels live in
 `.github/labels.json`, never in the GitHub UI. Generated artifacts:
 `marketplace.json` `plugins[]` and the issue forms' **Affected plugin**
-dropdown, both from `npm run generate`.
+dropdown, both from `npm run generate`. Plugins aren't packages: no GitHub
+Releases. `*--v*` tags come only from the `Tag plugin versions` workflow and are
+immutable (tag ruleset).
 
 ## Conventions
 
@@ -141,6 +147,16 @@ dropdown, both from `npm run generate`.
   `templates/*-reusable-template.md` counterparts verbatim except for
   filled-in placeholders. Don't reformat the canonical MIT license text with
   headers/bold/blockquotes — that weakens GitHub/SPDX license detection.
+- `main`: PR merges need green `check` + `version-check`; `main` can't be
+  deleted or force-pushed (rulesets). Label PRs from `.github/labels.json`.
+- Workflows pin every `uses:` to a full commit SHA with a `# vX.Y.Z` comment
+  (Dependabot updates them).
+- New shell scripts need the exec bit (`git ls-files -s` → `100755`); test
+  them by path, not via `bash script.sh`.
+- Accepted ADRs are amended by appending `### Amendment — YYYY-MM-DD`, never
+  rewritten; resolved debt moves from `pending-debt.md` to `resolved-debt.md`.
+- Keep searches scoped to the repo — never `find /` or `find ~` (it triggers
+  macOS privacy prompts for Desktop, Downloads, and network volumes).
 - Nothing here is pushed to the public GitHub remote, and no GitHub
   repository is created for it, without explicit confirmation in the
   conversation first — this repo's whole purpose is public distribution, so
