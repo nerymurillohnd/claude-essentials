@@ -7,3 +7,5 @@
 - [`maintenance/`](maintenance/) — pending and resolved technical debt ledgers.
 - [`audits/`](audits/) — dated, point-in-time repository review reports.
 - [`superpowers/`](superpowers/) — plans/specs from `superpowers` skill-driven design work.
+
+See also [`../templates/`](../templates/) for every reusable starting point this repo defines.
