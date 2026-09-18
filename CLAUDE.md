@@ -65,7 +65,12 @@ array. A plugin's manifest `name` must equal its directory name under
 `plugins/`; both the generator and `scripts/validate-marketplace.mjs` enforce
 this and fail the build otherwise. `schemas/marketplace.schema.json` and
 `schemas/plugin.schema.json` are the source of truth both scripts validate
-against.
+against — they encode *this repo's* contract. `schemas/claude-code/` holds
+separate, upstream-faithful skeletons of every documented field (plugin
+manifest, marketplace, `hooks.json`, `.mcp.json`, `.lsp.json`,
+`monitors.json`), each with its docs source in `$comment`; they carry no repo
+policy, and `scripts/lib/claude-code-schemas.test.mjs` checks them against the
+docs' own examples. When live docs change, update them first.
 
 **Adding a plugin:** copy one of `templates/plugin-bundle/`,
 `templates/plugin-skill-only/`, or `templates/plugin-agent-only/` into

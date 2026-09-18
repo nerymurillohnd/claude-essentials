@@ -1,0 +1,322 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/nerymurillohnd/claude-essentials/schemas/claude-code/hooks.schema.json",
+  "title": "Claude Code plugin hooks/hooks.json",
+  "description": "Complete skeleton of a plugin's hooks/hooks.json. Mirrors the official hooks reference; no repo-specific policy. The same event map is the `hooks` value in settings.json, skill/agent frontmatter, and inline in plugin.json.",
+  "$comment": "Source: https://code.claude.com/docs/en/hooks (verified 2026-09-18 against Claude Code 2.1.277). Live docs win; re-verify on drift.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["hooks"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "description": {
+      "type": "string",
+      "description": "Optional human-readable summary of what these hooks do."
+    },
+    "hooks": { "$ref": "#/definitions/hookEventMap" }
+  },
+  "definitions": {
+    "hookEventMap": {
+      "type": "object",
+      "description": "Map of hook event name to matcher groups.",
+      "additionalProperties": false,
+      "properties": {
+        "SessionStart": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: startup | resume | clear | compact | fork."
+        },
+        "Setup": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: init | maintenance."
+        },
+        "UserPromptSubmit": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "UserPromptExpansion": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: command name."
+        },
+        "PreToolUse": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: tool name."
+        },
+        "PermissionRequest": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: tool name."
+        },
+        "PermissionDenied": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: tool name."
+        },
+        "PostToolUse": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: tool name."
+        },
+        "PostToolUseFailure": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: tool name."
+        },
+        "PostToolBatch": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "Notification": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: notification type."
+        },
+        "MessageDisplay": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "SubagentStart": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: agent type."
+        },
+        "SubagentStop": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: agent type."
+        },
+        "TaskCreated": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "TaskCompleted": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "Stop": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "StopFailure": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: error type (letters, digits, _ and | only)."
+        },
+        "TeammateIdle": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "InstructionsLoaded": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: load reason."
+        },
+        "ConfigChange": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: config source."
+        },
+        "CwdChanged": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "DirectoryAdded": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: slash_command | register_repo_root."
+        },
+        "FileChanged": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: literal filenames to watch (letters, digits, _ and | only)."
+        },
+        "WorktreeCreate": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "WorktreeRemove": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "No matcher support; always fires."
+        },
+        "PreCompact": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: manual | auto."
+        },
+        "PostCompact": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: manual | auto."
+        },
+        "PreModelSwitch": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: canonical model name."
+        },
+        "PostModelSwitch": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: canonical model name."
+        },
+        "Elicitation": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: MCP server name."
+        },
+        "ElicitationResult": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: MCP server name."
+        },
+        "SessionEnd": {
+          "$ref": "#/definitions/matcherGroups",
+          "description": "Matcher: clear | resume | logout | prompt_input_exit | other."
+        }
+      }
+    },
+    "matcherGroups": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/matcherGroup" }
+    },
+    "matcherGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hooks"],
+      "properties": {
+        "matcher": {
+          "type": "string",
+          "description": "Omitted, \"\" or \"*\" match all. Letters/digits/_/-/space/,/| only: exact name or list. Anything else: unanchored JavaScript regex."
+        },
+        "hooks": {
+          "type": "array",
+          "description": "Handlers run in parallel when the matcher matches.",
+          "items": { "$ref": "#/definitions/handler" }
+        }
+      }
+    },
+    "handler": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["command", "http", "mcp_tool", "prompt", "agent"] }
+      },
+      "oneOf": [
+        { "$ref": "#/definitions/commandHandler" },
+        { "$ref": "#/definitions/httpHandler" },
+        { "$ref": "#/definitions/mcpToolHandler" },
+        { "$ref": "#/definitions/promptHandler" },
+        { "$ref": "#/definitions/agentHandler" }
+      ]
+    },
+    "commonHandlerFields": {
+      "if": {
+        "type": "string",
+        "description": "Permission-rule filter such as \"Bash(git *)\". Tool events only: PreToolUse, PostToolUse, PostToolUseFailure, PermissionRequest, PermissionDenied."
+      },
+      "timeout": {
+        "type": "number",
+        "description": "Seconds before cancelling. Defaults: 600 (command, http, mcp_tool), 30 (prompt), 60 (agent)."
+      },
+      "statusMessage": {
+        "type": "string",
+        "description": "Spinner text while the hook runs."
+      },
+      "once": {
+        "type": "boolean",
+        "description": "Remove the hook after its first successful run. Honored in skill frontmatter only."
+      }
+    },
+    "commandHandler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "command"],
+      "properties": {
+        "type": { "const": "command" },
+        "command": {
+          "type": "string",
+          "description": "Shell command, or the executable when args is set. Supports ${CLAUDE_PROJECT_DIR}, ${CLAUDE_PLUGIN_ROOT}, ${CLAUDE_PLUGIN_DATA}."
+        },
+        "args": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "When present, exec form (no shell); each element is exactly one argument."
+        },
+        "async": {
+          "type": "boolean",
+          "description": "Run in the background without blocking."
+        },
+        "asyncRewake": {
+          "type": "boolean",
+          "description": "Run in the background and wake Claude on exit code 2."
+        },
+        "shell": {
+          "enum": ["bash", "powershell"],
+          "description": "Shell for shell form only."
+        },
+        "if": { "$ref": "#/definitions/commonHandlerFields/if" },
+        "timeout": { "$ref": "#/definitions/commonHandlerFields/timeout" },
+        "statusMessage": { "$ref": "#/definitions/commonHandlerFields/statusMessage" },
+        "once": { "$ref": "#/definitions/commonHandlerFields/once" }
+      }
+    },
+    "httpHandler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "url"],
+      "properties": {
+        "type": { "const": "http" },
+        "url": {
+          "type": "string",
+          "description": "Receives the hook input as a JSON POST body."
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Values support $VAR / ${VAR} interpolation, limited to allowedEnvVars."
+        },
+        "allowedEnvVars": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "if": { "$ref": "#/definitions/commonHandlerFields/if" },
+        "timeout": { "$ref": "#/definitions/commonHandlerFields/timeout" },
+        "statusMessage": { "$ref": "#/definitions/commonHandlerFields/statusMessage" },
+        "once": { "$ref": "#/definitions/commonHandlerFields/once" }
+      }
+    },
+    "mcpToolHandler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "server", "tool"],
+      "properties": {
+        "type": { "const": "mcp_tool" },
+        "server": {
+          "type": "string",
+          "description": "Connected MCP server name; plugin-bundled servers are plugin:<plugin-name>:<server-name>. Skipped at SessionStart/Setup launch."
+        },
+        "tool": { "type": "string" },
+        "input": {
+          "type": "object",
+          "description": "Tool arguments; string values support ${path} substitution from the hook input, e.g. ${tool_input.file_path}."
+        },
+        "if": { "$ref": "#/definitions/commonHandlerFields/if" },
+        "timeout": { "$ref": "#/definitions/commonHandlerFields/timeout" },
+        "statusMessage": { "$ref": "#/definitions/commonHandlerFields/statusMessage" },
+        "once": { "$ref": "#/definitions/commonHandlerFields/once" }
+      }
+    },
+    "promptHandler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "prompt"],
+      "properties": {
+        "type": { "const": "prompt" },
+        "prompt": {
+          "type": "string",
+          "description": "$ARGUMENTS expands to the hook input JSON; escape literal dollars as \\$."
+        },
+        "model": { "type": "string" },
+        "if": { "$ref": "#/definitions/commonHandlerFields/if" },
+        "timeout": { "$ref": "#/definitions/commonHandlerFields/timeout" },
+        "statusMessage": { "$ref": "#/definitions/commonHandlerFields/statusMessage" },
+        "once": { "$ref": "#/definitions/commonHandlerFields/once" }
+      }
+    },
+    "agentHandler": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "prompt"],
+      "description": "Experimental upstream; may change.",
+      "properties": {
+        "type": { "const": "agent" },
+        "prompt": { "type": "string" },
+        "model": { "type": "string" },
+        "if": { "$ref": "#/definitions/commonHandlerFields/if" },
+        "timeout": { "$ref": "#/definitions/commonHandlerFields/timeout" },
+        "statusMessage": { "$ref": "#/definitions/commonHandlerFields/statusMessage" },
+        "once": { "$ref": "#/definitions/commonHandlerFields/once" }
+      }
+    }
+  }
+}

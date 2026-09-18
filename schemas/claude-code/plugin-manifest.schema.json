@@ -1,0 +1,312 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/nerymurillohnd/claude-essentials/schemas/claude-code/plugin-manifest.schema.json",
+  "title": "Claude Code plugin .claude-plugin/plugin.json",
+  "description": "Complete skeleton of a plugin manifest: every documented field, only `name` required (the upstream floor). This repo's stricter publication contract lives in ../plugin.schema.json, not here.",
+  "$comment": "Sources: https://code.claude.com/docs/en/plugins-reference#plugin-manifest-schema and https://code.claude.com/docs/en/plugins (verified 2026-09-18 against Claude Code 2.1.277). Cross-checked with https://json.schemastore.org/claude-code-plugin-manifest.json, which lags the docs (no defaultEnabled, metadata, experimental, workflows). Only plugin.json belongs in .claude-plugin/; every component lives at the plugin root.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case identifier and skill namespace (/name:skill)."
+    },
+    "displayName": {
+      "type": "string",
+      "description": "Human-readable UI name; falls back to name."
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version. When set, users receive updates only when it changes."
+    },
+    "description": {
+      "type": "string"
+    },
+    "author": {
+      "$ref": "#/definitions/person"
+    },
+    "homepage": {
+      "type": "string",
+      "description": "Documentation URL."
+    },
+    "repository": {
+      "type": "string",
+      "description": "Source code URL."
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX identifier."
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Free-form data for external tooling; ignored by Claude Code."
+    },
+    "defaultEnabled": {
+      "type": "boolean",
+      "description": "Whether the plugin starts enabled when the user hasn't set a state. Default true."
+    },
+    "skills": {
+      "$ref": "#/definitions/pathOrPaths",
+      "description": "Adds to the default skills/ scan."
+    },
+    "commands": {
+      "$ref": "#/definitions/pathOrPaths",
+      "description": "Replaces the default commands/ (flat .md skills; prefer skills/ for new plugins)."
+    },
+    "agents": {
+      "$ref": "#/definitions/pathOrPaths",
+      "description": "Replaces the default agents/."
+    },
+    "workflows": {
+      "$ref": "#/definitions/pathOrPaths",
+      "description": "Replaces the default workflows/."
+    },
+    "outputStyles": {
+      "$ref": "#/definitions/pathOrPaths",
+      "description": "Replaces the default output-styles/."
+    },
+    "hooks": {
+      "description": "Path(s) to hooks JSON files, or inline hooks. Default hooks/hooks.json.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/relativePath"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/relativePath"
+          }
+        },
+        {
+          "$ref": "hooks.schema.json"
+        },
+        {
+          "$ref": "hooks.schema.json#/definitions/hookEventMap"
+        }
+      ]
+    },
+    "mcpServers": {
+      "description": "Path(s) to MCP config JSON files, or inline servers. Default .mcp.json.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/relativePath"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/relativePath"
+          }
+        },
+        {
+          "$ref": "mcp.schema.json#/definitions/serverMap"
+        }
+      ]
+    },
+    "lspServers": {
+      "description": "Path(s) to LSP config JSON files, or inline servers. Default .lsp.json.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/relativePath"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/relativePath"
+          }
+        },
+        {
+          "$ref": "lsp.schema.json"
+        }
+      ]
+    },
+    "experimental": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Upstream marks these as subject to change between releases.",
+      "properties": {
+        "themes": {
+          "$ref": "#/definitions/pathOrPaths",
+          "description": "Replaces the default themes/."
+        },
+        "monitors": {
+          "$ref": "#/definitions/pathOrPaths",
+          "description": "Replaces the default monitors/monitors.json."
+        },
+        "evals": {
+          "description": "Eval suite directory for `claude plugin eval`: plain relative directory names such as \"qa\" or \"quality/evals\" — no absolute path, no \"..\". An invalid manifest value prints a Warning and falls back to evals/. Default evals/.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/evalDir"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/evalDir"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "userConfig": {
+      "$ref": "#/definitions/userConfig"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "description": "Plugin name, resolved in this marketplace."
+          },
+          {
+            "$ref": "#/definitions/dependency"
+          }
+        ]
+      }
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["server"],
+        "properties": {
+          "server": {
+            "type": "string",
+            "description": "Must match a key in mcpServers."
+          },
+          "userConfig": {
+            "$ref": "#/definitions/userConfig"
+          }
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Defaults applied while enabled; a root settings.json takes priority. Only these keys are supported.",
+      "properties": {
+        "agent": {
+          "type": "string",
+          "description": "Plugin agent to run as the main thread."
+        },
+        "subagentStatusLine": {}
+      }
+    }
+  },
+  "definitions": {
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      }
+    },
+    "relativePath": {
+      "type": "string",
+      "pattern": "^\\.(/|$)",
+      "description": "Relative to the plugin root; must start with ./ and never escape the plugin directory."
+    },
+    "pathOrPaths": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/relativePath"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/relativePath"
+          }
+        }
+      ]
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string",
+          "description": "Semver range, resolved against {name}--v{version} tags."
+        },
+        "marketplace": {
+          "type": "string"
+        }
+      }
+    },
+    "userConfig": {
+      "type": "object",
+      "description": "Options prompted at enable time. Available as ${user_config.KEY} and CLAUDE_PLUGIN_OPTION_<KEY>.",
+      "additionalProperties": {
+        "$ref": "#/definitions/userConfigOption"
+      }
+    },
+    "userConfigOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "description"],
+      "properties": {
+        "type": {
+          "enum": ["string", "number", "boolean", "directory", "file"]
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "sensitive": {
+          "type": "boolean",
+          "description": "Mask input and keep it in secure storage instead of settings.json."
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "default": {},
+        "options": {
+          "type": "array",
+          "description": "string only: picker values (v2.1.271+)."
+        },
+        "multiple": {
+          "type": "boolean",
+          "description": "string only: allow an array."
+        },
+        "min": {
+          "type": "number",
+          "description": "number only."
+        },
+        "max": {
+          "type": "number",
+          "description": "number only."
+        }
+      }
+    },
+    "evalDir": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$))[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)*/?$"
+    }
+  }
+}

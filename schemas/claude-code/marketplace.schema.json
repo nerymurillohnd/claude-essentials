@@ -1,0 +1,245 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/nerymurillohnd/claude-essentials/schemas/claude-code/marketplace.schema.json",
+  "title": "Claude Code .claude-plugin/marketplace.json",
+  "description": "Complete skeleton of a marketplace catalog: every documented root field, plugin-entry field, and plugin source form. Only the upstream floor is required. This repo's own catalog contract lives in ../marketplace.schema.json.",
+  "$comment": "Source: https://code.claude.com/docs/en/plugin-marketplaces (verified 2026-09-18 against Claude Code 2.1.277). Cross-checked with https://json.schemastore.org/claude-code-marketplace.json, which lags the docs (no renames, archive source, defaultEnabled, relevance). Relative-path sources resolve from the marketplace root and cannot be pinned; ref/sha exist only on git-based object sources. Catalogs that list plugins hosted in OTHER repositories pin them by 40-char sha (anthropics/claude-plugins-community: 2274 of 2282 entries on 2026-09-18).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["name", "owner", "plugins"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Editor autocomplete only; ignored at load time."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "not": {
+        "enum": [
+          "claude-code-marketplace",
+          "claude-code-plugins",
+          "claude-plugins-official",
+          "claude-plugins-community",
+          "claude-community",
+          "anthropic-marketplace",
+          "anthropic-plugins",
+          "agent-skills",
+          "anthropic-agent-skills",
+          "knowledge-work-plugins",
+          "life-sciences",
+          "claude-for-legal",
+          "claude-for-financial-services",
+          "financial-services-plugins",
+          "first-party-plugins",
+          "claude-tag-plugins",
+          "healthcare",
+          "npm",
+          "pip",
+          "uv",
+          "cargo",
+          "github",
+          "gh"
+        ]
+      },
+      "description": "Public kebab-case id used in plugin@marketplace. Reserved names and look-alikes of official marketplaces are rejected upstream; package-manager names are rejected in any casing (v2.1.275+)."
+    },
+    "owner": { "$ref": "#/definitions/person", "required": ["name"] },
+    "description": { "type": "string" },
+    "version": { "type": "string", "description": "Marketplace manifest version." },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "pluginRoot": {
+          "type": "string",
+          "description": "Directory for bare-name sources, e.g. \"./plugins\" (v2.1.239+)."
+        },
+        "description": { "type": "string", "description": "Alternate location." },
+        "version": { "type": "string", "description": "Alternate location." }
+      }
+    },
+    "renames": {
+      "type": "object",
+      "description": "Append-only map of former plugin name to current name, or null when removed.",
+      "additionalProperties": { "type": ["string", "null"] }
+    },
+    "allowCrossMarketplaceDependenciesOn": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Marketplaces whose plugins this catalog's plugins may depend on."
+    },
+    "forceRemoveDeletedPlugins": {
+      "type": "boolean",
+      "$comment": "Present in SchemaStore; absent from the docs field table on 2026-09-18. Unverified."
+    },
+    "plugins": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/pluginEntry" }
+    }
+  },
+  "definitions": {
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+    "stringOrStrings": {
+      "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$",
+      "description": "Full 40-character commit SHA; takes precedence over ref."
+    },
+    "pluginEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "source"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "source": { "$ref": "#/definitions/source" },
+        "displayName": { "type": "string" },
+        "description": { "type": "string" },
+        "version": {
+          "type": "string",
+          "description": "Pins the version; plugin.json wins silently if both set."
+        },
+        "author": { "$ref": "#/definitions/person" },
+        "homepage": { "type": "string" },
+        "repository": { "type": "string" },
+        "license": { "type": "string", "description": "SPDX identifier." },
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "category": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "metadata": { "type": "object", "description": "Free-form; ignored by Claude Code." },
+        "skills": { "$ref": "#/definitions/stringOrStrings" },
+        "commands": { "$ref": "#/definitions/stringOrStrings" },
+        "agents": { "$ref": "#/definitions/stringOrStrings" },
+        "hooks": {
+          "anyOf": [
+            { "type": "string" },
+            { "$ref": "hooks.schema.json" },
+            { "$ref": "hooks.schema.json#/definitions/hookEventMap" }
+          ]
+        },
+        "mcpServers": {
+          "anyOf": [{ "type": "string" }, { "$ref": "mcp.schema.json#/definitions/serverMap" }]
+        },
+        "lspServers": {
+          "anyOf": [{ "type": "string" }, { "$ref": "lsp.schema.json" }]
+        },
+        "headers": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Archive download headers (v2.1.238+)."
+        },
+        "headersHelper": {
+          "type": "string",
+          "description": "Command printing archive download headers as JSON; requires strict: false (v2.1.238+)."
+        },
+        "strict": {
+          "type": "boolean",
+          "description": "Default true: plugin.json is the authority. false: this entry is the whole definition."
+        },
+        "relevance": {
+          "type": "object",
+          "description": "Contextual-suggestion signals; requires a managed-settings allowlist."
+        },
+        "defaultEnabled": {
+          "type": "boolean",
+          "description": "Default true; overrides plugin.json."
+        }
+      }
+    },
+    "source": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^(\\./|[a-z0-9][a-z0-9-]*$)",
+          "description": "Relative path starting with ./ from the marketplace root, or a bare name resolved under metadata.pluginRoot. Fails in URL-based marketplaces."
+        },
+        { "$ref": "#/definitions/githubSource" },
+        { "$ref": "#/definitions/urlSource" },
+        { "$ref": "#/definitions/gitSubdirSource" },
+        { "$ref": "#/definitions/npmSource" },
+        { "$ref": "#/definitions/archiveSource" },
+        { "$ref": "#/definitions/commandSource" }
+      ]
+    },
+    "githubSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "repo"],
+      "properties": {
+        "source": { "const": "github" },
+        "repo": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+        "ref": { "type": "string", "description": "Branch or tag." },
+        "sha": { "$ref": "#/definitions/gitSha" }
+      }
+    },
+    "urlSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "url"],
+      "properties": {
+        "source": { "const": "url" },
+        "url": { "type": "string", "description": "https:// or git@ URL; .git optional." },
+        "ref": { "type": "string" },
+        "sha": { "$ref": "#/definitions/gitSha" }
+      }
+    },
+    "gitSubdirSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "url", "path"],
+      "properties": {
+        "source": { "const": "git-subdir" },
+        "url": { "type": "string", "description": "Git URL, owner/repo, or SSH URL." },
+        "path": { "type": "string", "description": "Plugin directory inside the repository." },
+        "ref": { "type": "string" },
+        "sha": { "$ref": "#/definitions/gitSha" }
+      }
+    },
+    "npmSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "package"],
+      "properties": {
+        "source": { "const": "npm" },
+        "package": { "type": "string" },
+        "version": { "type": "string", "description": "Version or range." },
+        "registry": { "type": "string" }
+      }
+    },
+    "archiveSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "url"],
+      "description": "Zip archive, max 256 MiB (v2.1.224+).",
+      "properties": {
+        "source": { "const": "archive" },
+        "url": { "type": "string", "pattern": "^https://" },
+        "sha256": { "type": "string", "pattern": "^[0-9A-Fa-f]{64}$" }
+      }
+    },
+    "commandSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "command"],
+      "description": "Command printing the plugin directory's absolute path (v2.1.229+).",
+      "properties": {
+        "source": { "const": "command" },
+        "command": { "type": "string", "maxLength": 500 },
+        "timeout": { "type": "number", "maximum": 600, "description": "Seconds; default 60." },
+        "mode": {
+          "enum": ["copy", "link"],
+          "description": "Default copy; link is not supported on Windows."
+        }
+      }
+    }
+  }
+}
