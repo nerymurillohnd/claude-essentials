@@ -38,11 +38,6 @@
       "type": "array",
       "items": { "type": "string" }
     },
-    "kind": {
-      "type": "string",
-      "enum": ["bundle", "skill-only", "agent-only"],
-      "description": "Non-upstream, catalog-only hint (see docs/decisions/adr-0001-marketplace-distribution-model.md) so the generator/README can label single-component plugins distinctly from multi-component bundles. Ignored by Claude Code itself."
-    },
     "commands": {
       "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
     },

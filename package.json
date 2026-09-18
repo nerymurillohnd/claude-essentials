@@ -8,14 +8,19 @@
   "scripts": {
     "generate": "node scripts/generate-marketplace.mjs",
     "validate": "node scripts/validate-marketplace.mjs",
+    "validate:claude": "node scripts/validate-claude.mjs",
     "test": "node --test \"scripts/**/*.test.mjs\"",
     "format": "biome format --write .",
     "lint": "biome lint .",
-    "check": "biome check . && npm test && npm run generate && npm run validate"
+    "check": "biome check . && npm test && npm run generate && npm run validate && npm run validate:claude"
   },
   "devDependencies": {
+    "@anthropic-ai/claude-code": "2.1.276",
     "@biomejs/biome": "^2.5.14",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1"
+  },
+  "allowScripts": {
+    "@anthropic-ai/claude-code@2.1.276": true
   }
 }

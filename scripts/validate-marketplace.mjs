@@ -6,7 +6,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import Ajv from "ajv";
 import addFormats from "ajv-formats";
-import { listPluginDirs, manifestPath, readJson, rootDir } from "./lib/plugins.mjs";
+import {
+  checkPluginKind,
+  listPluginDirs,
+  manifestPath,
+  readJson,
+  rootDir,
+} from "./lib/plugins.mjs";
 
 const marketplacePath = join(rootDir, ".claude-plugin", "marketplace.json");
 
@@ -65,7 +71,13 @@ function main() {
       errors.push(name);
       continue;
     }
-    console.log(`✓ plugins/${name}/.claude-plugin/plugin.json matches schema`);
+    const kindProblem = checkPluginKind(name, manifest);
+    if (kindProblem) {
+      console.error(`✗ ${kindProblem}`);
+      errors.push(name);
+      continue;
+    }
+    console.log(`✓ plugins/${name}/.claude-plugin/plugin.json matches schema and README Kind`);
   }
 
   for (const name of catalogNames) {

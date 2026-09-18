@@ -7,6 +7,5 @@
     "name": "Your Name"
   },
   "license": "MIT",
-  "keywords": ["replace", "with", "keywords"],
-  "kind": "agent-only"
+  "keywords": ["replace", "with", "keywords"]
 }

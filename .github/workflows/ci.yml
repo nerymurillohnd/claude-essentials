@@ -33,3 +33,6 @@ jobs:
 
       - name: Validate marketplace + plugin manifests
         run: npm run validate
+
+      - name: Validate with Claude Code (official, --strict)
+        run: npm run validate:claude
