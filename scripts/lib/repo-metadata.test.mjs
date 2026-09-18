@@ -26,6 +26,19 @@ test("checkLabels reports duplicates, bad colors, derived prefixes, long text, m
   assert.ok(errors.some((e) => e.includes('"status: needs-triage" is required')));
 });
 
+test("checkLabels rejects an alias that collides with a label name or another alias", () => {
+  const errors = checkLabels(
+    [
+      { name: "type: bug", color: "d73a4a", description: "d", aliases: ["bug"] },
+      { name: "bug", color: "d73a4a", description: "d" },
+      { name: "type: broken", color: "d73a4a", description: "d", aliases: ["bug"] },
+    ],
+    [],
+  );
+  assert.ok(errors.some((e) => e.includes('alias "bug" is also a label name')));
+  assert.ok(errors.some((e) => e.includes('alias "bug" is already an alias of another label')));
+});
+
 test("the committed .github/labels.json is valid", () => {
   assert.deepEqual(validateRepoMetadata(rootDir), []);
 });

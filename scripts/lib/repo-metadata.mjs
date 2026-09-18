@@ -14,6 +14,14 @@ export function checkLabels(labels, required = REQUIRED_LABELS) {
   if (!Array.isArray(labels)) return [".github/labels.json must be a JSON array"];
   const errors = [];
   const seen = new Set();
+  // First pass: every label name, so an alias can be checked against names that appear
+  // later in the array too (diffLabels matches aliases across the whole desired set).
+  const allNames = new Set(
+    labels
+      .filter((label) => typeof label?.name === "string" && label.name !== "")
+      .map((label) => label.name.toLowerCase()),
+  );
+  const seenAliases = new Set();
   for (const label of labels) {
     if (typeof label?.name !== "string" || label.name === "") {
       errors.push('.github/labels.json: every label needs a non-empty "name"');
@@ -36,8 +44,18 @@ export function checkLabels(labels, required = REQUIRED_LABELS) {
     if (description.length < 1 || description.length > MAX_LABEL_DESCRIPTION) {
       errors.push(`${where}: description must be 1–${MAX_LABEL_DESCRIPTION} characters`);
     }
-    if (!(label.aliases ?? []).every((alias) => typeof alias === "string")) {
+    const aliases = label.aliases ?? [];
+    if (!aliases.every((alias) => typeof alias === "string")) {
       errors.push(`${where}: aliases must be strings`);
+    } else {
+      for (const alias of aliases) {
+        const aliasKey = alias.toLowerCase();
+        if (allNames.has(aliasKey)) errors.push(`${where}: alias "${alias}" is also a label name`);
+        if (seenAliases.has(aliasKey)) {
+          errors.push(`${where}: alias "${alias}" is already an alias of another label`);
+        }
+        seenAliases.add(aliasKey);
+      }
     }
   }
   for (const name of required) {
