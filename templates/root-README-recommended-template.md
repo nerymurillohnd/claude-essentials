@@ -1,101 +1,174 @@
 <!--
-  Reusable root README template for claude-essentials.
+  Reusable root README template for claude-essentials — the master copy.
+  README.md at the repository root is the live instance: when this file
+  changes, update README.md in the same PR so the two never drift.
 
-  This is the structure the repo's actual README.md follows. When the
-  catalog grows, update README.md to match this shape rather than letting
-  the two drift — this file documents the intended shape, README.md is the
-  live instance.
+  REQUIRED SECTIONS (in order): What this is · Plugin catalog · Quick start ·
+  Update, disable, or remove · Compatibility · Requirements · Support policy ·
+  Security · Documentation map · Repository layout · Contributing · FAQ ·
+  License. The public-repository alert under the header is required too.
+
+  Formatting follows templates/plugin-README-reusable-template.md: dynamic
+  badges (never hardcoded counts or versions), one GitHub alert per section at
+  most, tables for multi-attribute data, `text` blocks for commands typed in
+  Claude and `bash` blocks for shell.
+
+  CATALOG ROWS: one per plugin, sorted by name. Columns follow the plugin's
+  README: Claude Code / Claude Cowork use its Compatibility status vocabulary
+  (✅ Supported · ⚠️ Partial · 🧪 Not tested · ❌ Not supported), and
+  "Additional requirements" lists its Requirements beyond Claude itself, or
+  "None".
 -->
+
+<div align="center">
 
 # 🧩 claude-essentials
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+**Top-tier Claude plugins, skills, and agents — in one public, versioned marketplace.**
 
-> A Git-backed marketplace of Claude Code plugins, skills, and agents.
+[![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/ci.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/ci.yml)
+[![Plugins](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnerymurillohnd%2Fclaude-essentials%2Fmain%2F.claude-plugin%2Fmarketplace.json&query=%24.plugins.length&label=plugins&color=8A2BE2)](#-plugin-catalog)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-supported-D97757?logo=claude&logoColor=white)](#-compatibility)
+[![Claude Cowork](https://img.shields.io/badge/Claude_Cowork-per_plugin-D97757?logo=claude&logoColor=white)](#-compatibility)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-**Explore:** [Plugins](#-plugin-catalog) · [Install](#-quick-start) ·
-[Documentation](#-documentation-map) · [Contribute](#-contributing) ·
-[Support](#-support-and-project-links)
+[Catalog](#-plugin-catalog) · [Install](#-quick-start) · [Compatibility](#-compatibility) ·
+[Docs](#-documentation-map) · [Contribute](#-contributing) · [Security](#-security)
 
-claude-essentials is for people who want to extend Claude Code with focused,
-installable capabilities instead of rebuilding the same workflow each time.
+</div>
 
-Every entry in the catalog is a plugin (Claude Code's only distribution unit),
-but three different *kinds* ship through that one mechanism — see
-[ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md):
+> [!IMPORTANT]
+> **This is a public repository.** Everything here — plugins, issues, pull
+> requests — is visible to anyone. Never post secrets, tokens, private paths,
+> or customer data in an issue or PR. claude-essentials is community-maintained
+> and is **not** an official Anthropic product.
 
-| Kind | What installing it gives you |
-|---|---|
-| `bundle` | Multiple skills/agents/commands/hooks working together |
+## 🎯 What this is
+
+claude-essentials is a Git-hosted plugin marketplace for **Claude Code** and
+**Claude Cowork**. Add it once, then install only the plugins you need —
+each one is self-contained, explicitly versioned, and documents exactly what it
+reads, writes, and reaches over the network.
+
+Every entry is a plugin (Claude's only distribution unit), in one of three
+kinds ([ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md)):
+
+| Kind | Installing it gives you |
+| --- | --- |
+| `bundle` | Several skills, agents, hooks, or servers that work together |
 | `skill-only` | Exactly one skill, nothing else |
 | `agent-only` | Exactly one subagent, nothing else |
 
-Each plugin's README explains what it does, what it can access, which tools
-it needs, and what side effects or approvals apply.
-
 ## 🧩 Plugin catalog
 
-| Plugin | Kind | Best for | Install ID |
-| --- | --- | --- | --- |
-| [{{Display Name}}](plugins/{{plugin-id}}/README.md) | `{{kind}}` | {{User-facing outcome summary.}} | `{{plugin-id}}` |
+| Plugin | Description | Kind | Claude Code | Claude Cowork | Additional requirements |
+| --- | --- | --- | :---: | :---: | --- |
+| [{{Display Name}}](plugins/{{plugin-id}}/README.md) | {{One-line outcome.}} | `{{kind}}` | {{✅}} | {{🧪}} | {{None}} |
 
-_Choose a plugin by outcome, then open its linked README for requirements,
-permissions, side effects, and examples._
+Pick by outcome, then read the plugin's README — **What it does not do**,
+**Security**, and **Limitations** — before installing anything with hooks,
+file writes, or network access.
 
 ## ⚡ Quick start
 
-Add the marketplace and install the plugin you need:
+**Claude Code**
 
-```
+```text
 /plugin marketplace add nerymurillohnd/claude-essentials
 /plugin install <plugin-id>@claude-essentials
 /plugin list
 ```
 
-`main` exposes the current catalog and is the supported installation reference.
+**Claude Cowork** — open **Customize → Plugins → Add marketplace**, enter
+`nerymurillohnd/claude-essentials` (or `https://github.com/nerymurillohnd/claude-essentials`),
+then install plugins from the list.
 
-Read the linked plugin README before installing a plugin with hooks, file
-writes, network access, or other side effects.
+> [!WARNING]
+> Add the marketplace by its **Git** address as shown above, never by a raw
+> `marketplace.json` URL. A URL-based marketplace fetches only that one file, so
+> plugins with relative sources — every plugin here — can't be resolved.
 
 ## 🔁 Update, disable, or remove
 
-```
-/plugin marketplace update claude-essentials
-/plugin disable <plugin-id>@claude-essentials
-/plugin uninstall <plugin-id>@claude-essentials
-/plugin marketplace remove claude-essentials
-```
+| Action | Claude Code | Claude Cowork |
+| --- | --- | --- |
+| Refresh the catalog | `/plugin marketplace update claude-essentials` | **Update** on the marketplace |
+| Update a plugin | `/plugin update <plugin-id>@claude-essentials` | Checked automatically against the marketplace |
+| Turn one off | `/plugin disable <plugin-id>@claude-essentials` | Disable its components in the plugin page |
+| Remove one | `/plugin uninstall <plugin-id>@claude-essentials` | **Uninstall** under **Customize → Plugins** |
+| Remove the marketplace | `/plugin marketplace remove claude-essentials` | — |
 
-See the [official Claude Code plugin docs](https://code.claude.com/docs/en/discover-plugins)
-for current host, marketplace, manifest, and distribution behavior.
+Plugins use explicit semantic versions: an installed plugin only changes when
+its `version` does ([versioning](docs/contributing/versioning.md)).
 
-## 📦 What is included
+## 🧭 Compatibility
+
+Plugins run in **Claude Code** and **Claude Cowork**. They aren't used in
+Claude Chat (web or desktop). Each plugin's README states the surfaces it was
+actually verified on; which components it ships decides where it can work:
+
+| Component | Claude Code | Claude Cowork |
+| --- | :---: | :---: |
+| Skills | ✅ | ✅ |
+| Subagents | ✅ | ✅ |
+| Hooks | ✅ | ✅ |
+| MCP servers (connectors) | ✅ | ✅ — the plugin's README states any reachability or sign-in limits |
+| LSP servers, monitors, `bin/` executables, plugin `settings.json` | ✅ | ❔ not listed in Cowork's docs — treat as Claude Code only |
+
+<sub>Sources: [Cowork: install plugins](https://claude.com/docs/cowork/guide/plugins) ·
+[Claude Code: plugins reference](https://code.claude.com/docs/en/plugins-reference). Verified 2026-09-18.</sub>
+
+## 📋 Requirements
+
+| Requirement | Details |
+| --- | --- |
+| Claude Code or Claude Cowork | A version with plugin marketplace support. This repo validates against the Claude Code version pinned as `CLAUDE_CODE_VERSION` in [`ci.yml`](.github/workflows/ci.yml). |
+| Git access to GitHub | To add and update the marketplace. |
+| Per-plugin requirements | Listed in the catalog and in each plugin's **Requirements** section, with a check command for each. |
+
+## 🛟 Support policy
+
+| | |
+| --- | --- |
+| **Supported** | The latest version of each plugin on `main`, on the surfaces its README marks ✅. |
+| **Not supported** | Older plugin versions (update first), untested surfaces, and plugins loaded from a local checkout. |
+| **Questions** | [Discussions](https://github.com/nerymurillohnd/claude-essentials/discussions) |
+| **Bugs and requests** | [Issue forms](https://github.com/nerymurillohnd/claude-essentials/issues/new/choose) — see [issues.md](docs/contributing/issues.md) |
+| **Response** | Best effort by the maintainer; there is no SLA. |
+
+## 🔒 Security
+
+> [!CAUTION]
+> Plugins run with your permissions. Read a plugin's **Security** section and
+> review its hooks and scripts before enabling it in a critical repository.
+
+Report a vulnerability **privately** through
+[GitHub Security Advisories](https://github.com/nerymurillohnd/claude-essentials/security/advisories/new),
+as described in [SECURITY.md](SECURITY.md). Don't open a public issue for an
+unpatched one, and never include secrets in any report.
+
+## 📚 Documentation map
+
+| I want to… | Start here |
+| --- | --- |
+| Choose and install a plugin | The [catalog](#-plugin-catalog), then the plugin's README |
+| Understand a plugin's behavior | Its README, then its `SKILL.md` or agent file |
+| Add or change a plugin | [CONTRIBUTING.md](CONTRIBUTING.md) → [plugins.md](docs/contributing/plugins.md) → [versioning.md](docs/contributing/versioning.md) |
+| Report a problem or propose a plugin | [Issue forms](https://github.com/nerymurillohnd/claude-essentials/issues/new/choose) |
+| Understand why things are built this way | [Decision records](docs/decisions/) |
+| Check open maintenance work | [Maintenance ledgers](docs/maintenance/) |
+
+## 📦 Repository layout
 
 | Path | Role |
 | --- | --- |
-| `.claude-plugin/marketplace.json` | Generated catalog — do not hand-edit `plugins[]`. |
-| `SECURITY.md` | Vulnerability reporting channel and scope. |
-| `CODE_OF_CONDUCT.md` | Community standards and enforcement. |
-| `plugins/<plugin-id>/` | Self-contained distributable plugin packages. |
-| `plugins/*/.claude-plugin/plugin.json` | Authored plugin identity, version, and component declarations. |
-| `docs/` | Architecture, contributor, and decision documentation. |
-| `schemas/`, `scripts/`, `templates/` | Repository schemas, generators, validators, and starting points. |
-| `.github/` | CI: Biome + catalog generation/validation on every PR. |
-
-The schemas, generator, and validator in this repository are maintainer
-tooling used to build and check the marketplace. They are not installed into
-a user's project — installing a plugin only brings that plugin's own declared
-components.
-
-## 🧭 Documentation map
-
-| Need | Start here |
-| --- | --- |
-| Choose or install a plugin | This README and the plugin catalog above. |
-| Understand plugin behavior | The plugin's `README.md`, then its `SKILL.md` or agent file. |
-| Contribute or maintain packages | [docs/contributing/plugins.md](docs/contributing/plugins.md). |
-| Review decisions | [docs/decisions/](docs/decisions/). |
-| Review maintenance status | [docs/maintenance/](docs/maintenance/). |
+| [`plugins/<plugin-id>/`](plugins/) | Self-contained, distributable plugins |
+| [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) | The catalog Claude reads — generated from each `plugin.json`, never hand-edited |
+| [`schemas/`](schemas/) | This repo's manifest contract, plus [upstream-faithful Claude Code schemas](schemas/claude-code/) |
+| [`scripts/`](scripts/), [`templates/`](templates/) | Maintainer tooling and starting points — never installed into your project |
+| [`docs/`](docs/) | Decisions, contributor guides, maintenance ledgers, audits |
+| [`.github/`](.github/) | CI, issue forms, labels, triage |
 
 ## 🤝 Contributing
 
@@ -104,42 +177,45 @@ npm install
 npm run check
 ```
 
-For a plugin change, update its manifest, README, and changelog together,
-then run `npm run check`. The catalog is generated from validated package
-manifests — don't hand-edit generated metadata.
-
-See [docs/contributing/plugins.md](docs/contributing/plugins.md) for the full
-walkthrough.
+Every change to what Claude loads bumps the plugin's `version` and adds a dated
+CHANGELOG entry. CI enforces this and tags `<plugin-id>--v<version>` on merge.
+Start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## ❓ FAQ
 
 <details>
 <summary>Can I install just one skill, or just one agent?</summary>
 
-Yes — look for `skill-only` or `agent-only` in the catalog's Kind column.
-Installing that plugin gives you exactly that one component, nothing else.
-See [ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md) for
-why this is a plugin either way.
+Yes — pick a `skill-only` or `agent-only` plugin from the catalog. Installing it
+gives you exactly that one component. See
+[ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md) for why it's
+still a plugin.
+
 </details>
 
 <details>
-<summary>Does installing a plugin change anything outside Claude Code's own config?</summary>
+<summary>Does installing a plugin change my project?</summary>
 
-No, unless the plugin's own README says otherwise. Read each plugin's
-permissions/boundaries section before installing.
+No. Installing only registers the plugin with Claude. A plugin acts on a project
+when one of its components runs, as described in its README's **Security**
+section.
+
 </details>
 
-## 🔒 Security
+<details>
+<summary>How do I get updates?</summary>
 
-Report a vulnerability privately — see [SECURITY.md](SECURITY.md). Don't open
-a public issue for an unpatched one.
+Refresh the marketplace, then update the plugin (see
+[Update, disable, or remove](#-update-disable-or-remove)). You only receive a new
+version when the plugin's `version` changes.
 
-## 🆘 Support and project links
+</details>
 
-- [Issues](https://github.com/nerymurillohnd/claude-essentials/issues)
-- [Security policy](SECURITY.md)
-- [Code of Conduct](CODE_OF_CONDUCT.md)
-- [MIT License](LICENSE)
+## 📄 License
 
-claude-essentials is community-maintained and is not an official Anthropic
-product.
+[Apache-2.0](LICENSE). Each plugin carries its own `LICENSE` with the same terms
+([ADR-0005](docs/decisions/adr-0005-apache-2-0-license.md)).
+
+---
+
+<div align="center"><sub>Maintained by <a href="https://github.com/nerymurillohnd">Nery Samuel Murillo Tejada</a> · Not an official Anthropic product · <a href="CODE_OF_CONDUCT.md">Code of Conduct</a></sub></div>
