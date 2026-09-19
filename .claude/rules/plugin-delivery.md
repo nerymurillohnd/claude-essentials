@@ -45,6 +45,11 @@ done below with a checklist.
   `session_id`), not only the field you expect to matter.
 - A function that must exit the hook (deny, fail) can't run inside `$(...)`,
   because it only exits the subshell. Return through globals instead.
+- Pass large test data through stdin or a file, never as one argument: Linux
+  caps a single argument at 128 KB (`MAX_ARG_STRLEN`) and macOS doesn't, so a
+  test that builds a 250 KB payload with `jq --arg` gets an empty payload on
+  the CI runner and passes without testing anything. Assert that the payload
+  was built before asserting on the hook's answer.
 
 ## Edits and evidence
 

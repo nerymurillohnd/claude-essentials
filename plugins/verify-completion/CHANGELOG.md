@@ -47,7 +47,7 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
   A reply that calls the work done while its own verdict is `NOT VERIFIED` is
   rejected as a contradiction.
 - `enforcement` option (`enforce`, `warn`, `off`) in `/config`.
-- 122-case hook test suite, run on bash 3.2 and 5.x with jq 1.6, 1.7.1, and 1.8.2; a typical reply is checked
+- 125-case hook test suite, run on bash 3.2 and 5.x with jq 1.6, 1.7.1, and 1.8.2; a typical reply is checked
   in about 100 ms, and 250 KB replies built to be slow in under 2 seconds.
 
 [Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.0...HEAD

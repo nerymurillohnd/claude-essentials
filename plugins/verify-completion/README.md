@@ -233,7 +233,7 @@ claude plugin eval plugins/verify-completion --scaffold --judge-model sonnet --a
 
 | Surface | Status | Last verified | Notes |
 | --- | --- | --- | --- |
-| Claude Code | 🧪 Not tested | 2026-09-19, Claude Code 2.1.278, local checkout only | Skill, agent (with the preloaded skill), both hooks, and the `deep-verify` workflow exercised in live `claude -p` sessions with `--plugin-dir`; not yet installed from the remote marketplace. 122-case hook suite passes on bash 3.2 and 5.3 with each of jq 1.6, 1.7.1, and 1.8.2 |
+| Claude Code | 🧪 Not tested | 2026-09-19, Claude Code 2.1.278, local checkout only | Skill, agent (with the preloaded skill), both hooks, and the `deep-verify` workflow exercised in live `claude -p` sessions with `--plugin-dir`; not yet installed from the remote marketplace. 125-case hook suite passes on bash 3.2 and 5.3 with each of jq 1.6, 1.7.1, and 1.8.2 |
 | Claude Cowork | 🧪 Not tested | — | Skill and agent should load; hooks depend on `bash` and `jq` in the sandbox; the `deep-verify` workflow isn't documented for Cowork |
 | Claude Chat (web, desktop) | ❌ Not supported | — | Plugins aren't used in Chat. |
 

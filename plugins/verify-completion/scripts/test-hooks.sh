@@ -32,9 +32,12 @@ bad() {
 
 # ------------------------------------------------------------- helpers ---
 
+# The message goes through stdin, not --arg: Linux caps a single argument at
+# 128 KB (MAX_ARG_STRLEN), so a long reply passed as an argument never reaches
+# jq there, and a test fed that empty payload passes without testing anything.
 payload() { # message [stop_hook_active] [session]
-  jq -n --arg m "$1" --argjson a "${2:-false}" --arg s "${3:-sess-1}" \
-    '{session_id: $s, transcript_path: "/tmp/t.jsonl", cwd: "/tmp", hook_event_name: "Stop", stop_hook_active: $a, last_assistant_message: $m}'
+  printf '%s' "$1" | jq -Rs --argjson a "${2:-false}" --arg s "${3:-sess-1}" \
+    '{session_id: $s, transcript_path: "/tmp/t.jsonl", cwd: "/tmp", hook_event_name: "Stop", stop_hook_active: $a, last_assistant_message: .}'
 }
 
 claims_of() { payload "$1" | jq -c -f "${analyze}" | jq -c '.claims'; }
@@ -424,8 +427,12 @@ timed_stop() { # label line-format expected-kind
   reset_state
   mark
   big=$(awk -v f="$2" 'BEGIN { for (i = 0; i < 6000; i++) printf f "\n", i }')
+  local input
+  input=$(payload "${big}")
+  # Guard against a vacuous pass: the payload must really carry the long reply.
+  if [[ ${#input} -gt ${#big} ]]; then ok; else bad "$1: payload was not built (${#input} bytes for a ${#big}-byte reply)"; fi
   start=$(date +%s)
-  run_gate stop "$(payload "${big}")"
+  run_gate stop "${input}"
   elapsed=$(($(date +%s) - start))
   expect_gate "$1" "$3"
   if [[ ${elapsed} -le 3 ]]; then ok; else bad "$1 took ${elapsed}s"; fi
