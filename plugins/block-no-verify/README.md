@@ -3,7 +3,7 @@
 [![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fnerymurillohnd%2Fclaude-essentials%2Fmain%2Fplugins%2Fblock-no-verify%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version&color=blue)](CHANGELOG.md)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Kind](https://img.shields.io/badge/kind-skill--only-8A2BE2)](../../docs/decisions/adr-0001-marketplace-distribution-model.md)
-[![Claude Code](https://img.shields.io/badge/Claude_Code-not_tested-D97757?logo=claude&logoColor=white)](#-compatibility)
+[![Claude Code](https://img.shields.io/badge/Claude_Code-partial-D97757?logo=claude&logoColor=white)](#-compatibility)
 [![Claude Cowork](https://img.shields.io/badge/Claude_Cowork-not_supported-D97757?logo=claude&logoColor=white)](#-compatibility)
 ![Bash](https://img.shields.io/badge/Bash-%E2%89%A53.2-4EAA25?logo=gnubash&logoColor=white)
 ![jq](https://img.shields.io/badge/jq-%E2%89%A51.6-555555)
@@ -198,7 +198,8 @@ claude plugin eval plugins/block-no-verify --no-publish --max-cost-usd 5
 
 | Surface | Status | Last verified | Notes |
 | --- | --- | --- | --- |
-| Claude Code (CLI, Desktop, IDE) on macOS / Linux / WSL | 🧪 Not tested | — | Handler suite (331 cases) passes on bash 3.2.57 and 5.3.20 (macOS, 2026-09-18); about 30 ms per typical command, about 200 ms worst case on 50 KB inputs; pending a remote-marketplace install check |
+| Claude Code (CLI, Desktop, IDE) on macOS | ✅ Supported | 2026-09-19 | Installed from the remote marketplace with Claude Code 2.1.278 into a clean config: assess, preflight, install (project), verify, status, and uninstall all pass, and live decisions deny `--no-verify`, `core.hooksPath`, and `HUSKY=0` while allowing plain commits. Handler suite (331 cases) passes on bash 3.2.57 and 5.3.20; about 30 ms per typical command, about 200 ms worst case on 50 KB inputs |
+| Claude Code (CLI, Desktop, IDE) on Linux / WSL | 🧪 Not tested | — | Same Bash handler and tests; not yet installed on a Linux or WSL machine |
 | Claude Code on Windows with Git Bash | 🧪 Not tested | — | Designed for Git Bash; not yet run on Windows |
 | Claude Code on Windows without Git Bash | ❌ Not supported | — | Hooks run in PowerShell; `preflight` refuses |
 | Claude Code cloud sessions | ⚠️ Partial | — | Only project scope applies: cloud sessions don't read `~/.claude/settings.json` |
