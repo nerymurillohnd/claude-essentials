@@ -314,7 +314,7 @@ cmd_assess() {
       if jq -e '(.hooks.PreToolUse // [])[]? | select(((.matcher // "") | tostring | test("Bash|PowerShell|^\\*?$")))' "${f}" >/dev/null 2>&1; then
         ((found)) || say "  installed plugins with PreToolUse shell hooks (active only if the plugin is enabled):"
         found=1
-        say "    - ${f#"${HOME}"/.claude/plugins/cache/}"
+        say "    - ${f#"${CFG_DIR}"/plugins/cache/}"
       fi
     done <<<"${plugin_hooks}"
   fi
@@ -367,6 +367,16 @@ cmd_preflight() {
     say "ok   bash ${v}"
   else
     say "FAIL bash ${v} < 3.2"
+    problems=1
+  fi
+  v=$(git --version 2>/dev/null | sed -n 's/^git version \([0-9.]*\).*/\1/p') || v=""
+  if [[ -z ${v} ]]; then
+    say "FAIL git: not on PATH (assess and the repository checks need it)"
+    problems=1
+  elif version_ge "${v}" 2.18; then
+    say "ok   git ${v}"
+  else
+    say "FAIL git ${v} < 2.18 (needs git config --type=bool)"
     problems=1
   fi
   v=$(jq_version || true)

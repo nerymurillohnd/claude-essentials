@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# block-no-verify-version: 0.1.0
+# block-no-verify-version: 0.1.1
 #
 # Claude Code PreToolUse handler (Bash and PowerShell tools). Denies Git
 # commands that bypass local verification (Git hooks: pre-commit, husky,
@@ -1549,13 +1549,27 @@ analyze_nested() { # $1 text, $2 mode, $3 label
   analyze_text "$1" "$2"
 }
 
+# Without jq the payload can't be parsed properly. Look only at the shell
+# tool's command string (never cwd or transcript paths, which often contain
+# "git") and deny if it could involve git; everything else passes.
+no_jq_decision() {
+  local p=$1 cmd
+  local re_tool='"tool_name"[[:space:]]*:[[:space:]]*"(Bash|PowerShell)"'
+  local re_cmd='"command"[[:space:]]*:[[:space:]]*"(([^"\\]|\\.)*)"'
+  [[ ${p} =~ ${re_tool} ]] || exit 0
+  [[ ${p} =~ ${re_cmd} ]] || exit 0
+  cmd=${BASH_REMATCH[1]}
+  lower "${cmd}"
+  if [[ ${LOWER} == *git* || ${LOWER} == *\\u* ]]; then
+    deny "jq is not installed, so this git command cannot be checked; install jq (the policy requires it)"
+  fi
+  exit 0
+}
+
 main() {
   local payload="" parsed tag tool cmd stripped
   IFS= read -r -d '' payload || true
-  if ! command -v jq >/dev/null 2>&1; then
-    if [[ ${payload} == *git* ]]; then deny "jq is not installed, so this git command cannot be checked; install jq (the policy requires it)"; fi
-    exit 0
-  fi
+  if ! command -v jq >/dev/null 2>&1; then no_jq_decision "${payload}"; fi
   if ! parsed=$(printf '%s' "${payload}" | jq -r '
       if type != "object" then "!"
       elif ((.tool_input | type) == "object") and ((.tool_input.command | type) == "string") then

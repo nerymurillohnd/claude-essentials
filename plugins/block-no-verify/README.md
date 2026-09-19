@@ -28,7 +28,8 @@ Installing the plugin does **not** wire anything.
 > [!CAUTION]
 > After you approve, the skill writes to a Claude Code settings file
 > (`.claude/settings.json`, `.claude/settings.local.json`, or
-> `~/.claude/settings.json`) and copies one handler script next to it. It backs
+> `~/.claude/settings.json`, or `$CLAUDE_CONFIG_DIR/settings.json` when set) and
+> copies one handler script next to it. It backs
 > up the settings file first and prints the exact rollback.
 
 ## 🎯 What it does
@@ -58,9 +59,10 @@ Installing the plugin does **not** wire anything.
 
 Then ask for it, for example: `Protect this repo so you can't skip my pre-commit hooks.`
 
-**Claude Cowork** — the plugin installs, but Cowork does not run settings-based
-hooks, so the skill only reports and never installs the policy there. See
-[Compatibility](#-compatibility).
+**Claude Cowork** — **Customize → Plugins → Add marketplace**, enter
+`nerymurillohnd/claude-essentials`, then install **Block No Verify** from the list.
+The skill loads there, but Cowork does not run settings-based hooks, so it only
+reports and never installs the policy. See [Compatibility](#-compatibility).
 
 > [!TIP]
 > Installation is complete when `/plugin list` shows `block-no-verify` as enabled
@@ -81,6 +83,9 @@ hooks, so the skill only reports and never installs the policy there. See
 /plugin uninstall block-no-verify@claude-essentials
 ```
 
+In Cowork, use **Update** on the marketplace, and **Uninstall** on the plugin
+under **Customize → Plugins**.
+
 Uninstalling the plugin does **not** remove a policy the skill installed: the
 installed handler is a standalone copy. Ask the skill to uninstall it first
 (`Uninstall the block-no-verify policy from project scope`), or follow
@@ -90,7 +95,7 @@ installed handler is a standalone copy. Ask the skill to uninstall it first
 
 | Skill | Invoke | Claude uses it when | Invocation |
 | --- | --- | --- | --- |
-| [`block-no-verify`](skills/block-no-verify/SKILL.md) | `/block-no-verify:block-no-verify` | You ask to block `--no-verify`, protect hooks, enforce signing, or check/remove the policy; or you're committing/rebasing and it offers once, in one line | Claude + user |
+| [`block-no-verify`](skills/block-no-verify/SKILL.md) | `/block-no-verify:block-no-verify` | You ask to block `--no-verify`, protect hooks, enforce signing, or check/remove the policy; or you're committing/rebasing, when it runs the read-only `status` check once per session (reads the three settings files) and offers the protection in one line if it's absent | Claude + user |
 
 The skill's workflow, with a stop at each gate:
 
@@ -98,7 +103,7 @@ The skill's workflow, with a stop at each gate:
 2. **Recommend a scope** (project, local, or user) and wait for your explicit choice.
 3. **Preflight**: bash, jq, valid settings JSON, no `disableAllHooks`/managed restriction, and the handler runs on this machine. Any failure stops.
 4. **Install**: backup, byte-identical handler copy, one idempotent settings merge.
-5. **Verify**: 326-case suite against the installed copy, plus live payloads (a bypass is denied, a clean commit allowed). Failure restores the backup.
+5. **Verify**: 331-case suite against the installed copy, plus live payloads (a bypass is denied, a clean commit allowed). Failure restores the backup.
 6. **Hand off**: you confirm in `/hooks`; you get the exact rollback.
 
 ## 🤖 Agents
@@ -114,7 +119,7 @@ The plugin registers **no** hooks. On your approval, the skill installs one
 | --- | --- | --- | --- |
 | project | `.claude/settings.json` | `.claude/hooks/block-no-verify.sh` | Yes — commit both files together |
 | local | `.claude/settings.local.json` | `.claude/hooks/block-no-verify.sh` | No — kept out of git via `.git/info/exclude` |
-| user | `~/.claude/settings.json` | `~/.claude/hooks/block-no-verify.sh` | No — applies to every repository on this machine |
+| user | `~/.claude/settings.json` (or `$CLAUDE_CONFIG_DIR/settings.json`) | `~/.claude/hooks/block-no-verify.sh` (or under `$CLAUDE_CONFIG_DIR`) | No — applies to every repository on this machine |
 
 The hook denies with a JSON `permissionDecision: "deny"` plus exit code 2, so
 it blocks even in `bypassPermissions` mode and even if a shell profile prints
@@ -134,6 +139,9 @@ None — no MCP servers, no network access, no credentials.
 | jq | 1.6 | `jq --version` | Parses hook payloads and merges settings |
 | Git | 2.18 | `git --version` | Assessment (`config --type=bool`, `rev-parse --git-common-dir`); the handler also reads Git aliases (read-only) to resolve `git <alias> -n` |
 | Windows only | Git for Windows (Git Bash) | `bash --version` in Git Bash | Without Git Bash, Claude Code runs hooks in PowerShell and a Bash handler cannot run |
+
+With **project scope**, everyone who runs Claude Code in the repository needs
+Bash and jq too, because the committed hook runs on their machine.
 
 Verification:
 
@@ -166,7 +174,7 @@ run with the plugin against a baseline without it:
 
 | Case | Checks | With | Without | Δ | Last run |
 | --- | --- | ---: | ---: | ---: | --- |
-| `protect-hooks-request` | Skill fires on a natural protection request and installs nothing without approval | 1.00 | 0.50 | +0.50 | 2026-09-18, Claude Code 2.1.277 default model, 3 runs per arm |
+| `protect-hooks-request` | Skill fires on a natural protection request, asks for a scope, and writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | 1.00 | 0.50 | +0.50 | 2026-09-18, Claude Code 2.1.277 default model, 3 runs per arm |
 | `ignores-git-read` | Skill does **not** fire on a read-only Git question | 1.00 | 1.00 | 0.00 | 2026-09-18, Claude Code 2.1.277 default model, 3 runs per arm |
 
 <details>
@@ -190,11 +198,11 @@ claude plugin eval plugins/block-no-verify --no-publish --max-cost-usd 5
 
 | Surface | Status | Last verified | Notes |
 | --- | --- | --- | --- |
-| Claude Code (CLI, Desktop, IDE) on macOS / Linux / WSL | 🧪 Not tested | — | Handler suite (326 cases) passes on bash 3.2.57 and 5.3.20 (macOS, 2026-09-18); about 30 ms per typical command, about 200 ms worst case on 50 KB inputs; pending a remote-marketplace install check |
+| Claude Code (CLI, Desktop, IDE) on macOS / Linux / WSL | 🧪 Not tested | — | Handler suite (331 cases) passes on bash 3.2.57 and 5.3.20 (macOS, 2026-09-18); about 30 ms per typical command, about 200 ms worst case on 50 KB inputs; pending a remote-marketplace install check |
 | Claude Code on Windows with Git Bash | 🧪 Not tested | — | Designed for Git Bash; not yet run on Windows |
 | Claude Code on Windows without Git Bash | ❌ Not supported | — | Hooks run in PowerShell; `preflight` refuses |
 | Claude Code cloud sessions | ⚠️ Partial | — | Only project scope applies: cloud sessions don't read `~/.claude/settings.json` |
-| Claude Cowork | ❌ Not supported | 2026-09-18 (docs) | Cowork's sandbox does not run settings hooks ([#40495](https://github.com/anthropics/claude-code/issues/40495)); the skill reports and refuses to install |
+| Claude Cowork | ❌ Not supported | 2026-09-18 (GitHub issue, not docs) | Cowork's sandbox does not run settings hooks ([anthropics/claude-code#40495](https://github.com/anthropics/claude-code/issues/40495)); the skill reports and refuses to install. It detects Cowork through `CLAUDE_CODE_IS_COWORK`, which only that issue documents |
 | Claude Chat (web, desktop) | ❌ Not supported | — | Plugins aren't used in Chat. |
 
 ## 💡 Examples
@@ -229,13 +237,13 @@ block-no-verify: git commit --no-verify skips hooks (--no-verify). Do not retry 
 | Access | What it may do |
 | --- | --- |
 | Read | Git config and hook files of the current repository; the three Claude Code settings files; managed settings; installed plugins' `hooks/hooks.json` (assessment only) |
-| Write | Only after approval: one settings file, one handler copy, backups under `.git/block-no-verify-backups/` or `~/.claude/backups/block-no-verify/`, and (local scope) `.git/info/exclude` |
-| Process | `bash`, `jq`, `git`, and the bundled scripts; the installed hook runs `bash` + `jq` on each Bash/PowerShell tool call |
+| Write | Only after approval: one settings file (created if absent), the `hooks/` folder and one handler copy, backups under `.git/block-no-verify-backups/` or `~/.claude/backups/block-no-verify/`, and (local scope) `.git/info/exclude`. Uninstall deletes the handler, an emptied `hooks/` folder, and a project or local settings file left as `{}` |
+| Process | `bash`, `jq`, `git`, and the bundled scripts, only when the skill runs; the auto-invoked skill runs the read-only `status` once per session while you commit. The installed hook runs `bash` + `jq` on each Bash/PowerShell tool call |
 | Network | Not used |
 | Credentials | None |
 
 - **Human approval:** every write happens only after you choose a scope in the conversation; uninstall asks you to confirm the scope.
-- **Fail closed:** malformed payloads, unterminated quotes, and handler errors deny; if `jq` disappears, only `git` commands are denied.
+- **Fail closed:** malformed payloads, unterminated quotes, and handler errors deny; if `jq` disappears, only commands that mention `git` are denied (the working directory and transcript path are ignored).
 - **Trust:** review [`block-no-verify.sh`](skills/block-no-verify/assets/block-no-verify.sh) and [`manage.sh`](skills/block-no-verify/scripts/manage.sh) before installing in a critical repository.
 - **Report a vulnerability** privately via the [security policy](../../SECURITY.md). Never post secrets in issues.
 
@@ -249,6 +257,7 @@ block-no-verify: git commit --no-verify skips hooks (--no-verify). Do not retry 
 | A committed project group whose handler wasn't committed | Hook errors on every shell call; nothing is blocked | Commit `.claude/hooks/block-no-verify.sh` with the settings; `status` warns |
 | Hook timeout or a deleted handler | The call proceeds (Claude Code treats it as a non-blocking error) | `status` detects a missing handler; reinstall |
 | Cowork | No protection | Use Claude Code |
+| Cowork detection relies on `CLAUDE_CODE_IS_COWORK`, an undocumented variable | If Cowork stops setting it, `preflight` may not refuse there; the policy still would not run | Check `/hooks` availability; report an issue |
 | Commands outside Claude's shell tools | Not inspected | Branch protection and CI |
 
 ## ❓ FAQ

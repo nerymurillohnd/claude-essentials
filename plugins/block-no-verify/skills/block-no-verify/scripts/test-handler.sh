@@ -453,6 +453,33 @@ big_files=$(yes 'file.txt' | head -3000 | tr '\n' ' ')
 want ALLOW "git add ${big_files} && git commit -m x"
 want DENY "git add ${big_files} && git commit --no-verify -m x"
 
+section="without jq (only the command decides, never cwd or transcript paths)"
+nojq=$(mktemp -d)
+for tool in bash tr; do
+  tool_path=$(command -v "${tool}") || tool_path=""
+  ln -s "${tool_path}" "${nojq}/${tool}"
+done
+nojq_verdict() { # nojq_verdict <command> <cwd>
+  local payload out rc
+  payload=$(jq -nc --arg c "$1" --arg d "$2" '{hook_event_name:"PreToolUse",tool_name:"Bash",cwd:$d,transcript_path:($d + "/t.jsonl"),tool_input:{command:$c}}')
+  out=$(printf '%s' "${payload}" | PATH="${nojq}" "${runner}" "${handler}" 2>/dev/null)
+  rc=$?
+  if ((rc == 0)) && [[ -z ${out} ]]; then printf 'ALLOW'; elif ((rc == 2)); then printf 'DENY'; else printf 'ERROR:%s' "${rc}"; fi
+}
+want_nojq() { # want_nojq ALLOW|DENY <command> <cwd>
+  local got
+  got=$(nojq_verdict "$2" "$3") || got=ERROR
+  record "$1" "${got}" "no jq: $2 (cwd $3)"
+}
+want_nojq ALLOW 'ls -la' /Users/me/github/app
+want_nojq ALLOW 'npm test' /home/me/git/project
+want_nojq DENY 'git commit -m x' /tmp/app
+want_nojq DENY 'echo "x"; GIT status' /tmp/app
+other=ALLOW
+printf '%s' '{"tool_name":"Write","tool_input":{"file_path":"/x/github/y"}}' | PATH="${nojq}" "${runner}" "${handler}" >/dev/null 2>&1 || other=DENY
+record ALLOW "${other}" "no jq: other tools pass"
+rm -rf "${nojq}"
+
 section="fail closed"
 want_raw DENY 'not json' 'invalid JSON'
 want_raw DENY '' 'empty stdin'
