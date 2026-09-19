@@ -88,7 +88,7 @@ export function runtimeManifestChanged(before, after) {
  * @param {Manifest | null | undefined} after
  * @returns {string[]} Changed plugin-relative paths that Claude loads at runtime.
  */
-export function runtimeChanges(name, changedFiles, before, after) {
+function runtimeChanges(name, changedFiles, before, after) {
   const prefix = `plugins/${name}/`;
   return changedFiles
     .filter((file) => file.startsWith(prefix))

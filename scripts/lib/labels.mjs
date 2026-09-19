@@ -10,7 +10,7 @@
  */
 
 export const PLUGIN_LABEL_PREFIX = "plugin: ";
-export const PLUGIN_LABEL_COLOR = "5319e7";
+const PLUGIN_LABEL_COLOR = "5319e7";
 export const MAX_LABEL_NAME = 50;
 export const MAX_LABEL_DESCRIPTION = 100;
 

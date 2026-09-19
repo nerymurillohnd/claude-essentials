@@ -16,7 +16,8 @@
     "lint": "biome lint .",
     "lint:sh": "node scripts/lint-shell.mjs",
     "typecheck": "tsc -p tsconfig.json",
-    "check": "biome check . && npm run lint:sh && npm run typecheck && npm test && npm run generate && npm run validate && npm run validate:claude"
+    "check": "biome check . && npm run lint:sh && npm run typecheck && npm run knip && npm test && npm run generate && npm run validate && npm run validate:claude",
+    "knip": "knip"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",
@@ -24,6 +25,7 @@
     "@types/semver": "7.8.0",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
+    "knip": "6.37.0",
     "semver": "^7.8.5",
     "typescript": "6.0.3",
     "typescript-language-server": "6.0.0",

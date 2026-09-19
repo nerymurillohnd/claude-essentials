@@ -65,6 +65,9 @@ jobs:
       - name: Type check (tsc, max-strict tsconfig.json)
         run: npm run typecheck
 
+      - name: Unused files, exports, and dependencies (Knip)
+        run: npm run knip -- --reporter github-actions
+
       - name: Unit tests
         run: npm test
 

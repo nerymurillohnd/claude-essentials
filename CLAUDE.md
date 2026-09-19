@@ -18,9 +18,10 @@ npm run generate  # rebuild .claude-plugin/marketplace.json's plugins[] from plu
 npm run validate  # schema-check marketplace.json + every plugin.json; cross-check disk <-> catalog
 npm run format    # biome format --write .
 npm run lint      # biome lint .
-npm run check     # format+lint, lint:sh, typecheck, tests, generate, validate, validate:claude — the CI gate
+npm run check     # format+lint, lint:sh, typecheck, knip, tests, generate, validate, validate:claude — the CI gate
 npm run lint:sh   # ShellCheck (.shellcheckrc) + shfmt -d on every tracked shell script
 npm run typecheck # tsc -p tsconfig.json: max-strict type check of scripts/**/*.mjs (part of npm run check)
+npm run knip      # unused files, exports, and dependencies (knip.jsonc; part of npm run check; CI adds --reporter github-actions)
 npm test                # node:test unit tests for scripts/lib (part of npm run check)
 npm run validate:claude # `claude plugin validate --strict` (claude on PATH; CI pins CLAUDE_CODE_VERSION) on the marketplace + every plugin
 npm run check:versions  # plugin version-bump rules vs origin/main; add -- --verify-tag for claude plugin tag --dry-run (CI job version-check)
@@ -42,7 +43,16 @@ committed.
 never compiles anything) and must stay at 0 errors: it is part of `npm run check`
 and a CI step. Type external data honestly (`unknown`, or `any` only where a
 schema validates it next), narrow `catch` values with `scripts/lib/errors.mjs`,
-and read `process.env` with bracket access plus an explicit missing-value check. `typescript`, `typescript-language-server`, and
+and read `process.env` with bracket access plus an explicit missing-value check.
+
+**Knip (`knip.jsonc`):** fix findings, don't ignore them — config hints fail the
+run, and entry exports count. `ignoreDependencies` holds only documented,
+accepted exceptions. When a plugin ships Node code with its own
+`package.json`, add it under `workspaces` with an explicit `entry` (Knip can't
+infer an MCP server entry from `.mcp.json`). Never run `knip --fix` in CI.
+The hook/CI "runtime vs exempt" rules exist twice (`scripts/lib/version-plan.mjs`
+and `.claude/hooks/lib/plugin-paths.sh`); `scripts/lib/plugin-paths.test.mjs`
+runs the bash functions to keep them identical. `typescript`, `typescript-language-server`, and
 `@types/node` are pinned exactly to the maintainer's globals (6.0.3 / 6.0.0 /
 Node 24 line); Claude Code's `typescript-lsp` plugin still runs the global
 `typescript-language-server` from `PATH`, which loads this repo's workspace
