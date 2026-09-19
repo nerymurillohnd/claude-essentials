@@ -21,6 +21,7 @@ body:
       description: Pick "Marketplace catalog / installation" for problems adding the marketplace or installing any plugin.
       options:
         - Marketplace catalog / installation
+        - block-no-verify
         - Not sure
     validations:
       required: true

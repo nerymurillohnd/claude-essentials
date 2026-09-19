@@ -1,0 +1,10 @@
+{
+  "matcher": "Bash|PowerShell",
+  "hooks": [
+    {
+      "type": "command",
+      "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-no-verify.sh\"",
+      "timeout": 10
+    }
+  ]
+}

@@ -52,3 +52,6 @@ __pycache__/
 tmp/
 temp/
 .cache/
+
+# claude plugin eval output
+plugins/*/evals/results/
