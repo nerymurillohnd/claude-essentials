@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "check": "biome check . && npm run lint:sh && npm run typecheck && npm run knip && npm test && npm run generate && npm run validate && npm run validate:claude",
+    "check": "biome check --error-on-warnings . && npm run lint:sh && npm run typecheck && npm run knip && npm test && npm run generate && npm run validate && npm run validate:claude",
     "check:versions": "node scripts/check-versions.mjs",
     "format": "biome format --write .",
     "generate": "node scripts/generate-marketplace.mjs && node scripts/generate-issue-forms.mjs",
@@ -15,7 +15,7 @@
     "lint": "biome lint .",
     "lint:sh": "node scripts/lint-shell.mjs",
     "test": "node --test \"scripts/**/*.test.mjs\"",
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "validate": "node scripts/validate-marketplace.mjs",
     "validate:claude": "node scripts/validate-claude.mjs"
   },

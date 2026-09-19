@@ -175,7 +175,11 @@ immutable (tag ruleset).
 
 ## Conventions
 
-- Biome (`biome.json`) formats/lints all JSON/JS in this repo; ShellCheck and
+- Biome (`biome.json`, pinned exactly: nursery rules are enabled) formats/lints
+  all JSON/JS and fails on warnings too (`--error-on-warnings`); JSON is strict
+  except `tsconfig*.json`/`*.jsonc`; `noConsole` is off only for the CLI entry
+  points `scripts/*.mjs`; `useLiteralKeys` is off because tsconfig's
+  `noPropertyAccessFromIndexSignature` requires `process.env["X"]`. ShellCheck and
   shfmt (via `.editorconfig`) cover every `.sh` file.
 - The repo and every plugin are Apache-2.0
   ([ADR-0005](docs/decisions/adr-0005-apache-2-0-license.md)): each `LICENSE`

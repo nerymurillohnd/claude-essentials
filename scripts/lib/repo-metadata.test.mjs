@@ -35,6 +35,20 @@ test("checkLabels reports duplicates, bad colors, derived prefixes, long text, m
   assert.ok(errors.some((e) => e.includes('"status: needs-triage" is required')));
 });
 
+test("checkLabels rejects non-string descriptions and non-array aliases", () => {
+  const errors = checkLabels(
+    [
+      { ...ok, description: 123 },
+      { ...ok, name: "type: docs", aliases: "docs" },
+      { ...ok, name: "type: feature", aliases: ["feat", 7] },
+    ],
+    [],
+  );
+  assert.ok(errors.some((e) => e.includes('"type: bug": description must be')));
+  assert.ok(errors.some((e) => e.includes('"type: docs": aliases must be an array of strings')));
+  assert.ok(errors.some((e) => e.includes('"type: feature": aliases must be an array of strings')));
+});
+
 test("checkLabels rejects an alias that collides with a label name or another alias", () => {
   const errors = checkLabels(
     [

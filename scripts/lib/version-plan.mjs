@@ -138,18 +138,82 @@ function bumpKind(from, to) {
 }
 
 /**
+ * @typedef {{ status: PlanStatus, bump: Bump | null, error?: string, done: boolean }} VersionChange
+ *   How a present, canonical `after` version relates to `before`. `done` means no
+ *   release checks apply (an error, or a change that needs no new version).
+ */
+
+/**
+ * Same version on both sides: fine if only exempt files changed or the bump is
+ * deferred; otherwise the runtime change needs a bump.
+ * @param {string} name
+ * @param {Manifest} before
+ * @param {Manifest & { version: string }} after
+ * @param {Pick<PlanContext, "changedFiles" | "deferred">} context
+ * @returns {VersionChange}
+ */
+function unbumpedChange(name, before, after, { changedFiles, deferred }) {
+  const runtime = runtimeChanges(name, changedFiles, before, after);
+  if (runtime.length === 0) return { status: "exempt", bump: null, done: true };
+  if (deferred) return { status: "deferred", bump: null, done: true };
+  const listed = runtime.slice(0, 5).join(", ") + (runtime.length > 5 ? ", …" : "");
+  return {
+    status: "unchanged",
+    bump: null,
+    error: `plugins/${name} changed runtime files (${listed}) but "version" is still ${after.version}. Bump it (semver) and add a CHANGELOG.md entry, or have a maintainer apply the "bump: deferred" label.`,
+    done: true,
+  };
+}
+
+/**
+ * @param {string} name
+ * @param {Manifest | null} before
+ * @param {Manifest & { version: string }} after
+ * @param {Pick<PlanContext, "changedFiles" | "deferred">} context
+ * @returns {VersionChange}
+ */
+function versionChange(name, before, after, context) {
+  if (!before) return { status: "new", bump: "initial", done: false };
+  if (!isCanonical(before.version)) return { status: "bumped", bump: "initial", done: false };
+  const order = semver.compare(after.version, before.version);
+  if (order < 0) {
+    return {
+      status: "unchanged",
+      bump: null,
+      error: `plugins/${name}: version went backwards (${before.version} → ${after.version})`,
+      done: true,
+    };
+  }
+  if (order === 0) return unbumpedChange(name, before, after, context);
+  return { status: "bumped", bump: bumpKind(before.version, after.version), done: false };
+}
+
+/**
+ * Checks for a version about to be released: its tag must be new and its
+ * CHANGELOG.md must have a dated entry.
+ * @param {string} name
+ * @param {string} version
+ * @param {Pick<PlanContext, "existingTags" | "changelogs">} context
+ * @returns {string[]}
+ */
+function releaseErrors(name, version, { existingTags, changelogs }) {
+  /** @type {string[]} */
+  const errors = [];
+  const tag = `${name}--v${version}`;
+  if (existingTags.has(tag))
+    errors.push(`plugins/${name}: tag ${tag} already exists; pick a new version`);
+  if (!hasChangelogEntry(changelogs.get(name), version)) errors.push(entryHint(name, version));
+  return errors;
+}
+
+/**
  * @param {string} name
  * @param {PlanContext} context
  * @returns {PluginPlan}
  */
-function planPlugin(
-  name,
-  { changedFiles, base, head, changelogs, renames, existingTags, deferred },
-) {
-  const before = base.get(name) ?? null;
-  const after = head.get(name) ?? null;
-  /** @type {string[]} */
-  const errors = [];
+function planPlugin(name, context) {
+  const before = context.base.get(name) ?? null;
+  const after = context.head.get(name) ?? null;
   /** @type {PluginPlan} */
   const result = {
     name,
@@ -157,61 +221,29 @@ function planPlugin(
     from: before?.version ?? null,
     to: after?.version ?? null,
     bump: null,
-    errors,
+    errors: [],
   };
-
   if (!after) {
     result.status = "removed";
-    if (!Object.hasOwn(renames, name)) {
-      errors.push(
+    if (!Object.hasOwn(context.renames, name)) {
+      result.errors.push(
         `plugins/${name} was removed; add "${name}" to marketplace.json "renames" (null, or its new name)`,
       );
     }
     return result;
   }
-  if (!isCanonical(after.version)) {
-    errors.push(
-      `plugins/${name}: "version" must be valid semver like 1.2.3, got ${JSON.stringify(after.version)}`,
+  const version = after.version;
+  if (!isCanonical(version)) {
+    result.errors.push(
+      `plugins/${name}: "version" must be valid semver like 1.2.3, got ${JSON.stringify(version)}`,
     );
     return result;
   }
-  if (!before) {
-    result.status = "new";
-    result.bump = "initial";
-  } else if (!isCanonical(before.version)) {
-    result.status = "bumped";
-    result.bump = "initial";
-  } else {
-    const order = semver.compare(after.version, before.version);
-    if (order < 0) {
-      errors.push(`plugins/${name}: version went backwards (${before.version} → ${after.version})`);
-      return result;
-    }
-    if (order === 0) {
-      const runtime = runtimeChanges(name, changedFiles, before, after);
-      if (runtime.length === 0) {
-        result.status = "exempt";
-        return result;
-      }
-      if (deferred) {
-        result.status = "deferred";
-        return result;
-      }
-      const listed = runtime.slice(0, 5).join(", ") + (runtime.length > 5 ? ", …" : "");
-      errors.push(
-        `plugins/${name} changed runtime files (${listed}) but "version" is still ${after.version}. Bump it (semver) and add a CHANGELOG.md entry, or have a maintainer apply the "bump: deferred" label.`,
-      );
-      return result;
-    }
-    result.status = "bumped";
-    result.bump = bumpKind(before.version, after.version);
-  }
-
-  const tag = `${name}--v${after.version}`;
-  if (existingTags.has(tag))
-    errors.push(`plugins/${name}: tag ${tag} already exists; pick a new version`);
-  if (!hasChangelogEntry(changelogs.get(name), after.version))
-    errors.push(entryHint(name, after.version));
+  const change = versionChange(name, before, { ...after, version }, context);
+  result.status = change.status;
+  result.bump = change.bump;
+  if (change.error) result.errors.push(change.error);
+  if (!change.done) result.errors.push(...releaseErrors(name, version, context));
   return result;
 }
 

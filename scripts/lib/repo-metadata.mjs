@@ -42,6 +42,74 @@ export function checkSchema(file, data, validate) {
 }
 
 /**
+ * Errors for one label's own fields (name length and prefix, color, description).
+ * @param {Record<string, unknown>} label A label whose `name` is a non-empty string.
+ * @param {string} where
+ * @returns {string[]}
+ */
+function labelFieldErrors(label, where) {
+  const name = /** @type {string} */ (label["name"]);
+  /** @type {string[]} */
+  const errors = [];
+  if (name.length > MAX_LABEL_NAME) errors.push(`${where}: name longer than ${MAX_LABEL_NAME}`);
+  if (name.startsWith(PLUGIN_LABEL_PREFIX)) {
+    errors.push(
+      `${where}: "${PLUGIN_LABEL_PREFIX}*" labels are derived from plugins/; don't list them`,
+    );
+  }
+  const color = label["color"];
+  if (typeof color !== "string" || !COLOR.test(color)) {
+    errors.push(`${where}: color must be 6 lowercase hex digits`);
+  }
+  const description = label["description"];
+  if (
+    typeof description !== "string" ||
+    description.length < 1 ||
+    description.length > MAX_LABEL_DESCRIPTION
+  ) {
+    errors.push(`${where}: description must be 1–${MAX_LABEL_DESCRIPTION} characters`);
+  }
+  return errors;
+}
+
+/**
+ * Errors for one label's `aliases`: must be an array of strings that collide with no
+ * label name and with no other label's alias (aliases are case-insensitive).
+ * @param {unknown} aliases
+ * @param {string} where
+ * @param {ReadonlySet<string>} allNames Lower-cased names of every label.
+ * @param {Set<string>} seenAliases Lower-cased aliases seen so far; updated in place.
+ * @returns {string[]}
+ */
+function aliasErrors(aliases, where, allNames, seenAliases) {
+  if (aliases === undefined) return [];
+  if (!Array.isArray(aliases) || !aliases.every((alias) => typeof alias === "string")) {
+    return [`${where}: aliases must be an array of strings`];
+  }
+  /** @type {string[]} */
+  const errors = [];
+  for (const alias of aliases) {
+    const aliasKey = alias.toLowerCase();
+    if (allNames.has(aliasKey)) errors.push(`${where}: alias "${alias}" is also a label name`);
+    if (seenAliases.has(aliasKey)) {
+      errors.push(`${where}: alias "${alias}" is already an alias of another label`);
+    }
+    seenAliases.add(aliasKey);
+  }
+  return errors;
+}
+
+/**
+ * @param {unknown} label
+ * @returns {label is Record<string, unknown> & { name: string }}
+ */
+const hasName = (label) =>
+  typeof label === "object" &&
+  label !== null &&
+  typeof (/** @type {Record<string, unknown>} */ (label)["name"]) === "string" &&
+  /** @type {Record<string, unknown>} */ (label)["name"] !== "";
+
+/**
  * @param {unknown} labels Parsed `.github/labels.json`; its shape is what this checks.
  * @param {readonly string[]} [required]
  * @returns {string[]}
@@ -54,15 +122,11 @@ export function checkLabels(labels, required = REQUIRED_LABELS) {
   const seen = new Set();
   // First pass: every label name, so an alias can be checked against names that appear
   // later in the array too (diffLabels matches aliases across the whole desired set).
-  const allNames = new Set(
-    labels
-      .filter((label) => typeof label?.name === "string" && label.name !== "")
-      .map((label) => label.name.toLowerCase()),
-  );
+  const allNames = new Set(labels.filter(hasName).map((label) => label.name.toLowerCase()));
   /** @type {Set<string>} */
   const seenAliases = new Set();
   for (const label of labels) {
-    if (typeof label?.name !== "string" || label.name === "") {
+    if (!hasName(label)) {
       errors.push('.github/labels.json: every label needs a non-empty "name"');
       continue;
     }
@@ -70,39 +134,47 @@ export function checkLabels(labels, required = REQUIRED_LABELS) {
     const key = label.name.toLowerCase();
     if (seen.has(key)) errors.push(`${where}: duplicate (label names are case-insensitive)`);
     seen.add(key);
-    if (label.name.length > MAX_LABEL_NAME)
-      errors.push(`${where}: name longer than ${MAX_LABEL_NAME}`);
-    if (label.name.startsWith(PLUGIN_LABEL_PREFIX)) {
-      errors.push(
-        `${where}: "${PLUGIN_LABEL_PREFIX}*" labels are derived from plugins/; don't list them`,
-      );
-    }
-    if (!COLOR.test(label.color ?? ""))
-      errors.push(`${where}: color must be 6 lowercase hex digits`);
-    const description = label.description ?? "";
-    if (description.length < 1 || description.length > MAX_LABEL_DESCRIPTION) {
-      errors.push(`${where}: description must be 1–${MAX_LABEL_DESCRIPTION} characters`);
-    }
-    /** @type {unknown[]} */
-    const aliases = Array.isArray(label.aliases) ? label.aliases : [];
-    if (!aliases.every((alias) => typeof alias === "string")) {
-      errors.push(`${where}: aliases must be strings`);
-    } else {
-      for (const alias of aliases) {
-        const aliasKey = alias.toLowerCase();
-        if (allNames.has(aliasKey)) errors.push(`${where}: alias "${alias}" is also a label name`);
-        if (seenAliases.has(aliasKey)) {
-          errors.push(`${where}: alias "${alias}" is already an alias of another label`);
-        }
-        seenAliases.add(aliasKey);
-      }
-    }
+    errors.push(...labelFieldErrors(label, where));
+    errors.push(...aliasErrors(label["aliases"], where, allNames, seenAliases));
   }
   for (const name of required) {
     if (!seen.has(name.toLowerCase()))
       errors.push(`.github/labels.json: "${name}" is required by automation`);
   }
   return errors;
+}
+
+/**
+ * A form's `labels` as a list: GitHub accepts a comma-separated string or an array.
+ * @param {unknown} rawLabels
+ * @returns {unknown[]}
+ */
+function formLabels(rawLabels) {
+  if (typeof rawLabels === "string") return rawLabels.split(",").map((l) => l.trim());
+  return Array.isArray(rawLabels) ? rawLabels : [];
+}
+
+/**
+ * Errors for the generated plugin dropdown (the triage bot parses its rendering).
+ * @param {unknown} body The form's `body`.
+ * @param {string} where
+ * @param {readonly string[]} pluginNames
+ * @returns {string[]}
+ */
+function pluginDropdownErrors(body, where, pluginNames) {
+  /** @type {any[]} */
+  const items = Array.isArray(body) ? body : [];
+  const expected = JSON.stringify(pluginDropdownOptions(pluginNames));
+  return items
+    .filter((item) => item?.id === PLUGIN_FIELD_ID)
+    .flatMap((item) => [
+      ...(item.attributes?.label === PLUGIN_FIELD_LABEL
+        ? []
+        : [`${where}: the "${PLUGIN_FIELD_ID}" dropdown label must be "${PLUGIN_FIELD_LABEL}"`]),
+      ...(JSON.stringify(item.attributes?.options) === expected
+        ? []
+        : [`${where}: "${PLUGIN_FIELD_ID}" dropdown is stale — run npm run generate`]),
+    ]);
 }
 
 /**
@@ -114,38 +186,13 @@ export function checkLabels(labels, required = REQUIRED_LABELS) {
  */
 export function checkIssueForm(file, form, { labelNames, pluginNames }) {
   const where = `.github/ISSUE_TEMPLATE/${file}`;
-  /** @type {string[]} */
-  const errors = [];
-  for (const key of ["name", "description", "body"]) {
-    if (!form?.[key]) errors.push(`${where}: missing "${key}"`);
-  }
-  const rawLabels = form?.labels;
-  /** @type {unknown[]} */
-  const labels =
-    typeof rawLabels === "string"
-      ? rawLabels.split(",").map((l) => l.trim())
-      : Array.isArray(rawLabels)
-        ? rawLabels
-        : [];
-  for (const label of labels) {
-    if (typeof label !== "string" || !labelNames.has(label))
-      errors.push(`${where}: label "${label}" is not in .github/labels.json`);
-  }
-  /** @type {any[]} */
-  const body = Array.isArray(form?.body) ? form.body : [];
-  for (const item of body) {
-    if (item?.id !== PLUGIN_FIELD_ID) continue;
-    if (item.attributes?.label !== PLUGIN_FIELD_LABEL) {
-      errors.push(
-        `${where}: the "${PLUGIN_FIELD_ID}" dropdown label must be "${PLUGIN_FIELD_LABEL}"`,
-      );
-    }
-    const expected = JSON.stringify(pluginDropdownOptions(pluginNames));
-    if (JSON.stringify(item.attributes?.options) !== expected) {
-      errors.push(`${where}: "${PLUGIN_FIELD_ID}" dropdown is stale — run npm run generate`);
-    }
-  }
-  return errors;
+  const missing = ["name", "description", "body"]
+    .filter((key) => !form?.[key])
+    .map((key) => `${where}: missing "${key}"`);
+  const unknownLabels = formLabels(form?.labels)
+    .filter((label) => typeof label !== "string" || !labelNames.has(label))
+    .map((label) => `${where}: label "${label}" is not in .github/labels.json`);
+  return [...missing, ...unknownLabels, ...pluginDropdownErrors(form?.body, where, pluginNames)];
 }
 
 const CANONICAL_SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
