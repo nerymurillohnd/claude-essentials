@@ -69,7 +69,8 @@ so it never downloads anything and analyzes with the same deduped `knip` as
 `npm run knip` and CI; `scripts/lib/tooling-alignment.test.mjs` fails if either
 stops holding. Approve it once with `/mcp` (project servers need approval).
 
-`npm run check` needs ShellCheck, shfmt, and `claude` on `PATH`. Claude Code is
+`npm run check` needs ShellCheck, shfmt, Ruff (the ruff-quality suites run it;
+CI pins `RUFF_VERSION`), and `claude` on `PATH`. Claude Code is
 never a repo dependency: CI installs the version pinned by `CLAUDE_CODE_VERSION`
 in `ci.yml` and `tag-versions.yml` (`npm run validate` keeps them equal).
 

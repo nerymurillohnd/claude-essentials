@@ -1,0 +1,14 @@
+{
+  "name": "shell-quality",
+  "displayName": "Shell Quality",
+  "version": "0.1.0",
+  "description": "Teaches Claude the current ShellCheck and shfmt workflow for shell scripts (format, then check; rc files and EditorConfig; correct fixes for common SC codes; macOS Bash 3.2 portability; pre-commit and CI), and, only when you ask and choose a scope and a configuration, installs Claude Code hooks that format and check every shell script Claude edits, deny suppression directives and configuration changes, and keep Claude from finishing until the scripts are clean.",
+  "author": {
+    "name": "Nery Samuel Murillo Tejada",
+    "url": "https://github.com/nerymurillohnd"
+  },
+  "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/shell-quality",
+  "repository": "https://github.com/nerymurillohnd/claude-essentials",
+  "license": "Apache-2.0",
+  "keywords": ["bash", "shell", "shellcheck", "shfmt", "lint", "format", "hooks", "quality-gate"]
+}

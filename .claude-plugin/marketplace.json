@@ -16,6 +16,16 @@
       "description": "A skill that, only when you ask and approve a scope, installs a Claude Code hook denying Git commands that skip local hooks or commit signing (--no-verify, -n, --no-gpg-sign, core.hooksPath, HUSKY=0, ...). Installing the plugin wires nothing."
     },
     {
+      "name": "ruff-quality",
+      "source": "./plugins/ruff-quality",
+      "description": "Teaches Claude the current Ruff workflow for Python (safe fixes, format, check; configuration discovery; rule selection after Ruff 0.16; migration from Black, isort, and Flake8; pre-commit and CI), and, only when you ask and choose a scope and a configuration, installs Claude Code hooks that fix, format, and lint every Python file Claude edits, deny suppression comments and configuration changes, and keep Claude from finishing until the files are clean."
+    },
+    {
+      "name": "shell-quality",
+      "source": "./plugins/shell-quality",
+      "description": "Teaches Claude the current ShellCheck and shfmt workflow for shell scripts (format, then check; rc files and EditorConfig; correct fixes for common SC codes; macOS Bash 3.2 portability; pre-commit and CI), and, only when you ask and choose a scope and a configuration, installs Claude Code hooks that format and check every shell script Claude edits, deny suppression directives and configuration changes, and keep Claude from finishing until the scripts are clean."
+    },
+    {
       "name": "verify-completion",
       "source": "./plugins/verify-completion",
       "description": "Makes Claude prove work is done before saying so: a six-gate verification skill with coherence and depth audits, a read-only verifier agent scaled to the size of the change, an opt-in workflow that cross-checks every finding, and a Stop hook that sends Claude back for a checkable Verification record when a reply presents finished work without one. It never authorizes commits, pushes, or deploys."
