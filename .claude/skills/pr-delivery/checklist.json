@@ -1,0 +1,41 @@
+{
+  "skill": "pr-delivery",
+  "items": [
+    {
+      "id": "review",
+      "text": "For a change under plugins/: /plugin-release-review completed on the final head (evidence: its checklist status), or \"not a plugin change\""
+    },
+    {
+      "id": "numbers",
+      "text": "README eval table, test counts, timings, and Compatibility dates re-measured in this branch when the skill description, evals, or scripts changed; CHANGELOG matches what ships"
+    },
+    {
+      "id": "merged",
+      "text": "PR merged: GitHub reports the authorized head SHA as merged (evidence: PR number, merge commit SHA)"
+    },
+    {
+      "id": "ci-main",
+      "text": "CI and Tag plugin versions are green on the merge commit in main (evidence: run ids and conclusions)"
+    },
+    {
+      "id": "tags",
+      "text": "Every plugin version on main has its <id>--vX.Y.Z tag on origin (created only by the Tag plugin versions workflow)",
+      "verify": "for m in plugins/*/.claude-plugin/plugin.json; do [ -f \"$m\" ] || continue; t=$(jq -r \"\\\"\\\\(.name)--v\\\\(.version)\\\"\" \"$m\"); git ls-remote --exit-code --tags origin \"refs/tags/$t\" >/dev/null || { echo \"missing remote tag $t\"; exit 1; }; done"
+    },
+    {
+      "id": "branches",
+      "text": "The feature branch is deleted locally and on origin",
+      "verify": "test -n \"$CHECKLIST_SUBJECT\" || { echo \"no branch recorded\"; exit 1; }; if git show-ref --verify --quiet \"refs/heads/$CHECKLIST_SUBJECT\"; then echo \"local branch $CHECKLIST_SUBJECT still exists\"; exit 1; fi; git ls-remote --exit-code --heads origin \"refs/heads/$CHECKLIST_SUBJECT\" >/dev/null; rc=$?; [ \"$rc\" -eq 2 ] || { echo \"origin still has $CHECKLIST_SUBJECT (or is unreachable: $rc)\"; exit 1; }"
+    },
+    {
+      "id": "main-synced",
+      "text": "On main, and local main equals origin/main after fetch --prune",
+      "verify": "git fetch --prune --quiet origin && [ \"$(git branch --show-current)\" = main ] && [ \"$(git rev-parse main)\" = \"$(git rev-parse origin/main)\" ] || { echo \"not on main, or main differs from origin/main\"; exit 1; }"
+    },
+    {
+      "id": "clean",
+      "text": "Working tree clean and the repo gate passes on main",
+      "verify": "[ -z \"$(git status --porcelain)\" ] || { git status --short; exit 1; }; npm run validate --silent"
+    }
+  ]
+}

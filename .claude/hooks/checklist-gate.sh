@@ -27,16 +27,17 @@ status=$(jq -r '.status // ""' "${file}" 2>/dev/null) || status=""
 open=$(jq -r '.items[] | select(.state == "open" or (.state == "done" and .evidence == "")) | "- \(.id): \(.text)"' "${file}")
 waiting=$(jq -r '.items[] | select(.state == "needs_user") | "- \(.id): \(.evidence)"' "${file}")
 
+# A question for the user comes first: later items often depend on the answer
+# (a merge approval gates everything after it), so the turn must be able to end.
+if [[ -n ${waiting} ]]; then
+  exit 0
+fi
 if [[ -n ${open} ]]; then
   {
     printf 'Checklist %s is not complete. Finish these items (record each with checklist.sh check <id> "<evidence>"), or ask the user and mark it with checklist.sh needs-user:\n%s\n' \
       "${file#"${root}"/}" "${open}"
-    [[ -z ${waiting} ]] || printf 'Waiting on the user:\n%s\n' "${waiting}"
   } >&2
   exit 2
-fi
-if [[ -n ${waiting} ]]; then
-  exit 0 # everything else is done; the user must answer before the rest can finish
 fi
 
 # Every item is done: run the verify commands before letting the turn end. They
@@ -50,10 +51,13 @@ if [[ -z ${template} || ! -f ${source_file} ]]; then
     "${file#"${root}"/}" "${template:-none}" >&2
   exit 2
 fi
+# Verify commands can read the checklist's subject (a plugin id, a branch name)
+# from $CHECKLIST_SUBJECT.
+subject=$(jq -r '.subject // ""' "${file}") || subject=""
 verifies=$(jq -r '.items[] | select(.verify != null) | [.id, .verify] | @tsv' "${source_file}") || verifies=""
 while IFS=$'\t' read -r id verify; do
   [[ -n ${verify} ]] || continue
-  if ! out=$(cd "${root}" && bash -c "${verify}" 2>&1); then
+  if ! out=$(cd "${root}" && CHECKLIST_SUBJECT=${subject} bash -c "${verify}" 2>&1); then
     tail_out=$(printf '%s\n' "${out}" | tail -n 15) || tail_out=""
     failures+="- ${id}: \`${verify}\` failed:"$'\n'"${tail_out}"$'\n'
   fi

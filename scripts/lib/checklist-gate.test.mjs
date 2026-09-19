@@ -118,3 +118,38 @@ test("verify commands come from the committed template, not the editable state",
   assert.equal(stop(dir, "session-1").status, 2);
   rmSync(dir, { recursive: true });
 });
+
+test("a question for the user lets the turn end even while later items are open", () => {
+  const dir = project("true");
+  checklist(dir, "needs-user", "a", "Approve the merge?");
+  assert.equal(stop(dir, "session-1").status, 0);
+  assert.equal(state(dir).status, "in_progress");
+  checklist(dir, "check", "a", "approved");
+  assert.equal(stop(dir, "session-1").status, 2);
+  rmSync(dir, { recursive: true });
+});
+
+test("verify commands see the checklist subject as $CHECKLIST_SUBJECT", () => {
+  const dir = project('test "$CHECKLIST_SUBJECT" = demo-plugin');
+  checklist(dir, "check", "a", "done");
+  checklist(dir, "check", "b", "verified");
+  assert.equal(stop(dir, "session-1").status, 0);
+  rmSync(dir, { recursive: true });
+});
+
+test("starting a second checklist while one is unfinished is refused", () => {
+  const dir = project("true");
+  const other = join(dir, "other.json");
+  writeFileSync(other, JSON.stringify({ skill: "other-skill", items: [{ id: "x", text: "X" }] }));
+  const refused = spawnSync(helper, ["start", other, "other-subject", "session-1"], {
+    encoding: "utf8",
+    env: { ...process.env, CLAUDE_PROJECT_DIR: dir },
+  });
+  assert.equal(refused.status, 1);
+  assert.match(refused.stderr, /demo-skill--demo-plugin\.json is still in progress/);
+  // Restarting the same checklist is allowed, and so is a new one once it is aborted.
+  checklist(dir, "start", join(dir, "checklist.json"), "demo-plugin", "session-1");
+  checklist(dir, "abort", "user said stop");
+  checklist(dir, "start", other, "other-subject", "session-1");
+  rmSync(dir, { recursive: true });
+});

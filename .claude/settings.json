@@ -58,6 +58,11 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-commit-biome.sh",
             "timeout": 60
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-push-merged-branch.sh",
+            "timeout": 15
           }
         ]
       }

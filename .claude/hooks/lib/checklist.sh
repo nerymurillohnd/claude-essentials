@@ -4,6 +4,9 @@
 # Stop hook the skill registers) refuses to let the turn end until every item is
 # done with evidence and each item's verify command passes.
 #
+# One checklist is active at a time; `start` refuses while another is unfinished.
+# Verify commands run from the repository root with $CHECKLIST_SUBJECT set.
+#
 # Usage (from the repository root, or anywhere with CLAUDE_PROJECT_DIR set):
 #   checklist.sh start <template.json> <subject> <session-id>
 #   checklist.sh check <item-id> <evidence>     done, with what proves it
@@ -58,6 +61,16 @@ start)
   mkdir -p "${state_dir}"
   skill=$(jq -r '.skill' "${template}")
   file="${state_dir}/${skill}--${subject//[^A-Za-z0-9._-]/_}.json"
+  # One active checklist per project: starting another would silently drop the
+  # gate on an unfinished one. Restarting the same checklist is fine.
+  if [[ -f ${active} ]]; then
+    previous=$(<"${active}")
+    previous_status=""
+    [[ ! -f ${previous} ]] || previous_status=$(jq -r '.status // ""' "${previous}")
+    if [[ ${previous} != "${file}" && ${previous_status} == in_progress ]]; then
+      die "${previous#"${root}"/} is still in progress; finish it, or run: checklist.sh abort \"<the user's instruction>\""
+    fi
+  fi
   started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   template_dir=$(dirname "${template}")
   template_dir=$(cd "${template_dir}" && pwd) || die "cannot resolve ${template}"
@@ -96,7 +109,7 @@ status)
   jq -r '"\(.skill) — \(.subject) — \(.status)", (.items[] | "  [\(if .state == "done" then "x" elif .state == "needs_user" then "?" else " " end)] \(.id): \(.text)\(if .evidence != "" then " — " + .evidence else "" end)")' "${file}"
   ;;
 *)
-  sed -n '2,15p' "$0" >&2
+  sed -n '2,18p' "$0" >&2
   exit 2
   ;;
 esac

@@ -110,6 +110,12 @@ PR, run the repo skill `/plugin-release-review <id>`
 and README quality. Its checklist is enforced by a Stop hook (ADR-0002
 amendment).
 
+**Delivering a change:** from push to finish, run `/pr-delivery [branch]`
+(`.claude/skills/pr-delivery/`). Its checklist doesn't let the work end until
+the PR is merged, the tags are on origin, the branch is gone locally and
+remotely, and `main` is synced. The working rules behind it live in
+`.claude/rules/plugin-delivery.md`.
+
 **Adding a plugin:** copy one of `templates/plugin-bundle/`,
 `templates/plugin-skill-only/`, or `templates/plugin-agent-only/` into
 `plugins/<id>/` — see [docs/contributing/plugins.md](docs/contributing/plugins.md).

@@ -274,3 +274,30 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
 - Limits: the evidence is text Claude writes, so the gate proves that each step
   was claimed and that the mechanical verifications pass, not that the
   judgment was good; the review itself remains the check on quality.
+
+### Amendment — 2026-09-19: push guard and delivery checklist
+
+- New `PreToolUse` hook (Bash) `guard-push-merged-branch.sh`, registered in
+  `.claude/settings.json`. On `git push`, for each pushed branch that was
+  published before (it has an upstream or a remote-tracking ref), it asks the
+  remote with `git ls-remote --exit-code --heads`. If the remote answers that the
+  branch is gone, which is what GitHub does after a merge, it denies the push.
+  New branches, deletions, and tags pass. It is read-only, uses only `git`, and
+  fails open when the remote can't be reached (exit 128), so it's a guardrail
+  against recreating merged branches, not a control. Tests:
+  `scripts/lib/push-guard.test.mjs`, under `bash` and `/bin/bash`.
+- A second checklist skill, `.claude/skills/pr-delivery/`, registers the same
+  `checklist-gate.sh` Stop hook. Its template verifies the finish of a change on
+  the real remote: every plugin version is tagged on origin, the feature branch
+  is deleted locally and on origin, `main` equals `origin/main`, and the tree is
+  clean with `npm run validate` passing.
+- `checklist-gate.sh` now exports the checklist's subject to verify commands as
+  `$CHECKLIST_SUBJECT`. An item marked `needs-user` now lets the turn end even
+  while other items are open, because later steps often depend on the answer
+  (nothing after a merge can run before it is approved). The question is asked
+  in the conversation, so this exit is visible to the user. `checklist.sh start` refuses while another checklist is
+  in progress, so one skill can't silently drop another's gate.
+- Limits: the delivery verifies need network access to `origin`, and while
+  offline the gate keeps the items open until Claude Code's block cap. Merge and
+  CI status are recorded as evidence, not re-run, so the hook needs no GitHub
+  credentials.
