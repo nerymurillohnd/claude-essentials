@@ -54,14 +54,19 @@ fi
 # Verify commands can read the checklist's subject (a plugin id, a branch name)
 # from $CHECKLIST_SUBJECT.
 subject=$(jq -r '.subject // ""' "${file}") || subject=""
-verifies=$(jq -r '.items[] | select(.verify != null) | [.id, .verify] | @tsv' "${source_file}") || verifies=""
-while IFS=$'\t' read -r id verify; do
+# Read each command verbatim by id: @tsv would escape backslashes and break any
+# command that contains one.
+ids=$(jq -r '.items[] | select(.verify != null) | .id' "${source_file}") || ids=""
+while IFS= read -r id; do
+  [[ -n ${id} ]] || continue
+  # shellcheck disable=SC2016 # $id is a jq variable
+  verify=$(jq -r --arg id "${id}" '.items[] | select(.id == $id) | .verify' "${source_file}") || verify=""
   [[ -n ${verify} ]] || continue
   if ! out=$(cd "${root}" && CHECKLIST_SUBJECT=${subject} bash -c "${verify}" 2>&1); then
     tail_out=$(printf '%s\n' "${out}" | tail -n 15) || tail_out=""
     failures+="- ${id}: \`${verify}\` failed:"$'\n'"${tail_out}"$'\n'
   fi
-done <<<"${verifies}"
+done <<<"${ids}"
 
 if [[ -n ${failures} ]]; then
   printf 'Checklist %s: items are marked done but their verification fails. Fix and re-check them:\n%s' \
