@@ -1,3 +1,4 @@
+// @ts-check
 // Pure triage rules (ADR-0004): which labels an issue or PR should carry.
 // scripts/triage.mjs gathers inputs from the GitHub event and API.
 import { CATALOG_OPTION, PLUGIN_FIELD_LABEL } from "./issue-forms.mjs";
@@ -13,6 +14,9 @@ const COMMUNITY_FILES = new Set([
 ]);
 const TOOLING_FILES = new Set(["package.json", "package-lock.json", "biome.json", ".editorconfig"]);
 
+/** @typedef {{ label: string, test: (file: string) => boolean }} AreaRule */
+
+/** @type {readonly AreaRule[]} */
 export const AREA_RULES = Object.freeze([
   { label: "area: plugins", test: (f) => f.startsWith("plugins/") },
   {
@@ -33,6 +37,7 @@ export const AREA_RULES = Object.freeze([
 ]);
 
 const MANAGED_PREFIXES = ["area: ", "plugin: ", "bump: "];
+/** @param {string} value */
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // Mirrors schemas/plugin.schema.json's "name" pattern/maxLength: a fork PR's
@@ -41,26 +46,48 @@ const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const PLUGIN_NAME_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_PLUGIN_NAME = 42;
 
+/**
+ * @param {string} name
+ * @returns {boolean}
+ */
 export function isValidPluginName(name) {
   return PLUGIN_NAME_PATTERN.test(name) && name.length <= MAX_PLUGIN_NAME;
 }
 
+/**
+ * @param {readonly string[]} files Changed paths.
+ * @returns {string[]}
+ */
 export function areaLabels(files) {
   return AREA_RULES.filter((rule) => files.some(rule.test))
     .map((rule) => rule.label)
     .sort();
 }
 
+/**
+ * @param {readonly string[]} files Changed paths (attacker-controlled on fork PRs).
+ * @returns {string[]}
+ */
 export function pluginLabels(files) {
   return pluginsTouched(files).filter(isValidPluginName).map(pluginLabelName);
 }
 
+/**
+ * @param {string | null | undefined} body A rendered issue-form body.
+ * @param {string} label The field heading.
+ * @returns {string | null}
+ */
 export function formField(body, label) {
   const match = new RegExp(`^### ${escapeRegExp(label)}[ \\t]*\\n+([^\\n]*)`, "m").exec(body ?? "");
   const value = match?.[1]?.trim();
   return value && value !== "_No response_" ? value : null;
 }
 
+/**
+ * @param {string | null | undefined} body
+ * @param {readonly string[]} pluginNames
+ * @returns {string[]}
+ */
 export function issueLabels(body, pluginNames) {
   const value = formField(body, PLUGIN_FIELD_LABEL);
   if (value === CATALOG_OPTION) return ["area: catalog"];
@@ -68,6 +95,14 @@ export function issueLabels(body, pluginNames) {
   return [];
 }
 
+/**
+ * @typedef {{ add: string[], remove: string[] }} LabelChanges
+ */
+
+/**
+ * @param {{ labels: readonly string[], author: string | undefined, commenter: string | undefined }} event
+ * @returns {LabelChanges}
+ */
 export function authorReplyChanges({ labels, author, commenter }) {
   if (author !== commenter || !labels.includes(STATUS_LABELS.info)) return { add: [], remove: [] };
   return {
@@ -76,7 +111,13 @@ export function authorReplyChanges({ labels, author, commenter }) {
   };
 }
 
+/**
+ * @param {readonly string[]} current
+ * @param {readonly string[]} desired
+ * @returns {LabelChanges} Only labels under the managed prefixes are ever removed.
+ */
 export function reconcile(current, desired) {
+  /** @param {string} label */
   const managed = (label) =>
     label !== DEFERRED_LABEL && MANAGED_PREFIXES.some((prefix) => label.startsWith(prefix));
   return {

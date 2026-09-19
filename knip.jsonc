@@ -1,0 +1,28 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+
+  // Private, self-contained repo (package.json "private": true, nothing published):
+  // an unused export in an entry script is dead code too.
+  "includeEntryExports": true,
+
+  // A configuration hint means Knip's picture of the repo is wrong: fail on it.
+  "treatConfigHintsAsErrors": true,
+
+  // Entries come from Knip's own plugins (package.json scripts, node:test,
+  // GitHub Actions workflows, Biome, TypeScript), so none are listed here: a
+  // redundant entry would itself be a configuration hint.
+  //
+  // Not configured on purpose:
+  // - Production mode (--production/--strict): every script here is maintainer
+  //   tooling; plugins ship Markdown/JSON, not bundled code.
+  // - `workspaces`: add "plugins/<id>" only when a plugin ships Node code with its
+  //   own package.json, together with its `entry` (Knip can't infer an MCP server
+  //   entry from .mcp.json). Declaring a glob that matches no package.json is a
+  //   configuration hint.
+  // - Catalogs: npm has none.
+
+  // Accepted by the maintainer (2026-09-18): pinned to match the global binary.
+  // Claude Code's typescript-lsp plugin runs typescript-language-server from PATH,
+  // so nothing in this repo imports or executes it — Knip is right that it's unused.
+  "ignoreDependencies": ["typescript-language-server"]
+}

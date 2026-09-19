@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// @ts-check
 // Tags every plugin version that has no "{name}--v{version}" tag yet (ADR-0003),
 // using the official `claude plugin tag --push`: it validates the plugin, checks
 // plugin.json against the marketplace entry, and refuses dirty trees or existing

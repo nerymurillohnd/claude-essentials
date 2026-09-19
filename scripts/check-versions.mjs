@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// @ts-check
 // Enforces ADR-0003 on the current branch: every plugin changed since the merge
 // base with --base must bump its semver "version" and add a dated CHANGELOG.md
 // entry, unless --deferred (the "bump: deferred" PR label) is passed.
@@ -22,10 +22,17 @@ const { values } = parseArgs({
   },
 });
 
+/** @param {...string} args */
 const git = (...args) =>
   execFileSync("git", args, { cwd: rootDir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+/** @param {string} text */
 const lines = (text) => text.split("\n").filter(Boolean);
 
+/**
+ * @param {string} ref
+ * @param {string} path
+ * @returns {string | null} File contents at `ref`, or null when absent there.
+ */
 function showAt(ref, path) {
   try {
     return git("show", `${ref}:${path}`);
@@ -42,8 +49,12 @@ const changedFiles = [
   ]),
 ];
 
+/** @typedef {import("./lib/version-plan.mjs").Manifest} Manifest */
+/** @type {Map<string, Manifest | null>} */
 const base = new Map();
+/** @type {Map<string, Manifest | null>} */
 const head = new Map();
+/** @type {Map<string, string | null>} */
 const changelogs = new Map();
 for (const name of pluginsTouched(changedFiles)) {
   const before = showAt(mergeBase, `plugins/${name}/.claude-plugin/plugin.json`);

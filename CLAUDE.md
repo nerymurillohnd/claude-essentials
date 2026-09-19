@@ -12,13 +12,18 @@ work.
 ## Commands
 
 ```bash
+nvm use           # Node from .nvmrc (24.21.0)
 npm install       # once
 npm run generate  # rebuild .claude-plugin/marketplace.json's plugins[] from plugins/*/.claude-plugin/plugin.json
 npm run validate  # schema-check marketplace.json + every plugin.json; cross-check disk <-> catalog
-npm run format    # biome format --write .
-npm run lint      # biome lint .
-npm run check     # format+lint, lint:sh, tests, generate, validate, validate:claude — the CI gate
+npm run check     # biome:ci, lint:sh, typecheck, knip, tests, generate, validate, validate:claude — the CI gate
+npm run biome:fix # apply safe Biome fixes (format + lint + assist); biome:fix:unsafe only by hand, then review
+npm run biome:ci  # read-only Biome gate (format, lint, assist) that fails on warnings — used by check and CI
+npm run format    # read-only format check (format:fix writes); lint / lint:fix likewise
+npm run biome:check / biome:staged / biome:watch  # strict checks: whole repo, staged files, watch mode
 npm run lint:sh   # ShellCheck (.shellcheckrc) + shfmt -d on every tracked shell script
+npm run typecheck # tsc -p tsconfig.json: max-strict type check of scripts/**/*.mjs (part of npm run check)
+npm run knip      # unused files, exports, and dependencies (knip.jsonc; part of npm run check; CI adds --reporter github-actions)
 npm test                # node:test unit tests for scripts/lib (part of npm run check)
 npm run validate:claude # `claude plugin validate --strict` (claude on PATH; CI pins CLAUDE_CODE_VERSION) on the marketplace + every plugin
 npm run check:versions  # plugin version-bump rules vs origin/main; add -- --verify-tag for claude plugin tag --dry-run (CI job version-check)
@@ -34,6 +39,29 @@ you don't also need formatting/lint.
 CI (`.github/workflows/ci.yml`) runs the same `npm run check` pipeline and
 additionally fails if `npm run generate` produces a diff that wasn't
 committed.
+
+**TypeScript tooling:** `tsconfig.json` type-checks every `scripts/**/*.mjs`
+(`allowJs` + `checkJs`, full `strict` plus the stricter extras, `noEmit` — tsc
+never compiles anything) and must stay at 0 errors: it is part of `npm run check`
+and a CI step. Type external data honestly (`unknown`, or `any` only where a
+schema validates it next), narrow `catch` values with `scripts/lib/errors.mjs`,
+and read `process.env` with bracket access plus an explicit missing-value check.
+
+**Knip (`knip.jsonc`):** fix findings, don't ignore them — config hints fail the
+run, and entry exports count. `ignoreDependencies` holds only documented,
+accepted exceptions. When a plugin ships Node code with its own
+`package.json`, add it under `workspaces` with an explicit `entry` (Knip can't
+infer an MCP server entry from `.mcp.json`). Never run `knip --fix` in CI.
+The hook/CI "runtime vs exempt" rules exist twice (`scripts/lib/version-plan.mjs`
+and `.claude/hooks/lib/plugin-paths.sh`); `scripts/lib/plugin-paths.test.mjs`
+runs the bash functions to keep them identical. `typescript`, `typescript-language-server`, and
+`@types/node` are pinned exactly to the maintainer's globals (6.0.3 / 6.0.0 /
+Node 24 line); Claude Code's `typescript-lsp` plugin still runs the global
+`typescript-language-server` from `PATH`, which loads this repo's workspace
+TypeScript. Never upgrade to TypeScript 7 in this repo or globally without the
+official side-by-side recipe: TS 7 ships no `tsserver` API and breaks the LSP.
+Every `.mjs` starts with `// @ts-check`; Node scripts are run with `node`
+(or `npm run`), so they carry no shebang and no exec bit.
 
 `npm run check` needs ShellCheck, shfmt, and `claude` on `PATH`. Claude Code is
 never a repo dependency: CI installs the version pinned by `CLAUDE_CODE_VERSION`
@@ -149,7 +177,11 @@ immutable (tag ruleset).
 
 ## Conventions
 
-- Biome (`biome.json`) formats/lints all JSON/JS in this repo; ShellCheck and
+- Biome (`biome.json`, pinned exactly: nursery rules are enabled) formats/lints
+  all JSON/JS and fails on warnings too (`--error-on-warnings`); JSON is strict
+  except `tsconfig*.json`/`*.jsonc`; `noConsole` is off only for the CLI entry
+  points `scripts/*.mjs`; `useLiteralKeys` is off because tsconfig's
+  `noPropertyAccessFromIndexSignature` requires `process.env["X"]`. ShellCheck and
   shfmt (via `.editorconfig`) cover every `.sh` file.
 - The repo and every plugin are Apache-2.0
   ([ADR-0005](docs/decisions/adr-0005-apache-2-0-license.md)): each `LICENSE`
@@ -164,6 +196,9 @@ immutable (tag ruleset).
   deleted or force-pushed (rulesets). Label PRs from `.github/labels.json`.
 - Workflows pin every `uses:` to a full commit SHA with a `# vX.Y.Z` comment
   (Dependabot updates them).
+- Every `actions/setup-node` step reads `node-version-file: .nvmrc` (never a
+  floating `node-version`), so CI runs the exact local Node; `npm run validate`
+  enforces it.
 - New shell scripts need the exec bit (`git ls-files -s` → `100755`); test
   them by path, not via `bash script.sh`.
 - Accepted ADRs are amended by appending `### Amendment — YYYY-MM-DD`, never

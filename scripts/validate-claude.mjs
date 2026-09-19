@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// @ts-check
 // Runs Claude Code's official validator in strict mode (warnings are errors) on the
 // marketplace manifest and on EVERY plugin: validating the marketplace root does not
 // check plugin contents (skills, agents, commands, hooks). Resolves DEBT-0001.
@@ -42,6 +42,7 @@ for (const target of targets) {
     continue;
   }
   const all = collectFindings(report);
+  /** @param {import("./lib/claude-cli.mjs").Finding} finding */
   const tolerated = (finding) =>
     target === "." && pluginNames.length === 0 && finding.message === EMPTY_MARKETPLACE_WARNING;
   const findings = all.filter((finding) => !tolerated(finding));

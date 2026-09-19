@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # PostToolUse hook (Edit|Write|Bash): formats and lints changed files — shfmt +
-# ShellCheck for shell scripts, `biome check --write` for everything else.
+# ShellCheck for shell scripts, `biome check --write --error-on-warnings` (the
+# gate's strictness) for everything else.
 # Edit/Write: lints tool_input.file_path. Bash: lints every modified or new
 # (non-ignored) repo file not older than the stamp bash-stamp.sh wrote when the
 # command started, so edits made through shell commands get the same gate.
@@ -73,7 +74,7 @@ lint_biome() {
     add_context "Biome is not installed locally (node_modules missing) — run \`npm install\`."
     return 0
   fi
-  if ! out="$(cd "${root}" && "${biome}" check --write --no-errors-on-unmatched --reporter=concise "${abs}" 2>&1)"; then
+  if ! out="$(cd "${root}" && "${biome}" check --write --error-on-warnings --no-errors-on-unmatched --reporter=concise "${abs}" 2>&1)"; then
     add_block "Biome reported issues it could not auto-fix in ${rel}:
 ${out:0:4000}"
   fi

@@ -1,3 +1,4 @@
+// @ts-check
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
@@ -8,10 +9,20 @@ import {
   untaggedVersions,
 } from "./version-plan.mjs";
 
+/** @typedef {import("./version-plan.mjs").PluginPlan} PluginPlan */
+
+/**
+ * @param {string} name
+ * @param {unknown} version
+ */
 const manifest = (name, version) => ({ name, version, description: "d" });
+/** @param {...string} versions */
 const changelog = (...versions) =>
   versions.map((v) => `## [${v}] - 2026-09-18\n\n### Fixed\n\n- Fix for ${v}.\n`).join("\n");
 
+/**
+ * @param {Partial<Parameters<typeof planVersions>[0]>} overrides
+ */
 function plan(overrides) {
   return planVersions({
     changedFiles: [],
@@ -23,6 +34,16 @@ function plan(overrides) {
     deferred: false,
     ...overrides,
   });
+}
+
+/**
+ * The plan's single plugin; fails the test if there isn't exactly one.
+ * @param {{ plugins: PluginPlan[] }} result
+ * @returns {PluginPlan}
+ */
+function only(result) {
+  assert.equal(result.plugins.length, 1, "expected exactly one planned plugin");
+  return /** @type {PluginPlan} */ (result.plugins[0]);
 }
 
 test("pluginsTouched keeps only files inside plugin directories", () => {
@@ -50,8 +71,8 @@ test("patch bump with changelog entry passes", () => {
     changelogs: new Map([["demo", changelog("1.0.1", "1.0.0")]]),
   });
   assert.equal(result.ok, true);
-  assert.equal(result.plugins[0].status, "bumped");
-  assert.equal(result.plugins[0].bump, "patch");
+  assert.equal(only(result).status, "bumped");
+  assert.equal(only(result).bump, "patch");
   assert.equal(result.bumpLabel, "bump: patch");
 });
 
@@ -64,12 +85,12 @@ test("runtime change without bump fails unless deferred", () => {
   };
   const failed = plan(input);
   assert.equal(failed.ok, false);
-  assert.match(failed.plugins[0].errors[0], /still 1\.0\.0/);
+  assert.match(only(failed).errors[0] ?? "", /still 1\.0\.0/);
   assert.equal(failed.bumpLabel, null);
 
   const deferred = plan({ ...input, deferred: true });
   assert.equal(deferred.ok, true);
-  assert.equal(deferred.plugins[0].status, "deferred");
+  assert.equal(only(deferred).status, "deferred");
   assert.equal(deferred.bumpLabel, "bump: none");
 });
 
@@ -86,7 +107,7 @@ test("changes Claude never loads need no bump", () => {
     changelogs: new Map([["demo", changelog("1.0.0")]]),
   });
   assert.equal(result.ok, true);
-  assert.equal(result.plugins[0].status, "exempt");
+  assert.equal(only(result).status, "exempt");
   assert.equal(result.bumpLabel, "bump: none");
 });
 
@@ -98,8 +119,8 @@ test("a one-character fix in a SKILL.md still needs a bump, and the error names 
     changelogs: new Map([["demo", changelog("1.0.0")]]),
   });
   assert.equal(result.ok, false);
-  assert.match(result.plugins[0].errors[0], /skills\/x\/SKILL\.md/);
-  assert.doesNotMatch(result.plugins[0].errors[0], /README/);
+  assert.match(only(result).errors[0] ?? "", /skills\/x\/SKILL\.md/);
+  assert.doesNotMatch(only(result).errors[0] ?? "", /README/);
 });
 
 test("unknown paths are treated as runtime (the exempt list is closed)", () => {
@@ -120,7 +141,7 @@ test("plugin.json metadata edits are exempt; component or dependency edits are n
     head: new Map([["demo", { ...before, description: "Better words.", keywords: ["a", "b"] }]]),
     changelogs: new Map([["demo", changelog("1.0.0")]]),
   });
-  assert.equal(metadataOnly.plugins[0].status, "exempt");
+  assert.equal(only(metadataOnly).status, "exempt");
 
   const dependencies = plan({
     changedFiles: ["plugins/demo/.claude-plugin/plugin.json"],
@@ -151,7 +172,7 @@ test("version going backwards fails", () => {
     changelogs: new Map([["demo", changelog("1.1.9")]]),
   });
   assert.equal(result.ok, false);
-  assert.match(result.plugins[0].errors[0], /backwards/);
+  assert.match(only(result).errors[0] ?? "", /backwards/);
 });
 
 test("new plugin needs a changelog entry for its first version", () => {
@@ -161,11 +182,11 @@ test("new plugin needs a changelog entry for its first version", () => {
   };
   const missing = plan({ ...input, changelogs: new Map([["fresh", "# Changelog\n"]]) });
   assert.equal(missing.ok, false);
-  assert.match(missing.plugins[0].errors[0], /no "## \[0\.1\.0\] - YYYY-MM-DD" entry/);
+  assert.match(only(missing).errors[0] ?? "", /no "## \[0\.1\.0\] - YYYY-MM-DD" entry/);
 
   const good = plan({ ...input, changelogs: new Map([["fresh", changelog("0.1.0")]]) });
   assert.equal(good.ok, true);
-  assert.equal(good.plugins[0].status, "new");
+  assert.equal(only(good).status, "new");
   assert.equal(good.bumpLabel, "bump: initial");
 });
 
@@ -176,7 +197,7 @@ test("prerelease and graduation are classified", () => {
     head: new Map([["demo", manifest("demo", "2.0.0-beta.1")]]),
     changelogs: new Map([["demo", changelog("2.0.0-beta.1")]]),
   });
-  assert.equal(pre.plugins[0].bump, "prerelease");
+  assert.equal(only(pre).bump, "prerelease");
   assert.equal(pre.bumpLabel, "bump: prerelease");
 
   const graduation = plan({
@@ -185,7 +206,7 @@ test("prerelease and graduation are classified", () => {
     head: new Map([["demo", manifest("demo", "2.0.0")]]),
     changelogs: new Map([["demo", changelog("2.0.0")]]),
   });
-  assert.equal(graduation.plugins[0].bump, "major");
+  assert.equal(only(graduation).bump, "major");
 });
 
 test("reusing an existing tag fails", () => {
@@ -197,7 +218,7 @@ test("reusing an existing tag fails", () => {
     existingTags: new Set(["demo--v1.1.0"]),
   });
   assert.equal(result.ok, false);
-  assert.match(result.plugins[0].errors[0], /demo--v1\.1\.0 already exists/);
+  assert.match(only(result).errors[0] ?? "", /demo--v1\.1\.0 already exists/);
 });
 
 test("non-canonical semver is rejected", () => {
@@ -207,7 +228,7 @@ test("non-canonical semver is rejected", () => {
     changelogs: new Map([["demo", changelog("1.0.0")]]),
   });
   assert.equal(result.ok, false);
-  assert.match(result.plugins[0].errors[0], /valid semver/);
+  assert.match(only(result).errors[0] ?? "", /valid semver/);
 });
 
 test("removed plugin requires a renames entry and counts as major", () => {
@@ -218,11 +239,11 @@ test("removed plugin requires a renames entry and counts as major", () => {
   };
   const missing = plan(input);
   assert.equal(missing.ok, false);
-  assert.match(missing.plugins[0].errors[0], /renames/);
+  assert.match(only(missing).errors[0] ?? "", /renames/);
 
   const recorded = plan({ ...input, renames: { gone: null } });
   assert.equal(recorded.ok, true);
-  assert.equal(recorded.plugins[0].status, "removed");
+  assert.equal(only(recorded).status, "removed");
   assert.equal(recorded.bumpLabel, "bump: major");
 });
 

@@ -1,3 +1,4 @@
+// @ts-check
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { pluginDropdownOptions } from "./issue-forms.mjs";
@@ -6,6 +7,7 @@ import {
   checkClaudeCodeVersions,
   checkIssueForm,
   checkLabels,
+  checkNodeVersionSource,
   checkSchema,
   issueFormValidators,
   validateRepoMetadata,
@@ -32,6 +34,20 @@ test("checkLabels reports duplicates, bad colors, derived prefixes, long text, m
   assert.ok(errors.some((e) => e.includes("6 lowercase hex")));
   assert.ok(errors.some((e) => e.includes("1–100")));
   assert.ok(errors.some((e) => e.includes('"status: needs-triage" is required')));
+});
+
+test("checkLabels rejects non-string descriptions and non-array aliases", () => {
+  const errors = checkLabels(
+    [
+      { ...ok, description: 123 },
+      { ...ok, name: "type: docs", aliases: "docs" },
+      { ...ok, name: "type: feature", aliases: ["feat", 7] },
+    ],
+    [],
+  );
+  assert.ok(errors.some((e) => e.includes('"type: bug": description must be')));
+  assert.ok(errors.some((e) => e.includes('"type: docs": aliases must be an array of strings')));
+  assert.ok(errors.some((e) => e.includes('"type: feature": aliases must be an array of strings')));
 });
 
 test("checkLabels rejects an alias that collides with a label name or another alias", () => {
@@ -93,6 +109,7 @@ test("the committed labels and issue forms are valid", () => {
   assert.deepEqual(validateRepoMetadata(rootDir, listPluginDirs()), []);
 });
 
+// biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell variable in workflow YAML, not a JS template.
 const INSTALL = 'npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"';
 
 test("checkClaudeCodeVersions accepts one canonical version across workflows", () => {
@@ -139,4 +156,32 @@ test("issue forms and config.yml are checked against the vendored GitHub schemas
   assert.ok(checkSchema("x.yml", noOptions, form).length > 0);
   assert.deepEqual(checkSchema("config.yml", { blank_issues_enabled: false }, config), []);
   assert.ok(checkSchema("config.yml", { blank_issues_enabled: "no" }, config).length > 0);
+});
+
+test("checkNodeVersionSource requires setup-node to read .nvmrc", () => {
+  /** @param {Record<string, unknown>} withBlock */
+  const wf = (withBlock) => ({
+    file: "ci.yml",
+    parsed: {
+      jobs: {
+        check: {
+          steps: [
+            { uses: "actions/checkout@x" },
+            { uses: "actions/setup-node@x", with: withBlock },
+          ],
+        },
+      },
+    },
+  });
+  assert.deepEqual(
+    checkNodeVersionSource([wf({ "node-version-file": ".nvmrc", cache: "npm" })]),
+    [],
+  );
+  assert.equal(checkNodeVersionSource([wf({ "node-version": 24 })]).length, 1);
+  assert.equal(
+    checkNodeVersionSource([wf({ "node-version-file": ".nvmrc", "node-version": 24 })]).length,
+    1,
+  );
+  assert.equal(checkNodeVersionSource([wf({ "node-version-file": ".node-version" })]).length, 1);
+  assert.deepEqual(checkNodeVersionSource([{ file: "x.yml", parsed: null }]), []);
 });

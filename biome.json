@@ -10,6 +10,7 @@
   },
   "formatter": {
     "enabled": true,
+    "formatWithErrors": false,
     "indentStyle": "space",
     "indentWidth": 2,
     "lineWidth": 100
@@ -17,7 +18,79 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended"
+      "preset": "recommended",
+      "a11y": {
+        "recommended": true
+      },
+      "correctness": {
+        "recommended": true,
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "noUnreachable": "error",
+        "useExhaustiveDependencies": "error",
+        "useHookAtTopLevel": "error",
+        "useValidTypeof": "error"
+      },
+      "complexity": {
+        "recommended": true,
+        "noBannedTypes": "error",
+        "noExcessiveCognitiveComplexity": "warn",
+        "noForEach": "warn",
+        "noUselessFragments": "error",
+        "useOptionalChain": "error",
+        "useLiteralKeys": "off"
+      },
+      "security": {
+        "recommended": true,
+        "noDangerouslySetInnerHtml": "error",
+        "noGlobalEval": "error"
+      },
+      "suspicious": {
+        "recommended": true,
+        "noArrayIndexKey": "error",
+        "noAssignInExpressions": "error",
+        "noBiomeFirstException": "error",
+        "noConsole": "error",
+        "noConfusingLabels": "error",
+        "noDuplicateDependencies": "error",
+        "noDuplicateObjectKeys": "error",
+        "noExplicitAny": "error",
+        "noImplicitAnyLet": "error",
+        "noMisleadingCharacterClass": "error",
+        "noPrototypeBuiltins": "error",
+        "noQuickfixBiome": "warn",
+        "noShadowRestrictedNames": "error",
+        "noThenProperty": "error",
+        "noUnsafeDeclarationMerging": "error",
+        "useAwait": "error",
+        "useBiomeIgnoreFolder": "warn",
+        "useErrorMessage": "error"
+      },
+      "style": {
+        "recommended": true,
+        "noNonNullAssertion": "error",
+        "useAsConstAssertion": "error",
+        "useConst": "error",
+        "useDefaultParameterLast": "error",
+        "useDefaultSwitchClause": "error",
+        "useImportType": "error",
+        "useNodeAssertStrict": "error",
+        "useSelfClosingElements": "error",
+        "useSingleVarDeclarator": "error",
+        "useTemplate": "error"
+      },
+      "nursery": {
+        "recommended": true
+      }
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "useSortedKeys": "off",
+        "useSortedPackageJson": "on"
+      }
     }
   },
   "javascript": {
@@ -28,8 +101,56 @@
     }
   },
   "json": {
+    "parser": {
+      "allowComments": false,
+      "allowTrailingCommas": false
+    },
     "formatter": {
+      "enabled": true,
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineEnding": "lf",
+      "lineWidth": 100,
+      "trailingCommas": "none",
+      "bracketSpacing": true,
+      "delimiterSpacing": false,
+      "expand": "auto",
+      "trailingNewline": true
+    },
+    "linter": {
+      "enabled": true
+    },
+    "assist": {
       "enabled": true
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/tsconfig*.json", "**/jsconfig*.json", "**/*.jsonc"],
+      "json": {
+        "parser": {
+          "allowComments": true,
+          "allowTrailingCommas": true
+        }
+      }
+    },
+    {
+      "includes": ["**/package.json"],
+      "json": {
+        "formatter": {
+          "expand": "always"
+        }
+      }
+    },
+    {
+      "includes": ["scripts/*.mjs"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ]
 }

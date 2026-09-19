@@ -224,3 +224,28 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   tracked shell script (`npm run lint:sh`, repo-local `.shellcheckrc`, pinned
   ShellCheck 0.11.0 and shfmt 3.14.1 in CI), so hook edits made outside
   Claude are gated too.
+
+### Amendment — 2026-09-18: Biome at gate strictness in hooks; commit guard
+
+- `post-edit.sh` now runs `biome check --write --error-on-warnings`. The gate
+  (`npm run check`, CI) fails on warnings via `npm run biome:ci`. Before this
+  change, a warning, such as a complexity limit, passed the edit hook and only
+  failed later in CI.
+- New `PreToolUse` hook `guard-commit-biome.sh` (matcher `Bash`). When a
+  command runs `git commit`, including with global options such as
+  `git -C <dir> commit`, it checks every file the commit could include with
+  `biome check --error-on-warnings`, and denies the commit when anything
+  fails. The file set is staged + modified + untracked non-ignored files,
+  because at `PreToolUse` time a chained `git add … && git commit` hasn't
+  staged anything yet. A dirty file with Biome issues therefore blocks the
+  commit even if it wouldn't be committed. The hook is read-only. It fails
+  closed: if `git` can't list files, the commit is denied rather than waved
+  through unchecked.
+- Verified under bash 3.2.57 and 5.3.20: non-commit commands are silent; a
+  clean tree is allowed; a staged file deleted from disk is allowed; a
+  complexity warning is denied; a `git` failure is denied (fail-closed).
+  Temporary files are cleaned up.
+- Limits: only commits made through Claude's Bash tool are checked. A human
+  commit outside Claude isn't, and CI remains the authority. `npm run
+  biome:staged` gives the same check by hand.
+

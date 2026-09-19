@@ -1,3 +1,4 @@
+// @ts-check
 // Upstream-faithful Claude Code schemas (schemas/claude-code/): each must compile,
 // accept the complete examples from the official docs, and reject known mistakes.
 // Fixtures are the docs' own examples (verified 2026-09-18), so a failing case
@@ -7,9 +8,12 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import Ajv from "ajv";
-import addFormats from "ajv-formats";
+import { Ajv } from "ajv";
+import ajvFormats from "ajv-formats";
 import { readJson, rootDir } from "./plugins.mjs";
+
+// ajv-formats is CommonJS: `.default` is the plugin function (same object at runtime) and what its typings declare.
+const addFormats = ajvFormats.default;
 
 const schemaDir = join(rootDir, "schemas", "claude-code");
 const base = "https://github.com/nerymurillohnd/claude-essentials/schemas/claude-code/";
@@ -24,13 +28,29 @@ function makeAjv() {
 }
 
 const ajv = makeAjv();
-const validator = (name) => ajv.getSchema(`${base}${name}.schema.json`);
+/**
+ * @param {string} name Schema file stem under schemas/claude-code/.
+ * @returns {import("ajv").ValidateFunction}
+ */
+const validator = (name) => {
+  const validate = ajv.getSchema(`${base}${name}.schema.json`);
+  assert.ok(validate, `schema ${name} is not registered`);
+  return validate;
+};
 
+/**
+ * @param {string} name
+ * @param {unknown} data
+ */
 function assertValid(name, data) {
   const validate = validator(name);
   assert.ok(validate(data), JSON.stringify(validate.errors, null, 2));
 }
 
+/**
+ * @param {string} name
+ * @param {unknown} data
+ */
 function assertInvalid(name, data) {
   assert.equal(validator(name)(data), false);
 }
