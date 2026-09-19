@@ -22,7 +22,8 @@ Local prerequisites: Node 24.21.0 (`nvm use` reads `.nvmrc`), [typescript-langua
 
 ```bash
 npm install
-npm run check          # format, lint, shell lint, type check, knip, unit tests, generate, validate — the CI gate
+npm run check          # Biome, shell lint, type check, knip, unit tests, generate, validate — the CI gate
+npm run biome:fix      # apply safe Biome fixes before re-running check
 npm run check:versions  # plugin version-bump rules against origin/main
 ```
 

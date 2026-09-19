@@ -41,7 +41,7 @@ jobs:
           claude --version
 
       - name: Format & lint (Biome)
-        run: npx biome check --error-on-warnings .
+        run: npm run biome:ci
 
       - name: Install ShellCheck and shfmt (pinned, checksum-verified)
         run: |

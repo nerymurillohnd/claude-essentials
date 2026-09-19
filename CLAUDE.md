@@ -16,9 +16,11 @@ nvm use           # Node from .nvmrc (24.21.0)
 npm install       # once
 npm run generate  # rebuild .claude-plugin/marketplace.json's plugins[] from plugins/*/.claude-plugin/plugin.json
 npm run validate  # schema-check marketplace.json + every plugin.json; cross-check disk <-> catalog
-npm run format    # biome format --write .
-npm run lint      # biome lint .
-npm run check     # format+lint, lint:sh, typecheck, knip, tests, generate, validate, validate:claude — the CI gate
+npm run check     # biome:ci, lint:sh, typecheck, knip, tests, generate, validate, validate:claude — the CI gate
+npm run biome:fix # apply safe Biome fixes (format + lint + assist); biome:fix:unsafe only by hand, then review
+npm run biome:ci  # read-only Biome gate (format, lint, assist) that fails on warnings — used by check and CI
+npm run format    # read-only format check (format:fix writes); lint / lint:fix likewise
+npm run biome:check / biome:staged / biome:watch  # strict checks: whole repo, staged files, watch mode
 npm run lint:sh   # ShellCheck (.shellcheckrc) + shfmt -d on every tracked shell script
 npm run typecheck # tsc -p tsconfig.json: max-strict type check of scripts/**/*.mjs (part of npm run check)
 npm run knip      # unused files, exports, and dependencies (knip.jsonc; part of npm run check; CI adds --reporter github-actions)
