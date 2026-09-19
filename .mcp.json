@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "knip": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--no-install", "knip-mcp"]
+    }
+  }
+}

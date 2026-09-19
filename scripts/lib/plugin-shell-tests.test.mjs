@@ -1,5 +1,5 @@
 // @ts-check
-// Runs every tracked plugin shell test suite (plugins/**/test-*.sh) so CI
+// Runs every tracked or new (not ignored) plugin shell test suite (plugins/**/test-*.sh) so CI
 // exercises what plugins ship. Each suite runs under `bash` from PATH and, when
 // it is a different binary, under /bin/bash too (macOS ships bash 3.2 there, the
 // oldest shell a public plugin must support).

@@ -24,5 +24,10 @@
   // Accepted by the maintainer (2026-09-18): pinned to match the global binary.
   // Claude Code's typescript-lsp plugin runs typescript-language-server from PATH,
   // so nothing in this repo imports or executes it — Knip is right that it's unused.
-  "ignoreDependencies": ["typescript-language-server"]
+  //
+  // Accepted by the maintainer (2026-09-19): @knip/mcp is the Knip MCP server
+  // Claude Code starts from .mcp.json (`npx --no-install knip-mcp`), so nothing
+  // imports it. It's pinned here so it runs the repo's own knip (deduped;
+  // scripts/lib/tooling-alignment.test.mjs fails if that ever changes).
+  "ignoreDependencies": ["typescript-language-server", "@knip/mcp"]
 }

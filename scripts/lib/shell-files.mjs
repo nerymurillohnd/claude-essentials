@@ -2,7 +2,7 @@
 // Finds the repository's shell scripts (DEBT-0003) with the same rule the
 // PostToolUse hook uses: a .sh file, or a file whose shebang runs sh or bash.
 import { execFileSync } from "node:child_process";
-import { closeSync, openSync, readSync } from "node:fs";
+import { closeSync, existsSync, openSync, readSync } from "node:fs";
 import { join } from "node:path";
 import { rootDir } from "./plugins.mjs";
 
@@ -32,16 +32,22 @@ function firstLine(path) {
   }
 }
 
-// Tracked files only, so ignored paths (node_modules, caches) never count.
+// Tracked files plus new files Git doesn't ignore, so a new plugin's scripts and
+// test suites are linted and run before their first commit; ignored paths
+// (node_modules, caches) and deleted files never count.
 /**
  * @param {string} [root]
  * @returns {string[]}
  */
 export function listShellFiles(root = rootDir) {
-  const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: root, encoding: "utf8" })
+  const files = execFileSync(
+    "git",
+    ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--deduplicate"],
+    { cwd: root, encoding: "utf8" },
+  )
     .split("\0")
-    .filter(Boolean);
-  return tracked.filter((file) => {
+    .filter((file) => file !== "" && existsSync(join(root, file)));
+  return files.filter((file) => {
     if (file.endsWith(".sh")) return true;
     try {
       return isShellScript(file, firstLine(join(root, file)));

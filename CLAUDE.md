@@ -21,10 +21,10 @@ npm run biome:fix # apply safe Biome fixes (format + lint + assist); biome:fix:u
 npm run biome:ci  # read-only Biome gate (format, lint, assist) that fails on warnings — used by check and CI
 npm run format    # read-only format check (format:fix writes); lint / lint:fix likewise
 npm run biome:check / biome:staged / biome:watch  # strict checks: whole repo, staged files, watch mode
-npm run lint:sh   # ShellCheck (.shellcheckrc) + shfmt -d on every tracked shell script
+npm run lint:sh   # ShellCheck (.shellcheckrc) + shfmt -d on every tracked or new (not ignored) shell script
 npm run typecheck # tsc -p tsconfig.json: max-strict type check of scripts/**/*.mjs (part of npm run check)
 npm run knip      # unused files, exports, and dependencies (knip.jsonc; part of npm run check; CI adds --reporter github-actions)
-npm test                # node:test unit tests for scripts/lib, plus every tracked plugins/**/test-*.sh suite under bash and /bin/bash (part of npm run check)
+npm test                # node:test unit tests for scripts/lib, plus every tracked or new plugins/**/test-*.sh suite under bash and /bin/bash (part of npm run check)
 npm run validate:claude # `claude plugin validate --strict` (claude on PATH; CI pins CLAUDE_CODE_VERSION) on the marketplace + every plugin
 npm run check:versions  # plugin version-bump rules vs origin/main; add -- --verify-tag for claude plugin tag --dry-run (CI job version-check)
 npm run labels:sync     # dry-run diff of GitHub labels vs .github/labels.json (--apply/--prune are outward-facing)
@@ -62,6 +62,12 @@ TypeScript. Never upgrade to TypeScript 7 in this repo or globally without the
 official side-by-side recipe: TS 7 ships no `tsserver` API and breaks the LSP.
 Every `.mjs` starts with `// @ts-check`; Node scripts are run with `node`
 (or `npm run`), so they carry no shebang and no exec bit.
+
+**Knip MCP server:** `.mcp.json` registers a project-scoped `knip` server
+(`npx --no-install knip-mcp`) from the exactly pinned `@knip/mcp` devDependency,
+so it never downloads anything and analyzes with the same deduped `knip` as
+`npm run knip` and CI; `scripts/lib/tooling-alignment.test.mjs` fails if either
+stops holding. Approve it once with `/mcp` (project servers need approval).
 
 `npm run check` needs ShellCheck, shfmt, and `claude` on `PATH`. Claude Code is
 never a repo dependency: CI installs the version pinned by `CLAUDE_CODE_VERSION`

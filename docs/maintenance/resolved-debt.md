@@ -5,6 +5,18 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0013 — 2026-09-19 — A new plugin's shell suites and scripts are tested and linted before its first commit
+
+- **Original pending record:** none. Found while building a new plugin on 2026-09-19.
+- **Resolved debt:** `listShellFiles()` read `git ls-files`, so `npm test` and `lint:sh` skipped every script a new plugin adds until it was committed. A branch adding a plugin passed `npm run check` without running that plugin's 110-case suite; running it needed `git add -N`. The same listing kept tracked files that had been deleted.
+- **Resolution:** `scripts/lib/shell-files.mjs` lists tracked files plus untracked files Git doesn't ignore (`--cached --others --exclude-standard`), and drops paths missing on disk. `scripts/lib/shell-files.test.mjs` builds a temporary repository with tracked, untracked, ignored, and deleted scripts and requires exactly the tracked and untracked ones. `.claude/skills/plugin-release-review/references/consistency-matrix.md` also gained a row for hook command form against the minimum Claude Code version, another class of gap found in the same review.
+- **Positive verification:** with a new plugin still untracked, `npm test` ran its `test-*.sh` suite under `/opt/homebrew/bin/bash` and `/bin/bash`, and `lint:sh` picked up its scripts.
+- **Negative verification:** before the fix the new test failed with `actual: [ 'deleted.sh', 'tracked.sh' ]` against `expected: [ 'tracked.sh', 'untracked.sh' ]`; the ignored script stays out.
+- **Owner or responsible area:** `scripts/lib/shell-files.mjs`
+- **Residual risk / follow-up:** plugin suites still run only with the local and CI runner's `jq`.
+- **Related records:** DEBT-0003
+- **Superseded by:** none
+
 ### DEBT-0011 — 2026-09-19 — Non-runtime changes are pushed directly to `main`; the checks run before the push
 
 - **Original pending record:** none. The maintainer raised it on 2026-09-19 after a README-only commit was rejected by the required-checks ruleset.

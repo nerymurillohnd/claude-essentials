@@ -1,5 +1,5 @@
 // @ts-check
-// Lints every tracked shell script with ShellCheck (policy: .shellcheckrc) and
+// Lints every tracked or new (not ignored) shell script with ShellCheck (policy: .shellcheckrc) and
 // checks formatting with shfmt (style: .editorconfig). Resolves DEBT-0003: the
 // same gate the PostToolUse hook applies to Claude's edits, for every change.
 import { spawnSync } from "node:child_process";
