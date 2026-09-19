@@ -1,0 +1,44 @@
+{
+  "skill": "plugin-release-review",
+  "items": [
+    {
+      "id": "scope",
+      "text": "Plugin id and change type identified; CLAUDE.md, the master README template, and the shape template read fresh"
+    },
+    {
+      "id": "floor",
+      "text": "npm run check and npm run check:versions pass (evidence: the summary lines)",
+      "verify": "npm run validate --silent"
+    },
+    {
+      "id": "fact-sheet",
+      "text": "Every runtime file read; fact sheet written (components, reads/writes, network, requirements and where each is enforced, surfaces, value, limits)"
+    },
+    {
+      "id": "consistency",
+      "text": "Every row of references/consistency-matrix.md compared against the sources (evidence: rows checked / failing)"
+    },
+    {
+      "id": "editorial",
+      "text": "README reviewed per references/readme-editorial-review.md, as a first-time visitor and against the fact sheet, including the root catalog row"
+    },
+    {
+      "id": "report",
+      "text": "Phase 6 report with verdict and evidence-backed findings presented to the user"
+    },
+    {
+      "id": "fixes",
+      "text": "Every finding fixed, or explicitly deferred by the user (mark needs-user until they decide); runtime fixes bumped the version with a CHANGELOG entry",
+      "verify": "npm run check:versions --silent"
+    },
+    {
+      "id": "prevention",
+      "text": "Each new class of finding closed: automated check with a test, a reference or rule in this skill, contributing guide / PR template, and a debt-ledger entry"
+    },
+    {
+      "id": "final-gate",
+      "text": "npm run check passes after all fixes",
+      "verify": "npm run validate --silent && npm test --silent"
+    }
+  ]
+}

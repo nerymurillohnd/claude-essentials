@@ -15,7 +15,7 @@ work.
 nvm use           # Node from .nvmrc (24.21.0)
 npm install       # once
 npm run generate  # rebuild .claude-plugin/marketplace.json's plugins[] from plugins/*/.claude-plugin/plugin.json
-npm run validate  # schema-check marketplace.json + every plugin.json; cross-check disk <-> catalog
+npm run validate  # schema-check marketplace.json + every plugin.json; cross-check disk <-> catalog; plugin README template contract + root README catalog row
 npm run check     # biome:ci, lint:sh, typecheck, knip, tests, generate, validate, validate:claude — the CI gate
 npm run biome:fix # apply safe Biome fixes (format + lint + assist); biome:fix:unsafe only by hand, then review
 npm run biome:ci  # read-only Biome gate (format, lint, assist) that fails on warnings — used by check and CI
@@ -102,6 +102,13 @@ docs' own examples. When live docs change, update them first.
 `schemas/github/` vendors SchemaStore's issue-form and issue-config schemas,
 unmodified except for a source `$comment` (GitHub publishes none); `npm run validate` checks every issue form
 against them.
+
+**Reviewing a plugin:** before calling a plugin done, and before any plugin
+PR, run the repo skill `/plugin-release-review <id>`
+(`.claude/skills/plugin-release-review/`). It adds the judgment layer on top of
+`npm run validate`: accuracy against the files, cross-artifact consistency,
+and README quality. Its checklist is enforced by a Stop hook (ADR-0002
+amendment).
 
 **Adding a plugin:** copy one of `templates/plugin-bundle/`,
 `templates/plugin-skill-only/`, or `templates/plugin-agent-only/` into

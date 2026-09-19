@@ -249,3 +249,28 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   commit outside Claude isn't, and CI remains the authority. `npm run
   biome:staged` gives the same check by hand.
 
+
+### Amendment — 2026-09-18: checklist gate for maintenance skills
+
+- New `Stop` hook `checklist-gate.sh`, registered by a maintenance skill's
+  frontmatter (`hooks:`), not by `.claude/settings.json`: Claude Code adds it
+  for the rest of the session once the skill is invoked. The first user is
+  `.claude/skills/plugin-release-review/`.
+- The skill starts a checklist from its `checklist.json` template with
+  `.claude/hooks/lib/checklist.sh`, and marks each item with evidence as it
+  goes. While this session's checklist is in progress, the gate exits 2 and
+  lists the open items, so the turn cannot end. Once every item is marked, it
+  re-runs each item's `verify` command (for example `npm run validate`) and
+  reopens failing items. Items marked `needs-user` let the turn end so the user
+  can decide. Other sessions and finished checklists never block.
+- Exit 2 was chosen over `hookSpecificOutput.decision` because it blocks a stop
+  regardless of JSON placement. Claude Code lifts a Stop hook after eight
+  consecutive blocks without progress (`CLAUDE_CODE_STOP_HOOK_BLOCK_CAP`), so a
+  genuinely stuck checklist cannot loop forever.
+- State lives in `.claude/state/checklists/` (gitignored). The gate never
+  writes outside that folder. `scripts/lib/checklist-gate.test.mjs` covers:
+  no checklist, another session, open items, a failing verify, completion,
+  and an item waiting on the user.
+- Limits: the evidence is text Claude writes, so the gate proves that each step
+  was claimed and that the mechanical verifications pass, not that the
+  judgment was good; the review itself remains the check on quality.

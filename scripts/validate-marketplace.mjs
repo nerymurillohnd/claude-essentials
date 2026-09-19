@@ -14,6 +14,7 @@ import {
   readJson,
   rootDir,
 } from "./lib/plugins.mjs";
+import { validateReadmes } from "./lib/readme-contract.mjs";
 import { validateRepoMetadata } from "./lib/repo-metadata.mjs";
 
 // ajv-formats is CommonJS: `.default` is the plugin function (same object at runtime) and what its typings declare.
@@ -129,6 +130,14 @@ function main() {
   if (metadataProblems.length === 0)
     console.log(
       "✓ labels, issue forms, and workflow CLAUDE_CODE_VERSION pins pass metadata checks",
+    );
+
+  const readmeProblems = validateReadmes(rootDir, pluginDirs);
+  for (const problem of readmeProblems) console.error(`✗ ${problem}`);
+  errors.push(...readmeProblems);
+  if (readmeProblems.length === 0)
+    console.log(
+      "✓ plugin READMEs follow the template contract; the root catalog lists every plugin",
     );
 
   if (errors.length > 0) {
