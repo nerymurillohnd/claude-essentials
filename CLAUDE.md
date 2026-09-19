@@ -24,7 +24,7 @@ npm run biome:check / biome:staged / biome:watch  # strict checks: whole repo, s
 npm run lint:sh   # ShellCheck (.shellcheckrc) + shfmt -d on every tracked shell script
 npm run typecheck # tsc -p tsconfig.json: max-strict type check of scripts/**/*.mjs (part of npm run check)
 npm run knip      # unused files, exports, and dependencies (knip.jsonc; part of npm run check; CI adds --reporter github-actions)
-npm test                # node:test unit tests for scripts/lib (part of npm run check)
+npm test                # node:test unit tests for scripts/lib, plus every tracked plugins/**/test-*.sh suite under bash and /bin/bash (part of npm run check)
 npm run validate:claude # `claude plugin validate --strict` (claude on PATH; CI pins CLAUDE_CODE_VERSION) on the marketplace + every plugin
 npm run check:versions  # plugin version-bump rules vs origin/main; add -- --verify-tag for claude plugin tag --dry-run (CI job version-check)
 npm run labels:sync     # dry-run diff of GitHub labels vs .github/labels.json (--apply/--prune are outward-facing)
