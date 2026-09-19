@@ -27,16 +27,17 @@ status=$(jq -r '.status // ""' "${file}" 2>/dev/null) || status=""
 open=$(jq -r '.items[] | select(.state == "open" or (.state == "done" and .evidence == "")) | "- \(.id): \(.text)"' "${file}")
 waiting=$(jq -r '.items[] | select(.state == "needs_user") | "- \(.id): \(.evidence)"' "${file}")
 
+# A question for the user comes first: later items often depend on the answer
+# (a merge approval gates everything after it), so the turn must be able to end.
+if [[ -n ${waiting} ]]; then
+  exit 0
+fi
 if [[ -n ${open} ]]; then
   {
     printf 'Checklist %s is not complete. Finish these items (record each with checklist.sh check <id> "<evidence>"), or ask the user and mark it with checklist.sh needs-user:\n%s\n' \
       "${file#"${root}"/}" "${open}"
-    [[ -z ${waiting} ]] || printf 'Waiting on the user:\n%s\n' "${waiting}"
   } >&2
   exit 2
-fi
-if [[ -n ${waiting} ]]; then
-  exit 0 # everything else is done; the user must answer before the rest can finish
 fi
 
 # Every item is done: run the verify commands before letting the turn end. They

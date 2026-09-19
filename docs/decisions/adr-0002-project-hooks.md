@@ -292,7 +292,10 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   is deleted locally and on origin, `main` equals `origin/main`, and the tree is
   clean with `npm run validate` passing.
 - `checklist-gate.sh` now exports the checklist's subject to verify commands as
-  `$CHECKLIST_SUBJECT`. `checklist.sh start` refuses while another checklist is
+  `$CHECKLIST_SUBJECT`. An item marked `needs-user` now lets the turn end even
+  while other items are open, because later steps often depend on the answer
+  (nothing after a merge can run before it is approved). The question is asked
+  in the conversation, so this exit is visible to the user. `checklist.sh start` refuses while another checklist is
   in progress, so one skill can't silently drop another's gate.
 - Limits: the delivery verifies need network access to `origin`, and while
   offline the gate keeps the items open until Claude Code's block cap. Merge and

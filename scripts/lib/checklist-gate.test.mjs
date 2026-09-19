@@ -119,6 +119,16 @@ test("verify commands come from the committed template, not the editable state",
   rmSync(dir, { recursive: true });
 });
 
+test("a question for the user lets the turn end even while later items are open", () => {
+  const dir = project("true");
+  checklist(dir, "needs-user", "a", "Approve the merge?");
+  assert.equal(stop(dir, "session-1").status, 0);
+  assert.equal(state(dir).status, "in_progress");
+  checklist(dir, "check", "a", "approved");
+  assert.equal(stop(dir, "session-1").status, 2);
+  rmSync(dir, { recursive: true });
+});
+
 test("verify commands see the checklist subject as $CHECKLIST_SUBJECT", () => {
   const dir = project('test "$CHECKLIST_SUBJECT" = demo-plugin');
   checklist(dir, "check", "a", "done");
