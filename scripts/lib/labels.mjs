@@ -1,5 +1,14 @@
+// @ts-check
 // Label taxonomy (ADR-0004): authored labels live in .github/labels.json; one
 // "plugin: <name>" label per plugins/<name>/ is derived, never authored.
+/**
+ * @typedef {{ name: string, color: string, description: string, aliases?: string[] }} Label
+ *   An authored or derived label (`.github/labels.json` entry shape).
+ * @typedef {{ name: string, color: string, description?: string | null }} RemoteLabel
+ *   A label as GitHub returns it.
+ * @typedef {{ op: "create", label: Label } | { op: "update", from: string, label: Label } | { op: "delete", from: string }} LabelOp
+ */
+
 export const PLUGIN_LABEL_PREFIX = "plugin: ";
 export const PLUGIN_LABEL_COLOR = "5319e7";
 export const MAX_LABEL_NAME = 50;
@@ -36,12 +45,25 @@ export const REQUIRED_LABELS = Object.freeze([
   ...AREA_LABELS,
 ]);
 
+/**
+ * @param {string} text
+ * @param {number} max
+ * @returns {string}
+ */
 const truncate = (text, max) => (text.length <= max ? text : `${text.slice(0, max - 1)}…`);
 
+/**
+ * @param {string} name
+ * @returns {string}
+ */
 export function pluginLabelName(name) {
   return `${PLUGIN_LABEL_PREFIX}${name}`;
 }
 
+/**
+ * @param {{ name: string, description?: string }} manifest
+ * @returns {Label}
+ */
 export function pluginLabel({ name, description }) {
   return {
     name: pluginLabelName(name),
@@ -50,14 +72,28 @@ export function pluginLabel({ name, description }) {
   };
 }
 
+/**
+ * @param {readonly Label[]} staticLabels
+ * @param {readonly { name: string, description?: string }[]} manifests
+ * @returns {Label[]}
+ */
 export function buildTaxonomy(staticLabels, manifests) {
   return [...staticLabels, ...manifests.map(pluginLabel)];
 }
 
+/**
+ * @param {readonly RemoteLabel[]} current
+ * @param {readonly Label[]} desired
+ * @param {{ prune?: boolean }} [options]
+ * @returns {LabelOp[]}
+ */
 export function diffLabels(current, desired, { prune = false } = {}) {
+  /** @param {string} name */
   const key = (name) => name.toLowerCase();
   const byName = new Map(current.map((label) => [key(label.name), label]));
+  /** @type {Set<string>} */
   const claimed = new Set();
+  /** @type {LabelOp[]} */
   const ops = [];
   for (const want of desired) {
     const have = byName.get(key(want.name));

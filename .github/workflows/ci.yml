@@ -62,6 +62,9 @@ jobs:
       - name: Lint shell scripts (ShellCheck + shfmt)
         run: npm run lint:sh
 
+      - name: Type check (tsc, max-strict tsconfig.json)
+        run: npm run typecheck
+
       - name: Unit tests
         run: npm test
 

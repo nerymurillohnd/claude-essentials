@@ -1,3 +1,4 @@
+// @ts-check
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
@@ -9,6 +10,12 @@ import {
 } from "./labels.mjs";
 import { bumpLabelFor } from "./version-plan.mjs";
 
+/**
+ * @param {string} name
+ * @param {string} [color]
+ * @param {string} [description]
+ * @param {object} [extra]
+ */
 const label = (name, color = "aaaaaa", description = "d", extra = {}) => ({
   name,
   color,
@@ -59,8 +66,10 @@ test("diffLabels deletes unclaimed labels only when pruning", () => {
 });
 
 test("every label bumpLabelFor can compute is in BUMP_LABELS", () => {
-  for (const bump of ["initial", "prerelease", "patch", "minor", "major", null]) {
+  /** @type {(import("./version-plan.mjs").Bump | null)[]} */
+  const bumps = ["initial", "prerelease", "patch", "minor", "major", null];
+  for (const bump of bumps) {
     const computed = bumpLabelFor([{ status: "bumped", bump, errors: [] }]);
-    assert.ok(BUMP_LABELS.includes(computed), computed);
+    assert.ok(computed !== null && BUMP_LABELS.includes(computed), String(computed));
   }
 });

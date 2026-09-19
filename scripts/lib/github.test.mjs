@@ -1,12 +1,23 @@
+// @ts-check
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createClient, parseRepoFromRemote, RAW } from "./github.mjs";
 
+/**
+ * @param {{ status?: number, body?: unknown }[]} responses Returned in order, one per call.
+ */
 function fakeFetch(responses) {
+  /** @type {{ url: string, init: RequestInit | undefined }[]} */
   const calls = [];
+  /**
+   * @param {string | URL | Request} url
+   * @param {RequestInit} [init]
+   */
   const fn = async (url, init) => {
-    calls.push({ url, init });
-    const { status = 200, body } = responses.shift();
+    calls.push({ url: String(url), init });
+    const next = responses.shift();
+    if (!next) throw new Error("fakeFetch: more requests than scripted responses");
+    const { status = 200, body } = next;
     const payload =
       body === undefined ? null : typeof body === "string" ? body : JSON.stringify(body);
     return new Response(payload, { status });
@@ -27,9 +38,17 @@ test("paginate follows pages until a short page", async () => {
   const client = createClient({ token: "t", repo: "o/r", fetchImpl });
   const items = await client.paginate("/repos/o/r/labels");
   assert.equal(items.length, 101);
-  assert.match(fetchImpl.calls[0].url, /\/repos\/o\/r\/labels\?per_page=100&page=1$/);
-  assert.match(fetchImpl.calls[1].url, /page=2$/);
-  assert.equal(fetchImpl.calls[0].init.headers.Authorization, "Bearer t");
+  assert.equal(fetchImpl.calls.length, 2);
+  const [first, second] = fetchImpl.calls;
+  assert.match(first?.url ?? "", /\/repos\/o\/r\/labels\?per_page=100&page=1$/);
+  assert.match(second?.url ?? "", /page=2$/);
+  assert.equal(new Headers(first?.init?.headers).get("authorization"), "Bearer t");
+});
+
+test("paginate rejects a non-list response instead of spreading it", async () => {
+  const fetchImpl = fakeFetch([{ body: { message: "not a list" } }]);
+  const client = createClient({ token: "t", repo: "o/r", fetchImpl });
+  await assert.rejects(client.paginate("/repos/o/r/labels"), /did not return a list/);
 });
 
 test("request treats DELETE of an already-removed resource as success", async () => {

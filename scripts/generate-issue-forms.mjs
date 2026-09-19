@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// @ts-check
 // Regenerates the "Affected plugin" dropdown in every issue form from plugins/
 // on disk (ADR-0004), so the forms never offer a plugin that doesn't exist.
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";

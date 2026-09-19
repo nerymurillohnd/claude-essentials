@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+// @ts-check
 // Syncs the repository's GitHub labels to the ADR-0004 taxonomy: .github/labels.json
 // plus one derived "plugin: <name>" label per plugin. Dry-run by default.
 // --apply writes; --prune also deletes labels outside the taxonomy (manual only).
@@ -21,22 +21,28 @@ const desired = buildTaxonomy(
 );
 const client = createClient({ token: resolveToken(), repo: resolveRepo() });
 const labelsPath = `/repos/${client.repo}/labels`;
-const ops = diffLabels(await client.paginate(labelsPath), desired, { prune: values.prune });
+const current = /** @type {import("./lib/labels.mjs").RemoteLabel[]} */ (
+  await client.paginate(labelsPath)
+);
+const ops = diffLabels(current, desired, { prune: values.prune });
 
 for (const op of ops) {
   const target = op.op === "create" ? op.label.name : op.from;
   const rename = op.op === "update" && op.from !== op.label.name ? ` → ${op.label.name}` : "";
   console.log(`${values.apply ? "" : "[dry-run] "}${op.op.padEnd(6)} ${target}${rename}`);
   if (!values.apply) continue;
-  const path = `${labelsPath}/${encodeURIComponent(op.from ?? "")}`;
   if (op.op === "create") {
     const { name, color, description } = op.label;
     await client.request("POST", labelsPath, { name, color, description });
   } else if (op.op === "update") {
     const { name, color, description } = op.label;
-    await client.request("PATCH", path, { new_name: name, color, description });
+    await client.request("PATCH", `${labelsPath}/${encodeURIComponent(op.from)}`, {
+      new_name: name,
+      color,
+      description,
+    });
   } else {
-    await client.request("DELETE", path);
+    await client.request("DELETE", `${labelsPath}/${encodeURIComponent(op.from)}`);
   }
 }
 

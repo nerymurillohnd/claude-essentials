@@ -1,3 +1,4 @@
+// @ts-check
 // Pure version rules for plugins (ADR-0003). Inputs are gathered by
 // check-versions.mjs (git), triage.mjs (GitHub API), or tag-versions.mjs; no I/O here.
 // A plugin "release" is a merged version bump plus its {name}--v{version} tag —
@@ -5,6 +6,31 @@
 import semver from "semver";
 import { hasChangelogEntry } from "./changelog.mjs";
 
+/**
+ * @typedef {"initial" | "prerelease" | "patch" | "minor" | "major"} Bump
+ * @typedef {"unchanged" | "removed" | "new" | "bumped" | "exempt" | "deferred"} PlanStatus
+ * @typedef {{ version?: unknown } & Record<string, unknown>} Manifest
+ *   A plugin.json object, not yet validated: `version` is the one field read by name.
+ * @typedef {{
+ *   name: string,
+ *   status: PlanStatus,
+ *   from: unknown,
+ *   to: unknown,
+ *   bump: Bump | null,
+ *   errors: string[],
+ * }} PluginPlan
+ * @typedef {{
+ *   changedFiles: readonly string[],
+ *   base: ReadonlyMap<string, Manifest | null>,
+ *   head: ReadonlyMap<string, Manifest | null>,
+ *   changelogs: ReadonlyMap<string, string | null | undefined>,
+ *   renames: Readonly<Record<string, string | null>>,
+ *   existingTags: ReadonlySet<string>,
+ *   deferred: boolean,
+ * }} PlanContext
+ */
+
+/** @type {Readonly<Record<Bump, number>>} */
 const RANK = { initial: 1, prerelease: 2, patch: 3, minor: 4, major: 5 };
 
 // Paths (relative to plugins/<name>/) that Claude Code never loads at runtime, so
@@ -24,19 +50,30 @@ export const METADATA_KEYS = new Set([
 ]);
 const MANIFEST = ".claude-plugin/plugin.json";
 
+/**
+ * Recursively sorts object keys so JSON.stringify compares structure, not key order.
+ * @param {unknown} value
+ * @returns {unknown}
+ */
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.keys(value)
         .sort()
-        .map((key) => [key, canonical(value[key])]),
+        .map((key) => [key, canonical(/** @type {Record<string, unknown>} */ (value)[key])]),
     );
   }
   return value;
 }
 
+/**
+ * @param {Manifest | null | undefined} before
+ * @param {Manifest | null | undefined} after
+ * @returns {boolean} Whether any non-metadata manifest field differs.
+ */
 export function runtimeManifestChanged(before, after) {
+  /** @param {Manifest | null | undefined} manifest */
   const strip = (manifest) =>
     canonical(
       Object.fromEntries(Object.entries(manifest ?? {}).filter(([key]) => !METADATA_KEYS.has(key))),
@@ -44,6 +81,13 @@ export function runtimeManifestChanged(before, after) {
   return JSON.stringify(strip(before)) !== JSON.stringify(strip(after));
 }
 
+/**
+ * @param {string} name
+ * @param {readonly string[]} changedFiles Repo-relative paths.
+ * @param {Manifest | null | undefined} before
+ * @param {Manifest | null | undefined} after
+ * @returns {string[]} Changed plugin-relative paths that Claude loads at runtime.
+ */
 export function runtimeChanges(name, changedFiles, before, after) {
   const prefix = `plugins/${name}/`;
   return changedFiles
@@ -54,31 +98,59 @@ export function runtimeChanges(name, changedFiles, before, after) {
     );
 }
 
+/**
+ * @param {unknown} version
+ * @returns {version is string}
+ */
 const isCanonical = (version) => typeof version === "string" && semver.valid(version) === version;
+/**
+ * @param {string} name
+ * @param {string} version
+ */
 const entryHint = (name, version) =>
   `plugins/${name}/CHANGELOG.md has no "## [${version}] - YYYY-MM-DD" entry`;
 
+/**
+ * @param {readonly string[]} changedFiles
+ * @returns {string[]} Sorted names of plugins with at least one changed file.
+ */
 export function pluginsTouched(changedFiles) {
+  /** @type {Set<string>} */
   const names = new Set();
   for (const file of changedFiles) {
     const match = /^plugins\/([^/]+)\/./.exec(file);
-    if (match) names.add(match[1]);
+    if (match?.[1]) names.add(match[1]);
   }
   return [...names].sort();
 }
 
+/**
+ * @param {string} from Canonical version, strictly lower than `to`.
+ * @param {string} to
+ * @returns {Bump}
+ */
 function bumpKind(from, to) {
   if (semver.prerelease(to)) return "prerelease";
-  return semver.diff(from, to).replace(/^pre/, "");
+  const diff = semver.diff(from, to);
+  if (diff === "major" || diff === "minor" || diff === "patch") return diff;
+  // semver.diff only reports pre* kinds when `to` is a prerelease, handled above.
+  throw new Error(`unexpected semver.diff(${from}, ${to}) = ${diff}`);
 }
 
+/**
+ * @param {string} name
+ * @param {PlanContext} context
+ * @returns {PluginPlan}
+ */
 function planPlugin(
   name,
   { changedFiles, base, head, changelogs, renames, existingTags, deferred },
 ) {
   const before = base.get(name) ?? null;
   const after = head.get(name) ?? null;
+  /** @type {string[]} */
   const errors = [];
+  /** @type {PluginPlan} */
   const result = {
     name,
     status: "unchanged",
@@ -143,16 +215,34 @@ function planPlugin(
   return result;
 }
 
+/**
+ * @param {readonly Pick<PluginPlan, "status" | "bump" | "errors">[]} plugins
+ * @returns {string | null} The `bump:` label, or null when any plugin has errors.
+ */
 export function bumpLabelFor(plugins) {
   if (plugins.some((plugin) => plugin.errors.length > 0)) return null;
+  /** @type {Bump | null} */
   let best = null;
   for (const plugin of plugins) {
+    /** @type {Bump | null} */
     const kind = plugin.status === "removed" ? "major" : plugin.bump;
     if (kind && (!best || RANK[kind] > RANK[best])) best = kind;
   }
   return `bump: ${best ?? "none"}`;
 }
 
+/**
+ * @param {{
+ *   changedFiles: readonly string[],
+ *   base: ReadonlyMap<string, Manifest | null>,
+ *   head: ReadonlyMap<string, Manifest | null>,
+ *   changelogs: ReadonlyMap<string, string | null | undefined>,
+ *   renames?: Readonly<Record<string, string | null>>,
+ *   existingTags?: ReadonlySet<string>,
+ *   deferred?: boolean,
+ * }} input
+ * @returns {{ plugins: PluginPlan[], bumpLabel: string | null, ok: boolean }}
+ */
 export function planVersions({
   changedFiles,
   base,
@@ -171,8 +261,19 @@ export function planVersions({
   };
 }
 
+/**
+ * @typedef {{ name: string, version: string, tag: string, prerelease: boolean }} UntaggedVersion
+ */
+
+/**
+ * @param {readonly { name: string, version: unknown, changelog: unknown }[]} plugins
+ * @param {ReadonlySet<string>} existingTags
+ * @returns {{ versions: UntaggedVersion[], errors: string[] }}
+ */
 export function untaggedVersions(plugins, existingTags) {
+  /** @type {UntaggedVersion[]} */
   const versions = [];
+  /** @type {string[]} */
   const errors = [];
   for (const { name, version, changelog } of plugins) {
     if (!isCanonical(version)) {

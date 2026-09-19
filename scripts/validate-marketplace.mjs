@@ -1,11 +1,12 @@
-#!/usr/bin/env node
+// @ts-check
 // Validates .claude-plugin/marketplace.json and every plugins/*/.claude-plugin/plugin.json
 // against schemas/*.schema.json, and cross-checks that every plugin listed in the
 // marketplace catalog actually exists on disk (and vice versa).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import Ajv from "ajv";
-import addFormats from "ajv-formats";
+import { Ajv } from "ajv";
+import ajvFormats from "ajv-formats";
+import { errorMessage } from "./lib/errors.mjs";
 import {
   checkPluginKind,
   listPluginDirs,
@@ -15,27 +16,41 @@ import {
 } from "./lib/plugins.mjs";
 import { validateRepoMetadata } from "./lib/repo-metadata.mjs";
 
+// ajv-formats is CommonJS: `.default` is the plugin function (same object at runtime) and what its typings declare.
+const addFormats = ajvFormats.default;
+
 const marketplacePath = join(rootDir, ".claude-plugin", "marketplace.json");
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 addFormats(ajv);
 
+/** @param {string} name */
 function loadSchema(name) {
   return JSON.parse(readFileSync(join(rootDir, "schemas", name), "utf8"));
 }
 
+/**
+ * @param {string} label
+ * @param {import("ajv").ErrorObject[] | null | undefined} errors
+ */
 function reportErrors(label, errors) {
   console.error(`✗ ${label}`);
-  for (const err of errors) {
+  for (const err of errors ?? []) {
     console.error(`  - ${err.instancePath || "/"} ${err.message}`);
   }
 }
 
 function main() {
+  /** @type {string[]} */
   const errors = [];
 
   const marketplaceSchema = ajv.compile(loadSchema("marketplace.schema.json"));
-  const pluginSchema = ajv.compile(loadSchema("plugin.schema.json"));
+  // Cast is sound: schemas/plugin.schema.json requires a string "name", the only field
+  // this script reads by name after validation.
+  const pluginSchema =
+    /** @type {import("ajv").ValidateFunction<{ name: string } & Record<string, unknown>>} */ (
+      ajv.compile(loadSchema("plugin.schema.json"))
+    );
 
   const marketplace = readJson(marketplacePath);
   if (!marketplaceSchema(marketplace)) {
@@ -46,16 +61,20 @@ function main() {
   }
 
   const pluginDirs = listPluginDirs();
-  const catalogNames = new Set(marketplace.plugins?.map((p) => p.name) ?? []);
+  /** @type {Set<string>} */
+  const catalogNames = new Set(
+    marketplace.plugins?.map(/** @param {{ name: string }} p */ (p) => p.name) ?? [],
+  );
   const diskNames = new Set(pluginDirs);
 
   for (const name of pluginDirs) {
+    /** @type {unknown} */
     let manifest;
     try {
       manifest = readJson(manifestPath(name));
     } catch (error) {
       console.error(
-        `✗ plugins/${name}: cannot read/parse .claude-plugin/plugin.json (${error.message})`,
+        `✗ plugins/${name}: cannot read/parse .claude-plugin/plugin.json (${errorMessage(error)})`,
       );
       errors.push(name);
       continue;

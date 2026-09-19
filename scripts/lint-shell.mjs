@@ -1,8 +1,9 @@
-#!/usr/bin/env node
+// @ts-check
 // Lints every tracked shell script with ShellCheck (policy: .shellcheckrc) and
 // checks formatting with shfmt (style: .editorconfig). Resolves DEBT-0003: the
 // same gate the PostToolUse hook applies to Claude's edits, for every change.
 import { spawnSync } from "node:child_process";
+import { hasErrorCode } from "./lib/errors.mjs";
 import { rootDir } from "./lib/plugins.mjs";
 import { listShellFiles } from "./lib/shell-files.mjs";
 
@@ -13,12 +14,14 @@ if (files.length === 0) {
 }
 
 let failed = false;
-for (const [tool, args, hint] of [
+/** @type {[tool: string, args: string[], hint: string][]} */
+const linters = [
   ["shellcheck", ["-x", ...files], "brew install shellcheck"],
   ["shfmt", ["-d", ...files], "brew install shfmt"],
-]) {
+];
+for (const [tool, args, hint] of linters) {
   const result = spawnSync(tool, args, { cwd: rootDir, encoding: "utf8" });
-  if (result.error?.code === "ENOENT") {
+  if (hasErrorCode(result.error, "ENOENT")) {
     console.error(`✗ ${tool} is not installed (${hint}).`);
     failed = true;
     continue;

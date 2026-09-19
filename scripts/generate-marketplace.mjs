@@ -1,23 +1,29 @@
-#!/usr/bin/env node
+// @ts-check
 // Regenerates the `plugins` array in .claude-plugin/marketplace.json from
 // each plugins/<name>/.claude-plugin/plugin.json on disk, so the catalog
 // never drifts from what actually exists in plugins/.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { errorMessage, hasErrorCode } from "./lib/errors.mjs";
 import { listPluginDirs, manifestPath, pluginsDir, rootDir } from "./lib/plugins.mjs";
 
 const marketplacePath = join(rootDir, ".claude-plugin", "marketplace.json");
 
+/**
+ * @param {string} pluginName
+ * @returns {{ name: string, description: string } & Record<string, unknown>}
+ */
 function readPluginManifest(pluginName) {
+  /** @type {any} */
   let manifest;
   try {
     manifest = JSON.parse(readFileSync(manifestPath(pluginName), "utf8"));
   } catch (error) {
-    if (error.code === "ENOENT") {
+    if (hasErrorCode(error, "ENOENT")) {
       throw new Error(`plugins/${pluginName} has no .claude-plugin/plugin.json`);
     }
     throw new Error(
-      `plugins/${pluginName}/.claude-plugin/plugin.json is not valid JSON: ${error.message}`,
+      `plugins/${pluginName}/.claude-plugin/plugin.json is not valid JSON: ${errorMessage(error)}`,
     );
   }
   if (manifest.name !== pluginName) {

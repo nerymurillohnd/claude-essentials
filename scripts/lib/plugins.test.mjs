@@ -1,3 +1,4 @@
+// @ts-check
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -36,6 +37,10 @@ test("rootDir is the repository root", () => {
   assert.equal(pluginsDir, join(rootDir, "plugins"));
 });
 
+/**
+ * @param {Record<string, string>} layout Relative path -> file contents.
+ * @returns {string} A temporary plugins directory.
+ */
 function fixture(layout) {
   const dir = mkdtempSync(join(tmpdir(), "ce-kind-"));
   for (const [path, content] of Object.entries(layout)) {
@@ -89,7 +94,7 @@ test("checkPluginKind reports a README that disagrees with the structure", () =>
     "demo/README.md": "**Kind:** `skill-only` — one skill.\n",
   });
   assert.match(
-    checkPluginKind("demo", {}, dir),
+    checkPluginKind("demo", {}, dir) ?? "",
     /declares Kind `skill-only` but its structure is `bundle`/,
   );
   writeFileSync(join(dir, "demo/README.md"), "**Kind:** `bundle` — several.\n");
