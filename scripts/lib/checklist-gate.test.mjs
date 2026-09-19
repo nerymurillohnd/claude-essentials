@@ -3,7 +3,7 @@
 // that maintenance skills use to refuse ending a turn with an incomplete checklist.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
@@ -152,4 +152,30 @@ test("starting a second checklist while one is unfinished is refused", () => {
   checklist(dir, "abort", "user said stop");
   checklist(dir, "start", other, "other-subject", "session-1");
   rmSync(dir, { recursive: true });
+});
+
+test("verify commands with backslashes and quotes reach bash verbatim", () => {
+  const dir = project(
+    String.raw`test "$(printf '%s' 'a\b')" = 'a\b' && jq -rn '"\("x")--v\("1")"' | grep -qx 'x--v1'`,
+  );
+  checklist(dir, "check", "a", "done");
+  checklist(dir, "check", "b", "verified");
+  const result = stop(dir, "session-1");
+  assert.equal(result.status, 0, result.stderr);
+  rmSync(dir, { recursive: true });
+});
+
+test("every committed checklist template has verify commands bash can parse", () => {
+  const skills = join(rootDir, ".claude", "skills");
+  const templates = readdirSync(skills)
+    .map((name) => join(skills, name, "checklist.json"))
+    .filter((path) => existsSync(path));
+  assert.ok(templates.length > 0);
+  for (const path of templates) {
+    for (const item of JSON.parse(readFileSync(path, "utf8")).items) {
+      if (typeof item.verify !== "string") continue;
+      const parsed = spawnSync("bash", ["-n", "-c", item.verify], { encoding: "utf8" });
+      assert.equal(parsed.status, 0, `${path} ${item.id}: ${parsed.stderr}`);
+    }
+  }
 });

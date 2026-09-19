@@ -301,3 +301,9 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   offline the gate keeps the items open until Claude Code's block cap. Merge and
   CI status are recorded as evidence, not re-run, so the hook needs no GitHub
   credentials.
+- Fix, 2026-09-19: the gate read verify commands through jq `@tsv`, which
+  escapes backslashes, so any command containing `\` failed with a bash syntax
+  error inside the gate while passing when run by hand. The gate now reads each
+  command verbatim by id. `checklist-gate.test.mjs` runs a command with
+  backslashes and quotes through the gate, and checks that every committed
+  `checklist.json` verify command parses with `bash -n`.
