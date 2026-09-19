@@ -1,0 +1,23 @@
+{
+  "name": "ruff-quality",
+  "displayName": "Ruff Quality",
+  "version": "0.1.0",
+  "description": "Teaches Claude the current Ruff workflow for Python (safe fixes, format, check; configuration discovery; rule selection after Ruff 0.16; migration from Black, isort, and Flake8; pre-commit and CI), and, only when you ask and choose a scope and a configuration, installs Claude Code hooks that fix, format, and lint every Python file Claude edits, deny suppression comments and configuration changes, and keep Claude from finishing until the files are clean.",
+  "author": {
+    "name": "Nery Samuel Murillo Tejada",
+    "url": "https://github.com/nerymurillohnd"
+  },
+  "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/ruff-quality",
+  "repository": "https://github.com/nerymurillohnd/claude-essentials",
+  "license": "Apache-2.0",
+  "keywords": [
+    "python",
+    "ruff",
+    "lint",
+    "format",
+    "pre-commit",
+    "hooks",
+    "quality-gate",
+    "guardrails"
+  ]
+}

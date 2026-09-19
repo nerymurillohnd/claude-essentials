@@ -16,6 +16,8 @@ body:
       options:
         - Marketplace catalog / installation
         - block-no-verify
+        - ruff-quality
+        - shell-quality
         - verify-completion
         - Not sure
     validations:

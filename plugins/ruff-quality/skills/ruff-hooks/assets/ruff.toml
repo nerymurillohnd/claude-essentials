@@ -1,0 +1,91 @@
+# ruff-quality recommended profile (Ruff >= 0.16).
+#
+# Strict, formatter-compatible, and built on top of Ruff's own defaults: it uses
+# `extend-select`, so the 413 rules Ruff 0.16 enables by default stay on and
+# keep evolving with Ruff; `select` would replace them. Every addition below
+# catches real defects or keeps code reviewable; nothing here conflicts with
+# `ruff format` (https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules).
+#
+# Change it by hand when your project needs to; the ruff-quality gate never
+# edits it and never lets Claude edit it.
+
+required-version = ">=0.16.0"
+line-length = 100
+# target-version is inferred from `requires-python` in pyproject.toml.
+
+[lint]
+extend-select = [
+  "E",     # pycodestyle errors (the formatter-conflicting ones are ignored below)
+  "W",     # pycodestyle warnings
+  "N",     # pep8-naming
+  "D",     # pydocstyle (Google convention, below)
+  "ANN",   # flake8-annotations: every public signature is typed
+  "S",     # flake8-bandit: security
+  "BLE",   # blind except
+  "FBT",   # boolean positional traps
+  "A",     # shadowed builtins
+  "C4",    # comprehensions
+  "C90",   # McCabe complexity
+  "DTZ",   # naive datetimes
+  "T10",   # leftover debugger calls
+  "EM",    # exception messages built outside the raise
+  "EXE",   # shebang/executable-bit consistency
+  "ISC",   # implicit string concatenation
+  "ICN",   # conventional import aliases
+  "LOG",   # logging
+  "G",     # logging format
+  "PIE",   # misc lints
+  "PT",    # pytest style
+  "RSE",   # raise
+  "RET",   # return
+  "SIM",   # simplify
+  "TID",   # tidy imports
+  "TC",    # type-checking imports
+  "ARG",   # unused arguments
+  "PTH",   # pathlib over os.path
+  "ERA",   # commented-out code
+  "PGH",   # pygrep-hooks (bare noqa, blanket type: ignore)
+  "PL",    # Pylint
+  "TRY",   # exception handling
+  "FLY",   # f-strings over join
+  "PERF",  # performance
+  "FURB",  # refurb
+  "RUF",   # Ruff-specific, including RUF100 (unused suppressions)
+]
+ignore = [
+  # Conflict with `ruff format` (official list).
+  "W191",   # tab-indentation
+  "E111",   # indentation-with-invalid-multiple
+  "E114",   # indentation-with-invalid-multiple-comment
+  "E117",   # over-indented
+  "D206",   # docstring-tab-indentation
+  "D300",   # triple-single-quotes
+  "ISC002", # multi-line-implicit-string-concatenation
+  # Docstrings that only restate a name: required on public APIs, not here.
+  "D100",   # public module
+  "D104",   # public package
+  "D105",   # magic method
+  "D107",   # __init__
+]
+
+[lint.per-file-ignores]
+# Tests assert, use magic values, and don't need docstrings or annotations.
+"**/tests/**" = ["S101", "PLR2004", "D", "ANN"]
+"**/test_*.py" = ["S101", "PLR2004", "D", "ANN"]
+"**/conftest.py" = ["D", "ANN"]
+
+[lint.pydocstyle]
+convention = "google"
+
+[lint.mccabe]
+max-complexity = 10
+
+[lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[lint.isort]
+# Only settings compatible with the formatter.
+combine-as-imports = true
+
+[format]
+docstring-code-format = true

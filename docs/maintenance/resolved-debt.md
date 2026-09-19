@@ -5,6 +5,26 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0014 — 2026-09-19 — Gate plugins enforce every stated minimum and test their installer and degraded modes
+
+- **Original pending record:** none. Found by `/plugin-release-review` while building ruff-quality and shell-quality 0.1.0.
+- **Resolved debt:** Four classes of gap, each caught before release:
+  - The README stated Git ≥ 2.18 and Ruff ≥ 0.16, but `preflight` checked neither Git nor (outside the recommended mode) the Ruff version, although the Stop gate's `ruff format --check --output-format` needs 0.16.
+  - Porting `manage.sh` from one plugin to the other silently dropped `os_kind`; `assess` and `preflight` printed `command not found` and still exited 0.
+  - A test fixture built with `${4:-{\}}` produced an empty payload under `/bin/bash` 3.2 only, so the suite's post cases tested nothing there.
+  - Without `jq`, the guard denies every `Write`/`Edit`/`Bash` call (intended fail-closed), but the message did not say how to recover.
+- **Resolution:**
+  - Both `manage.sh` preflights check Git ≥ 2.18; ruff-quality checks Ruff ≥ 0.16 in every mode.
+  - Each plugin ships `scripts/test-manage.sh`: every command in a sandbox, failing on `command not found`, `unbound variable`, or `syntax error`, and asserting that preflight reports each minimum. `npm test` runs it under `bash` and `/bin/bash`.
+  - Fixture builders abort the suite (`built_fail`) when jq cannot build a payload.
+  - The guard's fail-closed message names the recovery (`! bash … manage.sh uninstall`), both READMEs list it under Limitations, and each `test-gate.sh` runs the guard with `PATH` lacking `jq` and a full realistic payload.
+- **Positive verification:** `test-gate.sh` 99/99 (ruff-quality) and 82/82 (shell-quality), `test-manage.sh` all passing, on bash 3.2.57 and 5.3.20.
+- **Negative verification:** with `os_kind` removed from the shell `manage.sh`, `test-manage.sh` reported 2 failures; with the old fixture, the ruff suite failed 23 post cases under `/bin/bash`.
+- **Owner or responsible area:** `plugins/ruff-quality/skills/ruff-hooks/`, `plugins/shell-quality/skills/shell-hooks/`
+- **Residual risk / follow-up:** the suites run with the local and CI runner's `jq`, Ruff, ShellCheck, and shfmt versions only (see DEBT-0012).
+- **Related records:** DEBT-0012, DEBT-0013
+- **Superseded by:** none
+
 ### DEBT-0013 — 2026-09-19 — A new plugin's shell suites and scripts are tested and linted before its first commit
 
 - **Original pending record:** none. Found while building a new plugin on 2026-09-19.
