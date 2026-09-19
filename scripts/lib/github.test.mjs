@@ -13,14 +13,14 @@ function fakeFetch(responses) {
    * @param {string | URL | Request} url
    * @param {RequestInit} [init]
    */
-  const fn = async (url, init) => {
+  const fn = (url, init) => {
     calls.push({ url: String(url), init });
     const next = responses.shift();
-    if (!next) throw new Error("fakeFetch: more requests than scripted responses");
+    if (!next) return Promise.reject(new Error("fakeFetch: more requests than scripted responses"));
     const { status = 200, body } = next;
     const payload =
       body === undefined ? null : typeof body === "string" ? body : JSON.stringify(body);
-    return new Response(payload, { status });
+    return Promise.resolve(new Response(payload, { status }));
   };
   fn.calls = calls;
   return fn;

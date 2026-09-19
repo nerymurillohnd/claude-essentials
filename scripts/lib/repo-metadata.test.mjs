@@ -94,6 +94,7 @@ test("the committed labels and issue forms are valid", () => {
   assert.deepEqual(validateRepoMetadata(rootDir, listPluginDirs()), []);
 });
 
+// biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell variable in workflow YAML, not a JS template.
 const INSTALL = 'npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"';
 
 test("checkClaudeCodeVersions accepts one canonical version across workflows", () => {
