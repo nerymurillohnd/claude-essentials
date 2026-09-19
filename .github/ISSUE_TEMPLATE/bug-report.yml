@@ -22,6 +22,7 @@ body:
       options:
         - Marketplace catalog / installation
         - block-no-verify
+        - verify-completion
         - Not sure
     validations:
       required: true

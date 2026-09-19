@@ -14,6 +14,11 @@
       "name": "block-no-verify",
       "source": "./plugins/block-no-verify",
       "description": "A skill that, only when you ask and approve a scope, installs a Claude Code hook denying Git commands that skip local hooks or commit signing (--no-verify, -n, --no-gpg-sign, core.hooksPath, HUSKY=0, ...). Installing the plugin wires nothing."
+    },
+    {
+      "name": "verify-completion",
+      "source": "./plugins/verify-completion",
+      "description": "Makes Claude prove work is done before saying so: a six-gate verification skill with coherence and depth audits, a read-only verifier agent scaled to the size of the change, an opt-in workflow that cross-checks every finding, and a Stop hook that sends Claude back for a checkable Verification record when a reply presents finished work without one. It never authorizes commits, pushes, or deploys."
     }
   ]
 }

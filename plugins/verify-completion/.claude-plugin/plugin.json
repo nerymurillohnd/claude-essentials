@@ -1,0 +1,32 @@
+{
+  "name": "verify-completion",
+  "displayName": "Verify Completion",
+  "version": "0.1.0",
+  "description": "Makes Claude prove work is done before saying so: a six-gate verification skill with coherence and depth audits, a read-only verifier agent scaled to the size of the change, an opt-in workflow that cross-checks every finding, and a Stop hook that sends Claude back for a checkable Verification record when a reply presents finished work without one. It never authorizes commits, pushes, or deploys.",
+  "author": {
+    "name": "Nery Samuel Murillo Tejada",
+    "url": "https://github.com/nerymurillohnd"
+  },
+  "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/verify-completion",
+  "repository": "https://github.com/nerymurillohnd/claude-essentials",
+  "license": "Apache-2.0",
+  "keywords": [
+    "verification",
+    "completion",
+    "evidence",
+    "testing",
+    "code-review",
+    "quality",
+    "stop-hook",
+    "guardrails"
+  ],
+  "userConfig": {
+    "enforcement": {
+      "type": "string",
+      "title": "Completion-claim enforcement",
+      "description": "enforce: when a reply claims work is finished without a valid Verification record, Claude is asked once to verify, then you are warned. warn: only warn you. off: the hooks do nothing; the skill and agent stay available.",
+      "default": "enforce",
+      "options": ["enforce", "warn", "off"]
+    }
+  }
+}

@@ -217,6 +217,11 @@ immutable (tag ruleset).
   Plugin runtime changes (a version bump) go through a PR with green `check` +
   `version-check`. `main` can't be deleted or force-pushed (rulesets). Label
   PRs from `.github/labels.json`. DEBT-0011 records this policy.
+- Plugin workflow scripts (`plugins/*/workflows/*.js`) use the dynamic
+  workflow dialect (top-level `return`, runtime globals), which Biome can't
+  parse, so `biome.json` excludes them; `scripts/lib/plugin-workflows.test.mjs`
+  is their gate (pure-literal `meta`, declared phases, body compiles, and the
+  orchestration logic against a stub runtime).
 - Workflows pin every `uses:` to a full commit SHA with a `# vX.Y.Z` comment
   (Dependabot updates them).
 - Every `actions/setup-node` step reads `node-version-file: .nvmrc` (never a

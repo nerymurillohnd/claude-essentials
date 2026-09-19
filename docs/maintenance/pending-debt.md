@@ -5,6 +5,20 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0012 — Plugin hook suites run only against the CI runner's jq
+
+- **Status:** Pending
+- **Category:** quality
+- **Evidence:**
+  - **Confirmed facts:** `verify-completion`'s `analyze.jq` first used `capture(...)?.field` (jq 1.8 syntax) and a variable named `$end` (reserved in jq 1.6). Its 110-case suite passed on the maintainer's jq 1.8.2, failed 55 cases on jq 1.7.1 and failed to compile on jq 1.6 (2026-09-19). After the fix it passes on jq 1.6 (built from the release tarball), 1.7.1, and 1.8.2. `npm test` runs `plugins/**/test-*.sh` only with the `jq` on `PATH`; the GitHub runner provides one version.
+  - **Inferences:** Any plugin that claims "jq ≥ 1.6" (both current plugins do) can regress on older jq without CI noticing; jq 1.6 is what Ubuntu 22.04 ships.
+  - **Open questions:** Whether to download pinned jq 1.6 and 1.7.1 binaries in CI (Linux x86-64 release assets exist for both) or run the suites in an `ubuntu:22.04` container.
+- **Impact / risk:** A hook that fails to compile fails open, so users on older jq silently lose enforcement.
+- **Owner or responsible area:** `.github/workflows/ci.yml`, `scripts/lib/plugin-shell-tests.test.mjs`
+- **Next action:** Run every plugin shell suite under each jq version a plugin README claims, with the versions pinned in CI.
+- **Review condition:** Close when CI fails on a jq-1.8-only construct in a plugin that claims jq ≥ 1.6.
+- **Related records:** [verify-completion design](../superpowers/specs/2026-09-19-verify-completion-design.md)
+
 ### DEBT-0009 — Released CHANGELOG entries can be rewritten without CI noticing
 
 - **Status:** Pending
