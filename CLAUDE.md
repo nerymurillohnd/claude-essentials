@@ -196,6 +196,9 @@ immutable (tag ruleset).
   deleted or force-pushed (rulesets). Label PRs from `.github/labels.json`.
 - Workflows pin every `uses:` to a full commit SHA with a `# vX.Y.Z` comment
   (Dependabot updates them).
+- Every `actions/setup-node` step reads `node-version-file: .nvmrc` (never a
+  floating `node-version`), so CI runs the exact local Node; `npm run validate`
+  enforces it.
 - New shell scripts need the exec bit (`git ls-files -s` → `100755`); test
   them by path, not via `bash script.sh`.
 - Accepted ADRs are amended by appending `### Amendment — YYYY-MM-DD`, never

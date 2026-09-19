@@ -7,6 +7,7 @@ import {
   checkClaudeCodeVersions,
   checkIssueForm,
   checkLabels,
+  checkNodeVersionSource,
   checkSchema,
   issueFormValidators,
   validateRepoMetadata,
@@ -155,4 +156,32 @@ test("issue forms and config.yml are checked against the vendored GitHub schemas
   assert.ok(checkSchema("x.yml", noOptions, form).length > 0);
   assert.deepEqual(checkSchema("config.yml", { blank_issues_enabled: false }, config), []);
   assert.ok(checkSchema("config.yml", { blank_issues_enabled: "no" }, config).length > 0);
+});
+
+test("checkNodeVersionSource requires setup-node to read .nvmrc", () => {
+  /** @param {Record<string, unknown>} withBlock */
+  const wf = (withBlock) => ({
+    file: "ci.yml",
+    parsed: {
+      jobs: {
+        check: {
+          steps: [
+            { uses: "actions/checkout@x" },
+            { uses: "actions/setup-node@x", with: withBlock },
+          ],
+        },
+      },
+    },
+  });
+  assert.deepEqual(
+    checkNodeVersionSource([wf({ "node-version-file": ".nvmrc", cache: "npm" })]),
+    [],
+  );
+  assert.equal(checkNodeVersionSource([wf({ "node-version": 24 })]).length, 1);
+  assert.equal(
+    checkNodeVersionSource([wf({ "node-version-file": ".nvmrc", "node-version": 24 })]).length,
+    1,
+  );
+  assert.equal(checkNodeVersionSource([wf({ "node-version-file": ".node-version" })]).length, 1);
+  assert.deepEqual(checkNodeVersionSource([{ file: "x.yml", parsed: null }]), []);
 });

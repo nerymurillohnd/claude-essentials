@@ -197,6 +197,46 @@ export function checkIssueForm(file, form, { labelNames, pluginNames }) {
 
 const CANONICAL_SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
+/**
+ * @typedef {{ uses?: unknown, with?: Record<string, unknown> }} WorkflowStep
+ */
+
+/**
+ * Every `actions/setup-node` step of a parsed workflow, with its job name.
+ * @param {unknown} parsed
+ * @returns {{ job: string, step: WorkflowStep }[]}
+ */
+function setupNodeSteps(parsed) {
+  const jobs = /** @type {{ jobs?: Record<string, { steps?: WorkflowStep[] }> } | null} */ (parsed)
+    ?.jobs;
+  return Object.entries(jobs ?? {}).flatMap(([job, definition]) =>
+    (definition.steps ?? [])
+      .filter((step) => String(step.uses ?? "").startsWith("actions/setup-node@"))
+      .map((step) => ({ job, step })),
+  );
+}
+
+/**
+ * Every `actions/setup-node` step must read the Node version from `.nvmrc`, so CI
+ * runs exactly the version contributors use locally (no floating `node-version`).
+ * @param {readonly { file: string, parsed: unknown }[]} workflows
+ * @returns {string[]}
+ */
+export function checkNodeVersionSource(workflows) {
+  return workflows.flatMap(({ file, parsed }) =>
+    setupNodeSteps(parsed)
+      .filter(
+        ({ step }) =>
+          step.with?.["node-version-file"] !== ".nvmrc" ||
+          step.with?.["node-version"] !== undefined,
+      )
+      .map(
+        ({ job }) =>
+          `.github/workflows/${file} (${job}): setup-node must use "node-version-file: .nvmrc" and no "node-version"`,
+      ),
+  );
+}
+
 // Every workflow that installs the Claude Code CLI must pin the same canonical
 // version in its top-level env (DEBT-0004), so CI jobs can't drift apart.
 /**
@@ -256,8 +296,10 @@ export function validateRepoMetadata(rootDir, pluginNames) {
     .sort()
     .map((file) => {
       const source = readFileSync(join(workflowsDir, file), "utf8");
-      return { file, source, version: parse(source)?.env?.CLAUDE_CODE_VERSION };
+      const parsed = parse(source);
+      return { file, source, parsed, version: parsed?.env?.CLAUDE_CODE_VERSION };
     });
   errors.push(...checkClaudeCodeVersions(workflows));
+  errors.push(...checkNodeVersionSource(workflows));
   return errors;
 }
