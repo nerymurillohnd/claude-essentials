@@ -9,5 +9,11 @@
   "metadata": {
     "pluginRoot": "./plugins"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "block-no-verify",
+      "source": "./plugins/block-no-verify",
+      "description": "A skill that, only when you ask and approve a scope, installs a Claude Code hook denying Git commands that skip local hooks or commit signing (--no-verify, -n, --no-gpg-sign, core.hooksPath, HUSKY=0, ...). Installing the plugin wires nothing."
+    }
+  ]
 }

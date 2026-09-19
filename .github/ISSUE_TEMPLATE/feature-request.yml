@@ -15,6 +15,7 @@ body:
       label: Affected plugin
       options:
         - Marketplace catalog / installation
+        - block-no-verify
         - Not sure
     validations:
       required: true
