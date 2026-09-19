@@ -43,6 +43,8 @@
     ![uv](https://img.shields.io/badge/uv-required-DE5FE9?logo=uv&logoColor=white)
     ![npm](https://img.shields.io/badge/npm-required-CB3837?logo=npm&logoColor=white)
     ![pnpm](https://img.shields.io/badge/pnpm-required-F69220?logo=pnpm&logoColor=white)
+    ![Bash](https://img.shields.io/badge/Bash-%E2%89%A53.2-4EAA25?logo=gnubash&logoColor=white)
+    ![jq](https://img.shields.io/badge/jq-%E2%89%A51.6-555555)
     ![Git](https://img.shields.io/badge/Git-%E2%89%A52.40-F05032?logo=git&logoColor=white)
     ![GitHub CLI](https://img.shields.io/badge/gh-required-181717?logo=github&logoColor=white)
     ![Docker](https://img.shields.io/badge/Docker-required-2496ED?logo=docker&logoColor=white)
