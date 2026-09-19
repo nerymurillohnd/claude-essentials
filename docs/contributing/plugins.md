@@ -50,17 +50,41 @@ do**, **Security**, and **Limitations** are never optional. Compatibility may
 mark a surface ✅ only after installing from the remote marketplace on that
 surface.
 
+Add the plugin's row to the **Plugin catalog** table in the root
+[README.md](../../README.md) (sorted by plugin id, replacing the placeholder row
+if it is the first plugin), in the format
+[templates/root-README-recommended-template.md](../../templates/root-README-recommended-template.md)
+describes: the README title linked to `plugins/<id>/README.md`, the one-line
+outcome, the kind, the Claude Code and Claude Cowork statuses from the plugin
+README's badges, and its additional requirements. Use only requirement badges
+listed in the master template's badge catalog; add a new one there first.
+
 ## 4. Regenerate and validate the catalog
 
 ```bash
 npm run generate   # rebuilds .claude-plugin/marketplace.json from plugins/*
-npm run validate   # schema-checks marketplace.json + every plugin.json
-npm run check       # both, plus biome format/lint
+npm run validate   # schemas, README contract, and the root README catalog row
+npm run check       # everything CI runs
 ```
+
+`npm run validate` fails when a plugin README drifts from the template (missing,
+unknown, or reordered sections; leftover `{{placeholders}}`; more than one alert
+per section; code blocks without a language; badges outside the catalog; missing
+Claude Code or Cowork install steps) or when the root catalog doesn't list every
+plugin exactly once with matching kind and statuses.
 
 `npm run generate` is what actually adds your plugin to the marketplace
 catalog — don't hand-edit the `plugins` array in `.claude-plugin/marketplace.json`,
 it will just get overwritten.
+
+### Review before the PR
+
+If you work with Claude Code in this repository, run `/plugin-release-review <id>`.
+It checks what no script can: whether every README claim is true of the
+plugin's files, whether the manifest, catalog row, CHANGELOG, and LICENSE tell
+one consistent story, and whether a first-time reader understands what the
+plugin does and what it will do to their machine. Its checklist cannot finish
+until every step has evidence and the validators pass.
 
 ## 5. Date the CHANGELOG entry
 

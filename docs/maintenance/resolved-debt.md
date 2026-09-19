@@ -5,6 +5,23 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0008 — 2026-09-18 — Plugin README contract and root catalog row are enforced by `npm run validate`
+
+- **Original pending record:** none — found and fixed in the same change (post-release review of `block-no-verify` 0.1.0).
+- **Resolved debt:** Nothing enforced the plugin README template beyond the `**Kind:**` line, and the contributing guide never asked for a root README catalog row. `block-no-verify` 0.1.0 shipped with the root catalog still showing "No plugins published yet", the template's Cowork install and update steps replaced, and two requirement badges (Bash, jq) that were not in the template's badge catalog.
+- **Resolution:**
+  - `scripts/lib/readme-contract.mjs`, run by `npm run validate` (and so by `npm run check` and CI), derives the required sections, their order, and the allowed badges from `templates/plugin-README-reusable-template.md`. It rejects missing, unknown, or reordered sections, `{{placeholders}}`, more than one alert per section, unlabeled code blocks, badges outside the catalog, a Version badge that doesn't read the plugin's own `plugin.json`, and Installation without the Claude Code and Cowork steps. It also requires one root catalog row per plugin, sorted, whose link, kind, and surface statuses match the plugin.
+  - `docs/contributing/plugins.md`, the PR template, and `CLAUDE.md` state the catalog-row step and what `validate` checks.
+  - Bash and jq were added to the template's badge catalog; the root catalog and the plugin README were corrected.
+  - Follow-up checks from a seeded-defect test of the review skill: each plugin `LICENSE` must match the canonical Apache-2.0 SHA-256 and `plugin.json` must declare `Apache-2.0`; "≥" requirement badges must match the Requirements table and the catalog row; a `network-none` plugin must not ship scripts that call network tools; every CHANGELOG heading needs a link definition. The three plugin-shape CHANGELOG templates were re-synced with the master (guidance sentence, compare links).
+  - The judgment layer became the repo skill `.claude/skills/plugin-release-review/`, whose checklist is enforced by the `checklist-gate.sh` Stop hook (ADR-0002 amendment).
+- **Positive verification:** `npm run check` passes; `scripts/lib/readme-contract.test.mjs` and `scripts/lib/checklist-gate.test.mjs` cover each rule with fixtures and check this repository's files. In a seeded-defect copy of the repo, the review skill found all six planted defects plus three real 0.1.0 bugs, and the extended validator now catches three of the six mechanically.
+- **Negative verification:** Run against the tree before the fix, the validator reports all four gaps found by the manual review (badges Bash/jq, Cowork install steps, Cowork update line, placeholder catalog row).
+- **Owner or responsible area:** `scripts/lib/`, `templates/`, `docs/contributing/`
+- **Residual risk / follow-up:** Content quality (accuracy of claims, tone) still needs review; the validator checks structure and consistency only.
+- **Related records:** [ADR-0001](../decisions/adr-0001-marketplace-distribution-model.md), [PR #10](https://github.com/nerymurillohnd/claude-essentials/pull/10)
+- **Superseded by:** none
+
 ### DEBT-0001 — 2026-09-18 — `claude plugin validate --strict` runs in `npm run check` and CI
 
 - **Original pending record:** DEBT-0001 in [pending-debt.md](pending-debt.md) (removed on resolution; see git history).

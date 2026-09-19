@@ -5,6 +5,20 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0009 — Released CHANGELOG entries can be rewritten without CI noticing
+
+- **Status:** Pending
+- **Category:** quality
+- **Evidence:**
+  - **Confirmed facts:** In a seeded-defect copy of the repository, the released `## [0.1.0]` entry of `block-no-verify` was edited (a false "Python 3 handler" line) and `npm run check` plus `npm run check:versions` still passed. Only the review skill caught it (2026-09-18).
+  - **Inferences:** A released entry is a record of what shipped under an immutable tag; editing it silently rewrites history for users reading the CHANGELOG.
+  - **Open questions:** Whether `check:versions` should compare each tagged `## [X.Y.Z]` section with its content at tag `<id>--vX.Y.Z`, and how to allow deliberate typo fixes (a label such as `changelog: amend`).
+- **Impact / risk:** Misleading release notes; low frequency.
+- **Owner or responsible area:** `scripts/lib/version-plan.mjs`, `scripts/check-versions.mjs`
+- **Next action:** Extend `check:versions` to diff tagged sections against their tag, with a test and an explicit override label.
+- **Review condition:** Close when CI fails on an edited released entry and the override is documented.
+- **Related records:** DEBT-0008 in [resolved-debt.md](resolved-debt.md)
+
 ### DEBT-0006 — The repo marketplace schema rejects `renames: null`
 
 - **Status:** Pending
