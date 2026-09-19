@@ -50,10 +50,13 @@ if [[ -z ${template} || ! -f ${source_file} ]]; then
     "${file#"${root}"/}" "${template:-none}" >&2
   exit 2
 fi
+# Verify commands can read the checklist's subject (a plugin id, a branch name)
+# from $CHECKLIST_SUBJECT.
+subject=$(jq -r '.subject // ""' "${file}") || subject=""
 verifies=$(jq -r '.items[] | select(.verify != null) | [.id, .verify] | @tsv' "${source_file}") || verifies=""
 while IFS=$'\t' read -r id verify; do
   [[ -n ${verify} ]] || continue
-  if ! out=$(cd "${root}" && bash -c "${verify}" 2>&1); then
+  if ! out=$(cd "${root}" && CHECKLIST_SUBJECT=${subject} bash -c "${verify}" 2>&1); then
     tail_out=$(printf '%s\n' "${out}" | tail -n 15) || tail_out=""
     failures+="- ${id}: \`${verify}\` failed:"$'\n'"${tail_out}"$'\n'
   fi

@@ -5,6 +5,23 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0010 — 2026-09-19 — Delivery gaps from block-no-verify 0.1.x closed with a push guard, a delivery checklist, and project rules
+
+- **Original pending record:** none. Found while shipping block-no-verify 0.1.0–0.1.1 and fixed in the following PR.
+- **Resolved debt:** Shipping one plugin took three review rounds. The README eval table went stale after the skill description changed. A push after the #11 merge recreated the deleted branch `docs/block-no-verify-catalog` with a commit that never reached `main` (fixed in #12). The tag push failed server-side on reruns. "Done" was reported before every step was verified.
+- **Resolution:**
+  - `.claude/hooks/guard-push-merged-branch.sh` (PreToolUse, Bash) denies pushing a branch that was published before but no longer exists on the remote.
+  - The repo skill `pr-delivery` starts a checklist that `checklist-gate.sh` enforces. Its verify commands prove that every plugin version is tagged on origin, the feature branch is gone locally and remotely, `main` equals `origin/main`, and the tree is clean.
+  - `checklist.sh start` refuses while another checklist is unfinished. Verify commands receive `$CHECKLIST_SUBJECT`.
+  - `.claude/rules/plugin-delivery.md` records the working rules: design first, continuous review, Bash 3.2 and degraded-mode testing, edit verification, current numbers, branch hygiene, tagging, and the definition of done.
+  - `scripts/lib/text-files.test.mjs` fails when a tracked or new text file holds a raw control character. A tool turned a written NUL escape into the byte twice, the second time in this change.
+- **Positive verification:** `scripts/lib/push-guard.test.mjs` shows a deleted published branch is denied in eight spellings, under `bash` and `/bin/bash`. `checklist-gate.test.mjs` shows the subject reaches verify commands. The delivery verify commands pass against the real repository after #12.
+- **Negative verification:** New branches, live branches, deletions, tag pushes, and non-push commands are allowed, and an unreachable remote fails open. A second checklist start is refused, and the delivery `branches` verify fails while the feature branch still exists.
+- **Owner or responsible area:** `.claude/hooks/`, `.claude/skills/pr-delivery/`, `.claude/rules/`
+- **Residual risk / follow-up:** Both are guardrails for Claude sessions, not controls. The push guard fails open offline and doesn't see pushes made outside Claude. The merge and CI items are evidence Claude records, not commands the gate re-runs, because re-running them would need GitHub credentials in the hook.
+- **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md), [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md), DEBT-0008
+- **Superseded by:** none
+
 ### DEBT-0008 — 2026-09-18 — Plugin README contract and root catalog row are enforced by `npm run validate`
 
 - **Original pending record:** none — found and fixed in the same change (post-release review of `block-no-verify` 0.1.0).
