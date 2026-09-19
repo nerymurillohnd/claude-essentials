@@ -307,3 +307,17 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   command verbatim by id. `checklist-gate.test.mjs` runs a command with
   backslashes and quotes through the gate, and checks that every committed
   `checklist.json` verify command parses with `bash -n`.
+
+### Amendment — 2026-09-19: push guard renamed and gates direct pushes to main
+
+- `guard-push-merged-branch.sh` is now `guard-push.sh`. It keeps the merged-branch
+  check and adds a second one. On a push whose destination is `main`, it denies
+  the push unless the working tree is clean, `npm run check:versions` reports
+  `bump: none` (runtime changes go through a PR, ADR-0003 amendment of the same
+  date), and `npm run check` passes. It runs only on pushes to `main`, and its
+  timeout is 300 s because `npm run check` takes about a minute.
+- The gate commands can be replaced only through the hook's own environment
+  (`GUARD_PUSH_VERSIONS_CMD`, `GUARD_PUSH_CHECK_CMD`), which the tests use; the
+  command Claude runs can't change them. `scripts/lib/push-guard.test.mjs`
+  covers a clean pass, a runtime change, failing version rules, a failing check,
+  and a dirty tree.

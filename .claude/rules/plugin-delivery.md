@@ -70,6 +70,11 @@ done below with a checklist.
 - Use the GitHub MCP server for every GitHub read and mutation it supports
   (PRs, checks, reviews, labels, tags, merge). Use `gh` only for what it lacks:
   Actions logs, runs and reruns, ruleset and merge-method policy, and deleting refs.
+- Only a change that alters a plugin's behavior (a version bump) goes through a
+  PR. Everything else (docs, READMEs, root files, tooling) is committed on
+  `main` and pushed directly when the maintainer says "commit and push";
+  `guard-push.sh` runs the checks before the push. Open a PR only when the change
+  bumps a version or the maintainer says "PR".
 - Once a PR is merged, its branch is closed. Never push to it again: pushing
   recreates the deleted remote branch with commits `main` doesn't have. Follow-up
   work starts from a fresh branch off the updated `main`.

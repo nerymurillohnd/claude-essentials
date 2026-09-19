@@ -205,8 +205,12 @@ immutable (tag ruleset).
   `templates/*-reusable-template.md` counterparts verbatim except for
   filled-in placeholders. Never reformat license text with
   headers/bold/blockquotes — that weakens GitHub/SPDX license detection.
-- `main`: PR merges need green `check` + `version-check`; `main` can't be
-  deleted or force-pushed (rulesets). Label PRs from `.github/labels.json`.
+- `main`: changes that don't alter a plugin's behavior (docs, READMEs, root
+  files, tooling) are pushed directly to `main`; `.claude/hooks/guard-push.sh`
+  first requires a clean tree, `bump: none`, and a passing `npm run check`.
+  Plugin runtime changes (a version bump) go through a PR with green `check` +
+  `version-check`. `main` can't be deleted or force-pushed (rulesets). Label
+  PRs from `.github/labels.json`. DEBT-0011 records this policy.
 - Workflows pin every `uses:` to a full commit SHA with a `# vX.Y.Z` comment
   (Dependabot updates them).
 - Every `actions/setup-node` step reads `node-version-file: .nvmrc` (never a

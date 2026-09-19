@@ -47,7 +47,9 @@ and reopens any that fail.
    <id>` to completion on the final head. When the skill description, evals, or
    scripts changed, re-measure the README numbers (eval table, test counts,
    timings) in this branch. Run `npm run check` and `npm run check:versions`.
-2. **PR.** Push the branch and open the PR with the repository template and
+2. **PR.** Only a change that bumps a plugin version needs one; anything else
+   is pushed straight to `main`, where `guard-push.sh` runs the checks first.
+   Push the branch and open the PR with the repository template and
    labels from `.github/labels.json`. Use the GitHub MCP server for PR reads,
    checks, labels, and the merge when it is connected; use `gh` only for what it
    lacks (Actions runs and logs, ref deletion).
@@ -62,7 +64,7 @@ and reopens any that fail.
    create the tag by hand.
 6. **Clean up.** Delete the remote branch if GitHub didn't, switch to `main`,
    `git pull --ff-only`, `git fetch --prune`, and delete the local branch. Never
-   push to the merged branch again. The `guard-push-merged-branch.sh` hook denies
+   push to the merged branch again. The `guard-push.sh` hook denies
    it, and follow-up work starts on a new branch from `main`.
 
 When a step needs a decision only the user can make (approving the merge,

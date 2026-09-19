@@ -134,3 +134,26 @@ Chosen option: "Explicit semver, enforced in CI, tagged by CI with
   the last six months changes the resolution order above.
 - Revisit if Claude Code adds per-directory SHA versioning for relative-path
   plugins, or changes the tag convention.
+
+### Amendment — 2026-09-19: direct pushes for non-runtime changes
+
+- The maintainer's rule: only a change that alters a plugin's behavior needs a
+  version bump, and only those changes go through a pull request. Everything
+  else (documentation, READMEs, root files, tooling, metadata) is pushed
+  directly to `main`. The earlier "every change through a PR" came from the
+  repo-protocols plan's ruleset recommendation, not from the maintainer, and it
+  contradicted his direct-commit workflow.
+- The "Require green checks to merge into main" ruleset gets the repository
+  admin role as a bypass actor (mode *Always*), which reverses DEBT-0005. The
+  deletion and force-push ruleset and the immutable tag ruleset are unchanged.
+- The checks move before the push instead of disappearing.
+  `.claude/hooks/guard-push.sh` denies a direct push to `main` unless the tree
+  is clean, `npm run check:versions` reports `bump: none`, and `npm run check`
+  passes. A runtime change is sent to a PR.
+- `version-check` now also runs on pushes to `main`, comparing against the
+  commit before the push, so a runtime change that slipped through (a push made
+  outside Claude) still turns `main` red. The tag dry-run stays on pull
+  requests only, because after a push the tag workflow may already have created
+  the tag.
+- Accepted risk: a push made outside Claude Code skips the local gate. CI then
+  catches it after the fact, not before. Recorded as DEBT-0011.

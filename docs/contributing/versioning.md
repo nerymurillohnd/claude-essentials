@@ -33,8 +33,12 @@ section. It's recommended, not enforced: don't log every README typo.
 
 The `version-check` CI job (`npm run check:versions` locally) enforces this
 with the same classification (`scripts/lib/version-plan.mjs`). Its error lists
-the runtime files that need the bump. "No bump" still means "through a PR"
-once `main` is protected; it doesn't mean pushing to `main` directly. Never
+the runtime files that need the bump. A change that needs no bump (docs,
+READMEs, metadata, tooling) is pushed straight to `main`: the maintainer's
+push guard (`.claude/hooks/guard-push.sh`) first requires a clean tree,
+`bump: none`, and a passing `npm run check`, and CI re-runs both after the
+push. A change that bumps a version goes through a PR, so `version-check`
+gates the merge and the tag workflow runs on it. Never
 put `version` in `.claude-plugin/marketplace.json`: the generator doesn't emit
 it, and `plugin.json` would silently win anyway.
 

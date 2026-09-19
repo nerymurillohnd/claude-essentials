@@ -61,8 +61,8 @@
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-push-merged-branch.sh",
-            "timeout": 15
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-push.sh",
+            "timeout": 300
           }
         ]
       }

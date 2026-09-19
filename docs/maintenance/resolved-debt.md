@@ -5,6 +5,22 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0011 — 2026-09-19 — Non-runtime changes are pushed directly to `main`; the checks run before the push
+
+- **Original pending record:** none. The maintainer raised it on 2026-09-19 after a README-only commit was rejected by the required-checks ruleset.
+- **Resolved debt:** DEBT-0005 removed every bypass from the required-checks ruleset, and `version-check` only ran on pull requests. So every change needed a PR, even a one-word README fix. The maintainer's rule was never that: only a change that alters a plugin's behavior needs a version bump and a PR. The requirement came from the repo-protocols plan's recommendation.
+- **Resolution:**
+  - The repository admin role is a bypass actor (mode *Always*) on ruleset 23655894. The maintainer made this change in the GitHub UI.
+  - `.claude/hooks/guard-push.sh` denies a direct push to `main` unless the tree is clean, `check:versions` reports `bump: none`, and `npm run check` passes. A runtime change is sent to a PR.
+  - `version-check` also runs on pushes to `main`, against the commit before the push.
+  - `CLAUDE.md`, `docs/contributing/versioning.md`, `.claude/rules/plugin-delivery.md`, and `pr-delivery` describe the split: direct push for non-runtime changes, a PR for version bumps.
+- **Positive verification:** `push-guard.test.mjs` allows a clean non-runtime push to `main`. The first direct push after this change went through the real gate.
+- **Negative verification:** `push-guard.test.mjs` denies a runtime change, failing version rules, a failing check, and a dirty tree.
+- **Owner or responsible area:** GitHub rulesets, `.claude/hooks/guard-push.sh`, `.github/workflows/ci.yml`
+- **Residual risk / follow-up:** A push made outside Claude Code skips the local gate; CI's `check` and `version-check` on `main` catch it after the push, not before. The deletion, force-push, and tag rulesets keep no bypass.
+- **Related records:** DEBT-0005 (superseded), [ADR-0003 amendment 2026-09-19](../decisions/adr-0003-plugin-versioning-and-tagging.md), [ADR-0002](../decisions/adr-0002-project-hooks.md)
+- **Superseded by:** none
+
 ### DEBT-0010 — 2026-09-19 — Delivery gaps from block-no-verify 0.1.x closed with a push guard, a delivery checklist, and project rules
 
 - **Original pending record:** none. Found while shipping block-no-verify 0.1.0–0.1.1 and fixed in the following PR.
@@ -113,5 +129,5 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 - **Owner or responsible area:** GitHub repository rulesets
 - **Residual risk / follow-up:** If GitHub Actions can't run, nothing can merge. The remedy is a deliberate, audited, temporary ruleset edit — never a standing bypass. Every change to `main` goes through a PR, including docs-only changes.
 - **Related records:** [repo-protocols plan](../superpowers/plans/2026-09-18-repo-protocols.md), [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md)
-- **Superseded by:** none
+- **Superseded by:** DEBT-0011 (2026-09-19): the maintainer allows direct pushes to `main` for non-runtime changes, gated locally.
 

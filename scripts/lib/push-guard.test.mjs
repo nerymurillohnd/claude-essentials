@@ -1,16 +1,16 @@
 // @ts-check
-// Exercises .claude/hooks/guard-push-merged-branch.sh against a throwaway clone of
+// Exercises .claude/hooks/guard-push.sh against a throwaway clone of
 // a local bare "origin": pushing a published branch the remote no longer has is
 // denied; new branches, existing branches, deletions, and non-push commands pass.
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
 import { rootDir } from "./plugins.mjs";
 
-const guard = join(rootDir, ".claude", "hooks", "guard-push-merged-branch.sh");
+const guard = join(rootDir, ".claude", "hooks", "guard-push.sh");
 
 /** @type {string} */
 let base = "";
@@ -33,16 +33,31 @@ function git(cwd, ...args) {
   });
 }
 
-/** @param {string} command @param {string} [shell] */
-function decide(command, shell = "bash") {
+const passingGate = {
+  GUARD_PUSH_VERSIONS_CMD: 'echo "Computed label: bump: none"',
+  GUARD_PUSH_CHECK_CMD: "true",
+};
+
+/**
+ * @param {string} command
+ * @param {string} [shell]
+ * @param {Record<string, string>} [gate]
+ */
+function run(command, shell = "bash", gate = passingGate) {
   const result = spawnSync(shell, [guard], {
     encoding: "utf8",
     input: JSON.stringify({ tool_name: "Bash", tool_input: { command }, cwd: clone }),
-    env: { ...process.env, CLAUDE_PROJECT_DIR: clone },
+    env: { ...process.env, CLAUDE_PROJECT_DIR: clone, ...gate },
   });
   assert.equal(result.status, 0, result.stderr);
-  if (result.stdout.trim() === "") return "allow";
-  return JSON.parse(result.stdout).hookSpecificOutput.permissionDecision;
+  if (result.stdout.trim() === "") return { decision: "allow", reason: "" };
+  const output = JSON.parse(result.stdout).hookSpecificOutput;
+  return { decision: output.permissionDecision, reason: output.permissionDecisionReason };
+}
+
+/** @param {string} command @param {string} [shell] */
+function decide(command, shell = "bash") {
+  return run(command, shell).decision;
 }
 
 before(() => {
@@ -108,5 +123,45 @@ test("an unreachable remote fails open", () => {
     assert.equal(decide("git push"), "allow");
   } finally {
     git(clone, "remote", "set-url", "origin", join(base, "origin.git"));
+  }
+});
+
+test("a direct push to main passes when the tree is clean, the change is non-runtime, and check passes", () => {
+  assert.equal(run("git push origin main").decision, "allow");
+  assert.equal(run("git push origin feat/merged:main").decision, "allow");
+});
+
+test("a direct push to main with plugin runtime changes is sent to a pull request", () => {
+  const result = run("git push origin main", "bash", {
+    ...passingGate,
+    GUARD_PUSH_VERSIONS_CMD: 'echo "Computed label: bump: patch"',
+  });
+  assert.equal(result.decision, "deny");
+  assert.match(result.reason, /plugin runtime files \(bump: patch\).*pull request/s);
+});
+
+test("a direct push to main is denied when version rules or npm run check fail", () => {
+  const versions = run("git push origin main", "bash", {
+    ...passingGate,
+    GUARD_PUSH_VERSIONS_CMD: "echo 'block-no-verify: runtime change without bump'; exit 1",
+  });
+  assert.equal(versions.decision, "deny");
+  assert.match(versions.reason, /version rules fail.*runtime change without bump/s);
+  const check = run("git push origin main", "/bin/bash", {
+    ...passingGate,
+    GUARD_PUSH_CHECK_CMD: "echo 'biome: 1 error'; exit 1",
+  });
+  assert.equal(check.decision, "deny");
+  assert.match(check.reason, /npm run check fails.*biome: 1 error/s);
+});
+
+test("a direct push to main is denied while the tree has uncommitted changes", () => {
+  writeFileSync(join(clone, "dirty.txt"), "x");
+  try {
+    const result = run("git push origin main");
+    assert.equal(result.decision, "deny");
+    assert.match(result.reason, /uncommitted changes/);
+  } finally {
+    rmSync(join(clone, "dirty.txt"));
   }
 });

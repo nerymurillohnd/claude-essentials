@@ -87,8 +87,11 @@ jobs:
       - name: Validate with Claude Code (official, --strict)
         run: npm run validate:claude
 
+  # On pull requests it gates the merge (required check). On direct pushes to main
+  # (non-runtime changes, gated locally by .claude/hooks/guard-push.sh) it checks
+  # the pushed range after the fact, so a runtime change without a bump still
+  # turns main red.
   version-check:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -110,8 +113,15 @@ jobs:
       - name: Enforce plugin version bumps (ADR-0003)
         env:
           BASE_REF: ${{ github.base_ref }}
+          BEFORE: ${{ github.event.before }}
           DEFERRED: "${{ contains(github.event.pull_request.labels.*.name, 'bump: deferred') }}"
         run: |
-          args=(--base "origin/${BASE_REF}" --verify-tag)
+          # After a push the tag workflow runs in parallel and may already have
+          # created the tag, so the tag dry-run belongs to pull requests only.
+          if [[ -n "${BASE_REF}" ]]; then
+            args=(--base "origin/${BASE_REF}" --verify-tag)
+          else
+            args=(--base "${BEFORE}")
+          fi
           if [[ "${DEFERRED}" == "true" ]]; then args+=(--deferred); fi
           node scripts/check-versions.mjs "${args[@]}"
