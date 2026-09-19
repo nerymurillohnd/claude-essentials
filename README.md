@@ -43,6 +43,7 @@ kinds ([ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md)):
 | Plugin | Description | Kind | Claude Code | Claude Cowork | Additional requirements |
 | --- | --- | --- | :---: | :---: | --- |
 | [Block No Verify](plugins/block-no-verify/README.md) | Stop Claude from skipping your Git hooks or commit signing, in the scope you choose, only when you ask for it. | `skill-only` | ⚠️ | ❌ | Bash ≥ 3.2, `jq` ≥ 1.6, Git ≥ 2.18 |
+| [Verify Completion](plugins/verify-completion/README.md) | When Claude tells you something is done, it has shown you the evidence, or it tells you plainly what it couldn't verify. | `bundle` | 🧪 | 🧪 | Bash ≥ 3.2, `jq` ≥ 1.6 |
 
 Pick by outcome, then read the plugin's README — **What it does not do**,
 **Security**, and **Limitations** — before installing anything with hooks,

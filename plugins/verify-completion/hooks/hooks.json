@@ -1,0 +1,28 @@
+{
+  "description": "verify-completion: ask for a Verification record when a reply presents work as finished",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^(?!(?:Read|Glob|Grep|LS|NotebookRead|WebFetch|WebSearch|TodoWrite|TaskCreate|TaskGet|TaskList|TaskUpdate|TaskOutput|TaskStop|ToolSearch|Skill|AskUserQuestion|EnterPlanMode|ExitPlanMode|ListMcpResourcesTool|ReadMcpResourceTool|ReadMcpResourceDirTool|ListAgents|SendMessage)$)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/gate.sh\" mark",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/gate.sh\" stop",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

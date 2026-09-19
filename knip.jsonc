@@ -21,6 +21,14 @@
   //   configuration hint.
   // - Catalogs: npm has none.
 
+  // Plugin workflow scripts are loaded by Claude Code (/<plugin>:<name>), not
+  // imported by anything here, so they are entries like an MCP server's.
+  "entry": ["plugins/*/workflows/*.js"],
+  // Their `export const meta` is read by that runtime, and a workflow script must
+  // begin with it, so there's no room for a `@public` tag: skip only the unused-
+  // export check, only for these files.
+  "ignoreIssues": { "plugins/*/workflows/*.js": ["exports"] },
+
   // Accepted by the maintainer (2026-09-18): pinned to match the global binary.
   // Claude Code's typescript-lsp plugin runs typescript-language-server from PATH,
   // so nothing in this repo imports or executes it — Knip is right that it's unused.
