@@ -45,7 +45,7 @@
     {
       "name": "ruff-quality",
       "source": "./plugins/ruff-quality",
-      "description": "Teaches Claude the current Ruff workflow for Python (safe fixes, format, check; configuration discovery; rule selection after Ruff 0.16; migration from Black, isort, and Flake8; pre-commit and CI), and, only when you ask and choose a scope and a configuration, installs Claude Code hooks that fix, format, and lint every Python file Claude edits, deny suppression comments and configuration changes, and keep Claude from finishing until the files are clean.",
+      "description": "Teaches Claude the current Ruff workflow for Python (safe fixes, format, check; configuration discovery; rule selection as defaults change; migration from Black, isort, and Flake8; pre-commit and CI), and, only when you ask and choose a scope and a configuration, installs Claude Code hooks that fix, format, and lint every Python file Claude edits, deny suppression comments and configuration changes, and keep Claude from finishing until the files are clean.",
       "category": "development",
       "tags": [
         "python",

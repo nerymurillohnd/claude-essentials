@@ -15,7 +15,37 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.1.1] - 2026-09-20
+
 ### Changed
+
+- Skill descriptions (`shell-lint`, `shell-hooks`): rewritten from the skills'
+  own files rather than from the previous descriptions, and opening with the
+  instruction instead of a self-introduction. `shell-hooks` now names the four
+  hook events and what each one does, the three configuration modes, the
+  one-scope-at-a-time rule, that it fails closed, skips zsh and looks only at
+  scripts Claude touched, and that once installed the gate denies Claude
+  removing it. `shell-lint` now states that it applies to every shell script
+  Claude touches, not only when the user asks. No quoted trigger phrases.
+- Version claims are no longer pinned: `This skill covers ShellCheck 0.11 and
+  shfmt 3.14` becomes `Verified against ShellCheck 0.11.0 and shfmt 3.14.1 on
+  2026-09-19` plus an instruction to check both `--version` outputs and the
+  changelog, and the README no longer names releases in its summary. Declared
+  minimums and facts about a specific release stay.
+
+- Skill frontmatter now declares `when_to_use` beside `description`. Claude Code
+  appends it to `description` in the skill listing, so the two are one
+  1,536-character budget; splitting them keeps the instruction and the
+  triggering conditions apart. Neither field contains a colon followed by a
+  space, which a YAML parser reads as a nested mapping and rejects —
+  `scripts/lib/skill-frontmatter.test.mjs` now parses every skill's frontmatter
+  and enforces both rules, because `claude plugin validate --strict` does not.
+
+- Eval table: the published scores are withdrawn until the suite is re-measured
+  against the descriptions this version ships. The numbers dated 2026-09-19 were
+  measured against the previous text, and a re-run performed while preparing this
+  version pinned a different agent model, so neither set isolates the change.
+  The cases themselves are unchanged.
 
 - Catalog: the marketplace entry now has category `development` and search
   `tags`, from `plugin.json` `metadata.marketplace`.
@@ -61,5 +91,6 @@ heading: [Unreleased] compares the latest tag to HEAD; each version compares the
 previous tag to its own; the first version links to its tag.
 -->
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/shell-quality--v0.1.0...HEAD
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/shell-quality--v0.1.1...HEAD
+[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/tree/shell-quality--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/shell-quality--v0.1.0

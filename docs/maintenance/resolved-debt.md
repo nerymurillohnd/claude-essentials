@@ -27,6 +27,21 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 - **Owner or responsible area:** `scripts/lib/readme-contract.mjs`
 - **Residual risk / follow-up:** The gate checks that a posture is declared and that `none` is truthful; it does not verify that `required` is truthful, which review covers.
 - **Related records:** [plugin README template](../../templates/plugin-README-reusable-template.md)
+||||||| Stash base
+### DEBT-0020 — 2026-09-20 — Skill descriptions are written from the skill's own files, and the repository states the contract
+
+- **Original pending record:** none. Opened and closed inside the same change on 2026-09-20, so it never reached `pending-debt.md`; the measurement that opened it is preserved below.
+- **Resolved debt:** Five of the six published skills opened their `description` with the `plugin-dev` formula `This skill should be used when…`, measured on 2026-09-20 across 71 installed `SKILL.md` files as 14 of 14 `plugin-dev` skills and 0 of the other 57. The catalog presented one plugin's dialect as the platform's convention, and nothing in the repository stated what a description should be, so the next plugin would inherit it by imitation.
+- **Resolution:**
+  - All seven descriptions — the six published plus `claude-code-docs` — rewritten from each skill's own `SKILL.md`, references and scripts rather than from the previous wording. Each opens with the instruction it gives Claude, and each names behaviour no earlier description carried (the installer lifecycle and Cowork guard of `block-no-verify`; the four hook events, three modes and self-protection of each quality gate; the six named gates, four record states and restart rule of `verify-completion`).
+  - The triggering conditions moved into `when_to_use`, per the maintainer's decision on 2026-09-20; the docs define it as appended to `description` in the skill listing, so the two share one 1,536-character budget.
+  - `.claude/rules/plugin-authoring.md` states the contract, and both plugin templates carry it in their placeholder frontmatter.
+  - `scripts/lib/skill-frontmatter.test.mjs` (part of `npm test`) parses every plugin `SKILL.md` frontmatter with the repository's `yaml` dependency and enforces the budget.
+- **Positive verification:** `node --test scripts/lib/skill-frontmatter.test.mjs` passes 15 checks; combined lengths are 1,082 / 1,003 / 1,025 / 1,016 / 1,072 / 989 / 976 characters, all inside 1,536. `npm run check` passes with the five plugins.
+- **Negative verification:** Rewriting one description as a plain scalar containing a colon followed by a space fails the gate with `Nested mappings are not allowed in compact mappings`, while `claude plugin validate --strict` still passes it — the gap recorded as DEBT-0022.
+- **Owner or responsible area:** `.claude/rules/plugin-authoring.md`, `scripts/lib/skill-frontmatter.test.mjs`, `templates/plugin-*/skills/skill-name/SKILL.md`
+- **Residual risk / follow-up:** The gate checks that frontmatter parses and fits the budget; whether a description opens with an instruction rather than a self-introduction is caught by review, not by a gate. Whether the rewrite changes trigger behaviour is measured by the `claude plugin eval` re-run carried in each plugin's pull request.
+- **Related records:** [ADR-0006](../decisions/adr-0006-changelog-scope-skill-declaration-and-release-tooling.md), [DEBT-0022](pending-debt.md), global memory `bundled-skills-not-authoritative`
 - **Superseded by:** none
 
 ### DEBT-0017 — 2026-09-19 — README test-shell variables are checked against the suites that read them

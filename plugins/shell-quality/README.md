@@ -22,7 +22,7 @@
 
 Shell Quality helps anyone who lets Claude write Bash or POSIX shell keep it
 correct and consistent. Its `shell-lint` skill teaches Claude the current
-ShellCheck 0.11 and shfmt 3.14 workflow, correct fixes for common SC codes,
+ShellCheck and shfmt workflow, correct fixes for common SC codes,
 macOS Bash 3.2 pitfalls, configuration, migration, and pipelines whenever it
 works on a shell script. Its `shell-hooks` skill installs, only after you
 choose a scope and a configuration, a gate that formats and checks every script
@@ -196,10 +196,10 @@ run with the plugin against a baseline without it:
 
 | Case | Checks | With | Without | Δ | Last run |
 | --- | --- | ---: | ---: | ---: | --- |
-| `fix-shell-snippet` | `shell-lint` fires when cleaning up a script and fixes findings instead of silencing them | 1.00 | 1.00 | 0.00 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
-| `editorconfig-question` | `shell-lint` fires and explains that style flags disable EditorConfig | 1.00 | 0.67 | +0.33 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
-| `hook-request-gated` | `shell-hooks` fires, asks for scope and mode, writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | 1.00 | 0.50 | +0.50 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
-| `ignores-concept-question` | Neither skill fires on a conceptual shell question | 1.00 | 1.00 | 0.00 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
+| `fix-shell-snippet` | `shell-lint` fires when cleaning up a script and fixes findings instead of silencing them | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `editorconfig-question` | `shell-lint` fires and explains that style flags disable EditorConfig | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `hook-request-gated` | `shell-hooks` fires, asks for scope and mode, writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `ignores-concept-question` | Neither skill fires on a conceptual shell question | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
 
 <details>
 <summary>Maintainer checks</summary>
