@@ -10,5 +10,32 @@
   "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/shell-quality",
   "repository": "https://github.com/nerymurillohnd/claude-essentials",
   "license": "Apache-2.0",
-  "keywords": ["bash", "shell", "shellcheck", "shfmt", "lint", "format", "hooks", "quality-gate"]
+  "keywords": [
+    "bash",
+    "shell",
+    "shellcheck",
+    "shfmt",
+    "lint",
+    "format",
+    "pre-commit",
+    "hooks",
+    "quality-gate",
+    "guardrails"
+  ],
+  "metadata": {
+    "marketplace": {
+      "category": "development",
+      "tags": [
+        "shell",
+        "bash",
+        "shellcheck",
+        "shfmt",
+        "linting",
+        "formatting",
+        "pre-commit",
+        "quality-gate",
+        "guardrails"
+      ]
+    }
+  }
 }

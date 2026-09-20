@@ -47,7 +47,9 @@
             "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
           },
           "source": { "type": "string" },
-          "description": { "type": "string" }
+          "description": { "type": "string" },
+          "category": { "$ref": "plugin.schema.json#/definitions/marketplaceCategory" },
+          "tags": { "$ref": "plugin.schema.json#/definitions/marketplaceTags" }
         }
       }
     }

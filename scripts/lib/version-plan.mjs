@@ -36,6 +36,10 @@ const RANK = { initial: 1, prerelease: 2, patch: 3, minor: 4, major: 5 };
 // Paths (relative to plugins/<name>/) that Claude Code never loads at runtime, so
 // changing them doesn't change the plugin. This list is CLOSED: anything not listed
 // counts as runtime. Mirrored by .claude/hooks/lib/plugin-paths.sh — change both.
+// METADATA_KEYS are the plugin.json fields Claude Code shows but never acts on;
+// `metadata` is documented as never read by Claude Code at all
+// (https://code.claude.com/docs/en/plugins-reference), so the catalog fields kept
+// there (metadata.marketplace) never need a version bump.
 export const EXEMPT_FILE = /^(README\.md|CHANGELOG\.md|LICENSE(\.[^/]+)?|docs\/.+)$/;
 export const METADATA_KEYS = new Set([
   "$schema",
@@ -47,6 +51,7 @@ export const METADATA_KEYS = new Set([
   "homepage",
   "repository",
   "license",
+  "metadata",
 ]);
 const MANIFEST = ".claude-plugin/plugin.json";
 

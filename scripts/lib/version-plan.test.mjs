@@ -152,6 +152,30 @@ test("plugin.json metadata edits are exempt; component or dependency edits are n
   assert.equal(dependencies.ok, false);
 });
 
+test("a metadata-only plugin.json edit (catalog category and tags) is exempt", () => {
+  const before = manifest("demo", "1.0.0");
+  const result = plan({
+    changedFiles: ["plugins/demo/.claude-plugin/plugin.json"],
+    base: new Map([["demo", before]]),
+    head: new Map([
+      [
+        "demo",
+        { ...before, metadata: { marketplace: { category: "security", tags: ["git-hooks"] } } },
+      ],
+    ]),
+    changelogs: new Map([["demo", changelog("1.0.0")]]),
+  });
+  assert.equal(result.ok, true);
+  assert.equal(only(result).status, "exempt");
+  assert.equal(
+    runtimeManifestChanged(
+      { metadata: { marketplace: { category: "security" } } },
+      { metadata: { marketplace: { category: "testing", tags: ["x"] } } },
+    ),
+    false,
+  );
+});
+
 test("runtimeManifestChanged ignores key order and metadata", () => {
   assert.equal(
     runtimeManifestChanged({ a: 1, b: { c: 2, d: 3 } }, { b: { d: 3, c: 2 }, a: 1 }),

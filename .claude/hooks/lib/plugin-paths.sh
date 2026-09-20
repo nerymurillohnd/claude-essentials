@@ -20,7 +20,7 @@ plugin_path_is_exempt() {
 
 # Reads a plugin.json on stdin; prints it without metadata keys, keys sorted.
 plugin_manifest_runtime_json() {
-  jq -S 'del(."$schema", .version, .description, .displayName, .keywords, .author, .homepage, .repository, .license)'
+  jq -S 'del(."$schema", .version, .description, .displayName, .keywords, .author, .homepage, .repository, .license, .metadata)'
 }
 
 # plugin_runtime_change <root> <name> <tag>

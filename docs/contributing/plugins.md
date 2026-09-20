@@ -4,6 +4,12 @@ Every distributable unit in this repo — whether it's a full workflow bundle, a
 single skill, or a single agent — is a **plugin** under `plugins/<name>/`. See
 [ADR-0001](../decisions/adr-0001-marketplace-distribution-model.md) for why.
 
+## 0. Design first
+
+Run `/plugin-design <id>` before writing any file under `plugins/`. Its
+checklist (research, the surfaces matrix, requirements, failure modes, and the
+spec) must be approved before you copy a template.
+
 ## 1. Pick a shape and copy its template
 
 | Shape | Template | Result |
@@ -19,12 +25,50 @@ cp -R templates/plugin-skill-only plugins/my-new-skill
 ## 2. Fill in `.claude-plugin/plugin.json`
 
 Required fields: `name` (must equal the directory name, kebab-case, at most 42
-characters), `description`, and `version` (explicit semver; new plugins usually
-start at `0.1.0`, see [versioning.md](versioning.md)). See
+characters), `description`, `version` (explicit semver; new plugins usually
+start at `0.1.0`, see [versioning.md](versioning.md)), and
+`metadata.marketplace.category` (see below). See
 `schemas/plugin.schema.json` for the full field list, and
 [plugins-reference.md](https://code.claude.com/docs/en/plugins-reference.md)
 for everything Claude Code itself understands (author, license, keywords,
 component paths, hooks, mcpServers, dependencies, ...).
+
+### Catalog category and tags
+
+The marketplace entry supports `category` and `tags`, but `plugin.json` has no
+such fields
+([plugin-marketplaces](https://code.claude.com/docs/en/plugin-marketplaces),
+plugin entries). Declare them in `plugin.json` under `metadata.marketplace`,
+the free-form object Claude Code never reads
+([plugins-reference](https://code.claude.com/docs/en/plugins-reference),
+plugin manifest schema), and `npm run generate` copies them into the plugin's
+entry, after `name`, `source`, and `description`:
+
+```json
+"metadata": {
+  "marketplace": {
+    "category": "security",
+    "tags": ["git-hooks", "guardrails"]
+  }
+}
+```
+
+- `metadata.marketplace` and its `category` are always required. The category
+  must be one of the values in
+  `schemas/plugin.schema.json#/definitions/marketplaceCategory` (`automation`,
+  `database`, `deployment`, `design`, `development`, `learning`, `monitoring`,
+  `productivity`, `security`, `testing`: a curated subset of the official
+  Anthropic marketplace's categories). To allow a new one, add it there;
+  `marketplace.schema.json` references the same list.
+- `tags` is optional: at least one, unique, lowercase kebab-case, at most
+  eight. They are the catalog's search terms; overlap with `keywords` is
+  expected (the docs define both as discovery tags), so pick the terms a user
+  would type to find the plugin.
+- `npm run validate` fails when a catalog entry differs from what
+  `npm run generate` would write, so edit `plugin.json` and regenerate; never
+  edit the entry.
+- Editing `metadata` needs no version bump: it's in the exempt manifest fields
+  ([versioning.md](versioning.md)).
 
 Don't declare a `kind`. `npm run validate` derives it from what the plugin
 ships, and it must match the `**Kind:**` line in the plugin's README:
@@ -98,3 +142,11 @@ Fill in the pull request template. CI runs `npm run check` and
 version reaches users through the marketplace (`/plugin update` or
 auto-update), and the `Tag plugin versions` workflow tags `<name>--v<version>`
 with `claude plugin tag`. See [versioning.md](versioning.md).
+
+## Final audit
+
+Before opening a PR, run the `repo-auditor` subagent on the branch. It checks
+the change point by point against CLAUDE.md, the rules, the review and design
+checklists, templates, schemas, versioning, and the catalog, and returns
+`VERDICT: PASS` only with evidence for every check. `/pr-delivery` verifies the
+recorded verdict for the exact head SHA.

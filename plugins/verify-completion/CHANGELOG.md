@@ -15,6 +15,16 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+### Changed
+
+- Catalog: the marketplace entry now has category `testing` and search
+  `tags`, from `plugin.json` `metadata.marketplace`.
+- README: uninstalling deletes the data directory only from the last scope
+  (`/plugin` asks first; `--keep-data` keeps it); the `PostToolUse` matcher row
+  lists every read-only and bookkeeping tool it skips; the `deep-verify`
+  approval text follows the workflows docs per permission mode; dynamic
+  workflows also run with API access.
+
 ## [0.1.0] - 2026-09-19
 
 ### Added

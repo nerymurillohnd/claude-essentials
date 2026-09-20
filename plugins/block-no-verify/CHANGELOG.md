@@ -15,6 +15,19 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+### Changed
+
+- Catalog: the marketplace entry now has category `security` and search
+  `tags`, from `plugin.json` `metadata.marketplace`.
+- README Requirements: Claude Code minimum is 2.1.72, since `plugin.json` now
+  carries `metadata` (2.1.72 fixed manifests with unused fields failing to load).
+- The plugin description now leads with the outcome and states that only
+  commands Claude runs are checked, never your own terminal or CI.
+- README: the eval table credits the run it reports (Claude Code 2.1.278,
+  skill 0.1.1), the hooks section lists the installed `PreToolUse` group in
+  the template's event table, and the Security table gives the exact backup
+  folders and what the read-only `status` check reads.
+
 ## [0.1.1] - 2026-09-18
 
 ### Fixed

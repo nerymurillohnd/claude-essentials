@@ -19,5 +19,19 @@
     "hooks",
     "quality-gate",
     "guardrails"
-  ]
+  ],
+  "metadata": {
+    "marketplace": {
+      "category": "development",
+      "tags": [
+        "python",
+        "ruff",
+        "linting",
+        "formatting",
+        "pre-commit",
+        "quality-gate",
+        "guardrails"
+      ]
+    }
+  }
 }

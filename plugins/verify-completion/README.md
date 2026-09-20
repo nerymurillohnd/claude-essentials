@@ -86,8 +86,9 @@ Cowork's sandbox, which hasn't been verified. See [Compatibility](#-compatibilit
 ```
 
 In Cowork, use **Update** on the marketplace, and **Uninstall** on the plugin
-under **Customize → Plugins**. Uninstalling removes the hooks at once and, by
-default, the plugin's data directory with its marker files.
+under **Customize → Plugins**. Uninstalling removes the hooks at once. Uninstalling
+from the last scope where it's installed also deletes the plugin's data directory
+with its marker files (`/plugin` asks first; the CLI's `--keep-data` keeps it).
 
 ## 🧠 Skills
 
@@ -131,7 +132,7 @@ anything remote. Plugin agents can't set their own permission mode, so its
 
 | Event | Matcher | What it does | Blocks? |
 | --- | --- | --- | --- |
-| `PostToolUse` | every tool except read-only ones (`Read`, `Grep`, `Glob`, `WebFetch`, `WebSearch`, `TodoWrite`, `Skill`, task and plan tools, …) | Touches `<session>.work` in the plugin data directory so the Stop hook knows real work happened, and clears `<session>.nudged` | No |
+| `PostToolUse` | every tool except read-only and bookkeeping ones: `Read`, `Glob`, `Grep`, `LS`, `NotebookRead`, `WebFetch`, `WebSearch`, `TodoWrite`, the `Task*` tools, `ToolSearch`, `Skill`, `AskUserQuestion`, `EnterPlanMode`, `ExitPlanMode`, the MCP resource tools, `ListAgents`, `SendMessage` | Touches `<session>.work` in the plugin data directory so the Stop hook knows real work happened, and clears `<session>.nudged` | No |
 | `Stop` | — | Reads Claude's final reply. If it presents work as finished after real work and has no valid Verification record, or has an invalid or self-contradicting one, it sends Claude back with the exact problem and a fillable record template, so Claude can comply even where the skill isn't loaded (`additionalContext`). It asks again as long as Claude keeps working; if Claude answers without new work, it lets the turn end and shows **you** a warning that the claim is unverified. A valid record ends the cycle, whether the verdict is `VERIFIED` or `NOT VERIFIED` | Continues the turn; never blocks it for good |
 
 Both run `bash "${CLAUDE_PLUGIN_ROOT}/scripts/gate.sh"` (shell form, path
@@ -158,13 +159,17 @@ None — no MCP servers, no network access, no credentials.
 
 | Component | Path | Purpose | Surface |
 | --- | --- | --- | --- |
-| Workflow `deep-verify` | [`workflows/deep-verify.js`](workflows/deep-verify.js) | Opt-in, for large changes: three read-only verifiers (`coherence`, `depth`, `edges`) in parallel, then two skeptics try to refute each problem and one challenger tries to overturn each `PASS`. Returns confirmed problems, overturned passes, refuted findings, and what wasn't checked. Run it with `/verify-completion:deep-verify <requirement and where the change is>` | Claude Code with dynamic workflows (paid plans; on Pro, turn them on in `/config`); not documented for Cowork |
+| Workflow `deep-verify` | [`workflows/deep-verify.js`](workflows/deep-verify.js) | Opt-in, for large changes: three read-only verifiers (`coherence`, `depth`, `edges`) in parallel, then two skeptics try to refute each problem and one challenger tries to overturn each `PASS`. Returns confirmed problems, overturned passes, refuted findings, and what wasn't checked. Run it with `/verify-completion:deep-verify <requirement and where the change is>` | Claude Code with dynamic workflows (paid plans or API access; on Pro, turn them on in `/config`); not documented for Cowork |
 
 A live run on a retry helper whose only test used a mock that can't fail took
 28 agents and about 4.50 USD, and confirmed both real problems (it returns
 `null` instead of throwing after 3 failures, reproduced with a failing client;
-the mock never exercises a failure). Claude Code asks before it starts a
-workflow, and Claude only suggests it; it never launches it on its own.
+the mock never exercises a failure). Claude only suggests the workflow; it never
+launches it on its own. Whether Claude Code then asks before the run depends on
+your permission mode: every run in manual and accept-edits modes (unless you chose
+**Yes, and don't ask again** for it), only the first launch in auto mode, and
+never with bypass permissions or `claude -p`
+([workflows docs](https://code.claude.com/docs/en/workflows#approve-the-plan-before-it-runs)).
 
 ## 📋 Requirements
 
@@ -173,7 +178,7 @@ workflow, and Claude only suggests it; it never launches it on its own.
 | Claude Code | 2.1.163 | `claude --version` | Stop hooks that continue the turn with `additionalContext` |
 | Bash | 3.2 | `bash --version` | Runs the hook handler |
 | jq | 1.6 | `jq --version` | Parses the hook payload and analyzes the reply |
-| Dynamic workflows | On (only for `deep-verify`) | `/config` → **Dynamic workflows** | The optional `/verify-completion:deep-verify` runs as a workflow: paid plans, turned on from `/config` on Pro |
+| Dynamic workflows | On (only for `deep-verify`) | `/config` → **Dynamic workflows** | The optional `/verify-completion:deep-verify` runs as a workflow: paid plans or API access, turned on from `/config` on Pro |
 
 The `enforcement` picker in `/config` needs Claude Code 2.1.271 or later; older
 versions use the default, `enforce`.
@@ -289,7 +294,7 @@ summary, and returns gate-by-gate findings with file:line evidence.
 | --- | --- |
 | Read | The hook payload (Claude's final reply, session id, tool name); the skill and agent read whatever files and command output the task involves |
 | Write | Hooks: empty marker files under the plugin's data directory (or `$TMPDIR/verify-completion-<uid>/` if that's unavailable). Agent: nothing. Skill: nothing of its own; a negative-proof experiment is allowed only in a scratch copy |
-| Process | `bash` (no `jq`) on every tool call that isn't read-only; `bash`, `jq`, and `find` (to prune markers older than 7 days) at the end of each turn; the project's own check commands when Claude runs the gates; and, only when you run `/verify-completion:deep-verify` and approve it, many read-only verifier agents (28 in the run above, about 4.50 USD), each running checks under your session's permissions |
+| Process | `bash` (no `jq`) on every tool call that isn't read-only; `bash`, `jq`, and `find` (to prune markers older than 7 days) at the end of each turn; the project's own check commands when Claude runs the gates; and, only when you run `/verify-completion:deep-verify` and your permission mode lets the run start, many read-only verifier agents (28 in the run above, about 4.50 USD), each running checks under your session's permissions |
 | Network | Not used |
 | Credentials | None |
 

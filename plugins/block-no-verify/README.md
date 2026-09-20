@@ -95,7 +95,7 @@ installed handler is a standalone copy. Ask the skill to uninstall it first
 
 | Skill | Invoke | Claude uses it when | Invocation |
 | --- | --- | --- | --- |
-| [`block-no-verify`](skills/block-no-verify/SKILL.md) | `/block-no-verify:block-no-verify` | You ask to block `--no-verify`, protect hooks, enforce signing, or check/remove the policy; or you're committing/rebasing, when it runs the read-only `status` check once per session (reads the three settings files) and offers the protection in one line if it's absent | Claude + user |
+| [`block-no-verify`](skills/block-no-verify/SKILL.md) | `/block-no-verify:block-no-verify` | You ask to block `--no-verify`, protect hooks, enforce signing, or check/remove the policy; or you're committing/rebasing, when it runs the read-only `status` check once per session (reads the three settings files and the version line of any installed handler) and offers the protection in one line if it's absent | Claude + user |
 
 The skill's workflow, with a stop at each gate:
 
@@ -113,7 +113,11 @@ None — this plugin ships exactly one skill and no agents.
 ## 🪝 Hooks and side effects
 
 The plugin registers **no** hooks. On your approval, the skill installs one
-`PreToolUse` hook (matcher `Bash|PowerShell`, timeout 10 s) in the scope you chose:
+hook group in the scope you chose:
+
+| Event | Matcher | What the handler does | Blocks? |
+| --- | --- | --- | --- |
+| `PreToolUse` | `Bash\|PowerShell` | Parses the command Claude is about to run and denies Git verification or signing bypasses; reads Git aliases (read-only) to resolve `git <alias> -n`; writes nothing; timeout 10 s | Yes: the tool call |
 
 | Scope | Settings file | Handler | Shared |
 | --- | --- | --- | --- |
@@ -134,7 +138,7 @@ None — no MCP servers, no network access, no credentials.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | any with plugin support | `claude --version` | Loads the skill and runs the hook |
+| Claude Code | 2.1.72 | `claude --version` | Loads the skill and runs the hook; `plugin.json` carries `metadata`, and 2.1.72 fixed manifests with fields it doesn't use failing to load; `${CLAUDE_SKILL_DIR}` needs 2.1.69 |
 | Bash | 3.2 | `bash --version` | Runs the handler and the installer (macOS's stock `/bin/bash` 3.2 works) |
 | jq | 1.6 | `jq --version` | Parses hook payloads and merges settings |
 | Git | 2.18 | `git --version` | Assessment (`config --type=bool`, `rev-parse --git-common-dir`); the handler also reads Git aliases (read-only) to resolve `git <alias> -n` |
@@ -174,8 +178,8 @@ run with the plugin against a baseline without it:
 
 | Case | Checks | With | Without | Δ | Last run |
 | --- | --- | ---: | ---: | ---: | --- |
-| `protect-hooks-request` | Skill fires on a natural protection request, asks for a scope, and writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | 1.00 | 0.83 | +0.17 | 2026-09-19, Claude Code 2.1.277 default model, 3 runs per arm |
-| `ignores-git-read` | Skill does **not** fire on a read-only Git question | 1.00 | 1.00 | 0.00 | 2026-09-19, Claude Code 2.1.277 default model, 3 runs per arm |
+| `protect-hooks-request` | Skill fires on a natural protection request, asks for a scope, and writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | 1.00 | 0.83 | +0.17 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
+| `ignores-git-read` | Skill does **not** fire on a read-only Git question | 1.00 | 1.00 | 0.00 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
 
 <details>
 <summary>Maintainer checks</summary>
@@ -238,8 +242,8 @@ block-no-verify: git commit --no-verify skips hooks (--no-verify). Do not retry 
 | Access | What it may do |
 | --- | --- |
 | Read | Git config and hook files of the current repository; the three Claude Code settings files; managed settings; installed plugins' `hooks/hooks.json` (assessment only) |
-| Write | Only after approval: one settings file (created if absent), the `hooks/` folder and one handler copy, backups under `.git/block-no-verify-backups/` or `~/.claude/backups/block-no-verify/`, and (local scope) `.git/info/exclude`. Uninstall deletes the handler, an emptied `hooks/` folder, and a project or local settings file left as `{}` |
-| Process | `bash`, `jq`, `git`, and the bundled scripts, only when the skill runs; the auto-invoked skill runs the read-only `status` once per session while you commit. The installed hook runs `bash` + `jq` on each Bash/PowerShell tool call |
+| Write | Only after approval: one settings file (created if absent), the `hooks/` folder and one handler copy, backups under `<git common dir>/block-no-verify-backups/` (project and local scope) or `~/.claude/backups/block-no-verify/` (user scope, under `$CLAUDE_CONFIG_DIR` when set), and (local scope) `.git/info/exclude`. Uninstall deletes the handler, an emptied `hooks/` folder, and a project or local settings file left as `{}` |
+| Process | `bash`, `jq`, `git`, and the bundled scripts, only when the skill runs; the auto-invoked skill runs the read-only `status` once per session while you commit (it reads the three settings files and installed handler copies). The installed hook runs `bash` + `jq` on each Bash/PowerShell tool call, and `git config --get alias.<name>` (read-only) when a command uses a Git alias |
 | Network | Not used |
 | Credentials | None |
 

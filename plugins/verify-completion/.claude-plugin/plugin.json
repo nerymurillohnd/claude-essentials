@@ -28,5 +28,20 @@
       "default": "enforce",
       "options": ["enforce", "warn", "off"]
     }
+  },
+  "metadata": {
+    "marketplace": {
+      "category": "testing",
+      "tags": [
+        "verification",
+        "completion-claims",
+        "evidence",
+        "false-green",
+        "stop-hook",
+        "code-review",
+        "quality-gate",
+        "guardrails"
+      ]
+    }
   }
 }

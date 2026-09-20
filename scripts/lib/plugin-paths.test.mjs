@@ -66,3 +66,15 @@ test("bash plugin_manifest_runtime_json strips exactly METADATA_KEYS", () => {
   const stripped = JSON.parse(bash("plugin_manifest_runtime_json", [], JSON.stringify(manifest)));
   assert.deepEqual(stripped, runtimeFields);
 });
+
+test("bash plugin_manifest_runtime_json ignores a metadata-only edit", () => {
+  const base = { name: "demo", version: "1.0.0", skills: "./skills/" };
+  const edited = {
+    ...base,
+    metadata: { marketplace: { category: "security", tags: ["git-hooks", "guardrails"] } },
+  };
+  const strip = (/** @type {object} */ manifest) =>
+    bash("plugin_manifest_runtime_json", [], JSON.stringify(manifest));
+  assert.equal(strip(edited), strip(base));
+  assert.notEqual(strip({ ...base, skills: "./other/" }), strip(base));
+});

@@ -31,8 +31,8 @@ changes, and blocks the end of the turn until everything passes. Installing
 the plugin does **not** wire any hook.
 
 > [!CAUTION]
-> After you choose a scope and a mode, `shell-hooks` writes five hook groups to
-> a Claude Code settings file (`.claude/settings.json`,
+> After you choose a scope and a mode, `shell-hooks` writes five hook groups (four
+> events) to a Claude Code settings file (`.claude/settings.json`,
 > `.claude/settings.local.json`, or `~/.claude/settings.json`), copies one
 > handler script next to it, and, for the recommended mode, writes a
 > `.shellcheckrc` where none exists and appends a marked `[[shell]]` block to
@@ -133,7 +133,7 @@ in the scope you chose:
 | `UserPromptSubmit` | — | Records the ShellCheck/EditorConfig configuration and directive counts as accepted | No |
 | `PreToolUse` | `Write\|Edit\|Bash` | Denies adding `# shellcheck disable=…`/`source=/dev/null` and changing `.shellcheckrc`/`shellcheckrc`, the user-level rc, the shfmt keys of `.editorconfig`, the handler, or its settings | Yes: the edit |
 | `PostToolUse` | `Write\|Edit`, `Bash` | `shfmt -w`, then `shellcheck -f gcc` on each edited `.sh`/`.bash`/`.bats` or sh/bash/dash/ksh shebang script; reformats those files | No (the tool already ran); findings go to Claude with exit 2 |
-| `Stop` | — | Re-checks every script edited this session (`shellcheck`, `shfmt -d`), directives, and configuration | Yes: the end of the turn, up to `--max-blocks` (default 5) |
+| `Stop` | — | Re-checks every script edited this session (`shellcheck`, `shfmt -d`), directives, and configuration | Yes: the end of the turn, up to `--max-blocks` (1–7, default 5) |
 
 | Scope | Settings file | Handler | Shared |
 | --- | --- | --- | --- |
@@ -154,7 +154,7 @@ None — no MCP servers, no network access, no credentials.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.269 for Bash-edit coverage; any with plugin support otherwise | `claude --version` | Loads the skills and runs the hooks; `bashEditDiff` needs 2.1.269 |
+| Claude Code | 2.1.72; 2.1.269 for Bash-edit coverage | `claude --version` | Loads the skills and runs the hooks; `plugin.json` carries `metadata`, and 2.1.72 fixed manifests with fields it doesn't use failing to load; `${CLAUDE_SKILL_DIR}` needs 2.1.69; `bashEditDiff` needs 2.1.269 |
 | ShellCheck | 0.10 (0.11 for the recommended profile) | `shellcheck --version` | Checks every edited script; the profile uses 0.11 optional checks |
 | shfmt | 3.12 | `shfmt --version` | Formats every edited script; `simplify` in EditorConfig needs 3.12 |
 | Bash | 3.2 | `bash --version` | Runs the handler and installer (macOS's stock `/bin/bash` 3.2 works) |
@@ -209,9 +209,10 @@ From the marketplace root:
 ```bash
 npm run check
 claude plugin validate plugins/shell-quality --strict
-bash plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh
-bash plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh
-BNV_TEST_BASH=/bin/bash bash plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh
+plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh
+plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh
+SQ_TEST_BASH=/bin/bash plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh
+SQ_TEST_BASH=/bin/bash plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh
 claude plugin eval plugins/shell-quality --no-publish --max-cost-usd 6
 ```
 
@@ -264,8 +265,8 @@ shell-quality: this edit to deploy.sh adds a ShellCheck suppression (# shellchec
 
 | Access | What it may do |
 | --- | --- |
-| Read | Shell scripts Claude edits; `.shellcheckrc`/`shellcheckrc` and `.editorconfig` in the repository, `~/.shellcheckrc`, `~/.config/shellcheckrc`; the three Claude Code settings files; managed settings (assessment only) |
-| Write | Only after your choice: one settings file, the `hooks/` folder and one handler copy, a `.shellcheckrc` and a marked `.editorconfig` block (recommended mode, only where none exists), backups under `.git/shell-quality-backups/` or `~/.claude/backups/shell-quality/`, `.git/info/exclude` (local scope), and per-session state in `$TMPDIR`. The installed hooks reformat the scripts Claude edits |
+| Read | Shell scripts Claude edits; `.shellcheckrc`/`shellcheckrc` and `.editorconfig` in the repository, `~/.shellcheckrc`, `${XDG_CONFIG_HOME:-~/.config}/shellcheckrc`; the three Claude Code settings files; managed settings (assessment only) |
+| Write | Only after your choice: one settings file, the `hooks/` folder and one handler copy, a `.shellcheckrc` and a marked `.editorconfig` block (recommended mode, only where none exists), backups under `<git common dir>/shell-quality-backups/` (project and local scope) or `~/.claude/backups/shell-quality/` (user scope, under `$CLAUDE_CONFIG_DIR` when set), `.git/info/exclude` (local scope), and per-session state in `$TMPDIR`. The installed hooks reformat the scripts Claude edits |
 | Process | `bash`, `jq`, `git`, `shellcheck`, `shfmt`, and the bundled scripts |
 | Network | Not used |
 | Credentials | None |
@@ -284,7 +285,7 @@ shell-quality: this edit to deploy.sh adds a ShellCheck suppression (# shellchec
 | The gate cannot tell who changed configuration during a turn | If you edit `.shellcheckrc` while Claude is working, the Stop gate flags it | Let the turn end (it releases after the block limit with a warning); your next prompt accepts the change |
 | zsh and fish scripts | Not checked | ShellCheck does not support them |
 | Bash version compatibility | A script that passes can fail on macOS `/bin/bash` 3.2 | Follow the `shell-lint` portability section; test with `/bin/bash` |
-| Hook timeout (60 s post, 120 s Stop) | The call proceeds without a decision | Measured runs take well under a second per script |
+| Hook timeout (30 s baseline and guard, 60 s post, 120 s Stop) | The call proceeds without a decision | Measured runs take well under a second per script |
 | A committed project gate without the tools on a teammate's machine | Every script edit fails closed with `shellcheck not found` | Install the tools, or uninstall the gate |
 | `jq` removed after the gate is installed | Every `Write`, `Edit`, and `Bash` call is denied (fail-closed) with the reason | Install `jq` again with the `!` prefix, or uninstall the gate the same way |
 | Cowork | No gate | Use Claude Code |

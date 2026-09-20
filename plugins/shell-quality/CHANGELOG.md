@@ -15,6 +15,20 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+### Changed
+
+- Catalog: the marketplace entry now has category `development` and search
+  `tags`, from `plugin.json` `metadata.marketplace`.
+- README Requirements: Claude Code minimum is 2.1.72, since `plugin.json` now
+  carries `metadata` (2.1.72 fixed manifests with unused fields failing to load).
+- Keywords add `pre-commit` and `guardrails`, matching what the skills cover.
+- README: the hooks section gives the `--max-blocks` range (1–7), the
+  Limitations table lists every hook timeout (30 s baseline and guard, 60 s
+  post, 120 s Stop), the CAUTION alert says the five hook groups cover four
+  events, the Security table names the XDG ShellCheck rc path, and the
+  maintainer checks run both suites by path under `/bin/bash` with the
+  plugin's own `SQ_TEST_BASH`.
+
 ## [0.1.0] - 2026-09-19
 
 ### Added

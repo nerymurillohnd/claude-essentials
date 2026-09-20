@@ -1,11 +1,10 @@
 // @ts-check
 // Validates .claude-plugin/marketplace.json and every plugins/*/.claude-plugin/plugin.json
 // against schemas/*.schema.json, and cross-checks that every plugin listed in the
-// marketplace catalog actually exists on disk (and vice versa).
-import { readFileSync } from "node:fs";
+// marketplace catalog actually exists on disk (and vice versa), and that every
+// catalog entry equals what npm run generate would write from its plugin.json.
 import { join } from "node:path";
-import { Ajv } from "ajv";
-import ajvFormats from "ajv-formats";
+import { catalogEntryDrift, compileSchemas } from "./lib/catalog.mjs";
 import { errorMessage } from "./lib/errors.mjs";
 import {
   checkPluginKind,
@@ -17,18 +16,7 @@ import {
 import { validateReadmes } from "./lib/readme-contract.mjs";
 import { validateRepoMetadata } from "./lib/repo-metadata.mjs";
 
-// ajv-formats is CommonJS: `.default` is the plugin function (same object at runtime) and what its typings declare.
-const addFormats = ajvFormats.default;
-
 const marketplacePath = join(rootDir, ".claude-plugin", "marketplace.json");
-
-const ajv = new Ajv({ allErrors: true, strict: false });
-addFormats(ajv);
-
-/** @param {string} name */
-function loadSchema(name) {
-  return JSON.parse(readFileSync(join(rootDir, "schemas", name), "utf8"));
-}
 
 /**
  * @param {string} label
@@ -101,12 +89,11 @@ function main() {
   /** @type {string[]} */
   const errors = [];
 
-  const marketplaceSchema = ajv.compile(loadSchema("marketplace.schema.json"));
+  const schemas = compileSchemas();
+  const marketplaceSchema = schemas.marketplace;
   // Cast is sound: schemas/plugin.schema.json requires a string "name", the only field
   // this script reads by name after validation.
-  const pluginSchema = /** @type {PluginValidator} */ (
-    ajv.compile(loadSchema("plugin.schema.json"))
-  );
+  const pluginSchema = /** @type {PluginValidator} */ (schemas.plugin);
 
   const marketplace = readJson(marketplacePath);
   if (!marketplaceSchema(marketplace)) {
@@ -123,6 +110,16 @@ function main() {
   );
   errors.push(...pluginDirs.filter((name) => !validatePlugin(name, pluginSchema)));
   errors.push(...catalogDrift(catalogNames, new Set(pluginDirs)));
+
+  const validPlugins = pluginDirs.filter((name) => !errors.includes(name));
+  const entryProblems = catalogEntryDrift(
+    marketplace.plugins ?? [],
+    new Map(validPlugins.map((name) => [name, readJson(manifestPath(name))])),
+  );
+  for (const problem of entryProblems) console.error(`✗ ${problem}`);
+  errors.push(...entryProblems);
+  if (entryProblems.length === 0)
+    console.log("✓ every catalog entry matches its plugin.json (description, category, tags)");
 
   const metadataProblems = validateRepoMetadata(rootDir, pluginDirs);
   for (const problem of metadataProblems) console.error(`✗ ${problem}`);

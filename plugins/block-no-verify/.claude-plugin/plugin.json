@@ -2,7 +2,7 @@
   "name": "block-no-verify",
   "displayName": "Block No Verify",
   "version": "0.1.1",
-  "description": "A skill that, only when you ask and approve a scope, installs a Claude Code hook denying Git commands that skip local hooks or commit signing (--no-verify, -n, --no-gpg-sign, core.hooksPath, HUSKY=0, ...). Installing the plugin wires nothing.",
+  "description": "Stops Claude from skipping your Git hooks or commit signing: only when you ask and approve a scope, its skill installs a Claude Code PreToolUse hook that denies Git commands Claude runs with --no-verify, -n, --no-gpg-sign, core.hooksPath overrides, HUSKY=0, and similar bypasses. Installing the plugin wires nothing, and it never controls your own terminal or CI.",
   "author": {
     "name": "Nery Samuel Murillo Tejada",
     "url": "https://github.com/nerymurillohnd"
@@ -19,5 +19,20 @@
     "commit-signing",
     "no-verify",
     "guardrails"
-  ]
+  ],
+  "metadata": {
+    "marketplace": {
+      "category": "security",
+      "tags": [
+        "git",
+        "git-hooks",
+        "commit-signing",
+        "no-verify",
+        "pre-commit",
+        "husky",
+        "lefthook",
+        "guardrails"
+      ]
+    }
+  }
 }

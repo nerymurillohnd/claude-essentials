@@ -15,6 +15,20 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+### Changed
+
+- Catalog: the marketplace entry now has category `development` and search
+  `tags`, from `plugin.json` `metadata.marketplace`.
+- README: Requirements states the real Claude Code minimum for `ruff-hooks`
+  (2.1.69, for `${CLAUDE_SKILL_DIR}`) and the order the gate looks for Ruff
+  (`RUFF_BIN`, then the nearest `.venv/bin/ruff` or `venv/bin/ruff`, then
+  `PATH`); the Security table says what `uninstall` removes and keeps; the
+  Limitations table lists every hook timeout, notes that a timed-out guard does
+  not deny, and that Bash-edit coverage needs a Git repository and skips
+  Git-ignored files; the maintainer checks run both suites by path under
+  `/bin/bash` with `RQ_TEST_BASH`; the FAQ dates its comparison with Astral's
+  skill.
+
 ## [0.1.0] - 2026-09-19
 
 ### Added

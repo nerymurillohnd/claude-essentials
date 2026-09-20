@@ -5,6 +5,32 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0017 — 2026-09-19 — README test-shell variables are checked against the suites that read them
+
+- **Original pending record:** none. Found by the repo-auditor on 2026-09-19: the ruff-quality and shell-quality READMEs had told maintainers to run their suites with `BNV_TEST_BASH`, which those suites read only as a fallback after their own `RQ_TEST_BASH` / `SQ_TEST_BASH`; the README fix had no gate.
+- **Resolved debt:** A README could name a variable its suites don't read, so the documented command silently tested the default shell.
+- **Resolution:** `scripts/lib/readme-test-vars.test.mjs` (part of `npm test`) fails when a plugin README names a `<PREFIX>_TEST_BASH` variable that none of that plugin's `test-*.sh` suites reads.
+- **Positive verification:** the test passes for all four plugins.
+- **Negative verification:** replacing `RQ_TEST_BASH` with `NOPE_TEST_BASH` in `plugins/ruff-quality/README.md` fails it with "names NOPE_TEST_BASH, but no test-*.sh in plugins/ruff-quality reads it".
+- **Owner or responsible area:** `scripts/lib/readme-test-vars.test.mjs`
+- **Residual risk / follow-up:** Only `*_TEST_BASH` variables are checked; other documented environment variables are reviewed by hand.
+
+### DEBT-0015 — 2026-09-19 — Catalog category and tags come from `plugin.json` `metadata.marketplace`
+
+- **Original pending record:** none. Raised by the maintainer on 2026-09-19: `plugin.json` has a `metadata` object Claude Code doesn't read, and the repo had no contract for it.
+- **Resolved debt:** Marketplace entries support `category` and `tags` ([plugin-marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)), but `plugin.json` can't carry them, and `scripts/generate-marketplace.mjs` wrote only `name`, `source`, and `description`, so the catalog had no categories. `metadata` is documented as a free-form object Claude Code never reads ([plugins-reference](https://code.claude.com/docs/en/plugins-reference)), yet it was missing from `METADATA_KEYS` (`scripts/lib/version-plan.mjs`) and from the `jq del()` list in `.claude/hooks/lib/plugin-paths.sh`, so adding it to a manifest would have counted as a runtime change and forced a version bump. `schemas/marketplace.schema.json` (`additionalProperties: false` on entries) would also have rejected a `category`.
+- **Resolution:**
+  - Contract: `metadata.marketplace = { category, tags? }` in `plugin.json`. The allowed categories are defined once, in `schemas/plugin.schema.json#/definitions/marketplaceCategory` (a curated subset of the official Anthropic marketplace's categories, checked 2026-09-19; `location`, `math`, and `migration` are left out as outside this marketplace's scope); `marketplace.schema.json` entries reference that list and the tag definition.
+  - `scripts/lib/catalog.mjs` builds each entry (`name`, `source`, `description`, then `category` and `tags` when set); `generate-marketplace.mjs` uses it. `validate-marketplace.mjs` compiles both schemas in one Ajv instance and fails when an entry differs from what the generator would write.
+  - `metadata` is in `METADATA_KEYS` and in the `plugin-paths.sh` `jq del()` list.
+  - Templates carry a `metadata.marketplace` placeholder whose `REPLACE-WITH-CATEGORY` fails the schema until replaced; [plugins.md](../contributing/plugins.md) and [versioning.md](../contributing/versioning.md) document the contract.
+- **Positive verification:** `node --test scripts/lib/catalog.test.mjs scripts/lib/version-plan.test.mjs scripts/lib/plugin-paths.test.mjs` passes (generator order and omission, schema accept and reject cases, drift detection, metadata-only edit exempt in both the JS and bash implementations). `claude plugin validate --strict` 2.1.278 passes a plugin with `metadata.marketplace` and a marketplace entry with `category` and `tags`; CI pins 2.1.276, after 2.1.222, when `metadata` became a recognized field.
+- **Negative verification:** the schema rejects an unknown category (`utilities`), a missing category, non-kebab, empty, or duplicate tags, and extra keys; the template's placeholder category fails with `/metadata/marketplace/category must be equal to one of the allowed values`. `npm run validate` reported a catalog entry whose description no longer matched its `plugin.json`.
+- **Owner or responsible area:** `schemas/plugin.schema.json`, `schemas/marketplace.schema.json`, `scripts/lib/catalog.mjs`, `scripts/lib/version-plan.mjs`, `.claude/hooks/lib/plugin-paths.sh`
+- **Residual risk / follow-up:** `metadata.marketplace` became required on 2026-09-19, once all four plugins declared it. Placeholder `tags` (`replace`, `with`, `tags`) pass the schema, as placeholder `keywords` already do; only review catches them. Editors resolve the marketplace schema's `$ref` against its `$id`, so editor-side category completion may not work.
+- **Related records:** [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md)
+- **Superseded by:** none
+
 ### DEBT-0014 — 2026-09-19 — Gate plugins enforce every stated minimum and test their installer and degraded modes
 
 - **Original pending record:** none. Found by `/plugin-release-review` while building ruff-quality and shell-quality 0.1.0.
@@ -45,7 +71,7 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
   - The repository admin role is a bypass actor (mode *Always*) on ruleset 23655894. The maintainer made this change in the GitHub UI.
   - `.claude/hooks/guard-push.sh` denies a direct push to `main` unless the tree is clean, `check:versions` reports `bump: none`, and `npm run check` passes. A runtime change is sent to a PR.
   - `version-check` also runs on pushes to `main`, against the commit before the push.
-  - `CLAUDE.md`, `docs/contributing/versioning.md`, `.claude/rules/plugin-delivery.md`, and `pr-delivery` describe the split: direct push for non-runtime changes, a PR for version bumps.
+  - `CLAUDE.md`, `docs/contributing/versioning.md`, `.claude/rules/plugin-delivery.md`, and `pr-delivery` describe the split: direct push for non-runtime changes, a PR for version bumps. (2026-09-19: `plugin-delivery.md` was split into path-scoped rules; the split is now stated in `CLAUDE.md` Conventions and `pr-delivery`.)
 - **Positive verification:** `push-guard.test.mjs` allows a clean non-runtime push to `main`. The first direct push after this change went through the real gate.
 - **Negative verification:** `push-guard.test.mjs` denies a runtime change, failing version rules, a failing check, and a dirty tree.
 - **Owner or responsible area:** GitHub rulesets, `.claude/hooks/guard-push.sh`, `.github/workflows/ci.yml`
@@ -61,7 +87,7 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
   - `.claude/hooks/guard-push-merged-branch.sh` (PreToolUse, Bash) denies pushing a branch that was published before but no longer exists on the remote.
   - The repo skill `pr-delivery` starts a checklist that `checklist-gate.sh` enforces. Its verify commands prove that every plugin version is tagged on origin, the feature branch is gone locally and remotely, `main` equals `origin/main`, and the tree is clean.
   - `checklist.sh start` refuses while another checklist is unfinished. Verify commands receive `$CHECKLIST_SUBJECT`.
-  - `.claude/rules/plugin-delivery.md` records the working rules: design first, continuous review, Bash 3.2 and degraded-mode testing, edit verification, current numbers, branch hygiene, tagging, and the definition of done.
+  - `.claude/rules/plugin-delivery.md` records the working rules: design first, continuous review, Bash 3.2 and degraded-mode testing, edit verification, current numbers, branch hygiene, tagging, and the definition of done. (2026-09-19: moved to `plugin-authoring.md`, `shell-scripts.md`, and `edits-and-evidence.md`, and into the `plugin-design`, `plugin-release-review`, and `pr-delivery` checklists.)
   - `scripts/lib/text-files.test.mjs` fails when a tracked or new text file holds a raw control character. A tool turned a written NUL escape into the byte twice, the second time in this change.
 - **Positive verification:** `scripts/lib/push-guard.test.mjs` shows a deleted published branch is denied in eight spellings, under `bash` and `/bin/bash`. `checklist-gate.test.mjs` shows the subject reaches verify commands. The delivery verify commands pass against the real repository after #12.
 - **Negative verification:** New branches, live branches, deletions, tag pushes, and non-push commands are allowed, and an unreachable remote fails open. A second checklist start is refused, and the delivery `branches` verify fails while the feature branch still exists.
