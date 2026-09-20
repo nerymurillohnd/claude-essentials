@@ -134,6 +134,34 @@ test("records nothing while the working tree is dirty", () => {
   }
 });
 
+test("checks the worktree Claude is in, not the checkout the session started from", () => {
+  const dir = makeProject();
+  const worktree = join(dir, "wt");
+  const git = (/** @type {string[]} */ args) =>
+    spawnSync("git", ["-C", dir, ...args], { encoding: "utf8" });
+  try {
+    git(["worktree", "add", "--quiet", worktree, "-b", "wt"]);
+    // The worktree carries uncommitted work; the main checkout is clean. Before
+    // the hook read `cwd`, it checked the clean tree and filed a record anyway.
+    writeFileSync(join(worktree, "seed.txt"), "edited in the worktree\n");
+    assert.notEqual(
+      spawnSync("git", ["-C", worktree, "status", "--porcelain"], { encoding: "utf8" }).stdout,
+      "",
+      "the worktree must be dirty for this test to mean anything",
+    );
+    const out = run(dir, {
+      agent_type: "repo-auditor",
+      cwd: worktree,
+      last_assistant_message: `HEAD: ${sha}\nVERDICT: PASS`,
+    });
+    assert.match(out, /uncommitted changes/);
+    assert.equal(existsSync(recordPath(dir, sha)), false);
+  } finally {
+    spawnSync("git", ["-C", dir, "worktree", "remove", "--force", worktree], { encoding: "utf8" });
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("records nothing for other agents or a report without HEAD and VERDICT lines", () => {
   const dir = makeProject();
   try {

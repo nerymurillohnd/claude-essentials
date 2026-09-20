@@ -7,6 +7,10 @@
 # CI remains the authority. See docs/decisions/adr-0002-project-hooks.md.
 set -euo pipefail
 
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/repo-root.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/repo-root.sh"
+
 command -v jq >/dev/null 2>&1 || exit 0
 
 input="$(cat)"
@@ -14,9 +18,16 @@ command_text="$(jq -r '.tool_input.command // empty' <<<"${input}")"
 # `git commit` as a command, optionally with global options such as -C <dir>.
 [[ "${command_text}" =~ (^|[;&|[:space:]])git([[:space:]]+-[^[:space:]]+([[:space:]]+[^-[:space:]][^[:space:]]*)?)*[[:space:]]+commit([[:space:]]|$) ]] || exit 0
 
-root="${CLAUDE_PROJECT_DIR:-$(jq -r '.cwd // empty' <<<"${input}")}"
-root="$(cd "${root:-${PWD}}" && pwd -P)"
+# The tree holding the files this commit would include: the worktree when
+# Claude is in one, not the checkout the session started from. See
+# lib/repo-root.sh.
+root="$(session_tree "${input}")"
+# A fresh worktree has no node_modules unless worktree.symlinkDirectories
+# carries it over, so fall back to the project's own Biome before giving up.
 biome="${root}/node_modules/.bin/biome"
+if [[ ! -x "${biome}" ]]; then
+  biome="$(project_dir "${input}")/node_modules/.bin/biome"
+fi
 [[ -x "${biome}" ]] || exit 0
 
 deny() {

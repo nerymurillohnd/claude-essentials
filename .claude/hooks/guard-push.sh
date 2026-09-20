@@ -15,14 +15,19 @@
 # Read-only. See docs/decisions/adr-0002-project-hooks.md and ADR-0003.
 set -euo pipefail
 
+# shellcheck source-path=SCRIPTDIR
+# shellcheck source=lib/repo-root.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/repo-root.sh"
+
 command -v jq >/dev/null 2>&1 || exit 0
 
 input="$(cat)"
 command_text="$(jq -r '.tool_input.command // empty' <<<"${input}")"
 [[ "${command_text}" == *push* ]] || exit 0
 
-root="${CLAUDE_PROJECT_DIR:-$(jq -r '.cwd // empty' <<<"${input}")}"
-root="${root:-${PWD}}"
+# The tree being pushed, which is the worktree when Claude is in one — not the
+# checkout the session started from. See lib/repo-root.sh.
+root="$(session_tree "${input}")"
 git -C "${root}" rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
 deny() {
