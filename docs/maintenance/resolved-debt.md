@@ -5,6 +5,30 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0025 — 2026-09-20 — A plugin README must document every environment variable its Python scripts read
+
+- **Original pending record:** none. Found during `/plugin-release-review agent-self-knowledge` on 2026-09-20.
+- **Resolved debt:** `ccdocs.py` reads `CCDOCS_CACHE_TTL`, `CCDOCS_CORPUS_TTL` and `CCDOCS_LANG` (lines 54, 61, 62). None appeared in the plugin README, so three user-facing controls — including the one that decides how stale a "live documentation" answer may be — were invisible to anyone deciding whether to install it. A full review by hand found two of the three and missed the last.
+- **Resolution:** the README documents all three in a table under Requirements, and `scripts/lib/plugin-script-env.test.mjs` (part of `npm test`) fails when a plugin's Python scripts read an environment variable its README does not name. Ambient variables (`HOME`, `PATH`, `XDG_*`, `CLAUDE_*`, locale, CI) are exempt. Restricted to Python because `os.environ` names the variable unambiguously, while a shell `${VAR}` is more often a local.
+- **Positive verification:** `node --test scripts/lib/plugin-script-env.test.mjs` passes for `agent-self-knowledge`, the only plugin shipping Python today.
+- **Negative verification:** renaming `CCDOCS_CORPUS_TTL` to `CCDOCS_CORPUS_TTLX` in the README fails the test with `CCDOCS_CORPUS_TTL (read in skills/claude-code-docs/scripts/ccdocs.py)`. The first draft used a substring match and passed that mutation; the check now matches whole words.
+- **Owner or responsible area:** `scripts/lib/plugin-script-env.test.mjs`
+- **Residual risk / follow-up:** Shell scripts are not covered, and neither is a variable read indirectly. A plugin that reads configuration some other way still needs review to catch it.
+- **Related records:** [plugin-release-review skill](../../.claude/skills/plugin-release-review/)
+- **Superseded by:** none
+
+### DEBT-0024 — 2026-09-20 — Every plugin README states its network posture in the badge row
+
+- **Original pending record:** none. Found during `/plugin-release-review agent-self-knowledge` on 2026-09-20.
+- **Resolved debt:** `checkNetworkClaim` in `scripts/lib/readme-contract.mjs` only fired when a README claimed `network-none` and shipped a script that called out. A README with **no** Network badge passed, which is the more misleading case: `agent-self-knowledge` — the only plugin here that reaches the network at all — shipped with no Network badge while all four others carry `network-none`, so the badge row implied the opposite of the truth.
+- **Resolution:** `checkNetworkClaim` now reports a missing Network badge as a contract failure, so every plugin states `network-none`, `network-optional` or `network-required`. `agent-self-knowledge` carries `network-required`.
+- **Positive verification:** `npm run validate` passes with the badge present; `node --test scripts/lib/readme-contract.test.mjs` passes 15 checks.
+- **Negative verification:** `checkNetworkClaim(dir, new Map())` returns the missing-badge finding, asserted in the test; a plugin that declares `network-required` carries no obligation about its scripts, also asserted.
+- **Owner or responsible area:** `scripts/lib/readme-contract.mjs`
+- **Residual risk / follow-up:** The gate checks that a posture is declared and that `none` is truthful; it does not verify that `required` is truthful, which review covers.
+- **Related records:** [plugin README template](../../templates/plugin-README-reusable-template.md)
+- **Superseded by:** none
+
 ### DEBT-0017 — 2026-09-19 — README test-shell variables are checked against the suites that read them
 
 - **Original pending record:** none. Found by the repo-auditor on 2026-09-19: the ruff-quality and shell-quality READMEs had told maintainers to run their suites with `BNV_TEST_BASH`, which those suites read only as a fallback after their own `RQ_TEST_BASH` / `SQ_TEST_BASH`; the README fix had no gate.

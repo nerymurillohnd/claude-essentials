@@ -53,13 +53,17 @@ real, it just lives in the binary rather than in the docs.
 This is the plugin's material limitation, not a wording defect: the skill's
 sources are the published documentation, the changelog and the npm registry,
 and Claude Code ships settings keys in none of them. Every bounded negative
-claim about a settings key can therefore be a false negative. Recorded as
-DEBT-0023.
+claim about a settings key can therefore be a false negative. Recorded as DEBT-0023.
 
 Two negative findings, both recorded rather than papered over:
 
-- **The skill did not self-invoke.** The test session reported
-  `ACTIVACION: manual` despite a prompt that asked for sources four times.
+- **The skill did not self-invoke** in that test, which reported
+  `ACTIVACION: manual` despite a prompt that asked for sources four times. This
+  no longer holds for the shipped frontmatter: with the rewritten `description`
+  and `when_to_use`, the skill invoked itself unprompted in all three
+  `triggers-on-settings-question` runs [observed, 2026-09-20, eval suite]. One
+  case is not a guarantee, and the README still states that the skill may not
+  load on its own.
 - **Efficiency is unmeasured.** The run cost $1.96 / 3 min wall, but no
   baseline arm ran the same battery without the skill, so no comparative claim
   is made here.
@@ -91,8 +95,11 @@ README, CHANGELOG, LICENSE.
 **Rejected.** `commands/` (the skill is the interface) · `agents/` (a skill-only
 plugin ships exactly one skill) · `hooks/hooks.json` (out of the fixed scope;
 recorded as debt — see Non-goals) · `.mcp.json`, `.lsp.json`, `monitors/`,
-`workflows/`, `outputStyles` (nothing to serve) · `userConfig` (no configurable
-value; hosts and TTLs are constants) · `dependencies`, `defaultEnabled`,
+`workflows/`, `outputStyles` (nothing to serve) · `userConfig` (the two values
+that vary — the cache TTL and the documentation language — are already read
+from the environment as `CCDOCS_CACHE_TTL` and `CCDOCS_LANG`, and a
+`userConfig` option does not reach a skill's bundled script, so declaring one
+would promise a control it cannot deliver) · `dependencies`, `defaultEnabled`,
 `channels` (no relationship to other plugins) · `bin/` (forbidden).
 
 ## Decisions
@@ -233,17 +240,19 @@ recorded rather than silent:
   report block, so the plugin was first assembled with the skill's original
   684-char `description` and no `when_to_use`. The maintainer then rejected that
   description style across the whole catalog and ruled that `when_to_use` be
-  declared, so all seven skills in this repository now carry both fields,
-  rewritten from each skill's own files rather than from the previous wording.
+  declared. This branch carries that change for `claude-code-docs` only —
+  `description` 491 chars, `when_to_use` 591. The other six published skills are
+  rewritten the same way, each on its own branch and its own pull request.
 - **Four rewritten descriptions were invalid YAML, and no existing gate caught
   it.** Dropping the quotation marks left plain scalars containing `": "`, which
   a YAML parser rejects; `block-no-verify`, `ruff-hooks`, `shell-hooks` and
   `verify-completion` all failed to parse while `claude plugin validate
   --strict` and `npm run check` passed [observed, 2026-09-20, Claude Code
-  2.1.278]. Fixed by removing every `": "` from the values, and gated by
-  `scripts/lib/skill-frontmatter.test.mjs`, which parses every plugin
-  `SKILL.md` frontmatter with the repository's `yaml` dependency and enforces
-  the 1,536-char listing budget. See DEBT-0022.
+  2.1.278]. The gate ships on this branch —
+  `scripts/lib/skill-frontmatter.test.mjs` parses every plugin `SKILL.md`
+  frontmatter with the repository's `yaml` dependency and enforces the
+  1,536-char listing budget — while the four corrected descriptions land on
+  their own branches. See DEBT-0022.
 - **The `test-*.sh` suite in the Verification plan was not built.** `ccdocs.py`
   is Python and the repository has no Python test gate (DEBT-0016), so the
   script's failure modes are covered by `selfcheck` and by the clean-session
@@ -251,7 +260,14 @@ recorded rather than silent:
 - **Compatibility is `partial`, not `supported`**: retrieval was exercised in a
   real session, but the consumer smoke test from the remote marketplace has not
   been run.
-- **Debt records**: DEBT-0019 (`raw` without URL validation, risk accepted) and
-  DEBT-0021 (undocumented plugin-name restriction) opened and still pending;
-  DEBT-0020 (description style inherited from `plugin-dev`) opened and closed by
-  the rewrite; DEBT-0022 opened for the frontmatter gate gap.
+- **The negative-claim eval case was withdrawn, not shipped.** The plan above
+  required three cases. `bounded-negative-claim` asked which setting relocates
+  the worktree directory, on the assumption that none exists; `worktree.location`
+  does, so the case graded a true answer as a failure and was removed rather
+  than published. Two cases ship. No replacement question has been verified
+  absent from both the published documentation and the shipped settings schema.
+  DEBT-0023.
+- **Debt records**: DEBT-0019 (`raw` without URL validation, risk accepted),
+  DEBT-0021 (undocumented plugin-name restriction), DEBT-0022 (the validator
+  accepts unparseable frontmatter) and DEBT-0023 (published sources do not carry
+  every settings key) are open on this branch.

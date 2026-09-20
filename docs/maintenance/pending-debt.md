@@ -45,7 +45,7 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Owner or responsible area:** `scripts/lib/skill-frontmatter.test.mjs`
 - **Next action:** Report the gap upstream with the reproduction above. Locally, keep the repository's own gate as the authority and extend it if other frontmatter fields turn out to be parsed the same way.
 - **Review condition:** Close when `claude plugin validate --strict` fails a plugin whose skill frontmatter is not valid YAML, verified with the same reproduction.
-- **Related records:** [DEBT-0021](#debt-0021--plugin-name-restrictions-are-undocumented-upstream), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md), [resolved DEBT-0020](resolved-debt.md)
+- **Related records:** [DEBT-0021](#debt-0021--plugin-name-restrictions-are-undocumented-upstream), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
 
 ### DEBT-0021 — Plugin name restrictions are undocumented upstream
 
