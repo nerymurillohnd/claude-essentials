@@ -15,6 +15,7 @@ body:
       label: Affected plugin
       options:
         - Marketplace catalog / installation
+        - agent-self-knowledge
         - block-no-verify
         - ruff-quality
         - shell-quality

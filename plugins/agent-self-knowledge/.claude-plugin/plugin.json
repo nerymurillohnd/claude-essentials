@@ -1,0 +1,38 @@
+{
+  "name": "agent-self-knowledge",
+  "displayName": "Agent Self-Knowledge",
+  "version": "0.1.0",
+  "description": "Stops Claude from answering about Claude Code from memory. Its skill queries the live official documentation, the upstream changelog and the npm registry, then answers with the exact sentence quoted verbatim, the source URL, and the version it verified against — and reports what it could not find instead of filling the gap.",
+  "author": {
+    "name": "Nery Samuel Murillo Tejada",
+    "url": "https://github.com/nerymurillohnd"
+  },
+  "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/agent-self-knowledge",
+  "repository": "https://github.com/nerymurillohnd/claude-essentials",
+  "license": "Apache-2.0",
+  "keywords": [
+    "documentation",
+    "citations",
+    "live-docs",
+    "changelog",
+    "hallucination",
+    "verification",
+    "claude-code",
+    "self-knowledge"
+  ],
+  "metadata": {
+    "marketplace": {
+      "category": "development",
+      "tags": [
+        "documentation",
+        "citations",
+        "live-docs",
+        "changelog",
+        "verification",
+        "hallucination",
+        "self-knowledge",
+        "research"
+      ]
+    }
+  }
+}
