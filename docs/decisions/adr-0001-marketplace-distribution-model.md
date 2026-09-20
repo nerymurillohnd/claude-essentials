@@ -68,3 +68,37 @@ Starter layouts for all three shapes live in `templates/`.
 - The three shapes, their templates, and the distribution decision above are
   unchanged. See [ADR-0003](adr-0003-plugin-versioning-and-tagging.md) and
   the [spec](../superpowers/specs/2026-09-18-repo-protocols-design.md) (D5).
+
+### Amendment — 2026-09-20: two non-manual ways to get a bare skill onto a machine
+
+The Context above says the only way to install a skill without going through a
+plugin is "dropping it directly into `~/.claude/skills/` or
+`<project>/.claude/skills/`, which is a manual, per-machine action". Re-verified
+on 2026-09-20 against Claude Code 2.1.278, that sentence is incomplete. Two
+mechanisms it does not name exist:
+
+- **Skills-directory plugins.** "Any folder under a skills directory that
+  contains a `.claude-plugin/plugin.json` manifest is loaded as a plugin named
+  `<name>@skills-dir` on the next session, with no marketplace and no install
+  step" (`plugins-reference`, Skills-directory plugins; landed in Claude Code
+  2.1.157). At project scope the folder is checked into the repository and
+  reaches every collaborator who clones it, after the workspace trust dialog.
+  This is still a *plugin*, so it reinforces the decision rather than
+  contradicting it — but it is neither manual nor per-machine.
+- **Skills synced from claude.ai.** Claude Code downloads the skills enabled for
+  an account into `~/.claude/skills/synced/` and re-checks for changes about
+  every ten minutes (`skills`, Where synced skills load; terminal sessions
+  require 2.1.273). These are bare skills, with no plugin wrapper, distributed
+  to an account or to an organization's members.
+
+**The decision does not change.** A `.claude-plugin/marketplace.json` catalog
+still lists only plugins, `/plugin install` still installs a plugin, and neither
+route above distributes a bare skill to the open community from a git catalog —
+one is repository-local, the other is governed by claude.ai rather than by this
+repository. Both comparables read on 2026-09-20, `obra/superpowers` and
+`mattpocock/skills`, ship their skills as plugins for exactly this reason.
+
+This amendment corrects the Context only, so that a later session does not cite
+a claim the live documentation contradicts. See
+[ADR-0006](adr-0006-changelog-scope-skill-declaration-and-release-tooling.md) for
+the related decision that plugin manifests here declare no `skills` field.
