@@ -121,6 +121,23 @@ not miss.
 Review the root README catalog row the same way: its one-line outcome is the
 plugin's first impression in the catalog.
 
+Compare the README with the other shipped plugins, not only the templates:
+section order, emojis, badge row and order, tables, alert use, and voice must
+match. A difference is a finding unless the template changed on purpose.
+
+### 5b. Metadata fit
+
+1. Read `plugin.json` against every field the live plugin manifest schema offers.
+2. Each field the plugin's nature calls for is set (keywords for its problem space, `userConfig`, `dependencies`, `defaultEnabled`, component paths).
+3. Read `plugin.json` `metadata.marketplace` (`category`, `tags`): `npm run generate` copies it into the `marketplace.json` entry, so fix it there, never in the entry.
+4. A value a generator copied unchanged where the plugin needs more is a finding.
+
+### 5c. Bundled reviews
+
+1. Run `/code-review high` on the plugin's diff.
+2. Run `/security-review` when the plugin ships scripts, hooks, MCP, or LSP.
+3. Run `/claude-api prompt-audit` on its `SKILL.md` files, agents, and descriptions.
+
 ### 6. Report
 
 Present findings before changing anything substantial. Use this shape:

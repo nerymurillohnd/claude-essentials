@@ -78,6 +78,18 @@
           }
         ]
       }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "repo-auditor",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/record-audit.sh",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "enableWorkflows": true,

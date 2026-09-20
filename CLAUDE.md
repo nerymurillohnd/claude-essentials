@@ -110,6 +110,11 @@ docs' own examples. When live docs change, update them first.
 unmodified except for a source `$comment` (GitHub publishes none); `npm run validate` checks every issue form
 against them.
 
+**Designing a plugin:** before writing any plugin file, run the repo skill
+`/plugin-design <id>` (`.claude/skills/plugin-design/`): research, the
+component decision matrix, requirements, and the design spec, enforced by a
+Stop hook checklist.
+
 **Reviewing a plugin:** before calling a plugin done, and before any plugin
 PR, run the repo skill `/plugin-release-review <id>`
 (`.claude/skills/plugin-release-review/`). It adds the judgment layer on top of
@@ -117,11 +122,17 @@ PR, run the repo skill `/plugin-release-review <id>`
 and README quality. Its checklist is enforced by a Stop hook (ADR-0002
 amendment).
 
+**Final audit:** before any PR, the read-only `repo-auditor` subagent
+(`.claude/agents/repo-auditor.md`) audits the branch point by point;
+`/pr-delivery` requires its `VERDICT: PASS` recorded for the exact head SHA.
+
 **Delivering a change:** from push to finish, run `/pr-delivery [branch]`
 (`.claude/skills/pr-delivery/`). Its checklist doesn't let the work end until
 the PR is merged, the tags are on origin, the branch is gone locally and
 remotely, and `main` is synced. The working rules behind it live in
-`.claude/rules/plugin-delivery.md`.
+`.claude/rules/`: `plugin-delivery.md` and `edits-and-evidence.md` load every
+session; `plugin-authoring.md` (`plugins/**`) and `shell-scripts.md` (plugin
+and hook `.sh` files) load only when Claude reads a matching file.
 
 **Adding a plugin:** copy one of `templates/plugin-bundle/`,
 `templates/plugin-skill-only/`, or `templates/plugin-agent-only/` into

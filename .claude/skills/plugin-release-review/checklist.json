@@ -23,6 +23,18 @@
       "text": "README reviewed per references/readme-editorial-review.md, as a first-time visitor and against the fact sheet, including the root catalog row"
     },
     {
+      "id": "cross-plugin",
+      "text": "README format matches the other shipped plugins (sections, emojis, badges, tables, alerts, voice), not only the templates (evidence: plugins compared)"
+    },
+    {
+      "id": "metadata-fit",
+      "text": "plugin.json and the marketplace.json entry use every field the plugin's nature calls for, including category and tags; nothing copied unchanged by a generator where more is needed (evidence: fields reviewed)"
+    },
+    {
+      "id": "bundled-reviews",
+      "text": "/code-review high on the diff, /security-review when scripts/hooks/MCP/LSP ship, /claude-api prompt-audit on skills and agents; findings fixed or deferred (evidence: summaries)"
+    },
+    {
       "id": "report",
       "text": "Phase 6 report with verdict and evidence-backed findings presented to the user"
     },

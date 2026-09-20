@@ -13,6 +13,7 @@ only runs when someone runs it.
 | One-line purpose | README blockquote outcome, root catalog "Description" cell | Same meaning; the catalog cell may be shorter, never different |
 | Long description | `plugin.json` `description`, `marketplace.json` entry `description` (generated), README intro paragraph | Same claims and the same most important non-goal; no feature in one that the others contradict |
 | Keywords | `plugin.json` `keywords` | Describe the problem space a user would search for; no brand names |
+| Catalog category and tags | `plugin.json` `metadata.marketplace` (`category`, `tags`), `marketplace.json` entry (generated) | *(CI: entry matches generator; category in the allowed list)*; the category fits what the plugin does; tags are the search terms a user would type, at most eight |
 
 ## Version and history
 

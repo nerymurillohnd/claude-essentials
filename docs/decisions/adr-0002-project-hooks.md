@@ -321,3 +321,26 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   command Claude runs can't change them. `scripts/lib/push-guard.test.mjs`
   covers a clean pass, a runtime change, failing version rules, a failing check,
   and a dirty tree.
+
+### Amendment — 2026-09-19: design checklist, path-scoped rules, and the recorded final audit
+
+- `/plugin-design` (`.claude/skills/plugin-design/`) joins the checklist-gated
+  maintenance skills: its Stop-hook checklist holds a new plugin's design
+  (research, surfaces matrix, requirements, failure modes, spec, approval), and
+  its `spec` item verifies the required spec headings.
+- `.claude/rules/plugin-delivery.md` was split: procedures the three checklists
+  enforce became pointers; the remaining knowledge moved to path-scoped rules
+  (`plugin-authoring.md` for `plugins/**`, `shell-scripts.md` for shell files and
+  hooks) and one unscoped rule (`edits-and-evidence.md`). Path-scoped rules load
+  when a matching file is read, not written, so `/plugin-design` Phase 9 reads
+  them before creating files.
+- The read-only `repo-auditor` subagent (`.claude/agents/repo-auditor.md`) is the
+  final gate before a PR. A `SubagentStop` hook matched on `repo-auditor`
+  (`.claude/hooks/record-audit.sh`) records the auditor's own `HEAD:` and
+  `VERDICT:` lines in `.claude/state/audits/<sha>.json`; `/pr-delivery`'s `audit`
+  item verifies a PASS record for the merged PR's head (or the current head
+  before the merge). `scripts/lib/record-audit.test.mjs` covers recording, the
+  transcript fallback, and refusing other agents or incomplete reports.
+- Limit: the auditor's read-only status is enforced by `disallowedTools` for the
+  file tools and by its instructions for Bash; `npm run check` may run
+  `npm run generate`, and its G3 check fails the audit on any resulting change.

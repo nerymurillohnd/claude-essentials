@@ -1,0 +1,46 @@
+{
+  "skill": "plugin-design",
+  "items": [
+    {
+      "id": "start",
+      "text": "Phase 0: brainstorming and every matching plugin-dev:* skill invoked (evidence: skills invoked)"
+    },
+    {
+      "id": "goal",
+      "text": "Phase 1: goal restated and confirmed; user-only decisions asked (evidence: the user's words)"
+    },
+    {
+      "id": "research",
+      "text": "Phase 2: primary docs and 6-month changelog read; every source has an adopt/reject verdict (evidence: URLs, verdict count)"
+    },
+    {
+      "id": "evidence",
+      "text": "Phase 3: real tool exercised, edge cases tested, live captures done; facts tagged [observed]/[doc] (evidence: commands run)"
+    },
+    {
+      "id": "decisions",
+      "text": "Phase 4: every surface decided; skill boundaries, agents, workflows, and instructions-vs-script justified (evidence: spec section)"
+    },
+    {
+      "id": "requirements",
+      "text": "Phase 5: Requirements table and platform matrix filled for any user (evidence: spec section)"
+    },
+    {
+      "id": "failures",
+      "text": "Phase 6: non-goals, failure modes, fail-closed/open per event (evidence: spec section)"
+    },
+    {
+      "id": "verification-plan",
+      "text": "Phase 7: tests, at least 3 evals, open live checks listed (evidence: spec section)"
+    },
+    {
+      "id": "spec",
+      "text": "Phase 8: spec written with one canonical section and all required sections",
+      "verify": "f=$(ls docs/superpowers/specs/*-\"$CHECKLIST_SUBJECT\"-design.md 2>/dev/null | tail -1); test -n \"$f\" || { echo \"no spec for $CHECKLIST_SUBJECT\"; exit 1; }; for h in 'Requirements' 'Non-goals' 'Failure modes' 'Surfaces' 'References' 'Verification'; do grep -qi \"^#.*$h\" \"$f\" || { echo \"$f: missing a heading containing '$h'\"; exit 1; }; done"
+    },
+    {
+      "id": "approval",
+      "text": "Phase 8: the user approved or adjusted the design; nothing built before it (evidence: the user's words)"
+    }
+  ]
+}

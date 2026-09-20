@@ -10,6 +10,11 @@
       "text": "README eval table, test counts, timings, and Compatibility dates re-measured in this branch when the skill description, evals, or scripts changed; CHANGELOG matches what ships"
     },
     {
+      "id": "audit",
+      "text": "The repo-auditor subagent returned VERDICT: PASS on the final head SHA before the PR was opened, and again after any later push (evidence: head SHA, verdict line, check rows passed / N/A)",
+      "verify": "h=$(gh pr list --state merged --head \"$CHECKLIST_SUBJECT\" --json headRefOid -q '.[0].headRefOid' 2>/dev/null); test -n \"$h\" || h=$(git rev-parse HEAD); f=.claude/state/audits/$h.json; test -f \"$f\" || { echo \"no repo-auditor record for $h\"; exit 1; }; jq -e --arg h \"$h\" '.head == $h and .verdict == \"PASS\"' \"$f\" >/dev/null || { echo \"repo-auditor verdict for $h is not PASS\"; exit 1; }"
+    },
+    {
       "id": "merged",
       "text": "PR merged: GitHub reports the authorized head SHA as merged (evidence: PR number, merge commit SHA)"
     },
