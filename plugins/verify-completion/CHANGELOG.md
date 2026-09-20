@@ -15,7 +15,32 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.1.1] - 2026-09-20
+
 ### Changed
+
+- Skill description: rewritten from the skill's own files rather than from the
+  previous description, opening with the instruction instead of a
+  self-introduction. It now names the six gates, the four record states (`PASS`,
+  `FAIL`, `N/A`, `BLOCKED`), that a failing gate restarts the sequence from the
+  first, that the diff is re-read and the commands re-run instead of trusting an
+  earlier run or a subagent's report, and that the independent verifier scales
+  to the size of the change. The English and Spanish triggers are unchanged and
+  no longer quoted.
+
+- Skill frontmatter now declares `when_to_use` beside `description`. Claude Code
+  appends it to `description` in the skill listing, so the two are one
+  1,536-character budget; splitting them keeps the instruction and the
+  triggering conditions apart. Neither field contains a colon followed by a
+  space, which a YAML parser reads as a nested mapping and rejects —
+  `scripts/lib/skill-frontmatter.test.mjs` now parses every skill's frontmatter
+  and enforces both rules, because `claude plugin validate --strict` does not.
+
+- Eval table: the published scores are withdrawn until the suite is re-measured
+  against the descriptions this version ships. The numbers dated 2026-09-19 were
+  measured against the previous text, and a re-run performed while preparing this
+  version pinned a different agent model, so neither set isolates the change.
+  The cases themselves are unchanged.
 
 - Catalog: the marketplace entry now has category `testing` and search
   `tags`, from `plugin.json` `metadata.marketplace`.
@@ -66,5 +91,6 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 - 125-case hook test suite, run on bash 3.2 and 5.x with jq 1.6, 1.7.1, and 1.8.2; a typical reply is checked
   in about 100 ms, and 250 KB replies built to be slow in under 2 seconds.
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.0...HEAD
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.1...HEAD
+[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/tree/verify-completion--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/verify-completion--v0.1.0

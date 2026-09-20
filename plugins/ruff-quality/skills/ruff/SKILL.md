@@ -1,6 +1,7 @@
 ---
 name: ruff
-description: This skill should be used whenever Claude writes, edits, reviews, or fixes Python code (.py, .pyi, .ipynb) in a project, and when the user asks to "lint", "format", "fix Ruff errors", "explain a Ruff rule", "configure Ruff", "set up ruff.toml or [tool.ruff]", "migrate from black / isort / flake8 / pylint / pyupgrade to Ruff", "upgrade to Ruff 0.16", "add Ruff to pre-commit", "run Ruff in CI / GitHub Actions", or "set up the Ruff language server". It teaches the current Ruff workflow (safe fixes, then format, then check), how configuration is discovered, how to choose rules, and why findings are fixed in code instead of silenced. For installing the Claude Code after-edit hook, use the ruff-hooks skill instead.
+description: Lint and format Python with Ruff, fixing findings in the code instead of silencing them. Covers which command route to use (uv run, the project venv, PATH or uvx), the order that works (safe fixes, then format, then check), how configuration is discovered, why unsafe fixes need a preview first, why a whole codebase is never reformatted unasked, and every suppression that must never be added. Confirm the installed version with ruff --version and its changelog before relying on version-specific behavior. For installing the after-edit hook, use the ruff-hooks skill.
+when_to_use: On every Python file Claude writes, edits, reviews or fixes (.py, .pyi, .ipynb), before calling that work done, not only when the user asks. Also to explain or choose rules, configure ruff.toml or [tool.ruff], migrate from black, isort, flake8, pylint or pyupgrade, bring a configuration written for an older Ruff up to the current defaults, wire Ruff into pre-commit, GitHub Actions, an editor or Claude Code, or resolve a required-version error.
 compatibility: Claude Code, Claude Cowork, and any Agent Skills host. Needs ruff >= 0.16 on PATH, in the project's virtual environment, or through uv to run commands; the guidance works without it.
 license: Apache-2.0
 ---
@@ -9,10 +10,11 @@ license: Apache-2.0
 
 Ruff is the linter and formatter for Python from Astral. It replaces Black,
 isort, Flake8 and most of its plugins, pyupgrade, autoflake, pydocstyle, and
-large parts of Pylint and Bandit. This skill covers **Ruff 0.16** (0.16.0
-shipped on 2026-07-23). When the installed version differs, check
-`ruff --version` and the [changelog](https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md)
-before relying on version-specific behavior.
+large parts of Pylint and Bandit. Verified against **Ruff 0.16.8** on
+2026-09-19. Always check `ruff --version` and the
+[changelog](https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md) before
+relying on version-specific behavior: a later release may have changed it, and
+this page does not update itself.
 
 ## Non-negotiable rules
 
@@ -92,7 +94,7 @@ was fixed by hand, and anything left with the reason.
 - **Target version:** when `target-version` is not set, Ruff infers it from
   `requires-python` in the `pyproject.toml` next to the configuration.
 
-## Choosing rules after Ruff 0.16
+## Choosing rules when the defaults change
 
 Ruff 0.16 turned on **413 rules by default** (up from 59), including isort
 (`I`), bugbear (`B`), pyupgrade (`UP`), `RUF`, and `PGH004` (bare `noqa`), and

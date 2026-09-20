@@ -1,7 +1,7 @@
 {
   "name": "verify-completion",
   "displayName": "Verify Completion",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Makes Claude prove work is done before saying so: a six-gate verification skill with coherence and depth audits, a read-only verifier agent scaled to the size of the change, an opt-in workflow that cross-checks every finding, and a Stop hook that sends Claude back for a checkable Verification record when a reply presents finished work without one. It never authorizes commits, pushes, or deploys.",
   "author": {
     "name": "Nery Samuel Murillo Tejada",

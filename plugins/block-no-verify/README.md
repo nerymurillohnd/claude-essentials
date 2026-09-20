@@ -178,8 +178,8 @@ run with the plugin against a baseline without it:
 
 | Case | Checks | With | Without | Δ | Last run |
 | --- | --- | ---: | ---: | ---: | --- |
-| `protect-hooks-request` | Skill fires on a natural protection request, asks for a scope, and writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | 1.00 | 0.83 | +0.17 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
-| `ignores-git-read` | Skill does **not** fire on a read-only Git question | 1.00 | 1.00 | 0.00 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
+| `protect-hooks-request` | Skill fires on a natural protection request, asks for a scope, and writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `ignores-git-read` | Skill does **not** fire on a read-only Git question | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
 
 <details>
 <summary>Maintainer checks</summary>

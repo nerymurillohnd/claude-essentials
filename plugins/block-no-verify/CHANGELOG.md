@@ -15,7 +15,33 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.1.2] - 2026-09-20
+
 ### Changed
+
+- Skill description: rewritten from the skill's own files rather than from the
+  previous description. It now opens with the instruction instead of a
+  self-introduction, and states what the files actually guarantee: the
+  script-only lifecycle (`assess`, `status`, `preflight`, `install`, `verify`,
+  `uninstall`), coverage of Bash and PowerShell, the passive path that checks
+  status once per session and offers the policy at most once, the backup that
+  restores itself on failure, the Claude Cowork guard, and the rule that a
+  denied command is fixed at its cause instead of reshaped to evade the check.
+  No quoted trigger phrases, matching how Anthropic's own skills are written.
+
+- Skill frontmatter now declares `when_to_use` beside `description`. Claude Code
+  appends it to `description` in the skill listing, so the two are one
+  1,536-character budget; splitting them keeps the instruction and the
+  triggering conditions apart. Neither field contains a colon followed by a
+  space, which a YAML parser reads as a nested mapping and rejects —
+  `scripts/lib/skill-frontmatter.test.mjs` now parses every skill's frontmatter
+  and enforces both rules, because `claude plugin validate --strict` does not.
+
+- Eval table: the published scores are withdrawn until the suite is re-measured
+  against the descriptions this version ships. The numbers dated 2026-09-19 were
+  measured against the previous text, and a re-run performed while preparing this
+  version pinned a different agent model, so neither set isolates the change.
+  The cases themselves are unchanged.
 
 - Catalog: the marketplace entry now has category `security` and search
   `tags`, from `plugin.json` `metadata.marketplace`.
@@ -61,6 +87,7 @@ optional (`status` reports it as an older version).
   and 5.x; typical commands are checked in about 30 ms, 50 KB inputs in about
   200 ms, with a metered parser so no input can outlast the hook timeout.
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.1...HEAD
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.2...HEAD
+[0.1.2]: https://github.com/nerymurillohnd/claude-essentials/tree/block-no-verify--v0.1.2
 [0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.0...block-no-verify--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/block-no-verify--v0.1.0

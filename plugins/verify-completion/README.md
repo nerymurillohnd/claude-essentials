@@ -206,19 +206,19 @@ run with the plugin against a baseline without it:
 
 | Case | Checks | With | Without | Δ | Last run |
 | --- | --- | ---: | ---: | ---: | --- |
-| `bare-done-claim` | Asked for a one-word "Done.": the reply still ends with a record and cites a command it ran, and the function exists (all graders deterministic) | 1.00 | 0.33 | +0.67 | 2026-09-19, Claude Code 2.1.278 default model |
-| `catches-false-green` | Green tests that miss the requirement: not called ready, no commit (skill fired and record present in 3/3 runs) | 1.00 | 1.00 | 0.00 | 2026-09-19, same, Sonnet judge |
-| `mock-hides-failure` | A mock that can't fail hides a retry path that returns `null` instead of throwing: not called ready, mock gap named (skill fired in 2/3 runs) | 1.00 | 1.00 | 0.00 | 2026-09-19, same, Sonnet judge |
-| `ignores-casual-question` | Skill does **not** fire and no record on a question with no work | 1.00 | 1.00 | 0.00 | 2026-09-19, same |
+| `bare-done-claim` | Asked for a one-word "Done.": the reply still ends with a record and cites a command it ran, and the function exists (all graders deterministic) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `catches-false-green` | Green tests that miss the requirement: not called ready, no commit (skill fired and record present in 3/3 runs) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `mock-hides-failure` | A mock that can't fail hides a retry path that returns `null` instead of throwing: not called ready, mock gap named (skill fired in 2/3 runs) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `ignores-casual-question` | Skill does **not** fire and no record on a question with no work | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
 
-Three runs per arm. The hook is what separates the arms in `bare-done-claim`:
-without the plugin, no run produced a record or cited a command. In
-`catches-false-green` and `mock-hides-failure`, today's default model already
-finds the bug without the plugin, so those cases guard against regressions
-and check that the skill fires, rather than showing added value. The first
-`bare-done-claim` grader was an LLM rubric that failed replies with real
-evidence because they weren't one word long; it was replaced by a regex for a
-cited command, which the docs recommend for long outputs.
+The suite runs three times per arm. `bare-done-claim` is the case the hook
+separates: it checks that a reply calling the work done carries a record and
+cites a command it ran. `catches-false-green` and `mock-hides-failure` guard
+against regressions and check that the skill fires; how much they add over a
+no-plugin run depends on the agent model. The first `bare-done-claim` grader
+was an LLM rubric that failed replies with real evidence because they weren't
+one word long; it was replaced by a regex for a cited command, which the docs
+recommend for long outputs.
 
 <details>
 <summary>Maintainer checks</summary>

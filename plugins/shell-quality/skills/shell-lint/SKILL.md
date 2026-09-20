@@ -1,17 +1,19 @@
 ---
 name: shell-lint
-description: This skill should be used whenever Claude writes, edits, reviews, or fixes a shell script (.sh, .bash, .bats, or an extensionless file with a sh/bash/dash/ksh shebang), and when the user asks to "run ShellCheck", "fix SC2086 / SC2155 / an SC code", "format with shfmt", "set up .shellcheckrc", "configure shfmt / EditorConfig for shell", "make this script portable / POSIX / work on macOS bash 3.2", "migrate from bash -n / beautysh / checkbashisms to ShellCheck and shfmt", "add ShellCheck or shfmt to pre-commit", or "lint shell scripts in CI / GitHub Actions". It teaches the current ShellCheck 0.11 and shfmt 3.14 workflow (format, then check), how both tools find their configuration, correct fixes for the common SC codes, and why findings are fixed in the script instead of silenced. For installing the Claude Code after-edit hook, use the shell-hooks skill instead.
+description: Lint and format shell scripts with ShellCheck and shfmt, fixing findings in the script instead of silencing them. Covers the order that works (format, then check), how each tool finds its configuration, the correct fix for the codes you actually meet, where directives apply and which must never be added. Confirm the installed versions with shellcheck --version and shfmt --version and their changelogs before relying on version-specific behavior. For installing the after-edit hook, use the shell-hooks skill.
+when_to_use: On every shell script Claude writes, edits, reviews or fixes (.sh, .bash, .bats, or an extensionless file with a sh, bash, dash or ksh shebang), before calling that work done, not only when the user asks. Also to fix an SC code such as SC2086 or SC2155, set up .shellcheckrc or the shfmt keys of EditorConfig, make a script portable or POSIX or able to run on macOS bash 3.2, migrate from bash -n, beautysh or checkbashisms, or wire either tool into pre-commit, CI or an editor.
 compatibility: Claude Code, Claude Cowork, and any Agent Skills host. Needs shellcheck >= 0.10 and shfmt >= 3.12 to run commands; the guidance works without them.
 license: Apache-2.0
 ---
 
 # Shell lint
 
-ShellCheck finds bugs in shell scripts; shfmt formats them. This skill covers
-**ShellCheck 0.11** and **shfmt 3.14**. When installed versions differ, check
+ShellCheck finds bugs in shell scripts; shfmt formats them. Verified against
+**ShellCheck 0.11.0** and **shfmt 3.14.1** on 2026-09-19. Always check
 `shellcheck --version` and `shfmt --version` and the
 [ShellCheck changelog](https://github.com/koalaman/shellcheck/blob/master/CHANGELOG.md)
-before relying on version-specific behavior.
+before relying on version-specific behavior: a later release may have changed
+it, and this page does not update itself.
 
 ## Non-negotiable rules
 

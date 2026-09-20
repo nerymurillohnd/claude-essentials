@@ -20,7 +20,7 @@
 **Kind:** `bundle` — a full workflow: multiple components working together.
 
 Ruff Quality helps Python developers who use Claude Code keep Ruff green. Its
-`ruff` skill teaches Claude the current Ruff 0.16 workflow, configuration,
+`ruff` skill teaches Claude the current Ruff workflow, configuration,
 migration, and pipelines whenever it works on Python. Its `ruff-hooks` skill
 installs, only after you choose a scope and a configuration, a gate that fixes,
 formats, and lints every Python file Claude edits, denies suppression comments
@@ -40,7 +40,7 @@ passes. Installing the plugin does **not** wire any hook.
 | Scenario | How this plugin helps | Expected result |
 | --- | --- | --- |
 | Claude writes or edits Python | The `ruff` skill loads: safe fixes, then format, then check; no suppressions; scope limited to changed files | Code that passes the project's Ruff configuration |
-| You migrate from Black, isort, and Flake8, or upgrade to Ruff 0.16 | Tool-by-tool mapping, the `select` vs `extend-select` trap, current pre-commit hook ids and order | One reviewed change, no two formatters fighting |
+| You migrate from Black, isort, and Flake8, or bring an older configuration up to current defaults | Tool-by-tool mapping, the `select` vs `extend-select` trap, current pre-commit hook ids and order | One reviewed change, no two formatters fighting |
 | You want Ruff enforced on every edit | `ruff-hooks` shows the exact configuration of each mode with today's finding counts, then installs the gate in the scope you pick | Every edited file is fixed, formatted, and linted; findings go straight back to Claude |
 | Claude tries `# noqa`, `# ruff: ignore`, or relaxing `[tool.ruff]` to get green | The gate denies the edit before it happens, and re-checks suppression counts and configuration after edits and at Stop | The rule gets fixed in code; configuration stays your decision |
 | Claude tries to finish with findings left | The Stop gate re-checks every Python file edited this session and blocks, up to a limit you choose | The turn ends clean, or with a visible list of what is unresolved |
@@ -189,10 +189,10 @@ run with the plugin against a baseline without it:
 
 | Case | Checks | With | Without | Δ | Last run |
 | --- | --- | ---: | ---: | ---: | --- |
-| `fix-python-snippet` | `ruff` fires when cleaning up Python and fixes findings instead of silencing them | 1.00 | 0.67 | +0.33 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
-| `migrate-black-isort` | `ruff` fires on a migration question and gives current hook ids and order | 1.00 | 1.00 | 0.00 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
-| `hook-request-gated` | `ruff-hooks` fires, asks for scope and mode, writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | 1.00 | 0.50 | +0.50 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
-| `ignores-concept-question` | Neither skill fires on a conceptual Python question | 1.00 | 1.00 | 0.00 | 2026-09-19, Claude Code 2.1.278 default model, 3 runs per arm |
+| `fix-python-snippet` | `ruff` fires when cleaning up Python and fixes findings instead of silencing them | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `migrate-black-isort` | `ruff` fires on a migration question and gives current hook ids and order | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `hook-request-gated` | `ruff-hooks` fires, asks for scope and mode, writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+| `ignores-concept-question` | Neither skill fires on a conceptual Python question | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
 
 <details>
 <summary>Maintainer checks</summary>
@@ -310,8 +310,8 @@ make between turns.
 <summary>How is this different from Astral's official Ruff skill?</summary>
 
 As of 2026-09-19, the official skill (in `astral-sh/claude-code-plugins`)
-predates Ruff 0.16 and installs no hooks. This plugin covers 0.16 (the 413
-default rules, `ruff: ignore`, Markdown formatting), migration and pipelines,
+predates Ruff 0.16 and installs no hooks. This plugin covers the current
+defaults (413 rules, `ruff: ignore`, Markdown formatting), migration and pipelines,
 and adds an optional, tested gate that also forbids silencing rules. It is not
 affiliated with Astral.
 
