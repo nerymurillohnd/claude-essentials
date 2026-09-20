@@ -175,7 +175,7 @@ never with bypass permissions or `claude -p`
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.163 | `claude --version` | Stop hooks that continue the turn with `additionalContext` |
+| Claude Code | 2.1.222 | `claude --version` | Stop hooks that continue the turn with `additionalContext` (2.1.163); `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222 — earlier versions treat it as unrecognized, which `claude plugin validate --strict` turns into an error |
 | Bash | 3.2 | `bash --version` | Runs the hook handler |
 | jq | 1.6 | `jq --version` | Parses the hook payload and analyzes the reply |
 | Dynamic workflows | On (only for `deep-verify`) | `/config` → **Dynamic workflows** | The optional `/verify-completion:deep-verify` runs as a workflow: paid plans or API access, turned on from `/config` on Pro |

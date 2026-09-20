@@ -19,6 +19,12 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 
 - Catalog: the marketplace entry now has category `testing` and search
   `tags`, from `plugin.json` `metadata.marketplace`.
+- README Requirements: Claude Code minimum is 2.1.222, since `plugin.json` now
+  carries `metadata`, a recognized manifest field only from that version.
+  Earlier versions load the plugin but treat the key as unrecognized, which
+  `claude plugin validate --strict` — the command the README's Verification
+  section gives — turns into an error. Stop hooks with `additionalContext`
+  still date from 2.1.163.
 - README: uninstalling deletes the data directory only from the last scope
   (`/plugin` asks first; `--keep-data` keeps it); the `PostToolUse` matcher row
   lists every read-only and bookkeeping tool it skips; the `deep-verify`
