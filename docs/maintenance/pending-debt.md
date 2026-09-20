@@ -5,6 +5,20 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0018 — The catalog-metadata change shipped without a release review per plugin
+
+- **Status:** Pending
+- **Category:** process
+- **Evidence:**
+  - **Confirmed facts:** The branch `chore/repo-audit-and-catalog-metadata` changed the README and `plugin.json` of all four plugins and was pushed straight to `main` (`bump: none`, four plugins exempt). `.claude/rules/plugin-authoring.md` requires re-running `/plugin-release-review <id>` after every change touching runtime files, the README, or `plugin.json`. At the time of the push, `.claude/state/checklists/` held no record for `block-no-verify`, and the records for `ruff-quality` (2026-09-19T12:03:02Z), `shell-quality` (12:08:40Z), and `verify-completion` (09:02:21Z) all predated the last commit touching their plugin (2026-09-20T05:58Z, 05:58Z, 05:47Z) by about 18 hours. None of the three carries the `cross-plugin`, `metadata-fit`, or `bundled-reviews` items added to `.claude/skills/plugin-release-review/checklist.json` in this same branch.
+  - **Inferences:** The substance was covered by two independent `repo-auditor` passes over the same content, which returned PASS on every content row (identity, descriptions, hook and Security tables, README contract, root catalog rows, eval numbers, LICENSE checksums, issue forms) after four content errors they found were fixed. What is missing is the review instrument itself, not a known defect.
+  - **Open questions:** Whether the three new checklist items would surface anything the auditor's matrix does not already cover.
+- **Impact / risk:** Four plugins are published from a state no release review covers, so a gap the review catches but `npm run check` and the auditor do not would reach users unreviewed. The maintainer accepted this explicitly on 2026-09-20, choosing to consolidate and sync `main` first and review afterwards.
+- **Owner or responsible area:** `.claude/skills/plugin-release-review/`, `.claude/rules/plugin-authoring.md`
+- **Next action:** Run `/plugin-release-review` to completion on `block-no-verify`, `ruff-quality`, `shell-quality`, and `verify-completion` against the content on `main`, and fix whatever they surface in a follow-up change.
+- **Review condition:** Close when all four `.claude/state/checklists/plugin-release-review--<id>.json` records are complete and post-date the last commit touching their plugin.
+- **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md), [DEBT-0011](resolved-debt.md#debt-0011--2026-09-19--non-runtime-changes-are-pushed-directly-to-main-the-checks-run-before-the-push), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
+
 ### DEBT-0016 — Python tests and repo scripts have no gates yet
 
 - **Status:** Pending
