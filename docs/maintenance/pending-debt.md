@@ -5,6 +5,20 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0016 — Python tests and repo scripts have no gates yet
+
+- **Status:** Pending
+- **Category:** tooling
+- **Evidence:**
+  - **Confirmed facts:** The maintainer's environment standard (global CLAUDE.md) runs Python through uv (`#!/usr/bin/env -S uv run --script` with inline dependencies) and gates every Python file with Ruff and Basedpyright. This repo's `npm run check` and CI run only `node:test` and bash suites; nothing installs uv or runs pytest or Basedpyright (2026-09-19). The basedpyright-quality design plans a Python gate core with pytest.
+  - **Inferences:** A Python test or script added today would pass CI unlinted and untested.
+  - **Open questions:** Whether CI installs uv with `astral-sh/setup-uv` (pinned by SHA) or reuses the pinned Ruff install.
+- **Impact / risk:** Python code in plugins or tests would escape the gates every other language has.
+- **Owner or responsible area:** `package.json` scripts, `.github/workflows/ci.yml`, `scripts/lint-*.mjs`
+- **Next action:** Add `lint:py` (Ruff format and check, Basedpyright) and pytest via `uv run --script` to `npm run check` and CI, with uv pinned.
+- **Review condition:** Close when CI fails on a Ruff, Basedpyright, or pytest error in a Python file under `plugins/` or `scripts/`.
+- **Related records:** [basedpyright-quality design](../superpowers/specs/2026-09-19-basedpyright-quality-design.md)
+
 ### DEBT-0012 — Plugin hook suites run only against the CI runner's jq
 
 - **Status:** Pending
