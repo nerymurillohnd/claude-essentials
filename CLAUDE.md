@@ -98,7 +98,11 @@ the constraint from memory, it may have changed since this was written.
 `plugins/<name>/.claude-plugin/plugin.json` on disk — never hand-edit that
 array. A plugin's manifest `name` must equal its directory name under
 `plugins/`; both the generator and `scripts/validate-marketplace.mjs` enforce
-this and fail the build otherwise. `schemas/marketplace.schema.json` and
+this and fail the build otherwise. Each entry also carries `category` and
+`tags`, copied from `plugin.json` `metadata.marketplace` — a required object
+whose allowed categories live in
+`schemas/plugin.schema.json#/definitions/marketplaceCategory` and whose tags
+are capped at eight. `schemas/marketplace.schema.json` and
 `schemas/plugin.schema.json` are the source of truth both scripts validate
 against — they encode *this repo's* contract. `schemas/claude-code/` holds
 separate, upstream-faithful skeletons of every documented field (plugin

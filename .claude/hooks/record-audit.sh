@@ -21,7 +21,13 @@ if ! grep -Eq '^VERDICT: (PASS|FAIL)' <<<"${text}"; then
   transcript=$(jq -r '.agent_transcript_path // empty' <<<"${input}")
   transcript=${transcript/#\~/${HOME}}
   if [[ -f ${transcript} ]]; then
-    text=$(jq -r 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' "${transcript}" 2>/dev/null) || text=""
+    # Text blocks, plus a SubagentHandback payload: from Claude Code 2.1.271 a
+    # handing-back subagent delivers its report as that call's `message`, and
+    # `last_assistant_message` then holds only its closing text.
+    text=$(jq -r 'select(.type == "assistant") | .message.content[]? |
+      if .type == "text" then .text
+      elif .type == "tool_use" and .name == "SubagentHandback" then (.input.message // empty)
+      else empty end' "${transcript}" 2>/dev/null) || text=""
   fi
 fi
 
@@ -30,6 +36,18 @@ verdict=$(grep -Eo '^VERDICT: (PASS|FAIL)' <<<"${text}" | tail -1 | cut -d' ' -f
 
 if [[ -z ${head} || -z ${verdict} ]]; then
   jq -cn '{systemMessage: "record-audit: the repo-auditor report has no \"HEAD: <sha>\" and \"VERDICT:\" lines, so no audit was recorded."}'
+  exit 0
+fi
+
+# A verdict is only about a commit. With a dirty tree the audited content is not
+# what `${head}` contains — on a branch with no commits of its own, `${head}` is
+# main itself — so record nothing rather than a record pr-delivery would trust.
+if ! dirty=$(git -C "${root}" status --porcelain 2>/dev/null); then
+  jq -cn '{systemMessage: "record-audit: git status failed, so the tree could not be checked and no audit was recorded."}'
+  exit 0
+fi
+if [[ -n ${dirty} ]]; then
+  jq -cn '{systemMessage: "record-audit: the working tree has uncommitted changes, so the audit does not describe the commit at HEAD. Commit the work and audit again; nothing was recorded."}'
   exit 0
 fi
 

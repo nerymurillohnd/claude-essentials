@@ -341,6 +341,9 @@ arrays; BSD `awk`, `sed`, and `stat` compatible), so stock macOS works.
   item verifies a PASS record for the merged PR's head (or the current head
   before the merge). `scripts/lib/record-audit.test.mjs` covers recording, the
   transcript fallback, and refusing other agents or incomplete reports.
-- Limit: the auditor's read-only status is enforced by `disallowedTools` for the
-  file tools and by its instructions for Bash; `npm run check` may run
+- Limit: the auditor's read-only status is enforced by the `tools` allowlist in
+  its frontmatter (`Read, Grep, Glob, Bash`), with `disallowedTools` as a
+  redundant denylist — `disallowedTools` is applied first and `tools` resolves
+  against the remainder, so the allowlist is what binds — and by its
+  instructions for Bash; `npm run check` may run
   `npm run generate`, and its G3 check fails the audit on any resulting change.

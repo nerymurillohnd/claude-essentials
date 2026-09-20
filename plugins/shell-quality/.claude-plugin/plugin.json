@@ -30,7 +30,6 @@
         "bash",
         "shellcheck",
         "shfmt",
-        "linting",
         "formatting",
         "pre-commit",
         "quality-gate",

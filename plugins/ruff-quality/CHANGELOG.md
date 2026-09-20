@@ -19,8 +19,13 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 
 - Catalog: the marketplace entry now has category `development` and search
   `tags`, from `plugin.json` `metadata.marketplace`.
-- README: Requirements states the real Claude Code minimum for `ruff-hooks`
-  (2.1.69, for `${CLAUDE_SKILL_DIR}`) and the order the gate looks for Ruff
+- README Requirements: Claude Code minimum is 2.1.222, since `plugin.json` now
+  carries `metadata`, a recognized manifest field only from that version.
+  Earlier versions load the plugin but treat the key as unrecognized, which
+  `claude plugin validate --strict` — the command the README's Verification
+  section gives — turns into an error. `ruff-hooks` separately needs 2.1.69,
+  where it locates its scripts through `${CLAUDE_SKILL_DIR}`.
+- README: Requirements gives the order the gate looks for Ruff
   (`RUFF_BIN`, then the nearest `.venv/bin/ruff` or `venv/bin/ruff`, then
   `PATH`); the Security table says what `uninstall` removes and keeps; the
   Limitations table lists every hook timeout, notes that a timed-out guard does

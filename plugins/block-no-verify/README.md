@@ -138,7 +138,7 @@ None — no MCP servers, no network access, no credentials.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.72 | `claude --version` | Loads the skill and runs the hook; `plugin.json` carries `metadata`, and 2.1.72 fixed manifests with fields it doesn't use failing to load; `${CLAUDE_SKILL_DIR}` needs 2.1.69 |
+| Claude Code | 2.1.222 | `claude --version` | Loads the skill and runs the hook; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222 — earlier versions treat it as unrecognized, which `claude plugin validate --strict` turns into an error; `${CLAUDE_SKILL_DIR}` needs 2.1.69 |
 | Bash | 3.2 | `bash --version` | Runs the handler and the installer (macOS's stock `/bin/bash` 3.2 works) |
 | jq | 1.6 | `jq --version` | Parses hook payloads and merges settings |
 | Git | 2.18 | `git --version` | Assessment (`config --type=bool`, `rev-parse --git-common-dir`); the handler also reads Git aliases (read-only) to resolve `git <alias> -n` |

@@ -68,6 +68,20 @@ test("plugin schema requires metadata.marketplace and accepts an allowed categor
     ),
     true,
   );
+  assert.equal(
+    schemas.plugin(
+      manifest({
+        metadata: {
+          marketplace: {
+            category: "development",
+            tags: ["a", "b", "c", "d", "e", "f", "g", "h"],
+          },
+        },
+      }),
+    ),
+    true,
+    "eight tags is the documented maximum and must still pass",
+  );
 });
 
 test("plugin schema rejects an unknown category, a missing category, bad tags, and extra keys", () => {
@@ -77,6 +91,7 @@ test("plugin schema rejects an unknown category, a missing category, bad tags, a
     { category: "testing", tags: ["Not Kebab"] },
     { category: "testing", tags: [] },
     { category: "testing", tags: ["lint", "lint"] },
+    { category: "testing", tags: ["a", "b", "c", "d", "e", "f", "g", "h", "i"] },
     { category: "testing", keywords: ["lint"] },
   ];
   for (const catalog of invalid) {

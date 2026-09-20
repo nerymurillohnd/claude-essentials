@@ -39,6 +39,10 @@ every check with evidence.
    Record: head SHA, changed files, changed plugin ids (`plugins/<id>/`), new
    plugins (absent on `origin/main`), runtime vs exempt files, required bump.
    The caller's prompt may add the planned PR title and labels.
+   If `git status --porcelain` is non-empty, the change under review is not in
+   the commit range: audit the working tree instead (`git diff`,
+   `git diff --cached`, and the contents of every untracked file), and report
+   G1 as a FAIL, since no verdict can bind to a head that lacks the work.
 2. Load the sources (read them, do not recall them):
    `CLAUDE.md`; every `.claude/rules/*.md`;
    `.claude/skills/plugin-release-review/checklist.json`,

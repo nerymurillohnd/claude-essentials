@@ -154,7 +154,7 @@ None — no MCP servers, no network access, no credentials.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.72; 2.1.269 for Bash-edit coverage | `claude --version` | Loads the skills and runs the hooks; `plugin.json` carries `metadata`, and 2.1.72 fixed manifests with fields it doesn't use failing to load; `${CLAUDE_SKILL_DIR}` needs 2.1.69; `bashEditDiff` needs 2.1.269 |
+| Claude Code | 2.1.222; 2.1.269 for Bash-edit coverage | `claude --version` | Loads the skills and runs the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222 — earlier versions treat it as unrecognized, which `claude plugin validate --strict` turns into an error; `${CLAUDE_SKILL_DIR}` needs 2.1.69; `bashEditDiff` needs 2.1.269 |
 | ShellCheck | 0.10 (0.11 for the recommended profile) | `shellcheck --version` | Checks every edited script; the profile uses 0.11 optional checks |
 | shfmt | 3.12 | `shfmt --version` | Formats every edited script; `simplify` in EditorConfig needs 3.12 |
 | Bash | 3.2 | `bash --version` | Runs the handler and installer (macOS's stock `/bin/bash` 3.2 works) |
