@@ -42,6 +42,7 @@ kinds ([ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md)):
 
 | Plugin | Description | Kind | Claude Code | Claude Cowork | Additional requirements |
 | --- | --- | --- | :---: | :---: | --- |
+| [Agent Self-Knowledge](plugins/agent-self-knowledge/README.md) | Claude answers questions about Claude Code from the live official docs, quoting the exact sentence with its URL and version, instead of from memory. | `skill-only` | ⚠️ | 🧪 | Python ≥ 3.7 |
 | [Block No Verify](plugins/block-no-verify/README.md) | Stop Claude from skipping your Git hooks or commit signing, in the scope you choose, only when you ask for it. | `skill-only` | ⚠️ | ❌ | Bash ≥ 3.2, `jq` ≥ 1.6, Git ≥ 2.18 |
 | [Ruff Quality](plugins/ruff-quality/README.md) | Claude writes Python that passes Ruff, and, when you ask for it, cannot finish until every file it touched is fixed, formatted, and clean, without silencing a single rule. | `bundle` | 🧪 | 🧪 | Ruff ≥ 0.16, Bash ≥ 3.2, `jq` ≥ 1.6, Git ≥ 2.18 |
 | [Shell Quality](plugins/shell-quality/README.md) | Claude writes shell scripts that pass ShellCheck and shfmt, and, when you ask for it, cannot finish until every script it touched is formatted and clean, without silencing a single check. | `bundle` | 🧪 | 🧪 | ShellCheck ≥ 0.10, shfmt ≥ 3.12, Bash ≥ 3.2, `jq` ≥ 1.6, Git ≥ 2.18 |

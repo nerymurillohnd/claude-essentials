@@ -242,7 +242,16 @@ test("a network-none plugin must not ship scripts that call network tools", () =
     checkNetworkClaim(dir, badges).join("\n"),
     /scripts\/bad\.sh:2 calls a network tool/,
   );
-  assert.deepEqual(checkNetworkClaim(dir, new Map()), []);
+  // A badge row with no Network badge is the misleading case: the reader sees
+  // nothing about the network and assumes there is none.
+  assert.deepEqual(checkNetworkClaim(dir, new Map()), [
+    "the badge row has no Network badge; every plugin states its network posture (network-none, network-optional or network-required)",
+  ]);
+  // A plugin that declares the network carries no obligation about its scripts.
+  const declared = new Map([
+    ["Network", "https://img.shields.io/badge/network-required-lightgrey"],
+  ]);
+  assert.deepEqual(checkNetworkClaim(dir, declared), []);
   rmSync(dir, { recursive: true });
 });
 

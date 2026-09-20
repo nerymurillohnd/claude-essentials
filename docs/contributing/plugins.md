@@ -81,7 +81,14 @@ component paths in `plugin.json` makes a plugin a bundle.
 ## 3. Write the actual skill/agent/command content
 
 - Skills: `skills/<skill-name>/SKILL.md` — see [skills.md](https://code.claude.com/docs/en/skills.md)
-  for frontmatter fields (`name`, `description`, `allowed-tools`, `context`, `agent`, `arguments`, ...).
+  for frontmatter fields (`name`, `description`, `when_to_use`, `allowed-tools`,
+  `context`, `agent`, `arguments`, ...). `description` opens with the instruction
+  the skill gives Claude and `when_to_use` carries the triggering conditions;
+  Claude Code appends the second to the first in the skill listing, so the two
+  share one 1,536-character budget. Both are plain YAML scalars: no quoted
+  trigger phrases, and no colon followed by a space, which a YAML parser reads
+  as a nested mapping even though `claude plugin validate --strict` accepts it.
+  `scripts/lib/skill-frontmatter.test.mjs` is the gate.
 - Agents: `agents/<agent-name>.md` — see [sub-agents.md](https://code.claude.com/docs/en/sub-agents.md)
   for frontmatter fields (`name`, `description`, `tools`, `model`, `color`, ...).
 - Commands, hooks, MCP servers: see [plugins.md](https://code.claude.com/docs/en/plugins.md).

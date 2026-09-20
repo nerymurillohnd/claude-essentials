@@ -322,13 +322,22 @@ function walk(dir) {
 }
 
 /**
- * A plugin whose README declares no network use must not ship scripts that call out.
+ * Every plugin README states its network posture, and a README that declares no
+ * network use must not ship scripts that call out. The missing-badge case is the
+ * one that misleads: a reader scanning the badge row sees nothing about the
+ * network and assumes there is none.
  * @param {string} pluginDir
  * @param {Map<string, string>} badges
  * @returns {string[]}
  */
 export function checkNetworkClaim(pluginDir, badges) {
-  if (!/\/badge\/network-none-/.test(badges.get("Network") ?? "")) return [];
+  const badge = badges.get("Network");
+  if (badge === undefined) {
+    return [
+      "the badge row has no Network badge; every plugin states its network posture (network-none, network-optional or network-required)",
+    ];
+  }
+  if (!/\/badge\/network-none-/.test(badge)) return [];
   /** @type {string[]} */
   const problems = [];
   for (const path of walk(pluginDir)) {

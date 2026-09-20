@@ -11,6 +11,22 @@
   },
   "plugins": [
     {
+      "name": "agent-self-knowledge",
+      "source": "./plugins/agent-self-knowledge",
+      "description": "Stops Claude from answering about Claude Code from memory. Its skill queries the live official documentation, the upstream changelog and the npm registry, then answers with the exact sentence quoted verbatim, the source URL, and the version it verified against — and reports what it could not find instead of filling the gap.",
+      "category": "development",
+      "tags": [
+        "documentation",
+        "citations",
+        "live-docs",
+        "changelog",
+        "verification",
+        "hallucination",
+        "self-knowledge",
+        "research"
+      ]
+    },
+    {
       "name": "block-no-verify",
       "source": "./plugins/block-no-verify",
       "description": "Stops Claude from skipping your Git hooks or commit signing: only when you ask and approve a scope, its skill installs a Claude Code PreToolUse hook that denies Git commands Claude runs with --no-verify, -n, --no-gpg-sign, core.hooksPath overrides, HUSKY=0, and similar bypasses. Installing the plugin wires nothing, and it never controls your own terminal or CI.",
