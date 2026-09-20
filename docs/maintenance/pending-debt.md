@@ -5,6 +5,62 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0019 — `agent-self-knowledge` ships a URL fetcher with no scheme or host validation
+
+- **Status:** Pending (risk accepted)
+- **Category:** security
+- **Evidence:**
+  - **Confirmed facts:** `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py` defines `cmd_raw`, which passes its argument straight to `fetch()` with no scheme or host check. The skill's `allowed-tools` grants `Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/ccdocs.py *)`, so any argument runs without a per-command approval prompt. Both vectors were reproduced on 2026-09-20: `raw file://<path>` printed a local canary file, and `raw https://example.com` fetched an unrelated host.
+  - **Inferences:** Content the model reads (a documentation page, an issue, a web result) could induce a `raw` call that exfiltrates local data, since no prompt intervenes. The plugin is published publicly, so every installer inherits the capability.
+  - **Open questions:** None. The vector is confirmed and the fix is known.
+- **Impact / risk:** Arbitrary local file read and arbitrary outbound request, without user approval, on any machine where the plugin is enabled. The maintainer, Nery Samuel Murillo Tejada, accepted this explicitly on 2026-09-20 after seeing the reproduction and the proposed fix, to avoid any change to a retrieval behavior that had just been validated. Evidence that the fix is behaviorally inert: the clean-session test that validated the skill used `find`, `grep`, `outline`, `page`, `changelog` and `version` — `raw` was never called.
+- **Owner or responsible area:** `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py`
+- **Next action:** Add a host allowlist in `fetch()` restricted to `code.claude.com`, `raw.githubusercontent.com` and `registry.npmjs.org`, rejecting every other host and every non-`https` scheme; or remove `raw`. Either is a runtime change and needs a version bump and a CHANGELOG entry.
+- **Review condition:** Close when `raw file:///etc/hosts` and `raw https://example.com` both exit non-zero with an explicit rejection, covered by a case in the plugin's test suite.
+- **Related records:** [design spec](../superpowers/specs/2026-09-20-agent-self-knowledge-design.md), [plugin CHANGELOG](../../plugins/agent-self-knowledge/CHANGELOG.md)
+
+### DEBT-0023 — `agent-self-knowledge` can report a settings key as not found when it exists undocumented
+
+- **Status:** Pending
+- **Category:** correctness
+- **Evidence:**
+  - **Confirmed facts:** The settings schema inside the installed Claude Code 2.1.278 binary defines `worktree.location`, described as "Directory under which Claude Code Desktop creates the worktrees of SSH sessions that run on this machine ... The CLI (--worktree, EnterWorktree, agent isolation) does not read it yet." The same key returns 0 hits across the 99,415 lines of `https://code.claude.com/docs/llms-full.txt`, which documents only `baseRef`, `bgIsolation`, `sparsePaths` and `symlinkDirectories` under `worktree`. Both measured on 2026-09-20. In the clean-session test the skill reported the key as non-existent.
+  - **Inferences:** `ccdocs.py` reads the published documentation, the upstream changelog and the npm registry. None of the three carries the settings schema, so the skill's three-search negative protocol cannot distinguish "not documented" from "does not exist" for any settings key.
+  - **Open questions:** How many other keys are in the shipped schema but not the docs. Whether the schema is exposed anywhere fetchable, or only inside the binary.
+- **Impact / risk:** The bounded negative claim is the skill's headline behavior, and for settings keys it can be a false negative — the exact failure mode the plugin exists to prevent. A user told a key does not exist may build a workaround for a problem the product already solves.
+- **Owner or responsible area:** `plugins/agent-self-knowledge/skills/claude-code-docs/`
+- **Next action:** Decide whether the skill should read the installed binary's settings schema (for example `strings` over the executable, or a documented dump command if one exists) before reporting any settings key as absent, and whether that is worth the scope. Until then the README Limitations row carries the constraint.
+- **Review condition:** Close when a settings key that exists only in the shipped schema is reported as undocumented-but-present, verified with `worktree.location` as the reproduction, and covered by an eval case.
+- **Related records:** [design spec](../superpowers/specs/2026-09-20-agent-self-knowledge-design.md), [DEBT-0019](#debt-0019--agent-self-knowledge-ships-a-url-fetcher-with-no-scheme-or-host-validation)
+
+### DEBT-0022 — `claude plugin validate --strict` accepts skill frontmatter that no YAML parser can read
+
+- **Status:** Pending
+- **Category:** tooling
+- **Evidence:**
+  - **Confirmed facts:** On 2026-09-20, four `SKILL.md` files in this repository carried a `description` written as a plain YAML scalar containing a colon followed by a space (`block-no-verify`, `ruff-hooks`, `shell-hooks`, `verify-completion`). The repository's `yaml` dependency rejects all four with `Nested mappings are not allowed in compact mappings at line 2, column 14`. `claude plugin validate --strict` on Claude Code 2.1.278 returned success for every one of them, and the full `npm run check` pipeline passed.
+  - **Inferences:** Claude Code either extracts frontmatter line by line or parses it leniently, so a description that a conforming parser truncates or rejects still loads locally. Any consumer that reads the file with a standard YAML parser — an editor, a linter, a marketplace indexer, a future Claude Code release — would see a different description, or none.
+  - **Open questions:** Which parser Claude Code uses, and whether the leniency is deliberate. Not established: what the runtime actually loads for such a description.
+- **Impact / risk:** The only validator this repository can run against a published plugin does not catch a malformed skill description, which is the field that decides whether the skill is ever invoked. Four plugins were one commit away from publishing it.
+- **Owner or responsible area:** `scripts/lib/skill-frontmatter.test.mjs`
+- **Next action:** Report the gap upstream with the reproduction above. Locally, keep the repository's own gate as the authority and extend it if other frontmatter fields turn out to be parsed the same way.
+- **Review condition:** Close when `claude plugin validate --strict` fails a plugin whose skill frontmatter is not valid YAML, verified with the same reproduction.
+- **Related records:** [DEBT-0021](#debt-0021--plugin-name-restrictions-are-undocumented-upstream), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md), [resolved DEBT-0020](resolved-debt.md)
+
+### DEBT-0021 — Plugin name restrictions are undocumented upstream
+
+- **Status:** Pending
+- **Category:** docs
+- **Evidence:**
+  - **Confirmed facts:** The maintainer reported on 2026-09-20 that a plugin name containing "Claude" is rejected, while the same word is accepted in a repository name, a marketplace name, and a skill name; the plugin was renamed to `agent-self-knowledge` as a result. A search of the full documentation corpus (99,415 lines of `llms-full.txt`) finds reserved-name rules only for MCP servers ("Claude Browser", "Claude Preview", `workspace`) and for agent names containing `:`. Nothing documents a restriction on plugin names.
+  - **Inferences:** Either the restriction is enforced somewhere other than `claude plugin validate` (marketplace submission or claude.ai organization sync), or it comes from a rule that exists in code but not in the docs.
+  - **Open questions:** Which surface rejects the name, with which exact message, and whether it applies to any occurrence of "claude" or only to certain forms.
+- **Impact / risk:** A contributor can pick a name that passes every local gate and is rejected later, after the README, badges, tags and directory all carry it.
+- **Owner or responsible area:** `docs/contributing/plugins.md`
+- **Next action:** Reproduce the rejection, capture the exact message and the surface that emits it, then document the constraint in the contributing guide and report the documentation gap upstream.
+- **Review condition:** Close when the constraint is reproduced with captured output and written into `docs/contributing/plugins.md`.
+- **Related records:** [ADR-0001](../decisions/adr-0001-marketplace-distribution-model.md)
+
 ### DEBT-0018 — The catalog-metadata change shipped without a release review per plugin
 
 - **Status:** Pending
