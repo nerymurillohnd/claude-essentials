@@ -93,6 +93,5 @@
     ]
   },
   "enableWorkflows": true,
-  "todoFeatureEnabled": true,
-  "teammateMode": "auto"
+  "todoFeatureEnabled": true
 }
