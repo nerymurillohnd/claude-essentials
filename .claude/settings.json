@@ -93,5 +93,9 @@
     ]
   },
   "enableWorkflows": true,
-  "todoFeatureEnabled": true
+  "todoFeatureEnabled": true,
+  "worktree": {
+    "baseRef": "head",
+    "symlinkDirectories": ["node_modules"]
+  }
 }
