@@ -27,7 +27,6 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 - **Owner or responsible area:** `scripts/lib/readme-contract.mjs`
 - **Residual risk / follow-up:** The gate checks that a posture is declared and that `none` is truthful; it does not verify that `required` is truthful, which review covers.
 - **Related records:** [plugin README template](../../templates/plugin-README-reusable-template.md)
-||||||| Stash base
 ### DEBT-0020 — 2026-09-20 — Skill descriptions are written from the skill's own files, and the repository states the contract
 
 - **Original pending record:** none. Opened and closed inside the same change on 2026-09-20, so it never reached `pending-debt.md`; the measurement that opened it is preserved below.

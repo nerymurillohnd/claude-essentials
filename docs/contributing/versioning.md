@@ -18,7 +18,7 @@ text *is* code: a one-word fix in a `SKILL.md` changes what the model does.
 | Surface | Paths (relative to `plugins/<name>/`) | Bump? |
 | --- | --- | --- |
 | **Runtime**: Claude loads it | `skills/**` (including `references/` and skill scripts), `agents/**`, `commands/**`, `hooks/**`, `.mcp.json`, `.lsp.json`, `output-styles/**`, `monitors/**`, and every `plugin.json` field except the metadata below | **Yes**, at least PATCH |
-| **Not runtime**: only people read it | `README.md`, `CHANGELOG.md`, `LICENSE*`, `docs/**`, and `plugin.json` metadata: `description`, `displayName`, `keywords`, `author`, `homepage`, `repository`, `license`, `metadata` | **No** |
+| **Not runtime**: only people read it | `README.md`, `CHANGELOG.md`, `LICENSE*`, `docs/**`, `evals/**`, `test-*.sh` and `tests/**` at any depth (eval cases and the plugin's own test suites are never loaded by Claude), and `plugin.json` metadata: `description`, `displayName`, `keywords`, `author`, `homepage`, `repository`, `license`, `metadata` | **No** |
 | **Anything else** | any path not listed above | **Yes**. The exempt list is closed, so unknown paths count as runtime |
 
 A PR that changes runtime paths must:

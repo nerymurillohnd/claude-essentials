@@ -157,3 +157,18 @@ Chosen option: "Explicit semver, enforced in CI, tagged by CI with
   the tag.
 - Accepted risk: a push made outside Claude Code skips the local gate. CI then
   catches it after the fact, not before. Recorded as DEBT-0011.
+
+### Amendment — 2026-09-21: eval cases and plugin test suites are not runtime
+
+- `evals/**` at the plugin root, and `test-*.sh` files and `tests/**` directories
+  at any depth, join the exempt list. Claude never loads them: eval cases are
+  consumed only by `claude plugin eval`, and a plugin's own suites run only under
+  the maintainer gate. Editing them therefore needs no version bump and never
+  changes the plugin the user installs. The exempt list stays closed; anything
+  else under a plugin is still runtime.
+- The rule has one home in the maintainer tooling (`EXEMPT_FILE`) and one
+  mirror in `.claude/hooks/lib/plugin-paths.sh`; a parity test runs both over
+  the same table so they cannot drift.
+- Evals in CI select a plugin only when this runtime classification reports a
+  change for it; an `evals/**`-only diff never runs a suite and never blocks a
+  merge.

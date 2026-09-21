@@ -54,8 +54,6 @@ temp/
 .cache/
 
 # Generated Claude Code plugin-eval reports and run output
-plugins/*/evals/results/
-evals/results/
 **/evals/results/
 
 # Local machine-readable reports

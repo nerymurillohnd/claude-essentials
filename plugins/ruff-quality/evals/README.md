@@ -49,9 +49,12 @@ Ruff's own configuration discovery also differs: outside a project, Ruff picks u
 
 ## CI policy
 
-- **Always, required:** `claude plugin validate --strict`.
-- **Conditional, separate job:** `claude plugin eval`, only when a PR touches this plugin's
-  `skills/**`, `agents/**`, `hooks/**`, `evals/**` or `.claude-plugin/**`, and only for the
-  plugins whose diff changed.
+- **Always, required:** `claude plugin validate --strict` (`make validate-cli`).
+- **Conditional, never blocking:** `evals.yml` runs `claude plugin eval` for this plugin
+  only when the pull request changes one of its runtime files (`.claude-plugin/**`,
+  `skills/**`, `agents/**`, `commands/**`, `hooks/**`, `scripts/**`, `.mcp.json`,
+  `.lsp.json`, …), the same classification that decides a version bump. A change under
+  `evals/**`, `README.md`, `CHANGELOG.md`, `LICENSE` or `docs/**` never selects it.
 - **Never in CI:** `claude plugin eval init`.
-- Upload `aggregate-result.json` as a workflow artifact; `results/` stays git-ignored.
+- The job uploads the aggregate JSON and `report.html` as workflow artifacts, skips when
+  `ANTHROPIC_API_KEY` is absent, and is never a required check; `results/` stays git-ignored.

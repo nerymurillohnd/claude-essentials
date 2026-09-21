@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
 # Sourced by session-start.sh and post-edit.sh (ADR-0003): classifies plugin paths
 # as runtime (needs a version bump) or exempt (Claude never loads it). Mirrors
-# EXEMPT_FILE and METADATA_KEYS in scripts/lib/version-plan.mjs — change both together.
+# EXEMPT_FILE and METADATA_KEYS in scripts/versioning/version_plan.py — change
+# both together; scripts/harness/test_plugin_paths.py runs these functions and
+# the Python constant over one table.
 
 # plugin_path_is_exempt <rel>
 # Returns 0 when a path relative to plugins/<name>/ is never loaded by Claude
 # (EXEMPT_FILE): README.md, CHANGELOG.md, LICENSE or LICENSE.<ext> at the plugin
-# root, or anything under docs/. In a `case` pattern `*` also matches `/`, so
-# LICENSE.* needs the explicit no-slash check to match the JS regex.
-# scripts/lib/plugin-paths.test.mjs asserts parity with version-plan.mjs.
+# root; anything under docs/ or evals/ at the plugin root; and, at any depth, a
+# file named test-*.sh or anything under a directory named tests/ (ADR-0003
+# amendment 2026-09-21). In a `case` pattern `*` also matches `/`, so the
+# LICENSE.* and test-*.sh arms check the basename explicitly.
 plugin_path_is_exempt() {
-  local rel="$1"
+  local rel="$1" base="${1##*/}"
   case "${rel}" in
-  README.md | CHANGELOG.md | LICENSE | docs/?*) return 0 ;;
-  LICENSE.?*) [[ "${rel}" != */* ]] ;;
+  README.md | CHANGELOG.md | LICENSE | docs/?* | evals/?*) return 0 ;;
+  tests/?* | */tests/?*) return 0 ;;
+  LICENSE.?*) [[ "${rel}" != */* ]] && return 0 ;;
+  *) ;;
+  esac
+  case "${base}" in
+  test-?*.sh) return 0 ;;
   *) return 1 ;;
   esac
 }
