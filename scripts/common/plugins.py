@@ -1,14 +1,14 @@
 """Repository access: the git root, tracked files, plugin ids and JSON shape narrowing.
 
-Two rules shape the subprocess calls here. Ruff's `S607` demands a literal absolute
-executable path in `argv`, and `S603` demands that every element of `argv` be a literal, so
-each call spells its whole command out and passes the binary actually resolved from `PATH`
-through `executable=`. `argv[0]` is therefore a placeholder; `git` never reads it.
+One rule shapes the subprocess calls here: Ruff's `S607` rejects a partial executable path
+in `argv`, so every call writes a literal absolute path as `argv[0]` and passes the binary
+actually resolved from `PATH` through `executable=`. `argv[0]` is therefore a placeholder;
+`git` never reads it. (`S603` is ignored repository-wide, see `pyproject.toml`.)
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 import fnmatch
 import json
 from pathlib import Path
@@ -18,6 +18,7 @@ from typing import Final, TypeIs
 
 from scripts.common.errors import (
     ExecutableNotFoundError,
+    GitCommandFailedError,
     GitLsFilesFailedError,
     GitRevParseFailedError,
     MalformedJsonError,
@@ -113,6 +114,67 @@ def tracked_files(root: Path, *pathspecs: str) -> list[str]:
     )
 
 
+def git_output(root: Path, args: Sequence[str]) -> str:
+    """Run a git command in the working tree and return its standard output.
+
+    This is the general-purpose call the fixed-purpose helpers above do not cover: the
+    argument list is built at run time by the caller (a ref, a pathspec, a tag pattern).
+
+    Args:
+        root: The directory git runs in.
+        args: The arguments after the binary, for example `["tag", "--list", "x--v*"]`.
+
+    Returns:
+        Standard output, with no trailing newline stripped beyond what git emits.
+
+    Raises:
+        GitCommandFailedError: If git cannot start or exits non-zero.
+        ExecutableNotFoundError: If `git` is not on PATH.
+
+    Note:
+        The call passes `check=False` and inspects `returncode` itself, because
+        `CalledProcessError.stderr` is typed `Any` and reading it would violate `reportAny`.
+    """
+    try:
+        completed = subprocess.run(
+            ["/usr/bin/git", *args],
+            executable=_git_executable(),
+            cwd=root,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        raise GitCommandFailedError(args, str(error)) from error
+    if completed.returncode != 0:
+        raise GitCommandFailedError(
+            args, completed.stderr.strip() or f"exit {completed.returncode}"
+        )
+    return completed.stdout
+
+
+def git_output_or_none(root: Path, args: Sequence[str]) -> str | None:
+    """Run a git command and return None instead of raising when it exits non-zero.
+
+    Reading a path that does not exist at a given ref is an ordinary outcome, not a failure:
+    a renamed or newly added plugin has no file at its predecessor's tag.
+
+    Args:
+        root: The directory git runs in.
+        args: The arguments after the binary.
+
+    Returns:
+        Standard output, or None when git refused the request.
+
+    Raises:
+        ExecutableNotFoundError: If `git` is not on PATH.
+    """
+    try:
+        return git_output(root, args)
+    except GitCommandFailedError:
+        return None
+
+
 def plugin_ids(root: Path) -> list[str]:
     """List the plugin ids this marketplace ships.
 
@@ -133,6 +195,25 @@ def plugin_ids(root: Path) -> list[str]:
     )
 
 
+def parse_json(text: str, *, path: Path) -> object:
+    """Parse JSON text into untyped data the caller must narrow.
+
+    Args:
+        text: The document, which may come from a file or from `git show`.
+        path: The path named in the error; for a ref, the path the text was read at.
+
+    Returns:
+        The parsed document as `object`; never `Any`.
+
+    Raises:
+        MalformedJsonError: If the text is not valid JSON.
+    """
+    try:
+        return _loads(text)
+    except json.JSONDecodeError as error:
+        raise MalformedJsonError(path, str(error)) from error
+
+
 def load_json(path: Path) -> object:
     """Parse a JSON file into untyped data the caller must narrow.
 
@@ -145,11 +226,7 @@ def load_json(path: Path) -> object:
     Raises:
         MalformedJsonError: If the file is not valid JSON.
     """
-    text = path.read_text(encoding="utf-8")
-    try:
-        return _loads(text)
-    except json.JSONDecodeError as error:
-        raise MalformedJsonError(path, str(error)) from error
+    return parse_json(path.read_text(encoding="utf-8"), path=path)
 
 
 def _is_mapping(value: object) -> TypeIs[Mapping[object, object]]:

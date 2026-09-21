@@ -28,7 +28,7 @@ test-slow:     ## 70 process-spawning tests + plugin suites under bash and /bin/
 	$(PY) -m pytest -m slow
 #	$(PY) -m scripts.plugin_validation.run_plugin_suites # ported at step 5
 versions:      ## version-bump rules and route vs the latest tags / origin/main
-#	$(PY) -m scripts.versioning.check_versions $(VERSIONS_ARGS) # ported at step 3
+	$(PY) -m scripts.versioning.check_versions $(VERSIONS_ARGS)
 fix:           ## writer: ruff format, ruff check --fix (safe), shfmt -w, canonical JSON
 	$(PY) -m ruff format $(PY_FILES)
 	$(PY) -m ruff check --fix $(PY_FILES)

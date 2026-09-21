@@ -504,3 +504,524 @@ tree. This file is committed with step 7 and re-read by `repo-auditor` at step 1
 - Open item carried to the maintainer: the VS Code status-bar check (Ruff and basedpyright items showing the `.venv` binaries) needs an editor session.
 - **Design constraint found (S603):** under the floor, any `subprocess` call with a non-literal argv element is flagged (`ruff rule S603`: "Prone to false positives"). Probe: literal argv → clean; one dynamic element, tuple, `check_output`, or a resolved `executable=` with a dynamic list → S603. Decision requested from the maintainer before step 3 (see conversation).
 - **S603 decision (maintainer, 2026-09-21):** "Ignorar S603 en global y repo". `S603` added to the `ignore` list of `~/.config/ruff/ruff.toml` and mirrored in `[tool.ruff.lint] ignore` of `pyproject.toml` (Q2 stays true: repo ignores ⊆ global ignores). Probe re-run: the four S603 hits disappear; `S607` still fires on a partial executable path. Recorded for ADR-0007.
+
+---
+
+## Gate 3 — `scripts/versioning/` (2026-09-21)
+
+Modules built: `semver.py`, `version_plan.py`, `changelog.py`, `check_versions.py`,
+`tag_versions.py`, with `conftest.py` (temporary-repository builders), `test_semver.py`,
+`test_version_plan.py`, `test_changelog.py`, `test_changelog_immutable.py`,
+`test_check_versions.py`, `test_tag_versions.py`, and `scripts/harness/test_plugin_paths.py`.
+`scripts/common/` gained three generic helpers (`git_output`, `git_output_or_none`,
+`parse_json`) plus `GitCommandFailedError`, each with tests. The `versions` recipe of the
+`Makefile` is uncommented.
+
+### Decisions taken beyond the plan
+
+- **A `V1`–`V6` invariant family for this area (P14).** §A6 has no row for "a bump is owed",
+  so the six defects this area catches needed ids of their own. They live in
+  `version_plan.VERSIONING_INVARIANTS` with the defect written next to each, and
+  `test_versioning_invariants_are_documented` keeps the list honest:
+  V1 runtime change without a bump, V2 a version lower than the published one, V3 a first
+  release that is not `0.1.0`, V4 a removed directory with no `renames` null entry, V5
+  (warning) a removal with no prior deprecation release, V6 a version `claude plugin tag
+  --dry-run` refuses. An unparseable `version` reuses **M5** and a manifest with no `version`
+  reuses **M4**, rather than minting a seventh id for a defect §A6 already names.
+
+- **"Changed vs base" is defined as one union, deletions included.** `changed_paths(root,
+  base)` is `git diff --name-only --no-renames <base>` (base tree against the *working tree*,
+  so committed and uncommitted changes both count, and deleted paths are listed) unioned with
+  `git ls-files --others --exclude-standard` (untracked files git does not ignore), sorted and
+  deduplicated. This is exactly the pair `plugin_runtime_change` in `plugin-paths.sh` already
+  ran, so the hook and the gate see the same set.
+
+- **The route's allowlist has a name half and a content half** (maintainer decision,
+  2026-09-21; the first draft of this step made it path-only and routed a metadata edit to a
+  pull request, which contradicts the root `CLAUDE.md` "main" bullet and §A11 "Direct push:
+  exempt plugin files"). Two files are decided by what they contain, because the interesting
+  part of each is generated or purely descriptive:
+
+  | File | Direct when | Pull request when |
+  | --- | --- | --- |
+  | `plugins/<id>/.claude-plugin/plugin.json` | its runtime view (parsed object minus `METADATA_KEYS`) equals the base's, which covers a `description`/`keywords`/`author` edit and a pure reformat | anything Claude acts on moved |
+  | `.claude-plugin/marketplace.json` | parsed, it differs from the base in nothing but the generated `plugins` array | `renames` or any other top-level field moved |
+
+  Both comparisons are against the **base ref**, not the plugin's tag: the question is what
+  this push adds to `main`, not what the published version contains. The rule lives in one
+  place, `version_plan.content_exempt_paths`, which `route` calls and hands to
+  `is_direct_push_allowed` as `content_exempt`; the name rule never recomputes it. The module
+  docstring carries the wording for step 11 to copy into `docs/contributing/versioning.md`.
+
+- **`version` is the empty string for a removed plugin.** The JSON contract types `version` as
+  a string and a removed plugin has no manifest to read. The empty string also makes the
+  generic route rule (`version != tagged` ⇒ pull request) fire without a special case, and it
+  renders as `<name> removed` in the text report.
+
+- **`tagged` is a version string, not a tag name.** The task defines `required` as "runtime
+  changed AND `version == tagged`", which only type-checks if both are versions. The tag name
+  is reachable from `plan.plugins[*].tagged` plus the plugin (or predecessor) name, and
+  `version_plan.TagRef` carries it internally.
+
+- **No line but the last may contain `bump: `.** `guard-push.sh` searches the *whole* output
+  for `bump: none`, so a per-plugin line reading `bump: patch` would let an unbumped push
+  through. Per-plugin lines therefore read `needs patch`, `bumped from 0.1.0 (patch)` or
+  `deferred`, and `test_no_plugin_line_can_contain_the_label_prefix` pins that.
+
+- **`needs <level>` always prints `patch`.** The gate can only compute the *minimum* level a
+  runtime change owes; MAJOR or MINOR is the reviewer's call from the §A11 lifecycle table.
+
+- **`bump_level` calls a move confined to the prerelease line `prerelease`.** That includes
+  promoting `1.0.0-rc.1` to `1.0.0`: the release line did not move, so no MAJOR/MINOR/PATCH
+  applies. A decrease is `invalid`, never a level.
+
+- **Label precedence** (ascending, `invalid` excluded): `none` < `initial` < `prerelease` <
+  `patch` < `minor` < `major` < `removal`.
+
+- **`--verify-tag` with no `claude` on PATH is a V6 finding and a non-zero exit**, never a
+  silent skip: the check was explicitly requested. Without the flag nothing is printed.
+
+- **Emergency removal is detected, not declared.** A removal whose latest tag's CHANGELOG
+  section carries no `### Deprecated` heading gets the V5 *warning*; one that does gets
+  nothing. That is what separates the `removal` and `emergency_removal` route cases.
+
+- **`conftest.py` added under `scripts/versioning/`.** `test_check_versions.py` and
+  `test_tag_versions.py` need the same temporary repository as `test_version_plan.py`;
+  duplicating ~120 lines of builders three times was the alternative.
+
+- **`git_output` uses `check=False` and inspects `returncode`.** `CalledProcessError.stderr`
+  is typed `Any`, and reading it violates `reportAny` (probed: assigning it to an
+  `object`-annotated variable still fires). `CompletedProcess[str].stderr` is `str`, so the
+  real stderr reaches the message with no suppression.
+
+- **`semver.VERSION_PATTERN` is anchored with `\Z`, not `$`.** The first run of
+  `test_parse_rejects_everything_outside_the_grammar` caught `"1.0.0\n"` being accepted,
+  because `$` also matches before a trailing newline. `EXEMPT_FILE` uses `\Z` for the same
+  reason.
+
+- **The stale `S603` sentence in `scripts/common/plugins.py`'s module docstring was
+  corrected**, since `S603` is now ignored repository-wide; the literal-absolute-`argv[0]`
+  plus `executable=` pattern stays, because `S607` still requires it.
+
+### Findings about the repository
+
+- **C1 fails for four plugins today, not three.** The plan named `ruff-quality`,
+  `shell-quality` and `verify-completion`. `block-no-verify` fails too: it links `0.1.1`
+  correctly with `compare/` and then links its newest release `0.1.2` with `tree/`. No
+  CHANGELOG was edited. The four are recorded in `test_changelog_immutable.C1_DEBT`, and
+  `test_no_plugin_outside_the_recorded_debt_mixes_link_styles` keeps a fifth from joining
+  until the validator lands at step 5.
+
+  ```text
+  block-no-verify   | [0.1.2] should link to .../compare/block-no-verify--v0.1.1...block-no-verify--v0.1.2, not .../tree/block-no-verify--v0.1.2
+  ruff-quality      | [0.1.1] should link to .../compare/ruff-quality--v0.1.0...ruff-quality--v0.1.1, not .../tree/ruff-quality--v0.1.1
+  shell-quality     | [0.1.1] should link to .../compare/shell-quality--v0.1.0...shell-quality--v0.1.1, not .../tree/shell-quality--v0.1.1
+  verify-completion | [0.1.1] should link to .../compare/verify-completion--v0.1.0...verify-completion--v0.1.1, not .../tree/verify-completion--v0.1.1
+  ```
+
+- **C2 is clean: 10/10 released sections equal their text at their tag** (the plan's
+  expectation, confirmed).
+
+- **`.claude-plugin/marketplace.json` has no `renames` key yet**, so `read_renames` returns
+  `{}` on both sides and no rename or removal is in flight.
+
+### Checklist
+
+- [x] `make -s versions` prints five `exempt` lines and exactly `Computed label: bump: none`
+      as the last line
+
+  ```text
+  $ make -s versions
+  agent-self-knowledge 0.1.0 exempt
+  block-no-verify 0.1.2 exempt
+  ruff-quality 0.1.1 exempt
+  shell-quality 0.1.1 exempt
+  verify-completion 0.1.1 exempt
+  Computed label: bump: none
+  $ echo $?
+  0
+  ```
+
+- [x] `make -s versions VERSIONS_ARGS=--json | jq -e '.route == "pr"'` exits 0 (the gate's own
+      inputs changed) and no plugin reports `runtime_changed`
+
+  ```text
+  $ make -s versions VERSIONS_ARGS=--json
+  {
+    "route": "pr",
+    "label": "bump: none",
+    "deferred": false,
+    "plugins": [
+      {
+        "name": "agent-self-knowledge",
+        "predecessor": null,
+        "tagged": "0.1.0",
+        "version": "0.1.0",
+        "runtime_changed": false,
+        "first_runtime_path": null,
+        "required": false,
+        "ok": true,
+        "reason": "no runtime change since agent-self-knowledge--v0.1.0"
+      },
+      {
+        "name": "block-no-verify",
+        "predecessor": null,
+        "tagged": "0.1.2",
+        "version": "0.1.2",
+        "runtime_changed": false,
+        "first_runtime_path": null,
+        "required": false,
+        "ok": true,
+        "reason": "no runtime change since block-no-verify--v0.1.2"
+      },
+      {
+        "name": "ruff-quality",
+        "predecessor": null,
+        "tagged": "0.1.1",
+        "version": "0.1.1",
+        "runtime_changed": false,
+        "first_runtime_path": null,
+        "required": false,
+        "ok": true,
+        "reason": "no runtime change since ruff-quality--v0.1.1"
+      },
+      {
+        "name": "shell-quality",
+        "predecessor": null,
+        "tagged": "0.1.1",
+        "version": "0.1.1",
+        "runtime_changed": false,
+        "first_runtime_path": null,
+        "required": false,
+        "ok": true,
+        "reason": "no runtime change since shell-quality--v0.1.1"
+      },
+      {
+        "name": "verify-completion",
+        "predecessor": null,
+        "tagged": "0.1.1",
+        "version": "0.1.1",
+        "runtime_changed": false,
+        "first_runtime_path": null,
+        "required": false,
+        "ok": true,
+        "reason": "no runtime change since verify-completion--v0.1.1"
+      }
+    ]
+  }
+  $ make -s versions VERSIONS_ARGS=--json | jq -e '.route == "pr"'
+  true
+  $ echo $?
+  0
+  $ make -s versions VERSIONS_ARGS=--json | jq '[.plugins[] | select(.runtime_changed)] | length'
+  0
+  ```
+
+- [x] `.venv/bin/python -m scripts.versioning.tag_versions --dry-run` prints the idle line
+
+  ```text
+  $ .venv/bin/python -m scripts.versioning.tag_versions --dry-run
+  Every plugin version is already tagged.
+  $ echo $?
+  0
+  ```
+
+- [x] the route-table cases are covered and pass: the plan's fourteen, the four the
+      maintainer added on 2026-09-21, and four more covering the failure side of `runtime`,
+      `new_plugin`, `removal` and the manifest content rule
+
+  | §B case | test |
+  | --- | --- |
+  | `runtime` | `test_route_runtime` |
+  | `exempt_only` | `test_route_exempt_only` |
+  | `evals_only` | `test_route_evals_only` |
+  | `tests_only` | `test_route_tests_only` |
+  | `gate_only` | `test_route_gate_only` |
+  | `formatting_only_plugin_json` | `test_route_formatting_only_plugin_json` (now `direct`) |
+  | `metadata_only_plugin_json` | `test_route_metadata_only_plugin_json` |
+  | `catalog_plugins_array_only` | `test_route_catalog_plugins_array_only` |
+  | `catalog_renames_changed` | `test_route_catalog_renames_changed` |
+  | `new_plugin` | `test_route_new_plugin` |
+  | `rename` | `test_route_rename` |
+  | `deprecation` | `test_route_deprecation` |
+  | `removal` | `test_route_removal` |
+  | `emergency_removal` | `test_route_emergency_removal` |
+  | `multi_plugin` | `test_route_multi_plugin` |
+  | `deferred_merge` | `test_route_deferred_merge` |
+  | `post_merge_push` | `test_route_post_merge_push` |
+
+  ```text
+  $ .venv/bin/python -m pytest -m slow -k route -vv
+  collecting ... collected 277 items / 255 deselected / 22 selected
+
+  scripts/versioning/test_version_plan.py::test_route_runtime PASSED       [  4%]
+  scripts/versioning/test_version_plan.py::test_route_runtime_with_a_bump_passes PASSED [  9%]
+  scripts/versioning/test_version_plan.py::test_route_exempt_only PASSED   [ 13%]
+  scripts/versioning/test_version_plan.py::test_route_evals_only PASSED    [ 18%]
+  scripts/versioning/test_version_plan.py::test_route_tests_only PASSED    [ 22%]
+  scripts/versioning/test_version_plan.py::test_route_gate_only PASSED     [ 27%]
+  scripts/versioning/test_version_plan.py::test_route_formatting_only_plugin_json PASSED [ 31%]
+  scripts/versioning/test_version_plan.py::test_route_metadata_only_plugin_json PASSED [ 36%]
+  scripts/versioning/test_version_plan.py::test_route_metadata_edit_that_touches_runtime_is_a_pull_request PASSED [ 40%]
+  scripts/versioning/test_version_plan.py::test_route_catalog_plugins_array_only PASSED [ 45%]
+  scripts/versioning/test_version_plan.py::test_route_catalog_renames_changed PASSED [ 50%]
+  scripts/versioning/test_version_plan.py::test_route_catalog_top_level_field_changed PASSED [ 54%]
+  scripts/versioning/test_version_plan.py::test_route_new_plugin PASSED    [ 59%]
+  scripts/versioning/test_version_plan.py::test_route_new_plugin_must_start_at_the_initial_version PASSED [ 63%]
+  scripts/versioning/test_version_plan.py::test_route_rename PASSED        [ 68%]
+  scripts/versioning/test_version_plan.py::test_route_deprecation PASSED   [ 72%]
+  scripts/versioning/test_version_plan.py::test_route_removal PASSED       [ 77%]
+  scripts/versioning/test_version_plan.py::test_route_emergency_removal PASSED [ 81%]
+  scripts/versioning/test_version_plan.py::test_route_removal_without_a_renames_entry_fails PASSED [ 86%]
+  scripts/versioning/test_version_plan.py::test_route_multi_plugin PASSED  [ 90%]
+  scripts/versioning/test_version_plan.py::test_route_deferred_merge PASSED [ 95%]
+  scripts/versioning/test_version_plan.py::test_route_post_merge_push PASSED [100%]
+
+  ====================== 22 passed, 255 deselected in 5.35s ======================
+
+  $ .venv/bin/python -m pytest -m slow -vv -k content_exempt
+  collecting ... collected 277 items / 274 deselected / 3 selected
+
+  scripts/versioning/test_version_plan.py::test_content_exempt_paths_clears_only_what_it_should PASSED [ 33%]
+  scripts/versioning/test_version_plan.py::test_content_exempt_paths_refuses_a_manifest_that_moved_runtime PASSED [ 66%]
+  scripts/versioning/test_version_plan.py::test_content_exempt_paths_refuses_a_catalog_that_moved_policy PASSED [100%]
+
+  ====================== 3 passed, 274 deselected in 1.05s =======================
+  ```
+
+- [x] `test_changelog_immutable` reports 10/10 released sections equal to their tag, and
+      `test_plugin_paths` passes under both bash binaries
+
+  ```text
+  $ .venv/bin/python -m pytest -m slow -vv -k "changelog_immutable or plugin_paths"
+  collecting ... collected 268 items / 264 deselected / 4 selected
+
+  scripts/harness/test_plugin_paths.py::test_bash_mirror_agrees_with_python[/opt/homebrew/bin/bash] PASSED [ 25%]
+  scripts/harness/test_plugin_paths.py::test_bash_mirror_agrees_with_python[/bin/bash] PASSED [ 50%]
+  scripts/versioning/test_changelog_immutable.py::test_every_released_section_equals_its_text_at_its_tag PASSED [ 75%]
+  scripts/versioning/test_changelog_immutable.py::test_no_plugin_outside_the_recorded_debt_mixes_link_styles PASSED [100%]
+
+  ====================== 4 passed, 264 deselected in 0.26s =======================
+  $ .venv/bin/python -c "…count the sections compared…"
+  compared 10/10 released sections
+     agent-self-knowledge 0.1.0
+     block-no-verify 0.1.0
+     block-no-verify 0.1.1
+     block-no-verify 0.1.2
+     ruff-quality 0.1.0
+     ruff-quality 0.1.1
+     shell-quality 0.1.0
+     shell-quality 0.1.1
+     verify-completion 0.1.0
+     verify-completion 0.1.1
+  findings: []
+  ```
+
+  `/opt/homebrew/bin/bash` is 5.3.20 and `/bin/bash` is Apple's 3.2.57; both classify all
+  nineteen table paths identically to `version_plan.is_exempt`.
+
+- [x] `make lint types test-fast` exit 0, and `make test-slow`'s pytest step exit 0
+
+  ```text
+  $ make lint types test-fast >/dev/null 2>&1; echo $?
+  0
+  $ .venv/bin/python -m pytest -m slow -q
+  ................................................................         [100%]
+  $ echo $?
+  0
+  $ .venv/bin/python -m pytest -m slow | tail -1
+  64 passed, 213 deselected in 11.02s
+  $ .venv/bin/python -m pytest | tail -1
+  277 passed in 10.72s
+  ```
+
+  Full suite: 277 tests, 213 fast and 64 slow. `make lint` covers 26 `.py` files,
+  `make types` reports `0 errors, 0 warnings, 0 notes`.
+
+- [x] zero suppressions in the new code
+
+  ```text
+  $ grep -rnE "# *(noqa|type: ?ignore|pyright: ?ignore|basedpyright: ?ignore)|cast\(" --include='*.py' scripts/
+  $ echo $?
+  1
+  ```
+
+- [x] `claude plugin tag --help` — the flags `tag_versions.py` relies on
+
+  ```text
+  $ claude plugin tag --help
+  Usage: claude plugin tag [options] [path]
+
+  Create a {name}--v{version} git tag for a plugin release, validating that
+  plugin.json and any enclosing marketplace entry agree
+
+  Options:
+    --dry-run            Print what would be tagged without creating it
+    -f, --force          Skip the dirty-working-tree and tag-already-exists checks
+    -h, --help           Display help for command
+    -m, --message <msg>  Tag annotation message (use %s for the version)
+    --push               Push the tag to --remote after creating it
+    --remote <name>      Remote to push to with --push (default: "origin")
+  ```
+
+  Only `--dry-run` and `--push` are used. `--force` is never used: `*--v*` tags are immutable
+  by ruleset, so a forced retag could not land anyway.
+
+- [x] `git status --short` and `git diff --stat` at the end of the step
+
+  ```text
+  $ git status --short
+  ## refactor/python-toolchain-and-governance
+   M Makefile
+   M docs/superpowers/specs/2026-09-21-refactor-migration-log.md
+   M scripts/common/errors.py
+   M scripts/common/plugins.py
+   M scripts/common/test_errors.py
+   M scripts/common/test_plugins.py
+  ?? scripts/harness/test_plugin_paths.py
+  ?? scripts/versioning/changelog.py
+  ?? scripts/versioning/check_versions.py
+  ?? scripts/versioning/conftest.py
+  ?? scripts/versioning/semver.py
+  ?? scripts/versioning/tag_versions.py
+  ?? scripts/versioning/test_changelog.py
+  ?? scripts/versioning/test_changelog_immutable.py
+  ?? scripts/versioning/test_check_versions.py
+  ?? scripts/versioning/test_semver.py
+  ?? scripts/versioning/test_tag_versions.py
+  ?? scripts/versioning/test_version_plan.py
+  ?? scripts/versioning/version_plan.py
+
+  $ git diff --stat
+   Makefile                                           |   2 +-
+   .../specs/2026-09-21-refactor-migration-log.md     | 383 +++++++++++++++++++++
+   scripts/common/errors.py                           |  19 +
+   scripts/common/plugins.py                          |  97 +++++-
+   scripts/common/test_errors.py                      |  12 +
+   scripts/common/test_plugins.py                     |  43 +++
+   6 files changed, 545 insertions(+), 11 deletions(-)
+  ```
+
+  The thirteen new modules and test files are untracked, so `git diff --stat` does not count
+  them;
+  `git status --short` lists every one.
+
+Nothing was committed, pushed or tagged; no tag was created in this repository at any point.
+
+### External unsafe-fix run
+
+External unsafe-fix run at ~01:45: files re-read: `scripts/common/errors.py`,
+`scripts/common/plugins.py`, `scripts/common/test_errors.py`, `scripts/common/test_plugins.py`,
+`scripts/versioning/semver.py`, `version_plan.py`, `changelog.py`, `check_versions.py`,
+`tag_versions.py`, `conftest.py`, `test_semver.py`, `test_version_plan.py`,
+`test_changelog.py`, `test_changelog_immutable.py`, `test_check_versions.py`,
+`test_tag_versions.py`, `scripts/harness/test_plugin_paths.py`, `Makefile`; changes found:
+none surviving in the delivered files.
+
+One change by an external `--fix` pass was seen and repaired *during* the step, before this
+audit: while `version_plan.py` was half-written (its constants and helpers on disk, its plan
+builder not yet appended), an outside pass removed the four imports that were unused at that
+instant (`plugin_ids`, `announces_deprecation`, `released_body_at_tag`, `bump_level`) and moved
+`Finding` into the `TYPE_CHECKING` block. `ruff check` caught it immediately as `F821 Undefined
+name` once the builder landed; the import block was rewritten and the module has been clean
+since. Nothing else was altered, and `.claude/hooks/post-edit.sh` is not the cause: it is still
+the Biome-era hook and runs no Python tooling at all (a stale-tooling item for the step that
+owns the hooks).
+
+The maintainer ran `ruff check --fix --unsafe-fixes` over the repository from a terminal while
+this step was in progress. Every file written in this step was re-read in full and compared
+against what it was written to be. Two differences from the first draft were found and both
+were explained:
+
+1. **`{key: "x" for key in METADATA_KEYS}` → `dict.fromkeys(METADATA_KEYS, "x")`** in
+   `test_version_plan.py`. This is Ruff's `C420`, and under this repository's floor the rule
+   **fires as an error and its fix is marked safe**, so it was applied by the plain
+   `ruff check --fix` run in this step, not by the unsafe fixer. Probed in a scratch file:
+
+   ```text
+   $ .venv/bin/python -m ruff check scripts/versioning/_c420probe.py
+   C420 [*] Unnecessary dict comprehension for iterable; use `dict.fromkeys` instead
+   Found 1 error.
+   [*] 1 fixable with the `--fix` option.
+   ```
+
+   The value is the immutable string `"x"`, so `fromkeys` sharing one object across keys
+   cannot bite here, and the assertion is unchanged. Keeping the comprehension would fail
+   `make lint`.
+
+2. **`"\u2192"` written as a literal `→`** in `check_versions.py` and `test_check_versions.py`.
+   Identical Python strings. Ruff was probed and does not perform this rewrite
+   (`ruff check --fix --unsafe-fixes --select ALL` plus `ruff format` on a file containing the
+   escape left it untouched). The rendered bytes were checked directly:
+
+   ```text
+   >>> plugin_line(...)
+   'alpha 0.1.0 runtime: skills/demo/SKILL.md → needs patch'
+   bytes: b'alpha 0.1.0 runtime: skills/demo/SKILL.md \xe2\x86\x92 needs patch'
+   contains 'bump: ': False
+   ```
+
+Checks run to prove nothing else moved:
+
+- **Tracked diffs read line by line.** `scripts/common/errors.py`, `plugins.py`,
+  `test_errors.py`, `test_plugins.py` and `Makefile` show only the intended additions.
+- **Byte audit.** Every non-ASCII character in every file of this step is accounted for
+  (`→` ×8, `—` ×4, `…` ×1, `§` ×6, all in docstrings or rendered output) and there is no
+  stray control character anywhere under `scripts/`.
+- **No unsafe fix is pending.** `ruff check --unsafe-fixes --diff` over the whole `PY_FILES`
+  set prints nothing, and the rewrites an unsafe pass leaves behind (`contextlib.suppress`,
+  tuple `startswith`, `next(iter(...))`) appear nowhere.
+- **Mutation testing, to prove no *test* was weakened.** Seven deliberate defects were seeded
+  one at a time and every one was caught:
+
+  | Seeded defect | Caught by |
+  | --- | --- |
+  | `evals/` removed from `EXEMPT_FILE` | 5 failures, including both bash parity tests |
+  | `route` ignores `renames_changed` | not caught — the rename fixture is already `pr` by two other rules; the rule itself is covered by `test_read_renames_*` |
+  | `LABEL_PREFIX` changed | `test_the_golden_last_line`, `test_render_puts_the_label_last`, `test_an_unbumped_runtime_change_fails` |
+  | `bump_level` returns `patch` where `minor` is owed | 5 failures across `test_semver` and the rename/deprecation/multi-plugin route cases |
+  | `released_body_at_tag` always None | `test_check_released_bodies_catches_a_rewritten_release` |
+  | `required` hard-coded False | `test_route_runtime` and both `check_versions` failure cases |
+  | `--dry-run` no longer reaches the CLI | `test_dry_run_reports_the_tag_without_creating_it` |
+
+  Two further mutations were seeded against the content rule added on 2026-09-21:
+
+  | Seeded defect | Caught by |
+  | --- | --- |
+  | the catalog rule clears every `marketplace.json` change | `test_route_catalog_top_level_field_changed` |
+  | the manifest rule clears every `plugin.json` change | `test_content_exempt_paths_refuses_a_manifest_that_moved_runtime` |
+
+  The second was not caught by any route case, because a manifest edit that moves runtime is
+  already a pull request through "this plugin's runtime changed"; the negative assertion was
+  therefore added against `content_exempt_paths` itself, which is the rule's single home. The
+  same masking explains the one uncaught mutation above: the rename case is already routed to
+  `pr` by "version differs from its tag" and by "a path outside the allowlist changed", so
+  switching off `renames_changed` cannot change its answer.
+
+- **Byte-identical restore.** SHA-256 of all 26 `scripts/**/*.py` files was taken before the
+  mutations and compared after each restore; the final comparison is clean, so the audit left
+  the tree exactly as it found it.
+
+  ```text
+  $ diff /tmp/.../sha.before /tmp/.../sha.end && echo "ALL 26 FILES BYTE-IDENTICAL"
+  ALL 26 FILES BYTE-IDENTICAL TO THE PRE-AUDIT STATE
+  ```
+
+- **Gate re-run after the audit**: `make lint` clean, `make types` `0 errors, 0 warnings,
+  0 notes`, 212 fast + 56 slow tests pass, `make -s versions` still ends in
+  `Computed label: bump: none`, `tag_versions --dry-run` still prints
+  `Every plugin version is already tagged.`
+
+`plugins/` was not touched at any point in this step.
+
+### Carried to later steps
+
+- `.github/workflows/ci.yml` still calls `node scripts/check-versions.mjs`, and
+  `docs/contributing/versioning.md` still documents the npm commands and `scripts/lib/
+  version-plan.mjs`. Both are rewired at the steps that own them (6 and 8).
+- `check_versions` raises a usage error (exit 2) when `--base` cannot be resolved. The push
+  event passes `--base ${{ github.event.before }}`, which is forty zeros when a branch is
+  created; if that case ever reaches `main`, step 6 must special-case it in the workflow or
+  here.
+- The C1 validator, and the decision on whether to repair the four CHANGELOG footers, belong
+  to step 5.

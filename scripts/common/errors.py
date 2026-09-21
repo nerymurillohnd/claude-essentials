@@ -7,6 +7,7 @@ import enum
 from typing import TYPE_CHECKING, ClassVar, Literal
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
 Severity = Literal["error", "warning"]
@@ -98,6 +99,24 @@ class GitLsFilesFailedError(CommandFailedError):
     """`git ls-files -z` could not list the tracked files."""
 
     command: ClassVar[str] = "git ls-files -z"
+
+
+class GitCommandFailedError(MaintainerError):
+    """A `git` invocation the tooling depends on could not run or exited non-zero.
+
+    Unlike the fixed-command subclasses above, this one carries the actual argument list, so
+    a caller that builds its command at run time still produces a message a maintainer can
+    paste into a terminal.
+    """
+
+    def __init__(self, args: Sequence[str], detail: str) -> None:
+        """Record the command that failed and why.
+
+        Args:
+            args: The arguments passed to `git`, without the binary itself.
+            detail: What went wrong, taken from the exception or the captured stderr.
+        """
+        super().__init__(f"`git {' '.join(args)}` failed: {detail}")
 
 
 class MalformedJsonError(MaintainerError):

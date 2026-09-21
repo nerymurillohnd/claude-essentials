@@ -13,6 +13,7 @@ from scripts.common.errors import (
     ExecutableNotFoundError,
     ExitCode,
     Finding,
+    GitCommandFailedError,
     GitLsFilesFailedError,
     GitRevParseFailedError,
     MaintainerError,
@@ -104,3 +105,14 @@ def test_unexpected_shape_message_is_matchable() -> None:
     """Callers of `pytest.raises(match=...)` get a stable, escapable message."""
     with pytest.raises(UnexpectedShapeError, match=re.escape("expected a string, found int")):
         raise UnexpectedShapeError(Path("a/b.json"), "a string", 7)
+
+
+def test_git_command_failed_quotes_the_command_a_maintainer_can_rerun() -> None:
+    """A run-time argument list is useless in a message unless it is spelled out."""
+    error = GitCommandFailedError(["diff", "--name-only", "origin/main"], "bad revision")
+    assert str(error) == "`git diff --name-only origin/main` failed: bad revision"
+
+
+def test_git_command_failed_is_a_maintainer_error() -> None:
+    """Entrypoints catch one base class to turn any tooling failure into a usage exit."""
+    assert isinstance(GitCommandFailedError(["tag"], "x"), MaintainerError)

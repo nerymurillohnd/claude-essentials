@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from scripts.common.errors import (
+    GitCommandFailedError,
     GitRevParseFailedError,
     MalformedJsonError,
     UnexpectedShapeError,
@@ -19,7 +20,10 @@ from scripts.common.plugins import (
     PLUGINS_DIRNAME,
     as_mapping,
     as_str,
+    git_output,
+    git_output_or_none,
     load_json,
+    parse_json,
     plugin_ids,
     repo_root,
     tracked_files,
@@ -194,3 +198,42 @@ def test_as_str_rejects_a_number(tmp_path: Path) -> None:
 def test_as_str_passes_a_string_through(tmp_path: Path) -> None:
     """The narrowing helpers return the same value, never a copy or a coercion."""
     assert as_str("alpha", path=tmp_path / "plugin.json") == "alpha"
+
+
+@pytest.mark.slow
+def test_git_output_returns_standard_output(git_repo: Path) -> None:
+    """The general-purpose call is what the versioning area builds its refs and tags with."""
+    assert git_output(git_repo, ["rev-parse", "--is-inside-work-tree"]).strip() == "true"
+
+
+@pytest.mark.slow
+def test_git_output_names_the_arguments_that_failed(git_repo: Path) -> None:
+    """A gate line that only says "git failed" sends the reader back to the terminal."""
+    with pytest.raises(GitCommandFailedError, match=re.escape("`git rev-parse --verify absent`")):
+        _ = git_output(git_repo, ["rev-parse", "--verify", "absent"])
+
+
+@pytest.mark.slow
+def test_git_output_or_none_treats_a_refusal_as_an_answer(git_repo: Path) -> None:
+    """Reading a path that does not exist at a ref is ordinary, not a failure."""
+    assert git_output_or_none(git_repo, ["show", "absent:README.md"]) is None
+
+
+@pytest.mark.slow
+def test_git_output_or_none_still_returns_output_on_success(git_repo: Path) -> None:
+    """The forgiving wrapper is the same call when the command works."""
+    assert git_output_or_none(git_repo, ["rev-parse", "--is-inside-work-tree"]) is not None
+
+
+def test_parse_json_narrows_text_the_same_way_as_a_file(tmp_path: Path) -> None:
+    """Text from `git show` has to be parsed with the same narrowing as a file on disk."""
+    path = tmp_path / "plugin.json"
+    parsed = parse_json('{"name": "alpha"}', path=path)
+    assert as_str(as_mapping(parsed, path=path)["name"], path=path) == "alpha"
+
+
+def test_parse_json_names_the_path_it_was_told_about(tmp_path: Path) -> None:
+    """The path is the caller's label for the text, so a ref read still points somewhere."""
+    path = tmp_path / "plugin.json"
+    with pytest.raises(MalformedJsonError, match=re.escape(str(path))):
+        _ = parse_json("{nope}", path=path)
