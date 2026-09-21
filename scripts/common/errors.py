@@ -119,6 +119,23 @@ class GitCommandFailedError(MaintainerError):
         super().__init__(f"`git {' '.join(args)}` failed: {detail}")
 
 
+class MissingPathError(MaintainerError):
+    """A file or directory an entrypoint was pointed at does not exist.
+
+    Raised instead of letting an `OSError` escape, so `--root /nonexistent` and a checkout
+    without a catalog both end in one `error: …` line rather than a traceback.
+    """
+
+    def __init__(self, path: Path, description: str) -> None:
+        """Record what was missing and what it was supposed to be.
+
+        Args:
+            path: The path that is not there.
+            description: What the entrypoint needed it for ("the repository root").
+        """
+        super().__init__(f"{path}: {description} does not exist")
+
+
 class MalformedJsonError(MaintainerError):
     """A JSON file the tooling reads could not be parsed."""
 

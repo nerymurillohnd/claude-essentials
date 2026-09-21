@@ -5,8 +5,8 @@ setup:         ## create/refresh .venv from uv.lock (the only target that calls 
 	$(UV) sync --locked
 check: generate lint types test-fast validate validate-cli test-slow
 generate:      ## 10 regenerate catalog + issue forms, then fail on diff
-#	$(PY) -m scripts.marketplace.generate_marketplace   # ported at step 4
-#	$(PY) -m scripts.github.generate_issue_forms        # ported at step 4
+	$(PY) -m scripts.marketplace.generate_marketplace
+	$(PY) -m scripts.github.generate_issue_forms
 	git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE
 PY_FILES := $(shell git ls-files --cached --others --exclude-standard -- 'scripts/*.py')
 lint:          ## 20 ruff format --check + ruff check (explicit .py list), shell, json, text bytes, actionlint, zizmor

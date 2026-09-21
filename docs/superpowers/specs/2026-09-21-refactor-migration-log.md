@@ -1025,3 +1025,333 @@ Checks run to prove nothing else moved:
   here.
 - The C1 validator, and the decision on whether to repair the four CHANGELOG footers, belong
   to step 5.
+
+## Gate 4 — `scripts/marketplace/`, `scripts/github/` (2026-09-21)
+
+Twelve modules and twelve test modules were written against §A5, §A6 (M1–M10, G1–G3) and
+§A11. Nothing deleted from this repository was read or restored (P13): the catalog entry
+shape, the label taxonomy, the triage rules and the pins were rebuilt from the plan and from
+the tracked artifacts themselves.
+
+**Files created**
+
+```text
+scripts/common/jsontext.py            canonical_json + the JSON narrowing predicates
+scripts/common/test_jsontext.py
+scripts/marketplace/catalog.py        MARKETPLACE_CATEGORIES, name/tag rules, catalog_entry,
+                                      build_plugins_array, check_renames (M9), check_links (M10)
+scripts/marketplace/generate_marketplace.py
+scripts/marketplace/validate_marketplace.py   MARKETPLACE_INVARIANTS + M1–M10, --list, --root
+scripts/marketplace/conftest.py       fixture marketplace tree
+scripts/marketplace/test_catalog.py
+scripts/marketplace/test_generate_marketplace.py
+scripts/marketplace/test_validate_marketplace.py
+scripts/github/client.py              stdlib REST client, injectable transport, apply-gated writes
+scripts/github/labels.py              Label, REQUIRED_LABELS (incl. `bump: removal`), validate, plan
+scripts/github/sync_labels.py         dry run by default, --apply, --prune
+scripts/github/issue_forms.py         PyYAML + jsonschema validation, dropdown and label checks
+scripts/github/generate_issue_forms.py  targeted text rewrite of the `id: plugin` options block
+scripts/github/repo_metadata.py       CLAUDE_CODE_VERSION, tool pins (G3), workflow SHAs,
+                                      pipeline invocation (G2, advisory)
+scripts/github/triage_rules.py        pure path/answer/bump rules
+scripts/github/triage.py              event CLI, dry run by default
+scripts/github/conftest.py            recording transport + fixture tree
+scripts/github/test_client.py  test_labels.py  test_sync_labels.py  test_issue_forms.py
+scripts/github/test_generate_issue_forms.py  test_triage_rules.py  test_triage.py
+scripts/github/test_repo_metadata.py
+```
+
+**Files modified**: `Makefile` (the two `generate` lines uncommented) and
+`.claude-plugin/marketplace.json` (the `$schema` key removed by `make generate` itself).
+`plugins/`, `schemas/`, `.github/labels.json` and `.github/ISSUE_TEMPLATE/` were not edited.
+
+### Decisions taken beyond the plan
+
+- **`canonical_json` lives in `scripts/common/jsontext.py`, not in `scripts/lint/json_files.py`.**
+  Step 4 needs the canonical serialisation before step 6 exists, and two copies would be two
+  policies (P1). `json_files.py` imports it at step 6; the module also holds `is_json_object`
+  and `is_json_array`, the two `TypeIs` predicates every narrowing site needs under
+  basedpyright `all`.
+- **`GITHUB_SCHEMAS_DIR` is defined in `issue_forms.py`.** The plan places the constant with
+  `repo_metadata`, but `issue_forms` is its only consumer and `repo_metadata` would then
+  declare a constant it never uses. It is still exactly one definition, flipped to
+  `.github/schemas` at step 9 by editing that one line.
+- **`catalog_entry` takes a keyword-only `path`.** The narrowing helpers in
+  `scripts/common/plugins.py` name the offending file in every shape error; without the path
+  a bad manifest would raise an error that does not say which manifest.
+- **`validate_marketplace` takes `--root`.** The ten seeded-defect probes below run against a
+  scratch copy of the tree; without it they would have to mutate the working tree.
+- **`triage.py` applies no `bump:` label from a base-only checkout.** `check_versions`
+  answers "what does this working tree owe against this base", so in the base checkout
+  `triage.yml` performs it would always answer `bump: none` — wrong on every pull request
+  that bumps anything. The entrypoint therefore computes the label only when `HEAD` is the
+  event's head or merge commit, or when `--versions-json` supplies the document, and
+  otherwise applies no `bump:` label rather than a confident wrong one. Stale `bump:` labels
+  are still removed, and `bump: deferred` is still preserved. **This is the one item of the
+  step that the plan's wording does not resolve**: §A5 says triage "runs `check_versions` on
+  the base checkout with `--base`", which cannot produce a correct answer. Step 7, which owns
+  `triage.yml`, must either feed `--versions-json` from a separate job or give
+  `check_versions` a two-ref comparison mode.
+- **`AUTH_ENV_VARIABLE` rather than `TOKEN_VARIABLE`.** Ruff's `S105` flags any string
+  literal assigned to a name containing `token`, and the floor allows no suppression.
+
+### Gate 4 checklist
+
+- [x] `make generate` exit 0 and the diff over the two generated artifacts shows **only** the
+      `$schema` removal.
+
+  The generators are idempotent on this tree; the recipe's own `git diff --exit-code` refuses
+  while the removal is uncommitted, which is by instruction (this step does not commit).
+
+  ```text
+  $ make generate
+  .venv/bin/python -m scripts.marketplace.generate_marketplace
+  .claude-plugin/marketplace.json unchanged
+  .venv/bin/python -m scripts.github.generate_issue_forms
+  .github/ISSUE_TEMPLATE: dropdowns unchanged
+  git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE
+  diff --git i/.claude-plugin/marketplace.json w/.claude-plugin/marketplace.json
+  @@ -1,5 +1,4 @@
+   {
+  -  "$schema": "../schemas/marketplace.schema.json",
+     "name": "claude-essentials",
+  make: *** [generate] Error 1
+  make generate exit=2
+
+  $ git add .claude-plugin/marketplace.json && make generate
+  .claude-plugin/marketplace.json unchanged
+  .github/ISSUE_TEMPLATE: dropdowns unchanged
+  git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE
+  make generate exit=0
+  ```
+
+  ```text
+  $ git diff --stat -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE
+   .claude-plugin/marketplace.json | 1 -
+   1 file changed, 1 deletion(-)
+  ```
+
+  The tracked catalog was already canonical JSON: apart from the `$schema` line the generated
+  document is byte-identical to the file. No other tracked file was reformatted.
+
+- [x] `sync_labels` dry run against the live repository, exit 0, nothing pruned.
+
+  ```text
+  $ GITHUB_TOKEN=$(gh auth token) .venv/bin/python -m scripts.github.sync_labels
+  labels: GitHub already matches the taxonomy
+  exit=0
+  ```
+
+  **This differs from the plan's expectation** ("lists only `bump: removal` and the `area:`
+  text changes") for one reason: those are text changes to `.github/labels.json`, which step 7
+  owns and this step may not touch. With the file exactly as tracked, the live taxonomy
+  already matches — including the five `plugin: <id>` labels, whose derived colour `5319e7`
+  and 100-character truncated description were reproduced from the live labels. Adding the
+  one new entry to the taxonomy produces exactly the expected single create:
+
+  ```text
+  --- plan with .github/labels.json exactly as tracked today ---
+  labels: GitHub already matches the taxonomy
+  --- plan with `bump: removal` added, as step 7 will ---
+  create bump: removal
+  ```
+
+  Nothing is planned for pruning, and the run is read-only: `GET /repos/.../labels` only.
+
+- [x] `validate_marketplace` passes on the tree, and each of M1–M10 fires on a seeded defect.
+
+  ```text
+  $ .venv/bin/python -m scripts.marketplace.validate_marketplace
+  marketplace catalog: M1-M10 pass
+  exit=0
+  ```
+
+  Every probe was seeded into a fresh copy of the tracked tree under the session scratchpad
+  and checked with `--root <copy>`; the working tree was never mutated.
+
+  | Probe seeded in the scratch copy | Line that fired |
+  | --- | --- |
+  | `plugin.json` `name` changed to `beta` | `M1 plugins/ruff-quality/.claude-plugin/plugin.json: manifest `name` is 'beta' but the directory is 'ruff-quality'` |
+  | category changed to `misc` | `M2 …: category 'misc' is not one of: automation, database, deployment, design, development, learning, monitoring, productivity, security, testing` |
+  | nine tags | `M3 …: 9 tags; between 1 and 8 allowed` |
+  | `license` changed to `MIT` | `M4 …: `license` is 'MIT', not 'Apache-2.0'` |
+  | `version` changed to `1.0` | `M5 …: '1.0' is not a canonical version: expected X.Y.Z, X.Y.Z-beta.N or X.Y.Z-rc.N, with no `v` prefix and no build metadata` |
+  | directory renamed to 43 `a` characters | `M6 plugins/aaa…a/.claude-plugin/plugin.json: 'aaa…a' is 43 characters; at most 42 keeps `plugin: <name>` inside GitHub's limit` |
+  | entry description hand-edited | `M7 .claude-plugin/marketplace.json: its `plugins` array does not match the manifests on disk; run `make generate`` |
+  | `version` key added to an entry | `M8 .claude-plugin/marketplace.json: entry 'agent-self-knowledge' carries a `version` key; the catalog never pins one` |
+  | `renames` maps a plugin that still ships | `M9 .claude-plugin/marketplace.json: `renames` maps 'ruff-quality', but `plugins/ruff-quality/` still ships` |
+  | `homepage` points at another plugin | `M10 plugins/ruff-quality/.claude-plugin/plugin.json: `homepage` '…/plugins/other' does not end with '/plugins/ruff-quality'` |
+
+  All ten runs exited 1. Two further M9 and M10 cases (a removed plugin that keeps its root
+  README row; a `$schema` hint with nothing behind it) are covered by
+  `test_validate_marketplace.py` rather than by a scratch probe, because both need a tree with
+  a plugin removed.
+
+- [x] `validate_marketplace --list`
+
+  ```text
+  M1  `plugin.json` `name` equals its directory name — a catalog/directory mismatch breaks install
+  M2  `metadata.marketplace.category` is one of `MARKETPLACE_CATEGORIES` — free-text categories
+  M3  `tags`: one to eight, unique, `^[a-z0-9]+(-[a-z0-9]+)*$` — unbounded or duplicated tags
+  M4  required fields `name`, `description`, `version`, `metadata.marketplace.category`, `author.name`, `license == "Apache-2.0"` — ADR-0005 drift
+  M5  `version` is canonical SemVer: no `v`, no build metadata, prerelease `-(beta|rc).N` — the official CLI accepts `1.0`, which Claude Code then orders differently
+  M6  `name` matches `^[a-z0-9]+(-[a-z0-9]+)*$` and is at most 42 characters — DEBT-0021: `plugin: <name>` would exceed GitHub's 50-character label limit
+  M7  `marketplace.json` is byte-equal to the generated document — hand edits to a generated array
+  M8  disk and catalog agree both ways, and no entry carries a `version` key — a stale catalog
+  M9  `renames` values are a string or null; no key still ships; a null has no README row — DEBT-0006: a catalog that offers a plugin that no longer exists
+  M10  `homepage` ends with `/plugins/<id>`; no `$schema` points at a missing path — dead links
+  ```
+
+- [x] `make generate lint types test-fast` exit 0 (run with the `$schema` removal staged, so
+      the recipe's diff check passes); `pytest -m slow` exit 0.
+
+  ```text
+  $ git add .claude-plugin/marketplace.json && make generate lint types test-fast
+  make generate lint types test-fast exit=0
+  418 passed, 93 deselected in 0.48s
+
+  $ .venv/bin/python -m pytest -m slow
+  93 passed, 418 deselected in 11.37s
+
+  $ PATH=.venv/bin:$PATH .venv/bin/basedpyright --threads
+  0 errors, 0 warnings, 0 notes
+  ```
+
+  Counts at this point: **418 fast + 93 slow = 511** tests, up from 212 + 56 at the end of
+  step 3; the entrypoint fixes below raise it to 422 + 98. Every
+  test that spawns a process — `repo_root()`, `git remote get-url`, `git rev-parse` — carries
+  `@pytest.mark.slow`, matching the convention `scripts/common/test_plugins.py` set.
+
+- [x] `git status --short` and `git diff --stat` at the end.
+
+  ```text
+  $ git diff --stat
+   .claude-plugin/marketplace.json | 1 -
+   .claude/settings.json           | 3 ++-
+   Makefile                        | 4 ++--
+   pyproject.toml                  | 2 +-
+  ```
+
+  `.claude/settings.json` and `pyproject.toml` were modified by the concurrent steps running
+  in the same session, not by this one. This step's own changes are the `$schema` removal, the
+  two uncommented `generate` lines, twenty-six new files under `scripts/`, and this entry.
+
+### Entrypoint error handling — two runtime findings, fixed in this step
+
+A runtime probe of the CLIs found two entrypoints that ended in a raw traceback instead of a
+message. Both are fixed here, and the convention is now applied to every `main()` this step
+touches: **catch `MaintainerError` and `OSError`, print one `error: <message>` line to stderr,
+return the entrypoint's own failure status.** A traceback tells a maintainer where the code
+broke; it does not tell them what they did wrong.
+
+`scripts/common/errors.py` gained one class for the case neither side owned:
+
+```python
+class MissingPathError(MaintainerError):
+    """A file or directory an entrypoint was pointed at does not exist."""
+```
+
+**Finding 1 — `validate_marketplace --root /nonexistent`.** `collect()` now refuses a root
+that is not a directory and a tree with no catalog, before anything tries to read a file.
+
+```text
+$ .venv/bin/python -m scripts.marketplace.validate_marketplace --root /nonexistent
+error: /nonexistent: the repository root does not exist
+exit=2
+
+$ .venv/bin/python -m scripts.marketplace.validate_marketplace --root <an empty directory>
+error: <…>/.claude-plugin/marketplace.json: the marketplace catalog does not exist
+exit=2
+```
+
+Before the fix the same command ended in
+`FileNotFoundError: [Errno 2] No such file or directory: '/nonexistent/.claude-plugin/marketplace.json'`.
+Covered by `test_a_root_that_does_not_exist_is_one_line`,
+`test_a_tree_without_a_catalog_is_one_line` and `test_collect_refuses_a_missing_root`.
+
+**Finding 2 — `tag_versions --dry-run` with no `claude` on PATH.** The raising body moved to
+`_tag()` and `main()` converts. Note that the probe command in the report does not reproduce
+on this tree: with every version already tagged, `pending_tags()` is empty and the CLI is
+never resolved, so the command prints `Every plugin version is already tagged.` and exits 0.
+The defect is real but needs a pending tag. Reproduced in a scratch repository with one
+untagged plugin version and a PATH that provides git but not `claude`:
+
+```text
+$ env PATH=/usr/bin:/bin .venv/bin/python -m scripts.versioning.tag_versions --dry-run
+error: `claude` is not on PATH; run `make setup` and check the requirements
+exit=1
+```
+
+Covered by `test_main_reports_a_missing_cli_as_one_line`, which builds a PATH directory
+holding a single `git` symlink so the missing binary is `claude` and nothing else.
+
+**The same convention, applied as the other entrypoints were written.** In each one
+`repo_root()` moved inside the `try`, so a run outside a working tree is a message too:
+
+| Entrypoint | Failure exercised by its test | Status |
+| --- | --- | --- |
+| `generate_marketplace` | no catalog; run outside a working tree | 2 |
+| `validate_marketplace` | `--root` that is not there; no catalog | 2 |
+| `generate_issue_forms` | run outside a working tree | 2 |
+| `sync_labels` | `GITHUB_TOKEN` unset | 2 |
+| `triage` | truncated `GITHUB_EVENT_PATH` payload | 2 |
+| `tag_versions` | `claude` not installed | 1 (its own convention) |
+
+Every one of those tests asserts both the exit status and that `Traceback` does not appear on
+stderr.
+
+**Gate re-run after the fixes** — no regression in step 3's evidence:
+
+```text
+$ .venv/bin/python -m scripts.versioning.tag_versions --dry-run
+Every plugin version is already tagged.
+$ make -s versions | tail -1
+Computed label: bump: none
+$ .venv/bin/python -m scripts.marketplace.validate_marketplace
+marketplace catalog: M1-M10 pass
+$ GITHUB_TOKEN=$(gh auth token) .venv/bin/python -m scripts.github.sync_labels
+labels: GitHub already matches the taxonomy
+$ git add .claude-plugin/marketplace.json && make generate lint types test-fast
+make generate lint types test-fast exit=0
+$ PATH=.venv/bin:$PATH .venv/bin/basedpyright --threads
+0 errors, 0 warnings, 0 notes
+```
+
+Counts after the fixes: **422 fast + 98 slow = 520** tests, up from 418 + 93. No suppression
+appears anywhere under `scripts/`.
+
+### Observations and carried items
+
+- **G1 does not fail today, and `make validate` is still not wired.** The plan's Makefile
+  marker for `validate_marketplace` says "ported at step 4", but the instruction for this step
+  was to uncomment only the two `generate` lines. `validate_marketplace` therefore runs by
+  hand and in tests; wiring the `validate` recipe belongs to the step that also adds
+  `validate_plugins` (step 5), which is where the G invariants are emitted.
+- **`bump: removal` is the one required label the taxonomy does not declare yet.**
+  `labels.missing_required()` returns exactly `["bump: removal"]` today.
+  `test_only_the_step_seven_label_is_missing_today` asserts `⊆ {"bump: removal"}`, so it
+  passes now and keeps passing once step 7 adds the entry.
+- **G2's pipeline check is advisory, as specified.** `repo_metadata.collect()` on this tree
+  reports exactly one finding, a warning:
+  `G2 .github/workflows/ci.yml: the gate workflow runs no `make` target, so CI and `make check`
+  can drift (advisory until step 7)`. Step 7 flips it to an error when `ci.yml` is rewired.
+- **`good first issue` is neither required nor an error.** D5 drops it from the taxonomy; the
+  text removal is step 7's, and until then the label validates cleanly.
+- **`jsonschema` needs no stub package.** Probed under basedpyright `all` with
+  `allowedUntypedLibraries = []`: `reportMissingTypeStubs` does not fire, and
+  `validator_for`/`iter_errors` are precisely typed, which is why `issue_forms` carries an
+  explicit recursive `JsonValue` alias and narrows YAML into it.
+- **`repo_metadata` works around YAML 1.1.** PyYAML resolves the bare workflow key `on` to
+  the boolean `True`, so the trigger block would be unreachable by name; `workflow_document`
+  normalises it and `test_the_on_key_survives_yaml_one_point_one` pins the behaviour.
+
+### Decision carried to Follow-up PR #1 (2026-09-21)
+
+- `per-file-target-version` for `plugins/agent-self-knowledge/**` is inert in this PR (`make lint` covers `scripts/` only) and its value is provisional. In Follow-up PR #1 it must equal the Python floor the plugin README declares, measured by running `ccdocs.py` under that version; a G3 check asserts the three agree (README row, this key, the CI `uv python install` line). The plugin contract itself is the shebang `#!/usr/bin/env python3` (B1): the script runs with whatever `python3` the installing machine has.
+
+### Orchestrator verification of gate 4 (2026-09-21)
+
+- Re-ran `make lint && make types && make test-fast` → clean, `0 errors, 0 warnings, 0 notes`, `422 passed, 98 deselected`; `pytest -m slow -q` → 98 passed.
+- Runtime probes at the CLI surface (scratch clone with tags): `validate_marketplace --list` (10 rows), M5/M7/M8 on seeded defects, `--root /nonexistent` → `error: /nonexistent: the repository root does not exist` rc 2; `tag_versions --dry-run` with an untagged bump and no `claude` on PATH → `error: \`claude\` is not on PATH; run \`make setup\`…` rc 1; `sync_labels` dry run → `labels: GitHub already matches the taxonomy`; `generate_issue_forms` → `dropdowns unchanged`; `make generate` rc 0 with the `$schema` removal staged.
+- Accepted beyond the plan: `canonical_json` lives in `scripts/common/jsontext.py` (step 6's `json_files` imports it); `GITHUB_SCHEMAS_DIR` lives in `issue_forms.py`; `bump: removal` is created by the step-7 `labels.json` edit (dry run proves `create bump: removal`).
+- Carried: a `Makefile` prerequisite that fails with `run make setup` when `.venv/bin/python` is absent (step 6).

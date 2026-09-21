@@ -218,13 +218,35 @@ def main(argv: Sequence[str] | None = None) -> int:
         argv: Arguments without the program name; `sys.argv[1:]` when None.
 
     Returns:
-        0 when every pending version was tagged (or would be), 1 when the CLI refused one,
-        2 when the flags contradict each other.
+        0 when every pending version was tagged (or would be), 1 when the CLI refused a tag,
+        2 when the environment cannot run the command: contradictory flags, no `claude` on
+        PATH, no working tree, or an unreadable manifest.
     """
     options = parse_args(argv)
     if options.dry_run and options.push:
         print("--dry-run and --push contradict each other", file=sys.stderr)
         return int(ExitCode.USAGE)
+    try:
+        return _tag(options)
+    except (MaintainerError, OSError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return int(ExitCode.USAGE)
+
+
+def _tag(options: Options) -> int:
+    """Tag every pending version; the raising half of `main`.
+
+    Args:
+        options: The parsed command line.
+
+    Returns:
+        0 when every pending version was tagged (or would be), 1 when the CLI refused one.
+
+    Raises:
+        MaintainerError: If the CLI is absent, or a manifest cannot be read. `main` turns
+            both into one `error: …` line and the usage status, because neither is a finding
+            about a plugin: the command could not run at all.
+    """
     root = repo_root()
     pending = pending_tags(root)
     if not pending:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import stat
 from typing import TYPE_CHECKING, Final
 
@@ -171,3 +172,50 @@ def test_run_claude_tag_passes_push_through(
     assert (tmp_path / ARGV_LOG).read_text(encoding="utf-8").strip() == (
         "plugin tag plugins/alpha --push"
     )
+
+
+@pytest.mark.slow
+def test_main_reports_a_missing_cli_as_one_line(
+    repo: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A maintainer without the CLI installed gets a sentence, not a traceback.
+
+    The status is the usage one, not the finding one: nothing was learned about any plugin,
+    the command simply could not run.
+
+    Args:
+        repo: A repository with one released plugin.
+        tmp_path: pytest's per-test temporary directory.
+        capsys: Captures what the entrypoint printed.
+        monkeypatch: Removes the CLI from PATH while leaving git on it.
+    """
+    _bump_alpha(repo, "0.1.1")
+    monkeypatch.chdir(repo)
+    monkeypatch.delenv(CLAUDE_BIN_ENV, raising=False)
+    monkeypatch.setenv("PATH", str(_path_with_git_only(tmp_path)))
+    assert main(["--dry-run"]) == int(ExitCode.USAGE)
+    captured = capsys.readouterr()
+    assert captured.err.splitlines() == ["error: " + str(ExecutableNotFoundError("claude"))]
+    assert "Traceback" not in captured.err
+
+
+def _path_with_git_only(tmp_path: Path) -> Path:
+    """Build a PATH directory that provides git and nothing else.
+
+    Args:
+        tmp_path: The directory to build in.
+
+    Returns:
+        A directory holding a single `git` symlink.
+    """
+    resolved = shutil.which("git")
+    assert resolved is not None, "git must be on PATH for the maintainer test suite"
+    directory = tmp_path / "only-git"
+    directory.mkdir(exist_ok=True)
+    link = directory / "git"
+    if not link.exists():
+        link.symlink_to(resolved)
+    return directory
