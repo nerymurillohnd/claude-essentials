@@ -1,0 +1,144 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.languageServer": "None",
+  "python.analysis.typeCheckingMode": "off",
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "scripts"
+  ],
+  "basedpyright.importStrategy": "fromEnvironment",
+  "basedpyright.disableOrganizeImports": true,
+  "basedpyright.analysis.diagnosticMode": "workspace",
+  "ruff.enable": true,
+  "ruff.nativeServer": "on",
+  "ruff.path": [
+    "${workspaceFolder}/.venv/bin/ruff"
+  ],
+  "ruff.interpreter": [
+    "${workspaceFolder}/.venv/bin/python"
+  ],
+  "ruff.importStrategy": "fromEnvironment",
+  "ruff.configurationPreference": "filesystemFirst",
+  "ruff.lint.enable": true,
+  "ruff.format.backend": "internal",
+  "ruff.showSyntaxErrors": true,
+  "ruff.organizeImports": true,
+  "ruff.fixAll": true,
+  "ruff.codeAction.fixViolation": {
+    "enable": true
+  },
+  "ruff.codeAction.disableRuleComment": {
+    "enable": false
+  },
+  "shellcheck.enable": true,
+  "shellcheck.run": "onSave",
+  "shellcheck.useWorkspaceRootAsCwd": true,
+  "shellcheck.executablePath": "${workspaceFolder}/.venv/bin/shellcheck",
+  "shellformat.path": "${workspaceFolder}/.venv/bin/shfmt",
+  "shellformat.useEditorConfig": true,
+  "shellformat.flag": "",
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.tabSize": 4
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2
+  },
+  "[toml]": {
+    "editor.defaultFormatter": "tamasfe.even-better-toml",
+    "editor.formatOnSave": false
+  },
+  "[yaml]": {
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2
+  },
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "files.trimTrailingWhitespace": false
+  },
+  "[makefile]": {
+    "editor.insertSpaces": false
+  },
+  "editor.formatOnSaveMode": "file",
+  "editor.rulers": [
+    100
+  ],
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
+  "files.associations": {
+    "SKILL.md": "markdown",
+    "*.jq": "jq",
+    ".shellcheckrc": "properties"
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.ruff_cache": true,
+    "**/.pytest_cache": true,
+    "**/.basedpyright": true
+  },
+  "search.exclude": {
+    ".venv": true,
+    "**/evals/results": true,
+    ".claude/state": true,
+    ".claude/.cache": true
+  },
+  "files.watcherExclude": {
+    "**/.venv/**": true,
+    "**/evals/results/**": true
+  },
+  "yaml.schemas": {
+    ".github/schemas/issue-forms.schema.json": [
+      ".github/ISSUE_TEMPLATE/*.yml"
+    ],
+    ".github/schemas/issue-config.schema.json": [
+      ".github/ISSUE_TEMPLATE/config.yml"
+    ]
+  },
+  "yaml.format.enable": false,
+  "json.schemaDownload.enable": false,
+  "git.branchProtection": [
+    "main"
+  ],
+  "git.branchProtectionPrompt": "alwaysPrompt",
+  "makefile.configureOnOpen": false,
+  "task.problemMatchers.neverPrompt": true,
+  "terminal.integrated.env.osx": {
+    "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
+  },
+  "terminal.integrated.env.linux": {
+    "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}"
+  },
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "files.readonlyInclude": {
+    "uv.lock": true,
+    ".venv/**": true,
+    ".claude-plugin/marketplace.json": true,
+    "**/evals/results/**": true,
+    ".github/schemas/**": true
+  },
+  "search.useIgnoreFiles": true,
+  "editor.unicodeHighlight.invisibleCharacters": true,
+  "editor.unicodeHighlight.ambiguousCharacters": true,
+  "git.pruneOnFetch": true
+}

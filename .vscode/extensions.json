@@ -1,3 +1,25 @@
 {
-  "recommendations": ["anthropic.claude-code", "biomejs.biome"]
+  "recommendations": [
+    "anthropic.claude-code",
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "detachhead.basedpyright",
+    "timonwong.shellcheck",
+    "foxundermoon.shell-format",
+    "editorconfig.editorconfig",
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "ms-vscode.makefile-tools",
+    "github.vscode-github-actions"
+  ],
+  "unwantedRecommendations": [
+    "ms-python.vscode-pylance",
+    "biomejs.biome",
+    "esbenp.prettier-vscode",
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "ms-python.flake8",
+    "ms-python.pylint",
+    "ms-python.mypy-type-checker"
+  ]
 }

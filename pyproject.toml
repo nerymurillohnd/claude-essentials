@@ -1,13 +1,51 @@
-# ruff.toml — Repository Python linting & formatting policy (mirrors ~/.config/ruff/ruff.toml)
-# Compatible with both `ruff check` and `ruff format`
+[project]
+name = "claude-essentials-maintainer"
+version = "0.0.0"
+description = "Maintainer tooling for the claude-essentials plugin marketplace. Never distributed."
+requires-python = ">=3.14"
+license = "Apache-2.0"
+dependencies = []
 
+[tool.uv]
+package = false
+required-version = ">=0.12.17"
+default-groups = ["dev"]
+# Supply-chain cooldown: resolve only releases published at least 4 days ago.
+# A deliberate bump that needs a newer release uses `uv lock --upgrade-package <name>`.
+exclude-newer = "4 days"
+
+[dependency-groups]
+# Exact pins so a Dependabot bump is visible in this manifest, not only in uv.lock.
+dev = [
+  "actionlint-py==1.7.12.24",
+  "basedpyright==1.40.1",
+  "jsonschema==4.26.0",
+  "mini-racer==0.14.1",
+  "pytest==9.1.1",
+  "pytest-github-actions-annotate-failures==0.4.2",
+  "pyyaml==6.0.3",
+  "ruff==0.16.8",
+  "shellcheck-py==0.11.0.1",
+  "shfmt-py==4.2.0",
+  "types-pyyaml==6.0.12.20260906",
+  "zizmor==1.30.1",
+]
+
+# ---------------------------------------------------------------------------
+# Ruff — transcription of ~/.config/ruff/ruff.toml (the rigor floor, P11).
+# This project config replaces the user-level file entirely, so it carries the
+# full policy. `ruff.toml`/`.ruff.toml` must never exist here: they would take
+# precedence over this section.
+# ---------------------------------------------------------------------------
+[tool.ruff]
 line-length = 100
 indent-width = 4
 target-version = "py314"
 required-version = ">=0.16.7"
 force-exclude = true
+respect-gitignore = true
 
-# Preserve Ruff's standard exclusions and omit repository-specific generated files.
+# Ruff's standard exclusions, plus this repository's generated and non-source trees.
 extend-exclude = [
   ".bzr",
   ".direnv",
@@ -36,9 +74,15 @@ extend-exclude = [
   "node_modules",
   "site-packages",
   "venv",
+  "**/evals/**",
+  "docs/",
+  "templates/",
 ]
 
-[lint]
+# Shipped plugin Python targets the floor its README declares, not the maintainer's 3.14.
+per-file-target-version = { "plugins/agent-self-knowledge/**" = "py39" }
+
+[tool.ruff.lint]
 # Explicit selection (official recommendation)
 select = [
   # Core
@@ -126,36 +170,66 @@ ignore = [
 fixable = ["ALL"]
 unfixable = []
 
-[lint.isort]
+[tool.ruff.lint.isort]
 # Only formatter-compatible isort settings
 force-sort-within-sections = true
 combine-as-imports = true
 order-by-type = true
 # Do NOT use: force-single-line, force-wrap-aliases, split-on-trailing-comma
 
-[lint.mccabe]
+[tool.ruff.lint.mccabe]
 # Keep branching understandable in portable hooks and automation scripts.
 max-complexity = 8
 
-[lint.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[lint.flake8-annotations]
+[tool.ruff.lint.flake8-annotations]
 allow-star-arg-any = false
 mypy-init-return = true
 suppress-dummy-args = true
 suppress-none-returning = false
 
-[lint.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
-[lint.pycodestyle]
+[tool.ruff.lint.pycodestyle]
 max-doc-length = 100
 
-[format]
+[tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 docstring-code-format = true
 docstring-code-line-length = 100
+
+# ---------------------------------------------------------------------------
+# basedpyright — the type-quality half of the gate. `pyrightconfig.json` must
+# never exist: it would take precedence over this section.
+# ---------------------------------------------------------------------------
+[tool.basedpyright]
+typeCheckingMode = "all"
+failOnWarnings = true
+include = ["scripts"]
+exclude = [".venv", "docs", "templates", "**/evals/**", "node_modules"]
+# `exclude` alone still reports files reached through imports (basedpyright #31).
+ignore = [".venv", "docs", "templates", "**/evals/**", "node_modules"]
+pythonVersion = "3.14"
+pythonPlatform = "All"
+reportMissingModuleSource = "error"
+enableTypeIgnoreComments = false
+allowedUntypedLibraries = []
+# The only permitted downgrade: the same check the Ruff floor ignores as a
+# formatter conflict (ISC002). Upstream basedpyright disables it for that reason.
+reportImplicitStringConcatenation = false
+
+[tool.pytest.ini_options]
+testpaths = ["scripts"]
+pythonpath = ["."]
+markers = [
+  "slow: spawns processes",
+  "coverage_matrix: nightly, diffs KNOWN_TOOLS against the live CLI",
+]
+addopts = "--strict-markers -q"
+xfail_strict = true
