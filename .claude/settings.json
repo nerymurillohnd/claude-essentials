@@ -19,7 +19,8 @@
       "Bash(claude plugin validate *)",
       "Bash(claude plugin list *)",
       "Bash(claude plugin details *)",
-      "Bash(claude plugin marketplace list *)"
+      "Bash(claude plugin marketplace list *)",
+      "mcp__ide__getDiagnostics"
     ]
   },
   "hooks": {
