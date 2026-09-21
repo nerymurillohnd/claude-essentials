@@ -1,4 +1,0 @@
-schema_version: "1.1"
-name: mock-hides-failure
-context:
-  scaffold_script: scaffold.sh
