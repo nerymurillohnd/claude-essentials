@@ -96,5 +96,5 @@ previous tag to its own; the first version links to its tag.
 -->
 
 [Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/ruff-quality--v0.1.1...HEAD
-[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/tree/ruff-quality--v0.1.1
+[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/ruff-quality--v0.1.0...ruff-quality--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/ruff-quality--v0.1.0

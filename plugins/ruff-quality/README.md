@@ -184,15 +184,8 @@ finding counts per mode, and the three configurations, with no file changed.
 After you choose a scope and a mode, the install output shows
 `test suite: 99 passed, 0 failed`.
 
-**Behavioral evals** — [`evals/`](evals/) runs with `claude plugin eval`, which compares a
-run with the plugin against a baseline without it:
-
-| Case | Checks | With | Without | Δ | Last run |
-| --- | --- | ---: | ---: | ---: | --- |
-| `fix-python-snippet` | `ruff` fires when cleaning up Python and fixes findings instead of silencing them | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `migrate-black-isort` | `ruff` fires on a migration question and gives current hook ids and order | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `hook-request-gated` | `ruff-hooks` fires, asks for scope and mode, writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `ignores-concept-question` | Neither skill fires on a conceptual Python question | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+**Behavioural evals** — Behavioural evals live in [`evals/`](evals/) and run per the
+maintainer's eval protocol; results are reported in the pull request, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -209,7 +202,9 @@ RQ_TEST_BASH=/bin/bash plugins/ruff-quality/skills/ruff-hooks/scripts/test-manag
 claude plugin eval plugins/ruff-quality --no-publish --max-cost-usd 6
 ```
 
-`npm test` runs both suites on every bash it finds, so CI covers them.
+`make check` runs both suites under `bash` and under `/bin/bash`. The repository's
+runner exports `BNV_TEST_BASH` with the interpreter in use, and each suite honours it
+as the fallback for its own `RQ_TEST_BASH` variable.
 
 </details>
 

@@ -88,6 +88,6 @@ optional (`status` reports it as an older version).
   200 ms, with a metered parser so no input can outlast the hook timeout.
 
 [Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.2...HEAD
-[0.1.2]: https://github.com/nerymurillohnd/claude-essentials/tree/block-no-verify--v0.1.2
+[0.1.2]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.1...block-no-verify--v0.1.2
 [0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.0...block-no-verify--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/block-no-verify--v0.1.0

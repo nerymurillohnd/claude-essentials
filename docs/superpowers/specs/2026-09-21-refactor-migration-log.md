@@ -1279,26 +1279,48 @@ untagged plugin version and a PATH that provides git but not `claude`:
 ```text
 $ env PATH=/usr/bin:/bin .venv/bin/python -m scripts.versioning.tag_versions --dry-run
 error: `claude` is not on PATH; run `make setup` and check the requirements
-exit=1
+exit=2
 ```
 
 Covered by `test_main_reports_a_missing_cli_as_one_line`, which builds a PATH directory
 holding a single `git` symlink so the missing binary is `claude` and nothing else.
 
+**Status convention, settled.** An earlier draft returned 1 here on the grounds that
+`tag_versions` already used 1 for a refusal. That was corrected: **2 is the status for a
+command that could not run** (bad root, no working tree, no `GITHUB_TOKEN`, no `claude`), and
+**1 is reserved for a finding about a plugin** — in this entrypoint, the CLI refusing a tag it
+was asked to create. A missing binary teaches nothing about any plugin, so it is not a
+finding.
+
 **The same convention, applied as the other entrypoints were written.** In each one
 `repo_root()` moved inside the `try`, so a run outside a working tree is a message too:
 
-| Entrypoint | Failure exercised by its test | Status |
-| --- | --- | --- |
-| `generate_marketplace` | no catalog; run outside a working tree | 2 |
-| `validate_marketplace` | `--root` that is not there; no catalog | 2 |
-| `generate_issue_forms` | run outside a working tree | 2 |
-| `sync_labels` | `GITHUB_TOKEN` unset | 2 |
-| `triage` | truncated `GITHUB_EVENT_PATH` payload | 2 |
-| `tag_versions` | `claude` not installed | 1 (its own convention) |
+| Entrypoint | Failure its test exercises | Status | Test |
+| --- | --- | --- | --- |
+| `validate_marketplace` | `--root` that is not there | 2 | `test_a_root_that_does_not_exist_is_one_line` |
+| `validate_marketplace` | tree with no catalog | 2 | `test_a_tree_without_a_catalog_is_one_line` |
+| `validate_marketplace` | the precondition itself | — | `test_collect_refuses_a_missing_root` |
+| `generate_marketplace` | run outside a working tree | 2 | `test_main_outside_a_repository_is_one_line` |
+| `generate_issue_forms` | run outside a working tree | 2 | `test_main_outside_a_repository_is_one_line` |
+| `sync_labels` | `GITHUB_TOKEN` unset | 2 | `test_main_without_a_token_is_one_line` |
+| `triage` | truncated `GITHUB_EVENT_PATH` payload | 2 | `test_main_with_an_unreadable_event_is_one_line` |
+| `tag_versions` | `claude` not installed | 2 | `test_main_reports_a_missing_cli_as_one_line` |
 
 Every one of those tests asserts both the exit status and that `Traceback` does not appear on
 stderr.
+
+```text
+$ .venv/bin/python -m pytest -k "one_line or refuses_a_missing_root" -v
+scripts/github/test_generate_issue_forms.py::test_main_outside_a_repository_is_one_line
+scripts/github/test_sync_labels.py::test_main_without_a_token_is_one_line
+scripts/github/test_triage.py::test_main_with_an_unreadable_event_is_one_line
+scripts/marketplace/test_generate_marketplace.py::test_main_outside_a_repository_is_one_line
+scripts/marketplace/test_validate_marketplace.py::test_a_root_that_does_not_exist_is_one_line
+scripts/marketplace/test_validate_marketplace.py::test_a_tree_without_a_catalog_is_one_line
+scripts/marketplace/test_validate_marketplace.py::test_collect_refuses_a_missing_root
+scripts/versioning/test_tag_versions.py::test_main_reports_a_missing_cli_as_one_line
+8 passed, 512 deselected
+```
 
 **Gate re-run after the fixes** — no regression in step 3's evidence:
 
@@ -1311,8 +1333,12 @@ $ .venv/bin/python -m scripts.marketplace.validate_marketplace
 marketplace catalog: M1-M10 pass
 $ GITHUB_TOKEN=$(gh auth token) .venv/bin/python -m scripts.github.sync_labels
 labels: GitHub already matches the taxonomy
-$ git add .claude-plugin/marketplace.json && make generate lint types test-fast
-make generate lint types test-fast exit=0
+$ make lint types test-fast
+422 passed, 98 deselected in 0.47s
+exit=0
+$ .venv/bin/python -m pytest -m slow -q
+98 passed, 422 deselected in 11.64s
+exit=0
 $ PATH=.venv/bin:$PATH .venv/bin/basedpyright --threads
 0 errors, 0 warnings, 0 notes
 ```
@@ -1355,3 +1381,352 @@ appears anywhere under `scripts/`.
 - Runtime probes at the CLI surface (scratch clone with tags): `validate_marketplace --list` (10 rows), M5/M7/M8 on seeded defects, `--root /nonexistent` → `error: /nonexistent: the repository root does not exist` rc 2; `tag_versions --dry-run` with an untagged bump and no `claude` on PATH → `error: \`claude\` is not on PATH; run \`make setup\`…` rc 1; `sync_labels` dry run → `labels: GitHub already matches the taxonomy`; `generate_issue_forms` → `dropdowns unchanged`; `make generate` rc 0 with the `$schema` removal staged.
 - Accepted beyond the plan: `canonical_json` lives in `scripts/common/jsontext.py` (step 6's `json_files` imports it); `GITHUB_SCHEMAS_DIR` lives in `issue_forms.py`; `bump: removal` is created by the step-7 `labels.json` edit (dry run proves `create bump: removal`).
 - Carried: a `Makefile` prerequisite that fails with `run make setup` when `.venv/bin/python` is absent (step 6).
+
+## Gate 5 — `scripts/plugin_validation/` (2026-09-21)
+
+Ported: `claude_cli`, `cli_coverage`, `evals`, `frontmatter`, `hook_contract`, `kind`,
+`readme_contract`, `run_plugin_suites`, `runtime_boundary`, `script_env`, `validate_claude`,
+`validate_plugins`, `workflows`, plus `scripts/common/javascript.py` (the V8 helper both
+`hook_contract` and `workflows` use, P12) and one `test_*.py` per module, `conftest.py` and
+`test_templates.py`. The three `Makefile` recipe lines marked `# ported at step 5` are
+uncommented, and the `# ported at step 4` line in `validate` with them (see the decisions
+below).
+
+- [x] `.venv/bin/python -m scripts.plugin_validation.validate_plugins --list` prints every ID of §A6
+
+```text
+M1  `plugin.json` `name` equals its directory name — a catalog/directory mismatch breaks install
+M2  `metadata.marketplace.category` is one of `MARKETPLACE_CATEGORIES` — free-text categories
+M3  `tags`: one to eight, unique, `^[a-z0-9]+(-[a-z0-9]+)*$` — unbounded or duplicated tags
+M4  required fields `name`, `description`, `version`, `metadata.marketplace.category`, `author.name`, `license == "Apache-2.0"` — ADR-0005 drift
+M5  `version` is canonical SemVer: no `v`, no build metadata, prerelease `-(beta|rc).N` — the official CLI accepts `1.0`, which Claude Code then orders differently
+M6  `name` matches `^[a-z0-9]+(-[a-z0-9]+)*$` and is at most 42 characters — DEBT-0021: `plugin: <name>` would exceed GitHub's 50-character label limit
+M7  `marketplace.json` is byte-equal to the generated document — hand edits to a generated array
+M8  disk and catalog agree both ways, and no entry carries a `version` key — a stale catalog
+M9  `renames` values are a string or null; no key still ships; a null has no README row — DEBT-0006: a catalog that offers a plugin that no longer exists
+M10  `homepage` ends with `/plugins/<id>`; no `$schema` points at a missing path — dead links
+P1  the kind the files derive equals the README `**Kind:**` line — ADR-0001 drift
+P2  `LICENSE` is byte-equal to the Apache-2.0 template — SPDX detection
+P3  `CHANGELOG.md` has a dated section for the manifest version — a release with no notes
+P4  no `{{placeholder}}` survives in a shipped file — template leftovers
+P5  no top-level `bin/` in a plugin — an undeclared runtime
+C1  CHANGELOG footer links use one style, `tree/` then `compare/` — mixed link styles
+C2  a released section still reads as it did at its tag — DEBT-0009: rewritten history
+S1  frontmatter starts on line 1 and parses as YAML — DEBT-0022: a skill that never loads
+S2  frontmatter keys are documented (warning) — upstream additions
+S3  `description` plus `when_to_use`: present, under the cap, imperative — truncated listings
+S4  `allowed-tools` entries parse and name a tool (unknown: warning) — inert grants
+S5  an agent `name` has no `:` and a `description` is present — a load failure
+S6  an agent's `skills:` entries resolve on disk — dangling references
+H1  `hooks.json` parses; events and handler types are documented — shape drift
+H2  every regex matcher compiles under V8 and matches a tool — `Write|Edit[`
+H3  every exact matcher names a known tool (warning) — a typo that fires nothing
+H4  a `command` is present and non-empty — the CLI catches absent, not empty
+H5  a `${CLAUDE_PLUGIN_ROOT}` path exists, is executable, has a shebang — a dead handler
+H6  `timeout` is numeric and within the event's documented default — a silent cancel
+R1  the template's sections, in order, optional ones only when earned — a README that hides a limit
+R2  badge order, kind slug and surface statuses match the files — a badge that outranks the table
+R3  a ✅ row carries a dated `Last verified` — an unproven claim
+R4  the network badge is present and not `none` for a networked plugin — an undisclosed request
+R5  every invoked binary has a Requirements row and a symptom line — a plugin that never fires
+R6  every environment variable the scripts read is named — an undiscoverable knob
+R7  each shape template differs from the master only where it may — template rot
+R8  the root catalog lists every plugin, sorted, with its display name — a stale catalog row
+R9  no eval score table and no `Δ` column — numbers that go stale silently
+R10  a plugin whose hooks run `bash` marks Windows without Git Bash ❌ — a silent no-op on Windows
+R11  every `/<id>:<skill>` in the Skills table exists — a dead slash command
+R12  `SECURITY.md` and `CODE_OF_CONDUCT.md` keep their templates' sections — policy drift
+R13  the Cowork badge does not outrank a skill's `compatibility` — a contradicted claim
+R14  each catalog status is the collapse of the Compatibility rows — ambiguous statuses
+B1  shebangs, commands, grants and imports stay inside the runtime boundary — a plugin that assumes uv
+W1  a workflow's `meta` is literal, its phases declared, its body runs — a workflow that throws
+E1  a suite has a README, three cases and one must-not-fire case — a vanity suite
+E2  every case has a prompt and at least one grader — a case that cannot fail
+E3  `results/` is git-ignored and never tracked — run output in the repository
+E4  the suite README names the plugin and states the CI policy — a suite that claims to gate
+G1  `labels.json` shape, required labels and the generated dropdown — taxonomy drift
+G2  `uses:` pinned to a SHA, `CLAUDE_CODE_VERSION` equal, `make` invoked — DEBT-0004
+G3  tool pins agree across the lock, the floors and the workflows — a silent mismatch
+V1  a runtime file changed since the plugin's tag but `version` did not (ADR-0003)
+V2  a manifest version lower than the one already published
+V3  a plugin's first release numbered something other than 0.1.0
+V4  a plugin directory removed with no `renames` entry mapping it to null
+V5  a removal with no prior deprecation release (warning)
+V6  `claude plugin tag --dry-run` would refuse an untagged version
+T1  `templates/**` pass R and S with `{{…}}` tolerated — template rot (templates test)
+Q1  the quality floor: no per-file config, no downgraded rule — a seeded `extend-ignore` (hygiene test, step 6)
+Q2  the rigor floor: the repo policy is at least the global one — global drift (hygiene test, step 6)
+Q3  no suppressions in code files — a silenced finding (hygiene test, step 6)
+X1  one home per canonical table — duplicated policy (hygiene test, step 6)
+X2  vendored schemas are SHA-256 pinned — a silent edit (hygiene test, step 6)
+X3  accepted ADRs are append-only — rewritten history (hygiene test, step 6)
+X4  no stale Node tooling references — documentation that names a deleted tool (hygiene test, step 6)
+X5  LICENSE, CODE_OF_CONDUCT and SECURITY are verbatim to their templates — license detection (hygiene test, step 6)
+```
+
+- [x] `make validate` exit 0 on the tree after the exempt-file fixes
+
+```text
+.venv/bin/python -m scripts.marketplace.validate_marketplace
+marketplace catalog: M1-M10 pass
+.venv/bin/python -m scripts.plugin_validation.validate_plugins
+B1 plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py: declares a shebang but is not tracked as 100755 (DEBT-0029)
+G2 .github/workflows/ci.yml: the gate workflow runs no `make` target, so CI and `make check` can drift (advisory until step 7)
+plugins: every invariant passes (2 warning(s))
+```
+
+- [x] `make -s versions` still prints five `exempt` lines and `Computed label: bump: none`
+
+```text
+agent-self-knowledge 0.1.0 exempt
+block-no-verify 0.1.2 exempt
+ruff-quality 0.1.1 exempt
+shell-quality 0.1.1 exempt
+verify-completion 0.1.1 exempt
+Computed label: bump: none
+```
+
+### Exempt files edited, and the invariant that refused each one
+
+| File | ID that fired | Edit |
+| --- | --- | --- |
+| `plugins/{agent-self-knowledge,block-no-verify,ruff-quality,shell-quality,verify-completion}/README.md` | R9 | the eval score table (and its `Δ` column) moved verbatim to `docs/audits/2026-09-20-<plugin>-eval.md`, replaced by the §A10 sentence |
+| `plugins/agent-self-knowledge/README.md` | R5 | a `curl` Requirements row (minimum 7.64, check `curl --version`) and a Limitations row naming the symptom; `curl` is invoked by the skill's `allowed-tools` grant |
+| `plugins/block-no-verify/README.md` | R5 | a Limitations row naming the symptom of a missing `jq` |
+| `plugins/shell-quality/README.md` | R5 | a Limitations row naming the symptom of a missing `git` |
+| `plugins/{ruff-quality,shell-quality,verify-completion}/README.md` | R6 | `BNV_TEST_BASH` documented (their suites read it as the fallback); the `npm test` sentence replaced by the `make check` one (§A10) |
+| `plugins/shell-quality/README.md` | R6 | `SHELLCHECK_BIN` and `SHFMT_BIN` documented; the gate reads both |
+| `plugins/{block-no-verify,ruff-quality,shell-quality,verify-completion}/CHANGELOG.md` | C1 | the second release's footer link changed from `tree/` to `compare/<prev>...<tag>`; footer links only, which C2 allows |
+
+No plugin runtime file was touched: `make -s versions` prints five `exempt` lines above.
+
+### Probe table — every negative probe of Part D §5 that belongs to this step
+
+`.venv/bin/python -m pytest -m slow -vv -k probe` (14 parametrised cases; each asserts the
+ID fires with the defect present and is gone once it is removed):
+
+| Probe | ID | Fires, then passes after removal |
+| --- | --- | --- |
+| matcher `Write\|Edit[` | H2 | PASSED |
+| hook `command` set to `""` | H4 | PASSED |
+| fragment command pointing at a missing shipped file | H5 | PASSED |
+| `description: a: b` | S1 | PASSED |
+| eval suite with no must-not-fire case | E1 | PASSED |
+| `#!/usr/bin/env -S uv run --script` shebang | B1 | PASSED |
+| workflow with a syntax error | W1 | PASSED |
+| workflow whose `meta` is not a literal | W1 | PASSED |
+| workflow using an undeclared phase | W1 | PASSED |
+| workflow using `import(` | W1 | PASSED |
+| rewritten released CHANGELOG body | C2 | PASSED |
+| README with a `Δ` column | R9 | PASSED |
+| `**Kind:**` line that disagrees with the files | P1 | PASSED |
+| `{{placeholder}}` in a shipped file | P4 | PASSED |
+
+```text
+===================== 15 passed, 651 deselected in 15.74s ======================
+```
+
+- [x] `make validate-cli` exit 0
+
+```text
+.venv/bin/python -m scripts.plugin_validation.validate_claude
+pass  claude plugin validate . --strict
+      Validating marketplace manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/.claude-plugin/marketplace.json
+      
+      ✔ Validation passed
+pass  claude plugin validate plugins/agent-self-knowledge --strict
+      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/agent-self-knowledge/.claude-plugin/plugin.json
+      
+      ✔ Validation passed
+pass  claude plugin validate plugins/block-no-verify --strict
+      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/block-no-verify/.claude-plugin/plugin.json
+      
+      ✔ Validation passed
+pass  claude plugin validate plugins/ruff-quality --strict
+      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/ruff-quality/.claude-plugin/plugin.json
+      
+      ✔ Validation passed
+pass  claude plugin validate plugins/shell-quality --strict
+      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/shell-quality/.claude-plugin/plugin.json
+      
+      ✔ Validation passed
+pass  claude plugin validate plugins/verify-completion --strict
+      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/verify-completion/.claude-plugin/plugin.json
+      
+      ✔ Validation passed
+```
+
+- [x] `make test-slow` exit 0 — `TEST_SLOW_RC=0`
+
+```text
+121 passed, 545 deselected, 2 warnings in 63.78s (0:01:03)
+pass  plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh  [/opt/homebrew/bin/bash]  PASS
+pass  plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh  [/bin/bash]  PASS
+pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh  [/opt/homebrew/bin/bash]  PASS
+pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh  [/bin/bash]  PASS
+pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-manage.sh  [/opt/homebrew/bin/bash]  PASS
+pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-manage.sh  [/bin/bash]  PASS
+pass  plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh  [/opt/homebrew/bin/bash]  PASS
+pass  plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh  [/bin/bash]  PASS
+pass  plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh  [/opt/homebrew/bin/bash]  PASS
+pass  plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh  [/bin/bash]  PASS
+pass  plugins/verify-completion/scripts/test-hooks.sh  [/opt/homebrew/bin/bash]  125 passed, 0 failed
+pass  plugins/verify-completion/scripts/test-hooks.sh  [/bin/bash]  125 passed, 0 failed
+```
+
+Twelve (suite × interpreter) pairs, 6 of them under `/bin/bash`, which is the bash 3.2 floor
+the plugins target. `pytest -m slow -v -k plugin_suites` parametrises its smoke over the same
+interpreters, so the `/bin/bash` id appears in its verbose output.
+
+- [x] the plugin Python floor run (advisory, `DEBT-0029`)
+
+```text
+DEBT-0029 advisory: uv python install 3.7 -> exit 2: error: No download found for request: cpython-3.7-macos-aarch64-none
+DEBT-0029 advisory: agent-self-knowledge: 3.7 is not downloadable; falling back to the lowest uv offers, 3.8
+DEBT-0029 advisory: agent-self-knowledge: interpreter /Users/nerymurillohnd/.local/share/uv/python/cpython-3.8-macos-aarch64-none/bin/python3.8 (Python 3.8)
+DEBT-0029 advisory: plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py --help -> exit 0
+```
+
+`uv` publishes no CPython 3.7 build for this platform, so the runner falls back to the lowest
+version it does offer and says so. The advisory prefix means the outcome never changes the
+target's exit status; `DEBT-0029` records the gap and Follow-up PR #1 closes it.
+
+- [x] `make generate lint types test-fast` exit 0 — `544 passed, 122 deselected` (fast), `0 errors, 0 warnings, 0 notes` (basedpyright)
+
+### Follow-up PR #1 findings (reported, not fixed here)
+
+- **B1 warning:** `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py`
+  declares `#!/usr/bin/env python3` but is tracked `100644` (`EXE001` shape). Tagged
+  `DEBT-0029`; fixing it is a runtime edit and needs a version bump.
+- **Declared floor is not the tested floor.** The README advertises Python 3.7; uv can only
+  install 3.8 or newer, so the advisory run exercises 3.8. Either the floor moves or the
+  README states which version is actually verified.
+- **`verify-completion` README** still shows `claude plugin eval … --scaffold` in its
+  maintainer block; the plugin ships no scaffold (§A13). Left for step 11, which owns that
+  sweep, because the line is documentation rather than an invariant this step enforces.
+- **`.claude/rules/plugin-authoring.md`** tells the author to keep the README eval table up
+  to date, which R9 now forbids, and still names `npm run check` and `scripts/lib/*.mjs`.
+  Step 10 rewrites that file.
+- **G2 on `ci.yml`** stays a warning: the gate workflow invokes no `make` target yet. Step 7
+  switches CI and closes it.
+
+### Decisions beyond the plan, and why
+
+- **`test_vars.py` was not created.** Its content (the `*_TEST_BASH` rules) lives in
+  `script_env.py` beside the extraction it depends on. pytest collects every module named
+  `test_*.py`, so a module with that name would be imported as a test file and its helper
+  `test_bash_vars` collected as a test; the helper is therefore named
+  `suite_interpreter_vars`, with the reason recorded in its docstring.
+- **`scripts/common/javascript.py` is new.** Both `hook_contract` (H2) and `workflows` (W1)
+  compile JavaScript, so the V8 entry point is a generic helper in `common/` rather than a
+  private function one area reaches into (SLF001 would refuse the alternative).
+- **`validate` also uncomments the step-4 line.** `make validate` is specified in §A7 as
+  running `validate_marketplace` **and** `validate_plugins`; the marketplace line was left
+  commented at step 4, so the target would have run only half of what its help text claims.
+- **T1 is listed, not run by `make validate`.** §A5 and plan B both place T1 in
+  `test_templates.py`. `--list` prints it with the note `(templates test)`, the way Q1-Q3 and
+  X1-X5 carry `(hygiene test, step 6)`. The test records the one family the templates still
+  fire, R9 (the master template's eval table), as an exact pending set that step 11 closes:
+  a new finding fails the test, and so does removing one without updating the set.
+- **R12 checks structure, not verbatim wording.** A filled-in `{{PLACEHOLDER}}` re-wraps the
+  paragraph around it, so a line-by-line comparison of `SECURITY.md` and `CODE_OF_CONDUCT.md`
+  against their templates reports differences that are not drift (measured: 12 such findings,
+  every one a re-wrap or a deliberate substitution). R12 therefore asserts every non-optional
+  section of the template is present, in order, with no surviving placeholder; X5
+  (`scripts/hygiene/test_legal_text.py`, step 6) keeps the verbatim check, which also keeps
+  one home per rule (X1).
+- **R14's collapse excludes cloud-session rows.** A row naming a deployment variant rather
+  than a platform (`Claude Code cloud sessions`) never decides the catalog status on its own;
+  with it included, `ruff-quality` and `shell-quality` would have to show ⚠️ where their rows
+  read 🧪. Verified against all five plugins: the collapse reproduces every catalog cell.
+- **The 33 documented hook events** were counted from the live `hooks.md` headings
+  (`SessionStart` to `ElicitationResult`). Plan B says 32 and the step brief says 34; the
+  measured number is recorded in `HOOK_EVENTS` with its docs date, and an undocumented event
+  is a warning, never an error.
+- **Skill frontmatter has 20 documented keys, subagents 18** (counted from the reference
+  tables on 2026-09-21). `when_to_use` is one of the 20.
+- **`SessionEnd` timeouts.** The reference documents a shared 1.5 s budget that a longer
+  per-hook `timeout` raises, up to 60 s. H6 therefore warns between those two numbers and
+  fails above 60 s, rather than refusing every documented configuration.
+- **H5 does not resolve `$CLAUDE_PROJECT_DIR`.** That path names a file the plugin's own
+  installer writes into a user's project later, so it cannot exist here;
+  `block-no-verify`'s settings fragment relies on the exemption, and a test pins it.
+
+### Tree at the end of step 5 (nothing committed)
+
+```text
+$ git status --short
+## refactor/python-toolchain-and-governance
+ M Makefile
+ M docs/maintenance/pending-debt.md
+ M docs/superpowers/specs/2026-09-21-refactor-migration-log.md
+ M plugins/agent-self-knowledge/README.md
+ M plugins/block-no-verify/CHANGELOG.md
+ M plugins/block-no-verify/README.md
+ M plugins/ruff-quality/CHANGELOG.md
+ M plugins/ruff-quality/README.md
+ M plugins/shell-quality/CHANGELOG.md
+ M plugins/shell-quality/README.md
+ M plugins/verify-completion/CHANGELOG.md
+ M plugins/verify-completion/README.md
+?? docs/audits/2026-09-20-agent-self-knowledge-eval.md
+?? docs/audits/2026-09-20-block-no-verify-eval.md
+?? docs/audits/2026-09-20-ruff-quality-eval.md
+?? docs/audits/2026-09-20-shell-quality-eval.md
+?? docs/audits/2026-09-20-verify-completion-eval.md
+?? scripts/common/javascript.py
+?? scripts/common/test_javascript.py
+?? scripts/plugin_validation/claude_cli.py
+?? scripts/plugin_validation/cli_coverage.py
+?? scripts/plugin_validation/conftest.py
+?? scripts/plugin_validation/evals.py
+?? scripts/plugin_validation/frontmatter.py
+?? scripts/plugin_validation/hook_contract.py
+?? scripts/plugin_validation/kind.py
+?? scripts/plugin_validation/readme_contract.py
+?? scripts/plugin_validation/run_plugin_suites.py
+?? scripts/plugin_validation/runtime_boundary.py
+?? scripts/plugin_validation/script_env.py
+?? scripts/plugin_validation/test_claude_cli.py
+?? scripts/plugin_validation/test_cli_coverage.py
+?? scripts/plugin_validation/test_evals.py
+?? scripts/plugin_validation/test_frontmatter.py
+?? scripts/plugin_validation/test_hook_contract.py
+?? scripts/plugin_validation/test_kind.py
+?? scripts/plugin_validation/test_readme_contract.py
+?? scripts/plugin_validation/test_run_plugin_suites.py
+?? scripts/plugin_validation/test_runtime_boundary.py
+?? scripts/plugin_validation/test_script_env.py
+?? scripts/plugin_validation/test_templates.py
+?? scripts/plugin_validation/test_validate_claude.py
+?? scripts/plugin_validation/test_validate_plugins.py
+?? scripts/plugin_validation/test_workflows.py
+?? scripts/plugin_validation/validate_claude.py
+?? scripts/plugin_validation/validate_plugins.py
+?? scripts/plugin_validation/workflows.py
+```
+
+```text
+$ git diff --stat
+ Makefile                                           |   8 +-
+ docs/maintenance/pending-debt.md                   |  14 +
+ .../specs/2026-09-21-refactor-migration-log.md     | 318 ++++++++++++++++++++-
+ plugins/agent-self-knowledge/README.md             |  17 +-
+ plugins/block-no-verify/CHANGELOG.md               |   2 +-
+ plugins/block-no-verify/README.md                  |  10 +-
+ plugins/ruff-quality/CHANGELOG.md                  |   2 +-
+ plugins/ruff-quality/README.md                     |  15 +-
+ plugins/shell-quality/CHANGELOG.md                 |   2 +-
+ plugins/shell-quality/README.md                    |  20 +-
+ plugins/verify-completion/CHANGELOG.md             |   2 +-
+ plugins/verify-completion/README.md                |  25 +-
+ 12 files changed, 357 insertions(+), 78 deletions(-)
+```
+
+### Orchestrator verification of gate 5 (2026-09-21)
+
+- Re-ran `make generate lint types test-fast` → clean, `0 errors, 0 warnings, 0 notes`, `544 passed, 122 deselected`; `pytest -m slow` → .................................................                        [100%]; `make validate` rc 0 with the two advisory warnings (B1 DEBT-0029 on `ccdocs.py`, G2 advisory until step 7); `make validate-cli` → `✔ Validation passed` on the marketplace and the five plugins; `--list` prints 67 IDs; the 14 negative probes plus the clean-fixture control pass (`test_probe_fires_and_then_stops[...]`).
+- `make -s versions` → five `exempt` lines, `Computed label: bump: none`: the plugin edits (five READMEs: eval tables moved to `docs/audits/2026-09-20-<plugin>-eval.md`, R5 rows and symptoms added; four CHANGELOG footers to the `compare/` style) are exempt.
+- Pytest emits two third-party `DeprecationWarning`s from `py_mini_racer` (ctypes `_pack_` layout, slated for Python 3.19); not silenced, tracked for the next mini-racer upgrade.
+- Carried to step 11: one README sentence reads "**Behavioural evals** — Behavioural evals live in…" (duplicated opener) in the five READMEs; reword during README normalization.
+- The agent's session was interrupted once by a network failure (ENOTFOUND) and resumed from its transcript; every file was re-read before completion.

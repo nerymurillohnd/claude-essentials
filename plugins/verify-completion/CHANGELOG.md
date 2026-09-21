@@ -92,5 +92,5 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
   in about 100 ms, and 250 KB replies built to be slow in under 2 seconds.
 
 [Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.1...HEAD
-[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/tree/verify-completion--v0.1.1
+[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.0...verify-completion--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/verify-completion--v0.1.0

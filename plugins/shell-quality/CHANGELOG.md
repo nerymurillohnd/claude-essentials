@@ -92,5 +92,5 @@ previous tag to its own; the first version links to its tag.
 -->
 
 [Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/shell-quality--v0.1.1...HEAD
-[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/tree/shell-quality--v0.1.1
+[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/shell-quality--v0.1.0...shell-quality--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/shell-quality--v0.1.0

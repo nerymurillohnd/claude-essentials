@@ -172,6 +172,10 @@ bash --version
 jq --version
 ```
 
+The gate uses `SHELLCHECK_BIN` and `SHFMT_BIN` when you set them, then the lookup on
+`PATH`, `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin` and `/usr/bin`; set either
+one to pin a specific binary.
+
 Install them with your package manager (`brew install shellcheck shfmt`) or
 pinned release binaries; Ubuntu's apt ships ShellCheck 0.9, too old for the
 recommended profile. The skill's
@@ -191,15 +195,8 @@ that applies, counts per mode, and the three configurations, with no file
 changed. After you choose a scope and a mode, the install output shows
 `test suite: 82 passed, 0 failed`.
 
-**Behavioral evals** — [`evals/`](evals/) runs with `claude plugin eval`, which compares a
-run with the plugin against a baseline without it:
-
-| Case | Checks | With | Without | Δ | Last run |
-| --- | --- | ---: | ---: | ---: | --- |
-| `fix-shell-snippet` | `shell-lint` fires when cleaning up a script and fixes findings instead of silencing them | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `editorconfig-question` | `shell-lint` fires and explains that style flags disable EditorConfig | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `hook-request-gated` | `shell-hooks` fires, asks for scope and mode, writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `ignores-concept-question` | Neither skill fires on a conceptual shell question | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+**Behavioural evals** — Behavioural evals live in [`evals/`](evals/) and run per the
+maintainer's eval protocol; results are reported in the pull request, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -216,7 +213,9 @@ SQ_TEST_BASH=/bin/bash plugins/shell-quality/skills/shell-hooks/scripts/test-man
 claude plugin eval plugins/shell-quality --no-publish --max-cost-usd 6
 ```
 
-`npm test` runs both suites on every bash it finds, so CI covers them.
+`make check` runs both suites under `bash` and under `/bin/bash`. The repository's
+runner exports `BNV_TEST_BASH` with the interpreter in use, and each suite honours it
+as the fallback for its own `SQ_TEST_BASH` variable.
 
 </details>
 
@@ -288,6 +287,7 @@ shell-quality: this edit to deploy.sh adds a ShellCheck suppression (# shellchec
 | Hook timeout (30 s baseline and guard, 60 s post, 120 s Stop) | The call proceeds without a decision | Measured runs take well under a second per script |
 | A committed project gate without the tools on a teammate's machine | Every script edit fails closed with `shellcheck not found` | Install the tools, or uninstall the gate |
 | `jq` removed after the gate is installed | Every `Write`, `Edit`, and `Bash` call is denied (fail-closed) with the reason | Install `jq` again with the `!` prefix, or uninstall the gate the same way |
+| `git` is absent outside a repository | The gate cannot resolve the project root, so scope detection and the project profile are unavailable | Install Git 2.18 or later, or install the gate in user scope |
 | Cowork | No gate | Use Claude Code |
 
 ## ❓ FAQ

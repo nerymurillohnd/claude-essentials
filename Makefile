@@ -20,13 +20,13 @@ types:         ## 30 basedpyright, typeCheckingMode=all + failOnWarnings, venv i
 test-fast:     ## 40 in-process tests
 	$(PY) -m pytest -m "not slow and not coverage_matrix"
 validate:      ## 50 catalog + plugin invariants (M P C S H R B W E G T Q X)
-#	$(PY) -m scripts.marketplace.validate_marketplace   # ported at step 4
-#	$(PY) -m scripts.plugin_validation.validate_plugins # ported at step 5
+	$(PY) -m scripts.marketplace.validate_marketplace
+	$(PY) -m scripts.plugin_validation.validate_plugins
 validate-cli:  ## 60 claude plugin validate --strict on marketplace + every plugin
-#	$(PY) -m scripts.plugin_validation.validate_claude  # ported at step 5
+	$(PY) -m scripts.plugin_validation.validate_claude
 test-slow:     ## 70 process-spawning tests + plugin suites under bash and /bin/bash + plugin Python under its floor
 	$(PY) -m pytest -m slow
-#	$(PY) -m scripts.plugin_validation.run_plugin_suites # ported at step 5
+	$(PY) -m scripts.plugin_validation.run_plugin_suites
 versions:      ## version-bump rules and route vs the latest tags / origin/main
 	$(PY) -m scripts.versioning.check_versions $(VERSIONS_ARGS)
 fix:           ## writer: ruff format, ruff check --fix (safe), shfmt -w, canonical JSON

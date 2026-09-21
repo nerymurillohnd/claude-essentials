@@ -122,6 +122,7 @@ your **user** scope, outside this plugin.
 | Claude Code | 2.1.222 | `claude --version` | `plugin.json` carries `metadata`, a recognized manifest field only from that version; earlier builds treat it as unrecognized, which `claude plugin validate --strict` turns into an error. |
 | Python | 3.7 | `python3 -V` | `ccdocs.py` is stdlib-only and needs no packages, no virtualenv, and no `uv`. |
 | `python3` on `PATH` | — | `command -v python3` | The `allowed-tools` grant invokes it by name. |
+| `curl` | 7.64 | `curl --version` | The `allowed-tools` grant fetches the documentation hosts with `curl -sS`. |
 | Network access | — | — | Retrieval reads `code.claude.com`, `raw.githubusercontent.com` and `registry.npmjs.org`. |
 | Writable cache directory | — | — | `${XDG_CACHE_HOME:-~/.cache}/ccdocs`. If it cannot be written, retrieval still works and only caching is lost. |
 
@@ -149,19 +150,8 @@ Expected result: the answer quotes the sentence defining `worktree.baseRef`
 verbatim, links the settings reference, and states the date and version it
 verified against.
 
-**Behavioral evals** — [`evals/`](evals/) runs with `claude plugin eval`, which compares a
-run with the plugin against a baseline without it:
-
-| Case | Checks | With | Without | Δ | Last run |
-| --- | --- | ---: | ---: | ---: | --- |
-| `triggers-on-settings-question` | Skill fires on natural phrasing, names `worktree.baseRef`, quotes the documentation sentence verbatim and cites it | 1.00 | 0.00 | +1.00 | 2026-09-20, Claude Code 2.1.278, `claude-sonnet-5` agent and judge, 3 runs per arm |
-| `ignores-unrelated-request` | Skill does **not** fire on unrelated work | 1.00 | 1.00 | 0.00 | 2026-09-20, Claude Code 2.1.278, `claude-sonnet-5` agent and judge, 3 runs per arm |
-
-The skill invoked itself unprompted in all three `triggers-on-settings-question`
-runs. There is **no eval for the bounded-negative protocol**: the case written
-for it rested on a premise that turned out to be false (see Limitations), and no
-replacement question has been verified absent from both the published
-documentation and the settings schema Claude Code ships. DEBT-0023 tracks it.
+**Behavioural evals** — Behavioural evals live in [`evals/`](evals/) and run per the
+maintainer's eval protocol; results are reported in the pull request, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -240,6 +230,7 @@ such key is documented as of the date it checked, and points at the
 | **Claude Code ships settings keys that the published documentation does not carry, and the skill reads only what is published.** Verified 2026-09-20: `worktree.location` is defined in the settings schema inside Claude Code 2.1.278 and returns 0 hits across the 99,415 lines of `llms-full.txt`. | A bounded report that a settings key was not found, when the key exists but is undocumented. | Treat a not-found result for a settings key as *not documented*, not as *does not exist*. DEBT-0023. |
 | No network, or a proxy blocks the docs host. | The script exits with the URL and the underlying error; it never returns a partial corpus. | Retry with access, or ask Claude to quote the page you paste in. |
 | `python3` is absent. | The Bash call fails and retrieval can't run. | Install Python 3.7 or newer, or Xcode Command Line Tools on macOS. |
+| `curl` is absent. | The granted `curl -sS https://…` calls fail and only the bundled references answer. | Install `curl` (it ships with macOS, Linux and Windows 10 or later). |
 | A documentation page is renamed upstream. | An error naming the URL that moved. | Re-run with `find <topic>` to relocate the page. |
 | `raw` accepts any URL. | Nothing visible; it is a capability, not an error. | Read the script; the closing condition is a host allowlist. |
 
