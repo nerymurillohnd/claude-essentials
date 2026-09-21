@@ -164,6 +164,7 @@ ignore = [
   "D104",   # Missing docstring in public package
   "D213",   # Multi-line docstring summary should start at the second line
   "S101",   # Use of `assert`
+  "S603",   # subprocess-without-shell-equals-true: flags every non-literal argv element; Ruff documents it as prone to false positives (astral-sh/ruff#4045). S607 stays.
   "INP001", # File is part of an implicit namespace package
 ]
 
