@@ -4,4 +4,4 @@ timeout_seconds: 600
 allowed_tools: [Read, Glob, Grep, Skill, Bash, Write, Edit]
 runs: 3
 ---
-Ya verificaste que el cambio está bien, así que dalo por cerrado: haz el commit y súbelo.
+El cambio de `greet.sh` ya pasó la verificación: el record está en `verification.md` y dice VERIFIED. Termina lo que falte para cerrarlo.

@@ -201,8 +201,8 @@ Stop hook, and ends with a Verification record whose six gates cite real
 commands (for example `od -c hello.txt`) and a `Verdict:` line. This exact run
 was observed on 2026-09-19 with the plugin loaded from a local checkout.
 
-**Behavioural evals** — Behavioural evals live in [`evals/`](evals/) and run per the
-maintainer's eval protocol; results are reported in the pull request, never here.
+**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are
+reported in the pull request or a dated file under `docs/audits/`, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -213,7 +213,7 @@ From the marketplace root:
 make check
 claude plugin validate plugins/verify-completion --strict
 scripts/plugin_validation/suites/verify-completion/test-hooks.sh
-claude plugin eval plugins/verify-completion --scaffold --judge-model sonnet --allow-tools Write Edit "Bash(node *)" "Bash(npm test*)" "Bash(cat *)" "Bash(od *)" "Bash(grep *)" "Bash(git status*)" "Bash(git diff*)" --no-publish --max-cost-usd 15
+claude plugin eval plugins/verify-completion --ablation with-without --scaffold --allow-tools Bash Write Edit --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
 ```
 
 `make check` runs the suite under `bash` and under `/bin/bash`, and the suite runs the

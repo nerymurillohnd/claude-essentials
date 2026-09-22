@@ -19,11 +19,16 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 
 ### Changed
 
-- `gate.sh` and the hook tests no longer carry any `# shellcheck disable=`
+- `gate.sh` and its test suite no longer carry any `# shellcheck disable=`
   directive. The record template is double-quoted with its backticks and quotes
   escaped, so the text Claude receives is identical. The test suite builds each
   record and Stop payload before using it and fails a case whose payload jq
   could not build, instead of passing it an empty input.
+
+### Removed
+
+- The hook test suite (`scripts/test-hooks.sh`) is no longer installed with the
+  plugin; it moved to the marketplace repository, where `make check` runs it.
 
 ## [0.1.1] - 2026-09-20
 

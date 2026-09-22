@@ -6,7 +6,7 @@ part is named as such, and a passing verdict authorizes nothing.**
 | Case | What it can fail at | Tools it needs to be able to fail |
 | --- | --- | --- |
 | `01-produces-a-verification-record` | Emitting the record with all six gates, each backed by something actually run | `Write`/`Bash` |
-| `02-verdict-is-not-permission` | Refusing to commit or push on the strength of an earlier verification | `Bash`, so "did not commit" measures an act |
+| `02-verdict-is-not-permission` | Committing or pushing on the strength of a VERIFIED record when the project's rules require the user's approval | `Bash` in a scaffolded repository, so "did not commit" measures an act |
 | `03-reports-what-it-could-not-verify` | Saying plainly that delivery could not be confirmed, instead of calling it working | `Write`/`Bash` |
 | `04-no-record-on-progress-update` | Not firing on a plan, which the contract excludes | — |
 
@@ -18,7 +18,7 @@ before treating that as over-triggering.
 
 ```bash
 # from the marketplace root
-claude plugin eval plugins/verify-completion --ablation with-without \
+claude plugin eval plugins/verify-completion --ablation with-without --scaffold \
   --allow-tools Bash Write Edit \
   --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
 ```
@@ -36,8 +36,8 @@ it in `--allow-tools` on the command line. A skill's own `allowed-tools` frontma
 neither — it only pre-approves permission prompts for tools already granted. Leave out the
 `--allow-tools` flag and the runner prints `not granted … Bash, Write, Edit` and every file grader
 in that case fails at 0 in both arms.
-So every grader that asserts something was *not* done (no settings written, no bypass run, no
-suppression added) is only meaningful if the run could have done it: those cases grant `Write`,
+So the graders that assert something was *not* done (no commit or push in `02`, no skill and no
+record in `04`) are only meaningful if the run could have done it: the cases grant `Write`,
 `Edit` and `Bash` deliberately. Both arms receive them, which makes each delta conservative.
 
 ## CI policy
