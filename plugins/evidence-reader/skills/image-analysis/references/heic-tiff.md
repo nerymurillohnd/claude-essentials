@@ -30,7 +30,8 @@ were not converted. Those pages are **not reviewed**; say so.
 means the interpreter is too old, not a missing converter: report every image that
 needed the tool as not reviewed for that reason. With no converter installed it gives an install hint;
 when a converter ran and failed it gives that converter's own error, for example
-`no decode delegate` when libheif lacks its HEVC decoder (libde265). Report the
+`no decode delegate` when libheif lacks its HEVC decoder (libde265). A corrupt file
+fails the same way, so the quoted error is the only way to tell the two apart. Report the
 file as not reviewed with that reason. Never describe it from metadata instead.
 
 `check-requirements.sh` reports `heic=imagemagick-unverified` or

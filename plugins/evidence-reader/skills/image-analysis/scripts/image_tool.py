@@ -521,6 +521,8 @@ def _grid_boxes(grid: str | None, width: int, height: int) -> list[tuple[int, in
 
 
 def _cmd_tile(path: str, grid: str | None, region: str | None, scale: int) -> None:
+    if scale < 1:
+        _fail(2, f"--scale must be a whole number of 1 or more, got {scale}")
     kind = _sniff(path)
     dims = _dimensions(path, kind)
     if dims is None:

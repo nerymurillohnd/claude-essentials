@@ -492,6 +492,8 @@ expect_exit "image tile: non-ASCII digits are refused" 2 "--region must be X,Y,W
   "${py}" "${img}/image_tool.py" tile "${fx}/label.png" --region '²,0,10,10'
 expect_exit "image tile: too many tiles is refused" 2 "use at most 64" \
   "${py}" "${img}/image_tool.py" tile "${fx}/label.png" --grid 100x100
+expect_exit "image tile: a scale below 1 is refused" 2 "--scale must be a whole number of 1 or more" \
+  "${py}" "${img}/image_tool.py" tile "${fx}/label.png" --scale 0
 
 # --- eval resources are copies of these fixtures, so both describe the same files
 for resource in "${plugin}"/evals/*/resources/*; do

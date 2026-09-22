@@ -218,7 +218,7 @@ also checks that an older interpreter gets each extractor's version message and 
 
 | Surface | Status | Last verified | Notes |
 | --- | --- | --- | --- |
-| Claude Code | 🧪 Not tested | 2026-09-21, Claude Code 2.1.278, local checkout only | Live `claude -p --plugin-dir` runs: the three agents load, `document-reader` preloads both skills, resolves its reference files and scripts, reads a 45-page PDF in 20-page chunks and returns the report template; the report gate blocks an incomplete report and the agent completes it. Extractor suite (101 cases) and hook suite (22 cases) pass on bash 3.2 and 5.x with Python 3.14; Python 3.9 gets the version message and exit 5 (measured 2026-09-22). Not yet installed from the remote marketplace |
+| Claude Code | 🧪 Not tested | 2026-09-21, Claude Code 2.1.278, local checkout only | Live `claude -p --plugin-dir` runs: the three agents load, `document-reader` preloads both skills, resolves its reference files and scripts, reads a 45-page PDF in 20-page chunks and returns the report template; the report gate blocks an incomplete report and the agent completes it. Extractor suite (102 cases) and hook suite (22 cases) pass on bash 3.2 and 5.x with Python 3.14; Python 3.9 gets the version message and exit 5 (measured 2026-09-22). Not yet installed from the remote marketplace |
 | Claude Cowork | 🧪 Not tested | — | Skills and agents should load; extractors need `python3` and the optional tools in the sandbox; hooks need `bash` and `jq` there |
 | Claude Chat (web, desktop) | ❌ Not supported | — | Plugins aren't used in Chat. |
 
@@ -283,7 +283,7 @@ EXP 2028-03 (region x=0 y=180 w=1200 h=90); legibility: clear`.
 | Without `heif-convert` on Linux | HEIC not reviewed unless ImageMagick has HEIC support | `apt install libheif-examples` |
 | HEIC listed but no HEVC decoder (common on minimal Linux) | `heic=…-unverified` in the tier line; the photo is not reviewed and the report quotes the converter's error | `apt install libde265-0`, or convert the photos to JPEG before the review |
 | A file that is neither UTF-8 nor Windows-1252 | The CSV is reported as not verified (unknown encoding) | Re-export as UTF-8, or state the encoding so the review can force it |
-| Without `jq`, or if the hook times out | No report gate; one notice per stop | Install `jq` 1.6 or later |
+| Without `jq`, or if the hook times out (reports above roughly 12 MB exceed its 10-second limit) | No report gate; without `jq`, one notice per stop | Install `jq` 1.6 or later; keep reports to findings, not document dumps |
 | Windows: the hook runs `bash` from `PATH` | Without Git Bash on `PATH`, the gate never runs | Add Git Bash to `PATH`; only macOS and Linux are tested |
 | Formulas without cached values are recomputed only for simple aggregates | `NOT RECOMPUTED` with the reason for other functions | Open and save the workbook in Excel or LibreOffice, then audit again |
 | The gate checks the report's form, not the truth of its receipts | A well-formed report with a wrong citation passes the gate | Re-run the cited extractor command on the cited locator |

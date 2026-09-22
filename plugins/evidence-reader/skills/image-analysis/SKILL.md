@@ -50,8 +50,11 @@ Use one comparable line per image inside **Findings**:
 
 ## Rules
 
-- Exit codes: `2` unreadable input or a bad `--region`/`--grid`, `5` no tool for
-  the step (converter, cropper) or `python3` older than 3.14. Each is a
+- Exit codes: `2` unreadable input, a format that is not an image, or a bad
+  `--region`/`--grid`/`--scale`; `5` no tool could do the step: none is installed,
+  or every converter rejected the file (a missing decoder and a corrupt file look
+  the same; the message quotes each converter's error), or `python3` is older
+  than 3.14. Each is a
   **Not verified** entry with the script's message, never a silent skip.
 - Transcribe exactly what is visible. If a character is ambiguous (0/O, 1/l,
   5/S, 8/B), say so and give the alternatives instead of choosing silently.
