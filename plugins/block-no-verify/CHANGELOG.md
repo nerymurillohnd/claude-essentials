@@ -15,6 +15,18 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.1.3] - 2026-09-22
+
+### Changed
+
+- The handler, `manage.sh` and the test suite no longer carry any
+  `# shellcheck disable=` directive. The literals that held `$` for jq or for the
+  hook shell are double-quoted with the `$` escaped, so each value is the same
+  byte for byte, and the handler's `main` ends with `return 0` instead of
+  `exit 0`, which exits with the same status and lets ShellCheck see that the
+  ERR trap reaches `on_internal_error`. Behavior is unchanged; an installed
+  handler reports version 0.1.3 and differs only in those lines.
+
 ## [0.1.2] - 2026-09-20
 
 ### Changed
@@ -87,7 +99,8 @@ optional (`status` reports it as an older version).
   and 5.x; typical commands are checked in about 30 ms, 50 KB inputs in about
   200 ms, with a metered parser so no input can outlast the hook timeout.
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.2...HEAD
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.3...HEAD
+[0.1.3]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.2...block-no-verify--v0.1.3
 [0.1.2]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.1...block-no-verify--v0.1.2
 [0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/block-no-verify--v0.1.0...block-no-verify--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/block-no-verify--v0.1.0

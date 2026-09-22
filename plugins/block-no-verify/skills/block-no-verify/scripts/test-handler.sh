@@ -9,9 +9,8 @@
 #
 # Exit 0 when every case passes, 1 otherwise. Needs bash and jq.
 #
-# Test inputs are literal shell commands handed to the handler as data; they are
-# never expanded here, so single-quoted $ and backticks are intended.
-# shellcheck disable=SC2016
+# Test inputs are literal shell commands handed to the handler as data: any $,
+# backtick or double quote in them is escaped, so nothing expands here.
 
 set -uo pipefail
 
@@ -129,7 +128,7 @@ want ALLOW "git commit -F - <<'EOF'
 HUSKY=0 git commit --no-verify
 EOF"
 want ALLOW 'git commit -m "say \"--no-verify\" loudly"'
-want ALLOW 'git commit -m "$(printf "%s" "fix: allow -n in docs")"'
+want ALLOW "git commit -m \"\$(printf \"%s\" \"fix: allow -n in docs\")\""
 want ALLOW 'echo "git commit --no-verify" > notes.txt'
 want ALLOW 'grep -rn -- "--no-verify" docs/'
 want ALLOW 'git log --grep="--no-verify"'
@@ -283,12 +282,12 @@ want ALLOW 'bash ./scripts/release.sh'
 want ALLOW 'echo "git status" | bash'
 
 section="substitutions"
-want DENY 'echo $(git commit --no-verify -m x)'
-want DENY 'out=`git commit -n -m x`'
+want DENY "echo \$(git commit --no-verify -m x)"
+want DENY "out=\`git commit -n -m x\`"
 want DENY 'cat <(git commit --no-verify -m x)'
-want DENY 'cd "$(git rev-parse --show-toplevel)" && git commit --no-verify -m x'
-want ALLOW 'cd "$(git rev-parse --show-toplevel)" && git status'
-want ALLOW 'echo "$(git log -1 --format=%s)"'
+want DENY "cd \"\$(git rev-parse --show-toplevel)\" && git commit --no-verify -m x"
+want ALLOW "cd \"\$(git rev-parse --show-toplevel)\" && git status"
+want ALLOW "echo \"\$(git log -1 --format=%s)\""
 
 section="git string-command entry points"
 want DENY 'git rebase -x "git commit --amend --no-verify" main'
@@ -298,10 +297,10 @@ want ALLOW 'git rebase -x "npm test" main'
 want ALLOW 'git submodule foreach git status'
 
 section="opaque constructs"
-want DENY 'F=--no-verify; $GIT commit $F -m x'
-want DENY 'git${IFS}commit${IFS}--no-verify'
+want DENY "F=--no-verify; \$GIT commit \$F -m x"
+want DENY "git\${IFS}commit\${IFS}--no-verify"
 want DENY 'echo --no-verify | xargs git commit -m x'
-want ALLOW 'FLAG=--quiet; git commit $FLAG -m x'
+want ALLOW "FLAG=--quiet; git commit \$FLAG -m x"
 want ALLOW 'git ls-files | xargs -n1 git log -1 --format=%h --'
 
 section="powershell"
@@ -310,17 +309,17 @@ want DENY 'git commit -n -m "x"' PowerShell
 want DENY '& git commit --no-verify -m x' PowerShell
 want DENY '& "C:\Program Files\Git\cmd\git.exe" commit --no-verify -m x' PowerShell
 want DENY 'git.exe -c core.hooksPath=NUL commit -m x' PowerShell
-want DENY '$env:HUSKY = "0"; git commit -m x' PowerShell
-want DENY '$env:HUSKY="0"; git commit -m x' PowerShell
+want DENY "\$env:HUSKY = \"0\"; git commit -m x" PowerShell
+want DENY "\$env:HUSKY=\"0\"; git commit -m x" PowerShell
 want DENY 'Set-Location repo; git commit --no-verify -m x' PowerShell
 want DENY 'powershell -c "git commit --no-verify -m x"' PowerShell
 want DENY 'bash -c "git commit --no-verify -m x"' PowerShell
 want ALLOW "git commit -m 'it''s --no-verify in text'" PowerShell
-want ALLOW 'git commit -m "tick `"--no-verify`" text"' PowerShell
-want ALLOW '$msg = @"
+want ALLOW "git commit -m \"tick \`\"--no-verify\`\" text\"" PowerShell
+want ALLOW "\$msg = @\"
 explain --no-verify
-"@
-git commit -m $msg' PowerShell
+\"@
+git commit -m \$msg" PowerShell
 want ALLOW 'git status; git log -n 3' PowerShell
 want ALLOW '<# git commit --no-verify #> git status' PowerShell
 
@@ -357,17 +356,17 @@ want DENY "git commit --no-verify -m \"\$(cat <<'EOF'
 fix: don't
 EOF
 )\""
-want ALLOW 'cat > notes.md <<EOF
-Ran $(date) without --no-verify
-EOF'
-want DENY 'cat > notes.md <<EOF
-$(git commit --no-verify -m x)
-EOF'
+want ALLOW "cat > notes.md <<EOF
+Ran \$(date) without --no-verify
+EOF"
+want DENY "cat > notes.md <<EOF
+\$(git commit --no-verify -m x)
+EOF"
 
 section="expansions that build flags (red-team regressions)"
-want DENY 'git commit $(echo --no-verify) -m x'
-want DENY 'git commit `echo --no-verify` -m x'
-want DENY 'F=--no-verify; git commit $F -m x'
+want DENY "git commit \$(echo --no-verify) -m x"
+want DENY "git commit \`echo --no-verify\` -m x"
+want DENY "F=--no-verify; git commit \$F -m x"
 want DENY 'set -- --no-verify; git commit "$@" -m x'
 want DENY 'git commit --no-{verify,} -m x'
 want DENY 'git commit --{no-verify,} -m x'
@@ -383,11 +382,11 @@ want DENY "git -c core.editor='git commit --no-verify -m x' commit"
 want DENY "git -c core.sshCommand='sh -c \"git commit -n -m x\"' push"
 want DENY 'SKIP_SIMPLE_GIT_HOOKS=1 git commit -m x'
 want DENY 'OVERCOMMIT_DISABLE=1 git commit -m x'
-want ALLOW 'git commit -m "$(date +%F) release"'
-want ALLOW 'git commit -m "$MSG"'
-want ALLOW 'MSG="about --no-verify"; git commit -m "$MSG"'
+want ALLOW "git commit -m \"\$(date +%F) release\""
+want ALLOW "git commit -m \"\$MSG\""
+want ALLOW "MSG=\"about --no-verify\"; git commit -m \"\$MSG\""
 want ALLOW 'GIT_EDITOR=true git rebase --continue'
-want ALLOW '$EDITOR notes.txt; git commit -m "docs: explain --no-verify"'
+want ALLOW "\$EDITOR notes.txt; git commit -m \"docs: explain --no-verify\""
 want ALLOW 'HOME=/tmp/x git status'
 want ALLOW 'git -c commit.gpgsign=on commit -m x'
 want ALLOW 'git -c commit.gpgsign=0x1 commit -m x'
@@ -486,7 +485,7 @@ want_raw DENY '' 'empty stdin'
 want_raw DENY '[1,2]' 'non-object payload'
 want DENY 'git commit -m "unterminated'
 want DENY "git commit -m 'unterminated"
-want DENY 'git commit -m $(echo x'
+want DENY "git commit -m \$(echo x"
 want DENY 'echo `git commit -n'
 
 section="pass through"
@@ -497,7 +496,7 @@ want_raw ALLOW '{"tool_name":"Read","tool_input":{"command":"git commit --no-ver
 want ALLOW 'npm test'
 want ALLOW 'ls -la # git commit --no-verify'
 
-version=$("${runner}" -c 'printf %s "${BASH_VERSION}"') || version=unknown
+version=$("${runner}" -c "printf %s \"\${BASH_VERSION}\"") || version=unknown
 printf '\n%d passed, %d failed (handler: %s, bash: %s)\n' "${pass}" "${fail}" "${handler}" "${version}"
 if ((fail)); then
   echo FAIL
