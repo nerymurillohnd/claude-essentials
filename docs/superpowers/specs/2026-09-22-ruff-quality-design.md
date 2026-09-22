@@ -59,8 +59,8 @@ plugin component. There is no migration: nothing of 0.1.x was ever installed by 
   `Write(P)` for the Write tool only (probe plugin, Claude Code 2.1.278, 2026-09-22; unlike
   permission rules, where `Edit` covers every file-editing tool). Every file condition
   therefore has a `Write(...)` twin; invariant H7 enforces it.
-- **Tool resolution**: `.venv/bin`, `venv/bin`, `.venv/Scripts` walking up from the file,
-  then `PATH`, then `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin` (GUI-launched
+- **Tool resolution**: `.venv/bin`, `venv/bin`, `.venv/Scripts` walking up from the file to the
+  project root (`CLAUDE_PROJECT_DIR`, else `cwd`), only executables the user owns, then `PATH`, then `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin` (GUI-launched
   sessions get a minimal `PATH`).
 - **State**: one file per session under `${CLAUDE_PLUGIN_DATA}/sessions` (TMPDIR fallback),
   pruned after 7 days.

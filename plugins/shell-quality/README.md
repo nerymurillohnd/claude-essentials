@@ -111,8 +111,8 @@ None — this plugin ships one skill and no agents.
 | `Stop` | — | Re-checks every script this session touched | Yes: keeps Claude working, at most 7 times; the 8th stop ends with a message listing what still fails |
 
 The handler is [`hooks/shell-gate.sh`](hooks/shell-gate.sh). It runs the first
-shfmt and ShellCheck it finds: the project's own (`.venv/bin/` or `venv/bin/` above
-the edited script, for example from `shellcheck-py` and `shfmt-py`), then `PATH`,
+shfmt and ShellCheck it finds: the project's own (`.venv/bin/` or `venv/bin/` between
+the edited script and the project root, owned by you, for example from `shellcheck-py` and `shfmt-py`), then `PATH`,
 then `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Each tool then finds
 your configuration as it always does: ShellCheck the nearest `.shellcheckrc`, then
 `~/.shellcheckrc`, then `$XDG_CONFIG_HOME/shellcheckrc`, plus `SHELLCHECK_OPTS`,
@@ -224,12 +224,12 @@ shell-quality: Claude wants to add a ShellCheck suppression (# shellcheck disabl
 | --- | --- |
 | Read | The shell scripts Claude edits; the file an edit targets, to compare directives and shfmt keys before and after |
 | Write | The shell scripts Claude edits (shfmt formatting) and per-session state in `${CLAUDE_PLUGIN_DATA}` |
-| Process | `bash`, `jq`, `shfmt`, `shellcheck`, and the bundled handler |
+| Process | `bash`, `jq`, the bundled handler, and `shfmt` and `shellcheck` executables: ones you own in a `.venv/` or `venv/` inside the project (a repository can commit them, so they run on Claude's first edit there, as an editor would), else the ones on `PATH` or in `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Never ones above the project root |
 | Network | Not used |
 | Credentials | None |
 
 - **Human approval:** a suppression or a configuration change reaches your permission prompt before it happens; the hook never denies and never edits configuration.
-- **Never blocks on its own failure:** a missing tool, a malformed payload or an unwritable state directory ends in a message, not a blocked session.
+- **Never blocks on its own failure:** a missing tool, a malformed payload, an unwritable state directory, or a ShellCheck tool or configuration error ends in a message to you, never in Claude being kept working.
 - **Trust:** review [`hooks/shell-gate.sh`](hooks/shell-gate.sh) and [`hooks/hooks.json`](hooks/hooks.json) before installing in a critical repository.
 - **Report a vulnerability** privately via the [security policy](../../SECURITY.md). Never post secrets in issues.
 

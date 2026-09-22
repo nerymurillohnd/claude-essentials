@@ -109,8 +109,8 @@ None — this plugin ships one skill and no agents.
 | `Stop` | — | Re-checks every Python file this session touched | Yes: keeps Claude working, at most 7 times; the 8th stop ends with a message listing what still fails |
 
 The handler is [`hooks/ruff-gate.sh`](hooks/ruff-gate.sh). It runs the first Ruff
-it finds: the project's own (`.venv/bin/ruff` or `venv/bin/ruff` above the edited
-file), then `ruff` on `PATH`, then `~/.local/bin`, `/opt/homebrew/bin` and
+it finds: the project's own (`.venv/bin/ruff` or `venv/bin/ruff` between the edited
+file and the project root, owned by you), then `ruff` on `PATH`, then `~/.local/bin`, `/opt/homebrew/bin` and
 `/usr/local/bin`. Ruff then finds your configuration as it always does: the nearest
 `ruff.toml`, `.ruff.toml` or `pyproject.toml` with `[tool.ruff]`, else your
 user-level file, else its defaults. Every result is one line for you
@@ -218,12 +218,12 @@ ruff-quality: Claude wants to add a suppression comment (noqa, ruff: noqa, fmt: 
 | --- | --- |
 | Read | The Python files Claude edits; the file an edit targets, to compare suppressions and `[tool.ruff]` tables before and after |
 | Write | The Python files Claude edits (Ruff's safe fixes and formatting) and per-session state in `${CLAUDE_PLUGIN_DATA}` |
-| Process | `bash`, `jq`, `ruff`, and the bundled handler |
+| Process | `bash`, `jq`, the bundled handler, and a `ruff` executable: one you own in a `.venv/` or `venv/` inside the project (a repository can commit one, so it runs on Claude's first edit there, as an editor would), else the one on `PATH` or in `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Never one above the project root |
 | Network | Not used |
 | Credentials | None |
 
 - **Human approval:** a suppression or a Ruff configuration change reaches your permission prompt before it happens; the hook never denies and never edits configuration.
-- **Never blocks on its own failure:** a missing tool, a malformed payload or an unwritable state directory ends in a message, not a blocked session.
+- **Never blocks on its own failure:** a missing tool, a malformed payload, an unwritable state directory, or a Ruff tool or configuration error (such as a `required-version` mismatch) ends in a message to you, never in Claude being kept working.
 - **Trust:** review [`hooks/ruff-gate.sh`](hooks/ruff-gate.sh) and [`hooks/hooks.json`](hooks/hooks.json) before installing in a critical repository.
 - **Report a vulnerability** privately via the [security policy](../../SECURITY.md). Never post secrets in issues.
 

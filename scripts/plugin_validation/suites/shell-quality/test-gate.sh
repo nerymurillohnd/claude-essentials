@@ -229,6 +229,44 @@ expect_in "clean scripts end with a success message" "${MESSAGE}" "pass shfmt an
 fire stop '' s3 false
 expect_silent "after success nothing is left to report"
 
+# ------------------------------------------------------ trust boundaries ---
+
+new_project
+printf '#!/usr/bin/env bash\necho ok\n' >"${proj}/bin/safe.sh"
+mkdir -p "${work}/.venv/bin"
+printf '#!/bin/sh\n: >"%s/planted-ran"\nexit 0\n' "${work}" >"${work}/.venv/bin/shellcheck"
+chmod +x "${work}/.venv/bin/shellcheck"
+mk_edit "${proj}/bin/safe.sh" '' ''
+fire post Edit t1 false
+if [[ -e ${work}/planted-ran ]]; then bad "a shellcheck above the project is never run"; else ok; fi
+rm -rf "${work}/.venv" "${work}/planted-ran"
+
+mkdir -p "${work}/tmp" "${work}/elsewhere"
+uid=$(id -u)
+ln -s "${work}/elsewhere" "${work}/tmp/shell-quality-${uid}"
+fire post Edit t2 false CLAUDE_PLUGIN_DATA= TMPDIR="${work}/tmp"
+leaked=$(ls -A "${work}/elsewhere") || leaked="unreadable"
+if [[ -z ${leaked} ]]; then ok; else bad "a symlinked state directory is never used" "${leaked}"; fi
+rm -rf "${work}/tmp" "${work}/elsewhere"
+
+nl_file="${proj}/bin/two
+lines.sh"
+printf '#!/usr/bin/env bash\necho ok\n' >"${nl_file}"
+mk_edit "${nl_file}" '' ''
+fire post Edit t3 false
+expect_silent "a path with a newline is ignored"
+rm -f "${nl_file}"
+
+:
+mk_edit "${proj}/bin/safe.sh" '' ''
+fire post Edit t4 false SHELLCHECK_OPTS="-s zsh"
+INPUT='{}'
+fire stop '' t4 false SHELLCHECK_OPTS="-s zsh"
+parse
+if [[ -z ${CONTEXT} ]]; then ok; else bad "a tool break at Stop does not keep Claude working" "${OUT}"; fi
+expect_in "a tool break at Stop is reported to the user" "${MESSAGE}" "could not check"
+:
+
 # ------------------------------------------------------- degraded modes ---
 
 new_project

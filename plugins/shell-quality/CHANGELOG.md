@@ -35,8 +35,11 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 - The hook runs the shfmt and ShellCheck already installed in your project or globally, with
   each tool's own configuration discovery (your nearest `.shellcheckrc`, then
   `~/.shellcheckrc`, then `$XDG_CONFIG_HOME/shellcheckrc`, plus `SHELLCHECK_OPTS`, which every
-  report names; shfmt reads your `.editorconfig` and gets no style flags). It never
-  downloads anything. Without the tools, or without `jq`, it tells you once per session how
+  report names; shfmt reads your `.editorconfig` and gets no style flags). Project tools are
+  used only from a `.venv/` or `venv/` inside the project and owned by you, never from a
+  directory above it. It never downloads anything. A ShellCheck tool or configuration error is
+  reported to you and never keeps Claude working. Findings name the script relative to the
+  project. Without the tools, or without `jq`, it tells you once per session how
   to install them and blocks nothing. zsh scripts are skipped and said so.
 - The `shell-lint` skill was rewritten from the official ShellCheck and shfmt documentation.
 

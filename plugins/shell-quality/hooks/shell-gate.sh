@@ -40,7 +40,8 @@ state_dir() {
     dir=${TMPDIR:-/tmp}
     dir="${dir%/}/shell-quality-$(id -u 2>/dev/null || echo 0)"
   fi
-  if (umask 077 && mkdir -p "${dir}") 2>/dev/null && [[ -d ${dir} && -w ${dir} ]]; then
+  # A fallback directory someone else created (or a symlink to one) is never trusted.
+  if (umask 077 && mkdir -p "${dir}") 2>/dev/null && [[ -d ${dir} && ! -L ${dir} && -O ${dir} && -w ${dir} ]]; then
     STATE_DIR=${dir}
     find "${dir}" -type f -mtime +7 -exec rm -f {} + 2>/dev/null
     return 0
@@ -170,14 +171,24 @@ do_guard() {
 
 # ------------------------------------------------------------------ tools ---
 
-find_tool() { # find_tool NAME DIR: the project's own install above DIR, then the global one
-  local name=$1 d=$2 c
-  while [[ -n ${d} && ${d} != / ]]; do
-    for c in "${d}/.venv/bin/${name}" "${d}/venv/bin/${name}" "${d}/.venv/Scripts/${name}.exe"; do
-      [[ -x ${c} ]] && printf '%s' "${c}" && return 0
+find_tool() { # find_tool NAME DIR: the project's own install between DIR and the project root, then the global one
+  local name=$1 d=$2 root c
+  root=${CLAUDE_PROJECT_DIR:-${cwd}}
+  root=${root%/}
+  # Only inside the project, and only an executable this user owns: a .venv planted in a
+  # shared parent directory (/tmp) is never run.
+  case "${d}/" in
+  "${root}"/*)
+    while [[ -n ${d} ]]; do
+      for c in "${d}/.venv/bin/${name}" "${d}/venv/bin/${name}" "${d}/.venv/Scripts/${name}.exe"; do
+        [[ -x ${c} && -O ${c} ]] && printf '%s' "${c}" && return 0
+      done
+      [[ ${d} == "${root}" ]] && break
+      d=${d%/*}
     done
-    d=${d%/*}
-  done
+    ;;
+  *) ;;
+  esac
   command -v "${name}" 2>/dev/null && return 0
   for c in "${HOME}/.local/bin/${name}" "/opt/homebrew/bin/${name}" "/usr/local/bin/${name}"; do
     [[ -x ${c} ]] && printf '%s' "${c}" && return 0
@@ -223,7 +234,7 @@ correct() {
   first=$(head -n 1 "${f}" 2>/dev/null) || first=""
   [[ ${first} == '#!'*zsh* ]] && return 3
   before=$(cksum <"${f}" 2>/dev/null)
-  out=$(cd "${cwd}" && "${SHFMT}" -w "${f}" 2>&1)
+  out=$(cd "${cwd}" && "${SHFMT}" -w -- "${f}" 2>&1)
   rc=$?
   after=$(cksum <"${f}" 2>/dev/null)
   [[ ${before} == "${after}" ]] || CHANGED=1
@@ -232,7 +243,7 @@ correct() {
 ${out}")
     return 1
   fi
-  out=$(cd "${f%/*}" && "${SHELLCHECK}" -x -f gcc "${f}" 2>&1)
+  out=$(cd "${f%/*}" && "${SHELLCHECK}" -x -f gcc -- "${f}" 2>&1)
   rc=$?
   FINDINGS=$(trim_findings "${f}" "${out}")
   ((rc > 1)) && return 2
@@ -243,6 +254,7 @@ ${out}")
 
 do_post() {
   [[ -n ${file} && -f ${file} ]] && is_shell "${file}" || exit 0
+  [[ ${file} == *$'\n'* ]] && exit 0 # one path per line in the session list
   find_tools "${file%/*}" || missing_tools
   [[ -n ${STATE_DIR} ]] && printf '%s\n' "${file}" >>"${STATE_DIR}/${SESSION}.files"
   local r rc note
@@ -277,7 +289,7 @@ do_stop() {
   [[ -n ${STATE_DIR} ]] || exit 0
   local list="${STATE_DIR}/${SESSION}.files" blocks_file="${STATE_DIR}/${SESSION}.blocks"
   [[ -s ${list} ]] || exit 0
-  local active blocks=0 f r rc report="" bad=0 checked=0 files note
+  local active blocks=0 f r rc report="" bad=0 checked=0 files note broken="" bnote=""
   active=$(field '.stop_hook_active')
   [[ ${active} == true && -f ${blocks_file} ]] && blocks=$(cat "${blocks_file}" 2>/dev/null)
   [[ ${blocks} =~ ^[0-9]+$ ]] || blocks=0
@@ -290,29 +302,43 @@ do_stop() {
     rc=$?
     ((rc == 3)) && continue
     checked=$((checked + 1))
-    if ((rc != 0)); then
+    r=$(rel "${f}")
+    if ((rc == 1)); then
       bad=$((bad + 1))
-      r=$(rel "${f}")
-      report="${report}${r} (exit ${rc}):
+      report="${report}${r}:
+${FINDINGS}
+"
+    elif ((rc != 0)); then
+      # A tool or configuration error is the user's to fix: reported, never a reason to
+      # keep Claude working.
+      broken="${broken}${r} (exit ${rc}):
 ${FINDINGS}
 "
     fi
   done <<<"${files}"
+  [[ -n ${broken} ]] && bnote="
+${TAG}: ShellCheck could not check these scripts (a tool or configuration error, not a finding)${note}:
+${broken}"
   if ((bad == 0)); then
-    rm -f "${list}" "${blocks_file}"
-    ((checked > 0)) && say_user "${TAG} ✓ ${checked} shell script(s) touched this session pass shfmt and ShellCheck${note}"
+    rm -f "${blocks_file}"
+    if [[ -n ${broken} ]]; then
+      say_user "${TAG} ✗${bnote#*"${TAG}:"}"
+    else
+      rm -f "${list}"
+      ((checked > 0)) && say_user "${TAG} ✓ ${checked} shell script(s) touched this session pass shfmt and ShellCheck${note}"
+    fi
     exit 0
   fi
   if ((blocks >= MAX_BLOCKS)); then
     rm -f "${blocks_file}"
     say_user "${TAG} ✗ gave up after ${MAX_BLOCKS} attempts: ${bad} shell script(s) still fail shfmt or ShellCheck${note}.
-${report}"
+${report}${bnote}"
     exit 0
   fi
   blocks=$((blocks + 1))
   printf '%s\n' "${blocks}" >"${blocks_file}"
   jq -cn --arg c "${TAG}: you cannot finish yet (attempt ${blocks} of ${MAX_BLOCKS}). These scripts you changed still fail after formatting${note}. Fix each finding in the script; a # shellcheck disable= directive or a configuration change is not a fix and needs the user's confirmation.
-${report}" --arg m "${TAG}: ${bad} shell script(s) still fail; Claude keeps working (${blocks}/${MAX_BLOCKS})" \
+${report}" --arg m "${TAG}: ${bad} shell script(s) still fail; Claude keeps working (${blocks}/${MAX_BLOCKS})${bnote}" \
     '{systemMessage: $m, hookSpecificOutput: {hookEventName: "Stop", additionalContext: $c}}'
   exit 0
 }

@@ -37,7 +37,8 @@ state_dir() {
     dir=${TMPDIR:-/tmp}
     dir="${dir%/}/ruff-quality-$(id -u 2>/dev/null || echo 0)"
   fi
-  if (umask 077 && mkdir -p "${dir}") 2>/dev/null && [[ -d ${dir} && -w ${dir} ]]; then
+  # A fallback directory someone else created (or a symlink to one) is never trusted.
+  if (umask 077 && mkdir -p "${dir}") 2>/dev/null && [[ -d ${dir} && ! -L ${dir} && -O ${dir} && -w ${dir} ]]; then
     STATE_DIR=${dir}
     find "${dir}" -type f -mtime +7 -exec rm -f {} + 2>/dev/null
     return 0
@@ -176,14 +177,24 @@ do_guard() {
 # ------------------------------------------------------------------- ruff ---
 
 RUFF=""
-find_ruff() { # the project's own install above $1, then the global one
-  local d=$1 c
-  while [[ -n ${d} && ${d} != / ]]; do
-    for c in "${d}/.venv/bin/ruff" "${d}/venv/bin/ruff" "${d}/.venv/Scripts/ruff.exe"; do
-      [[ -x ${c} ]] && RUFF=${c} && return 0
+find_ruff() { # the project's own install between $1 and the project root, then the global one
+  local d=$1 root c
+  root=${CLAUDE_PROJECT_DIR:-${cwd}}
+  root=${root%/}
+  # Only inside the project, and only an executable this user owns: a .venv planted in a
+  # shared parent directory (/tmp) is never run.
+  case "${d}/" in
+  "${root}"/*)
+    while [[ -n ${d} ]]; do
+      for c in "${d}/.venv/bin/ruff" "${d}/venv/bin/ruff" "${d}/.venv/Scripts/ruff.exe"; do
+        [[ -x ${c} && -O ${c} ]] && RUFF=${c} && return 0
+      done
+      [[ ${d} == "${root}" ]] && break
+      d=${d%/*}
     done
-    d=${d%/*}
-  done
+    ;;
+  *) ;;
+  esac
   RUFF=$(command -v ruff 2>/dev/null) && return 0
   for c in "${HOME}/.local/bin/ruff" /opt/homebrew/bin/ruff /usr/local/bin/ruff; do
     [[ -x ${c} ]] && RUFF=${c} && return 0
@@ -198,9 +209,9 @@ CHANGED=0
 correct() {
   local f=$1 before after out rc
   before=$(cksum <"${f}" 2>/dev/null)
-  (cd "${cwd}" && "${RUFF}" check --fix --no-unsafe-fixes --unfixable F401 --force-exclude --no-cache --quiet "${f}") >/dev/null 2>&1
-  (cd "${cwd}" && "${RUFF}" format --force-exclude --no-cache --quiet "${f}") >/dev/null 2>&1
-  out=$(cd "${cwd}" && "${RUFF}" check --no-fix --force-exclude --no-cache --output-format concise "${f}" 2>&1)
+  (cd "${cwd}" && "${RUFF}" check --fix --no-unsafe-fixes --unfixable F401 --force-exclude --no-cache --quiet -- "${f}") >/dev/null 2>&1
+  (cd "${cwd}" && "${RUFF}" format --force-exclude --no-cache --quiet -- "${f}") >/dev/null 2>&1
+  out=$(cd "${cwd}" && "${RUFF}" check --no-fix --force-exclude --no-cache --output-format concise -- "${f}" 2>&1)
   rc=$?
   after=$(cksum <"${f}" 2>/dev/null)
   [[ ${before} == "${after}" ]] || CHANGED=1
@@ -218,6 +229,7 @@ missing_ruff() {
 
 do_post() {
   [[ -n ${file} && -f ${file} ]] && is_python "${file}" || exit 0
+  [[ ${file} == *$'\n'* ]] && exit 0 # one path per line in the session list
   find_ruff "${file%/*}" || missing_ruff
   [[ -n ${STATE_DIR} ]] && printf '%s\n' "${file}" >>"${STATE_DIR}/${SESSION}.files"
   local r rc
@@ -248,7 +260,7 @@ do_stop() {
   [[ -n ${STATE_DIR} ]] || exit 0
   local list="${STATE_DIR}/${SESSION}.files" blocks_file="${STATE_DIR}/${SESSION}.blocks"
   [[ -s ${list} ]] || exit 0
-  local active blocks=0 f r rc report="" bad=0 checked=0 files
+  local active blocks=0 f r rc report="" bad=0 checked=0 files broken="" note=""
   active=$(field '.stop_hook_active')
   [[ ${active} == true && -f ${blocks_file} ]] && blocks=$(cat "${blocks_file}" 2>/dev/null)
   [[ ${blocks} =~ ^[0-9]+$ ]] || blocks=0
@@ -260,28 +272,42 @@ do_stop() {
     r=$(rel "${f}")
     correct "${f}"
     rc=$?
-    if ((rc != 0)); then
+    if ((rc == 1)); then
       bad=$((bad + 1))
-      report="${report}${r} (exit ${rc}):
+      report="${report}${r}:
+${FINDINGS}
+"
+    elif ((rc != 0)); then
+      # A tool or configuration error is the user's to fix: reported, never a reason to
+      # keep Claude working.
+      broken="${broken}${r} (exit ${rc}):
 ${FINDINGS}
 "
     fi
   done <<<"${files}"
+  [[ -n ${broken} ]] && note="
+${TAG}: Ruff could not check these files (a tool or configuration error, not a finding):
+${broken}"
   if ((bad == 0)); then
-    rm -f "${list}" "${blocks_file}"
-    ((checked > 0)) && say_user "${TAG} ✓ ${checked} Python file(s) touched this session pass Ruff"
+    rm -f "${blocks_file}"
+    if [[ -n ${broken} ]]; then
+      say_user "${TAG} ✗${note#*"${TAG}:"}"
+    else
+      rm -f "${list}"
+      ((checked > 0)) && say_user "${TAG} ✓ ${checked} Python file(s) touched this session pass Ruff"
+    fi
     exit 0
   fi
   if ((blocks >= MAX_BLOCKS)); then
     rm -f "${blocks_file}"
     say_user "${TAG} ✗ gave up after ${MAX_BLOCKS} attempts: ${bad} Python file(s) still fail Ruff.
-${report}"
+${report}${note}"
     exit 0
   fi
   blocks=$((blocks + 1))
   printf '%s\n' "${blocks}" >"${blocks_file}"
   jq -cn --arg c "${TAG}: you cannot finish yet (attempt ${blocks} of ${MAX_BLOCKS}). These files you changed still fail Ruff after the safe fixes and formatting. Fix each finding in the code; a suppression comment or a configuration change is not a fix and needs the user's confirmation.
-${report}" --arg m "${TAG}: ${bad} Python file(s) still fail Ruff; Claude keeps working (${blocks}/${MAX_BLOCKS})" \
+${report}" --arg m "${TAG}: ${bad} Python file(s) still fail Ruff; Claude keeps working (${blocks}/${MAX_BLOCKS})${note}" \
     '{systemMessage: $m, hookSpecificOutput: {hookEventName: "Stop", additionalContext: $c}}'
   exit 0
 }

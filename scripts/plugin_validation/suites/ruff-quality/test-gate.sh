@@ -257,6 +257,44 @@ expect_silent "after success nothing is left to report"
 fire stop '' s-none false
 expect_silent "a session that touched no Python stays silent"
 
+# ------------------------------------------------------ trust boundaries ---
+
+new_project
+printf 'x = 1\n' >"${proj}/pkg/safe.py"
+mkdir -p "${work}/.venv/bin"
+printf '#!/bin/sh\n: >"%s/planted-ran"\nexit 0\n' "${work}" >"${work}/.venv/bin/ruff"
+chmod +x "${work}/.venv/bin/ruff"
+mk_edit "${proj}/pkg/safe.py" '' ''
+fire post Edit t1 false
+if [[ -e ${work}/planted-ran ]]; then bad "a ruff above the project is never run"; else ok; fi
+rm -rf "${work}/.venv" "${work}/planted-ran"
+
+mkdir -p "${work}/tmp" "${work}/elsewhere"
+uid=$(id -u)
+ln -s "${work}/elsewhere" "${work}/tmp/ruff-quality-${uid}"
+fire post Edit t2 false CLAUDE_PLUGIN_DATA= TMPDIR="${work}/tmp"
+leaked=$(ls -A "${work}/elsewhere") || leaked="unreadable"
+if [[ -z ${leaked} ]]; then ok; else bad "a symlinked state directory is never used" "${leaked}"; fi
+rm -rf "${work}/tmp" "${work}/elsewhere"
+
+nl_file="${proj}/pkg/two
+lines.py"
+printf 'x = 1\n' >"${nl_file}"
+mk_edit "${nl_file}" '' ''
+fire post Edit t3 false
+expect_silent "a path with a newline is ignored"
+rm -f "${nl_file}"
+
+printf 'required-version = ">=99"\n' >"${proj}/ruff.toml"
+mk_edit "${proj}/pkg/safe.py" '' ''
+fire post Edit t4 false
+INPUT='{}'
+fire stop '' t4 false
+parse
+if [[ -z ${CONTEXT} ]]; then ok; else bad "a tool break at Stop does not keep Claude working" "${OUT}"; fi
+expect_in "a tool break at Stop is reported to the user" "${MESSAGE}" "could not check"
+rm -f "${proj}/ruff.toml"
+
 # ------------------------------------------------------- degraded modes ---
 
 new_project

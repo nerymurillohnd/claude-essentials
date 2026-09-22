@@ -35,8 +35,10 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 
 - The hook runs the Ruff already installed in your project or globally, with Ruff's own
   configuration discovery (your nearest `ruff.toml`, `.ruff.toml` or `pyproject.toml`, then
-  your user-level file, then Ruff's defaults). It never runs `uv` or `uvx` and never
-  downloads anything. Without Ruff, or without `jq`, it tells you once per session how to
+  your user-level file, then Ruff's defaults). A project Ruff is used only from a `.venv/` or
+  `venv/` inside the project and owned by you, never from a directory above it. It never runs
+  `uv` or `uvx` and never downloads anything. A Ruff tool or configuration error is reported
+  to you and never keeps Claude working. Without Ruff, or without `jq`, it tells you once per session how to
   install it and blocks nothing.
 - The `ruff` skill was rewritten from the official Ruff and uv documentation: installing,
   command routes (with `--locked` and `--no-python-downloads` for uv), configuration
