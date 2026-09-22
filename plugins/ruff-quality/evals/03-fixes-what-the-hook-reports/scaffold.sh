@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# A small project whose calc.py carries two findings Ruff cannot fix by itself (E741, F821),
+# A small project whose calc.py carries two findings in Ruff's default rule set that its safe
+# fixes leave for Claude (F841, whose fix is unsafe, and F821),
 # and a project-level Ruff the plugin's hook can run: the sandbox has no Ruff of its own.
 set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -20,8 +21,9 @@ cat >calc.py <<'PY'
 
 
 def total(values):
-    l = list(values)
-    return sum(l)
+    items = list(values)
+    count = len(items)
+    return sum(items)
 
 
 def describe(values):

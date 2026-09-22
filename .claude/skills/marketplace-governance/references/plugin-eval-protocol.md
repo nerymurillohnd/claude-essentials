@@ -73,6 +73,14 @@ Static checks are governed separately; see the validation rules.
 - Anchor literal quotes by copying them from the live source at authoring time, and record the date.
 - A rubric must never require more than the contract requires. State that changes beyond the named
   findings neither help nor hurt.
+- When the contract is "fix what the tool reports", name only findings the pinned tool version reports
+  with the case's configuration, and check them by running it on the scaffold. Rule sets change
+  between releases (Ruff 0.16.0 dropped E711 and E741 from its defaults), and a rubric that still
+  demands them punishes the arm that trusts the tool.
+- `file_exists` counts only files created during the run. For a file the scaffold created and Claude
+  edited, grade its contents or use `tool_used` on `Edit` with an `input_match` on the file name.
+- A case about a project needs a scaffold that creates the project; with an empty sandbox the right
+  answer is to ask for it, and nothing else is measured.
 - Where a contract has two correct paths — proceed, or stop because a prerequisite is missing — the
   rubric must accept both.
 - Give every skill at least one negative case that must not fire it.

@@ -5,4 +5,4 @@ match: contains
 weight: 0.5
 flags: i
 ---
-ruff format --check
+ruff format --(check|diff)
