@@ -1,0 +1,29 @@
+{
+  "description": "evidence-reader report gate: when one of the plugin's three agents stops, check that its report carries the evidence-standard sections and send it back to complete them (at most twice). The SubagentStop hook fires only for those agents; the PreToolUse hook sees every SubagentHandback and exits at once for any other agent. Never edits files; fails open.",
+  "hooks": {
+    "SubagentStop": [
+      {
+        "matcher": "^evidence-reader:(document-reader|tabular-auditor|image-inspector)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/gate.sh\" stop",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "SubagentHandback",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/gate.sh\" handback",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

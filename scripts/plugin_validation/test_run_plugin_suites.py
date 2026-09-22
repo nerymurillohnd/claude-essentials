@@ -26,7 +26,7 @@ from scripts.plugin_validation.run_plugin_suites import (
     smoke_run,
     suites,
 )
-from scripts.plugin_validation.script_env import SHARED_TEST_BASH
+from scripts.plugin_validation.script_env import SHARED_TEST_BASH, SHARED_TEST_PYTHON
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -83,6 +83,22 @@ def test_the_shared_fallback_is_the_variable_the_suites_read() -> None:
     root = repo_root()
     texts = [(root / rel).read_text(encoding="utf-8") for rel in suites(root)]
     assert all(SHARED_TEST_BASH in text for text in texts)
+
+
+def test_a_suite_gets_the_repository_python(tmp_path: Path) -> None:
+    """A CI runner's own `python3` is older than the floor; the suite must not fall back to it.
+
+    Args:
+        tmp_path: A scratch repository root.
+    """
+    suite = tmp_path / "test-echo.sh"
+    _ = suite.write_text(
+        f'#!/usr/bin/env bash\necho "${{{SHARED_TEST_PYTHON}}}"\n', encoding="utf-8"
+    )
+    suite.chmod(0o755)
+    result = run_suite(tmp_path, "test-echo.sh", "bash")
+    assert result.ok
+    assert result.detail == sys.executable
 
 
 def test_the_python_smoke_run_never_installs_an_interpreter() -> None:

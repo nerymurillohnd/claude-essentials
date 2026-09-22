@@ -45,6 +45,7 @@
     ![pnpm](https://img.shields.io/badge/pnpm-required-F69220?logo=pnpm&logoColor=white)
     ![Bash](https://img.shields.io/badge/Bash-%E2%89%A53.2-4EAA25?logo=gnubash&logoColor=white)
     ![jq](https://img.shields.io/badge/jq-%E2%89%A51.6-555555)
+    ![poppler](https://img.shields.io/badge/poppler-recommended-555555)
     ![Git](https://img.shields.io/badge/Git-%E2%89%A52.40-F05032?logo=git&logoColor=white)
     ![GitHub CLI](https://img.shields.io/badge/gh-required-181717?logo=github&logoColor=white)
     ![Ruff](https://img.shields.io/badge/Ruff-%E2%89%A50.16-D7FF64?logo=ruff&logoColor=black)

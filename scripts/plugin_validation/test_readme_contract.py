@@ -8,6 +8,7 @@ from scripts.common.plugins import plugin_ids, repo_root
 from scripts.plugin_validation.conftest import PLUGIN_ID
 from scripts.plugin_validation.readme_contract import (
     CompatibilityRow,
+    check_badges,
     check_catalog,
     check_legal_texts,
     check_network_badge,
@@ -156,6 +157,21 @@ def test_a_network_badge_claiming_none_is_refused(scratch: Path) -> None:
     text = (scratch / "plugins" / PLUGIN_ID / "README.md").read_text(encoding="utf-8")
     assert ids(list(check_network_badge("x.md", text, networked=True))) == ["R4"]
     assert check_network_badge("x.md", text, networked=False) == []
+
+
+def test_a_badge_outside_the_catalog_is_reported() -> None:
+    """A made-up badge reads as a requirement nobody reviewed; the catalog is the list."""
+    root = repo_root()
+    plugin = "block-no-verify"
+    text = (root / "plugins" / plugin / "README.md").read_text(encoding="utf-8")
+    assert check_badges(root, plugin, "x.md", text) == []
+    invented = text.replace(
+        "![Bash](", "![Madeup](https://img.shields.io/badge/madeup-1-555555)\n![Bash](", 1
+    )
+    assert invented != text
+    assert "`Madeup`" in " ".join(
+        str(finding) for finding in check_badges(root, plugin, "x.md", invented)
+    )
 
 
 def test_a_missing_requirements_row_is_reported(scratch: Path) -> None:

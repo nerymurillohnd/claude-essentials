@@ -83,7 +83,9 @@ extend-exclude = [
 # version check and by run_plugin_suites). Its syntax stays parseable by 3.9, the python3 the
 # Xcode Command Line Tools ship, so an older interpreter reaches that check's message instead
 # of a SyntaxError; this target keeps `ruff format` and `UP` fixes from breaking that.
-per-file-target-version = { "plugins/agent-self-knowledge/**" = "py39" }
+# evidence-reader follows the same rule; there the target also kept `ruff format` from turning an
+# except tuple into the parenthesis-free form only 3.14 parses (test_python_version_guard).
+per-file-target-version = { "plugins/agent-self-knowledge/**" = "py39", "plugins/evidence-reader/**" = "py39" }
 
 [tool.ruff.lint]
 # Explicit selection (official recommendation)
@@ -160,6 +162,14 @@ unfixable = []
 [tool.ruff.lint.per-file-ignores]
 "scripts/**/test_*.py" = ["S101"]
 "scripts/**/conftest.py" = ["S101"]
+# S314 (xml.etree over untrusted data): these three extractors parse untrusted OOXML/XLSX
+# parts, but each already scans the raw bytes for a DOCTYPE/ENTITY declaration and refuses
+# to parse when one is present (the classic XXE/billion-laughs vector), tested in
+# scripts/plugin_validation/suites/evidence-reader/test-scripts.sh ("xml refuses entities").
+# defusedxml would add the plugin's only non-stdlib dependency, against its stdlib-only design.
+"plugins/evidence-reader/skills/document-reading/scripts/extract_docx.py" = ["S314"]
+"plugins/evidence-reader/skills/document-reading/scripts/extract_pptx.py" = ["S314"]
+"plugins/evidence-reader/skills/tabular-data/scripts/extract_xlsx.py" = ["S314"]
 
 [tool.ruff.lint.isort]
 # Only formatter-compatible isort settings

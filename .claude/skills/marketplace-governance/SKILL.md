@@ -118,8 +118,9 @@ loads any of it. The user-facing surface is `plugins/`.
 | `test_run_plugin_suites.py` | Every plugin suite, under every bash that matters, plus the Python smoke run and floor gate. |
 | `runtime_boundary.py` | B1: the boundary between the maintainer's environment and a user's machine (§2.1). |
 | `test_runtime_boundary.py` | B1: what a plugin may assume a user's machine already has (§2.1). |
-| `script_env.py` | Which environment variables a shipped script reads, and the `*_TEST_BASH` convention. |
+| `script_env.py` | Which variables a shipped script reads; the `*_TEST_BASH` and `BNV_TEST_PYTHON` conventions. |
 | `test_script_env.py` | Environment-variable extraction: what a script reads, not what it mentions. |
+| `test_skill_supporting_files.py` | A skill's supporting files never carry `${CLAUDE_SKILL_DIR}`, which only SKILL.md gets filled in. |
 | `test_templates.py` | T1: the shape templates under the same README and frontmatter rules, with `{{…}}` allowed. |
 | `validate_claude.py` | `make validate-cli`: the official CLI's verdict on the marketplace and every plugin. |
 | `test_validate_claude.py` | `make validate-cli`: the entrypoint's exit codes and its one-line error. |

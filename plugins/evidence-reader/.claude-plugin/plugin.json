@@ -1,0 +1,51 @@
+{
+  "name": "evidence-reader",
+  "displayName": "Evidence Reader",
+  "version": "0.1.0",
+  "description": "Makes Claude read documents, spreadsheets, data files and images completely and report back with a receipt for every claim: three read-only agents (documents, tabular data, images) with a shared evidence contract, bundled stdlib extractors for Office, PDF, CSV, JSON and XML, image conversion and cropping for fine print, and a report gate that sends an agent back when its report lacks a completeness checklist. It never creates or edits the files it reads.",
+  "author": {
+    "name": "Nery Samuel Murillo",
+    "url": "https://github.com/nerymurillohnd"
+  },
+  "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/evidence-reader",
+  "repository": "https://github.com/nerymurillohnd/claude-essentials",
+  "license": "Apache-2.0",
+  "keywords": [
+    "documents",
+    "pdf",
+    "excel",
+    "csv",
+    "images",
+    "audit",
+    "citations",
+    "subagents"
+  ],
+  "userConfig": {
+    "enforcement": {
+      "type": "string",
+      "title": "Report gate enforcement",
+      "description": "block: when an evidence-reader agent returns a report without the required sections, it is sent back to complete it, at most twice, then allowed to stop flagged as incomplete. warn: only warn you. off: the gate does nothing; the skills and agents stay available.",
+      "default": "block",
+      "options": [
+        "block",
+        "warn",
+        "off"
+      ]
+    }
+  },
+  "metadata": {
+    "marketplace": {
+      "category": "productivity",
+      "tags": [
+        "document-reading",
+        "pdf",
+        "spreadsheets",
+        "csv",
+        "image-analysis",
+        "citations",
+        "audit",
+        "subagents"
+      ]
+    }
+  }
+}
