@@ -9,10 +9,12 @@ setup:         ## create/refresh .venv from uv.lock (the only target that calls 
 $(PY):
 	@echo "error: .venv is missing; run \`make setup\`" >&2; exit 2
 check: generate lint types test-fast validate validate-cli test-slow ## the whole gate, in order
-generate: $(PY) ## 10 regenerate catalog + issue forms, then fail on diff
+generate: $(PY) ## 10 regenerate catalog + issue forms + governance tables, then fail on diff
 	$(PY) -m scripts.marketplace.generate_marketplace
 	$(PY) -m scripts.github.generate_issue_forms
-	git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE
+	$(PY) -m scripts.harness.governance_docs
+	git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE \
+	  .claude/skills/marketplace-governance/SKILL.md
 PY_FILES := $(shell git ls-files --cached --others --exclude-standard -- 'scripts/*.py' 'plugins/*.py')
 lint: $(PY)    ## 20 ruff format --check + ruff check (explicit .py list), shell, json, text bytes, actionlint, zizmor
 	$(PY) -m ruff format --check $(PY_FILES)

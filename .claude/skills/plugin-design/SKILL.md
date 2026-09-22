@@ -118,7 +118,10 @@ risks per scenario before deciding. Live, current sources win over memory.
 
 ## Phase 11: Review
 
-1. Run `/plugin-release-review <id>` on the first complete draft.
+1. Run `/plugin-release-review <id>` on the first complete draft. Its
+   `bundled-reviews` item accepts Phase 10's `/code-review high`,
+   `/security-review`, and `/claude-api prompt-audit` runs as evidence instead
+   of re-running them, as long as the head SHA hasn't changed since.
 2. Re-run it after every change to runtime files, README, or `plugin.json`.
 
 ## Phase 12: Deliver

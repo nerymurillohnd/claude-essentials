@@ -55,9 +55,9 @@ only runs when someone runs it.
 
 | Surface | Check |
 | --- | --- |
-| Root README catalog | Row present, sorted, wording current *(CI: structure)* |
+| Root README catalog | Row present, sorted *(CI: structure)*; wording is current (no script checks catalog prose freshness) |
 | `marketplace.json` | Regenerated (`make generate` leaves no diff) *(CI)* |
 | Issue forms | "Affected plugin" dropdown lists the plugin *(CI)* |
 | Labels | `plugin: <id>` exists on GitHub after the Labels workflow runs (`gh label list`) |
-| Tags | After merge: `git ls-remote --tags origin '<id>--v*'` shows the new version |
+| Tags | N/A for the version under review: it merges and tags after this review, so the new tag can't exist yet (`pr-delivery`'s `tags` item verifies it then). To exercise the check now, confirm the plugin's *previous* released version has its tag: `git ls-remote --tags origin '<id>--v<previous-version>'`. A first-ever release has no previous version to check; note that and move on — `pr-delivery` still covers the new tag post-merge |
 | Links | Every relative link in the README resolves; external links point at the right pages |

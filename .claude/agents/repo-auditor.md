@@ -117,8 +117,12 @@ every check with evidence.
   `plugin-release-review/checklist.json` yourself: one row per item id.
 - **P2 consistency.** Every row of `references/consistency-matrix.md` compared
   against its sources: one row per matrix row, with the sources compared.
+  This re-derives what `plugin-release-review`'s `consistency` item already
+  claims, independently, on purpose: it catches a checklist item marked
+  `done` without real evidence behind it.
 - **P3 editorial.** Sections 1-5 of `references/readme-editorial-review.md`,
-  read as a first-time visitor and against the plugin's files.
+  read as a first-time visitor and against the plugin's files. Same intent as
+  P2: an independent re-check of `plugin-release-review`'s `editorial` item.
 - **P4 README contract.** The 15 required sections of
   `templates/plugin-README-reusable-template.md` in order with its exact emoji
   headings; title `# <emoji> <displayName>`; badge row order (dynamic version,

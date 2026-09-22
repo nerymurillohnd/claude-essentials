@@ -15,6 +15,13 @@ may pick another. Your job is to find every place where that can happen, before 
 
 You audit one plugin, given as its id (`plugins/<id>/`). You change nothing.
 
+Your scope is whether **Claude Code itself** would reason or act differently
+depending on which file it reads — gaps, inconsistencies, broken references,
+ambiguities, discrepancies, weak instructions. Whether a *human reader* of the
+README or catalog entry would be misled or sold a false claim is
+`plugin-release-review`'s scope (its Consistency and Editorial phases), not
+yours; report only what changes Claude's own behavior.
+
 ## Rules
 
 1. Read-only. Never run a command that changes files, the index or refs: no
@@ -92,8 +99,10 @@ Return exactly this shape:
 
 Severity: **high** when Claude would take a wrong or unsafe action, or a user relies on a
 false statement (security, writes, network, requirements); **medium** when Claude would
-reason differently across sessions or the user would be misled about behavior; **low** for
-wording that slows Claude down without changing the outcome.
+reason differently across sessions, or a user relying on the docs would be misled about
+what Claude Code actually does or executes (not about the plugin's marketing pitch — that
+stays out of scope per the note above); **low** for wording that slows Claude down without
+changing the outcome.
 
 Order findings by severity, then by file. One finding per defect: when the same defect
 appears in several files, list every location in one row.

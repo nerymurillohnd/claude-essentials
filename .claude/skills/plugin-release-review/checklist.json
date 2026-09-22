@@ -2,13 +2,17 @@
   "skill": "plugin-release-review",
   "items": [
     {
+      "id": "coherence-audit",
+      "text": "plugin-coherence-auditor subagent run for this plugin id and its report read in full; every high/medium finding folded into the fact sheet, consistency, or editorial phases below (evidence: report head SHA, finding count, coverage line)"
+    },
+    {
       "id": "scope",
       "text": "Plugin id and change type identified; CLAUDE.md, the master README template, and the shape template read fresh"
     },
     {
       "id": "floor",
       "text": "make check and make versions pass (evidence: the summary lines)",
-      "verify": "make -s validate"
+      "verify": "make -s check && make -s versions"
     },
     {
       "id": "fact-sheet",
@@ -32,7 +36,7 @@
     },
     {
       "id": "bundled-reviews",
-      "text": "/code-review high on the diff, /security-review when scripts/hooks/MCP/LSP ship, /claude-api prompt-audit on skills and agents; findings fixed or deferred (evidence: summaries)"
+      "text": "/code-review high on the diff, /security-review when scripts/hooks/MCP/LSP ship, /claude-api prompt-audit on skills and agents; findings fixed or deferred (evidence: summaries, or the plugin-design Phase 10 run's summaries if the head SHA hasn't changed since)"
     },
     {
       "id": "report",
@@ -50,7 +54,7 @@
     {
       "id": "final-gate",
       "text": "make check passes after all fixes",
-      "verify": "make -s validate && make -s test-slow"
+      "verify": "make -s check"
     }
   ]
 }

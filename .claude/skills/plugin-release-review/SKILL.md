@@ -8,7 +8,7 @@ hooks:
     - hooks:
         - type: command
           command: '"${CLAUDE_PROJECT_DIR}/.claude/hooks/checklist-gate.sh"'
-          timeout: 300
+          timeout: 600
 ---
 
 # Plugin release review
@@ -37,7 +37,7 @@ end is built from them.
 
 ### Checklist (enforced)
 
-Start the checklist before phase 1, from the repository root:
+Start the checklist before phase 0, from the repository root:
 
 ```bash
 .claude/hooks/lib/checklist.sh start .claude/skills/plugin-release-review/checklist.json "$plugin_id" "${CLAUDE_SESSION_ID}"
@@ -62,6 +62,18 @@ version bump), mark it `checklist.sh needs-user <item-id> "<question>"` and ask;
 the turn can then end, and the item continues when they answer. Use
 `checklist.sh abort "<their words>"` only when the user explicitly says to stop
 the review. `checklist.sh status` shows where the review stands.
+
+### 0. Coherence audit
+
+Dispatch the `plugin-coherence-auditor` subagent on `$plugin_id` (one agent per
+plugin) and read its report in full before anything else. It finds gaps,
+inconsistencies, broken references, ambiguities, discrepancies, and weak
+instructions that would make Claude Code itself reason or act differently —
+that is its scope; a claim that would mislead a *human reader* of the README
+or the catalog is this skill's own scope, covered in phases 4-5. Fold every
+high/medium finding of its report into the fact sheet (phase 3), the
+consistency check (phase 4), or the editorial review (phase 5), whichever it
+matches; don't duplicate the finding, cite it once where it's fixed.
 
 ### 1. Scope
 
@@ -108,6 +120,19 @@ surface status, dates) must agree across `plugin.json`, the
 `marketplace.json` entry, the plugin README, the CHANGELOG, the LICENSE, the
 root README catalog row, the issue-form dropdowns, labels, and tags.
 
+Every row carries a `*(CI: ...)*` tag naming exactly what `make check` already
+proved, seconds ago, in phase 2: cite that run as the evidence for that part
+instead of re-deriving it by hand. The tag never covers the whole cell — read
+the rest of the Notes, wherever it sits (before the tag, after a trailing
+`;`, or both), as the claim no script makes and give that your own read. A
+cell that is nothing but the tag needs no further read at all. Don't let a
+word in the tag itself stand in for the claim: "structure" means row
+presence and order, not that the prose is still accurate; a category
+truly fitting, a minimum being really enforced, "Last verified" being
+honest, and a released CHANGELOG entry never being rewritten are none of
+them caught by any script, however the row is worded. Spend the manual
+read there, not on what `make check` already proved.
+
 ### 5. Editorial review of the README
 
 Read `references/readme-editorial-review.md` and review the README as a
@@ -137,6 +162,10 @@ match. A difference is a finding unless the template changed on purpose.
 1. Run `/code-review high` on the plugin's diff.
 2. Run `/security-review` when the plugin ships scripts, hooks, MCP, or LSP.
 3. Run `/claude-api prompt-audit` on its `SKILL.md` files, agents, and descriptions.
+4. Skip a re-run and cite the earlier summaries instead when `plugin-design`
+   Phase 10 already ran all three against this exact diff and the head SHA
+   hasn't changed since (`git log -1 --format=%H`); any later commit means the
+   diff changed and these run again.
 
 ### 6. Report
 
@@ -188,3 +217,9 @@ prevent each class of finding.
   marketplace on that surface. Unverified is 🧪, and saying so is a feature.
 - **Sell with facts.** The strongest pitch is a concrete scenario, an exact
   effect, and a stated limit. Adjectives ("powerful", "seamless") add nothing.
+- **Independent re-derivation is intentional, not redundant.** `repo-auditor`
+  (checks P2, P3) walks `consistency-matrix.md` and
+  `readme-editorial-review.md` again on its own, rather than trusting this
+  skill's checklist status. That is deliberate defense in depth against a
+  checklist item marked `done` without real evidence — never "optimize away"
+  either pass.

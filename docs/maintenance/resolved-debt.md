@@ -5,6 +5,15 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0038 — 2026-09-22 — `marketplace-governance`'s per-file tables were stale and nothing kept them honest
+
+- **Original pending record:** `pending-debt.md` DEBT-0038 (opened 2026-09-22): the GitHub area table was missing six of its nineteen files, and the skill's own note admitted the tables predated the python-toolchain-and-governance migration (PR #19) with step 10 (rewrite them) explicitly deferred.
+- **Resolved debt:** No generator derived the per-area `| File | Function |` tables from disk, so every module added, renamed or removed after the migration silently drifted. Two areas (Lint, Harness) had no table at all — Harness listed one of its nineteen files by name. The Placement Rule also still said "ten areas" against the eight real `scripts/` folders.
+- **Resolution:** `scripts/harness/governance_docs.py` reads the first line of every governed module's own docstring (all 122+ non-`__init__.py` files already carried one) and rewrites each area's table between a `<!-- governance-docs:<area> -->` marker pair, module immediately followed by its own test, otherwise alphabetical; wired into `make generate` alongside the catalog and issue-form generators, with its own `git diff --exit-code` path. Lint and Harness got their first-ever tables. The Placement Rule now says "eight areas."
+- **Positive verification:** `make check` exits 0 on this branch (`generate`, `lint`, `types`, `test-fast`, `validate`, `validate-cli`, `test-slow`); `scripts/harness/test_governance_docs.py` (14 cases, including `test_the_real_skill_file_is_current` and `test_every_real_area_has_exactly_one_marker_pair`) and the pre-existing `scripts/harness/test_scaffold_map.py` both pass.
+- **Negative verification:** `module_rows` raises `MissingDocstringError`/`UnparsableModuleError` on a seeded module with no docstring or a syntax error; `render` raises `MissingMarkerError` when an area's marker pair is removed; reverting the GitHub table to its stale form and rerunning the generator restores the correct nineteen-row table.
+- **Owner or responsible area:** `scripts/harness/governance_docs.py`, `.claude/skills/marketplace-governance/SKILL.md`, `Makefile`
+
 ### DEBT-0037 — 2026-09-22 — Post-merge audit findings: private paths, stale schema links, an undocumented upgrade
 
 - **Original pending record:** none; `repo-auditor` returned `VERDICT: FAIL` on `a58e326`, and the pull request merged anyway, so these are fixed on a fresh branch per `.claude/rules/plugin-delivery.md`.
