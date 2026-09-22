@@ -38,7 +38,7 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Status:** Pending
 - **Category:** security
 - **Evidence:**
-  - **Confirmed facts:** `plugins/verify-completion/scripts/gate.sh:28-33` accepts `${TMPDIR:-/tmp}/verify-completion-<uid>` when it exists and is writable (`-d`, `-w`), without checking its owner or that it is not a symlink, and `gate.sh:88` then writes empty marker files there with `: >`. Found by the 0.1.2 release review on 2026-09-22; the code predates that release. `shell-quality` and `ruff-quality` already check `-O` and `! -L` for the same fallback.
+  - **Confirmed facts (re-verified 2026-09-22):** `plugins/verify-completion/scripts/gate.sh:28-34` (`state_dir`, line numbers shifted slightly since this was filed) still accepts `${TMPDIR:-/tmp}/verify-completion-<uid>` on `[[ -d ${dir} && -w ${dir} ]]` alone, without `-O` (owned by current user) or `! -L` (not a symlink), and `gate.sh:88` then writes empty marker files there with `: >`. `ruff-quality`'s equivalent (`plugins/ruff-quality/scripts/ruff-gate.sh:48`) checks `[[ -d ${dir} && ! -L ${dir} && -O ${dir} && -w ${dir} ]]`, with the comment "A fallback directory someone else created (or a symlink to one) is never trusted" — confirming the divergence is real and still unresolved.
   - **Inferences:** On a shared `/tmp`, a directory planted under that name could redirect the marker writes through a symlink and truncate a file the user owns. The path is reached only when `CLAUDE_PLUGIN_DATA` is unset, and macOS gives each user a private `TMPDIR`.
   - **Open questions:** Whether any supported Claude Code build leaves `CLAUDE_PLUGIN_DATA` unset for a plugin hook.
 - **Impact / risk:** Low; fallback path on shared-`/tmp` systems only.
@@ -89,20 +89,6 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Review condition:** Close when a settings key that exists only in the shipped schema is reported as undocumented-but-present, verified with `worktree.location` as the reproduction, and covered by an eval case.
 - **Related records:** [design spec](../superpowers/specs/2026-09-20-agent-self-knowledge-design.md), [DEBT-0019](#debt-0019--agent-self-knowledge-ships-a-url-fetcher-with-no-scheme-or-host-validation)
 
-### DEBT-0022 — `claude plugin validate --strict` accepts skill frontmatter that no YAML parser can read
-
-- **Status:** Pending
-- **Category:** tooling
-- **Evidence:**
-  - **Confirmed facts:** On 2026-09-20, four `SKILL.md` files in this repository carried a `description` written as a plain YAML scalar containing a colon followed by a space (`block-no-verify`, `ruff-hooks`, `shell-hooks`, `verify-completion`). The repository's `yaml` dependency rejects all four with `Nested mappings are not allowed in compact mappings at line 2, column 14`. `claude plugin validate --strict` on Claude Code 2.1.278 returned success for every one of them, and the full `npm run check` pipeline passed.
-  - **Inferences:** Claude Code either extracts frontmatter line by line or parses it leniently, so a description that a conforming parser truncates or rejects still loads locally. Any consumer that reads the file with a standard YAML parser — an editor, a linter, a marketplace indexer, a future Claude Code release — would see a different description, or none.
-  - **Open questions:** Which parser Claude Code uses, and whether the leniency is deliberate. Not established: what the runtime actually loads for such a description.
-- **Impact / risk:** The only validator this repository can run against a published plugin does not catch a malformed skill description, which is the field that decides whether the skill is ever invoked. Four plugins were one commit away from publishing it.
-- **Owner or responsible area:** `scripts/plugin_validation/test_frontmatter.py`
-- **Next action:** Report the gap upstream with the reproduction above. Locally, keep the repository's own gate as the authority and extend it if other frontmatter fields turn out to be parsed the same way.
-- **Review condition:** Close when `claude plugin validate --strict` fails a plugin whose skill frontmatter is not valid YAML, verified with the same reproduction.
-- **Related records:** [DEBT-0021](#debt-0021--plugin-name-restrictions-are-undocumented-upstream), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
-
 ### DEBT-0021 — Plugin name restrictions are undocumented upstream
 
 - **Status:** Pending
@@ -117,18 +103,18 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Review condition:** Close when the constraint is reproduced with captured output and written into `docs/contributing/plugins.md`.
 - **Related records:** [ADR-0001](../decisions/adr-0001-marketplace-distribution-model.md)
 
-### DEBT-0018 — The catalog-metadata change shipped without a release review per plugin
+### DEBT-0018 — Plugin release-review checklist records are stale against the plugins' latest commits
 
-- **Status:** Pending
+- **Status:** Pending — re-verified against current repo state 2026-09-22, evidence refreshed (facts below superseded the original 2026-09-20 measurement; this is the same underlying gap, now against a fifth plugin)
 - **Category:** process
 - **Evidence:**
-  - **Confirmed facts:** The branch `chore/repo-audit-and-catalog-metadata` changed the README and `plugin.json` of all four plugins and was pushed straight to `main` (`bump: none`, four plugins exempt). `.claude/rules/plugin-authoring.md` requires re-running `/plugin-release-review <id>` after every change touching runtime files, the README, or `plugin.json`. At the time of the push, `.claude/state/checklists/` held no record for `block-no-verify`, and the records for `ruff-quality` (2026-09-19T12:03:02Z), `shell-quality` (12:08:40Z), and `verify-completion` (09:02:21Z) all predated the last commit touching their plugin (2026-09-20T05:58Z, 05:58Z, 05:47Z) by about 18 hours. None of the three carries the `cross-plugin`, `metadata-fit`, or `bundled-reviews` items added to `.claude/skills/plugin-release-review/checklist.json` in this same branch.
-  - **Inferences:** The substance was covered by two independent `repo-auditor` passes over the same content, which returned PASS on every content row (identity, descriptions, hook and Security tables, README contract, root catalog rows, eval numbers, LICENSE checksums, issue forms) after four content errors they found were fixed. What is missing is the review instrument itself, not a known defect.
-  - **Open questions:** Whether the three new checklist items would surface anything the auditor's matrix does not already cover.
-- **Impact / risk:** Four plugins are published from a state no release review covers, so a gap the review catches but `npm run check` and the auditor do not would reach users unreviewed. The maintainer accepted this explicitly on 2026-09-20, choosing to consolidate and sync `main` first and review afterwards.
+  - **Confirmed facts (2026-09-22):** `.claude/state/checklists/` holds `plugin-release-review--*.json` for `agent-self-knowledge` (mtime 2026-09-21T01:07), `ruff-quality` (2026-09-22T06:06), `shell-quality` (2026-09-19T06:08), and `verify-completion` (2026-09-19T03:02); there is still no record for `block-no-verify` at all. `git log -1 --format=%cI -- plugins/<id>/` gives the last commit touching each plugin: `block-no-verify` 2026-09-22T06:53:17-06:00, `ruff-quality` and `shell-quality` and `agent-self-knowledge` 2026-09-22T07:43:10-06:00, `verify-completion` 2026-09-22T07:22:38-06:00. Every existing record predates its plugin's last commit, and `block-no-verify` has never had one.
+  - **Inferences:** The gap widened rather than closed: the original report covered four plugins (one with no record, three stale by ~18 hours); today it covers five plugins (one still with no record ever, four stale by hours to over a day), because `agent-self-knowledge` joined the catalog and inherited the same pattern.
+  - **Open questions:** Same as originally filed — whether the checklist's newer items (`cross-plugin`, `metadata-fit`, `bundled-reviews`) would surface anything `repo-auditor`'s matrix does not already cover; unresolved because no run has happened since they were added.
+- **Impact / risk:** Five plugins are currently published from a state no release review covers post-dates. The maintainer has repeatedly accepted this trade-off (sync `main` first, review afterwards) across at least two prior instances (2026-09-20, and implicitly again through 2026-09-22's PR #19 merge, per `.claude/state/checklists/` timestamps all predating that merge).
 - **Owner or responsible area:** `.claude/skills/plugin-release-review/`, `.claude/rules/plugin-authoring.md`
-- **Next action:** Run `/plugin-release-review` to completion on `block-no-verify`, `ruff-quality`, `shell-quality`, and `verify-completion` against the content on `main`, and fix whatever they surface in a follow-up change.
-- **Review condition:** Close when all four `.claude/state/checklists/plugin-release-review--<id>.json` records are complete and post-date the last commit touching their plugin.
+- **Next action:** Run `/plugin-release-review` to completion on all five plugins (`agent-self-knowledge`, `block-no-verify`, `ruff-quality`, `shell-quality`, `verify-completion`) against the content on `main`, and fix whatever they surface in a follow-up change.
+- **Review condition:** Close when all five `.claude/state/checklists/plugin-release-review--<id>.json` records are complete and post-date the last commit touching their plugin.
 - **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md), [DEBT-0011](resolved-debt.md#debt-0011--2026-09-19--non-runtime-changes-are-pushed-directly-to-main-the-checks-run-before-the-push), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
 
 ### DEBT-0012 — Plugin hook suites run only against the CI runner's jq
@@ -136,53 +122,25 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Status:** Pending
 - **Category:** quality
 - **Evidence:**
-  - **Confirmed facts:** `verify-completion`'s `analyze.jq` first used `capture(...)?.field` (jq 1.8 syntax) and a variable named `$end` (reserved in jq 1.6). Its 110-case suite passed on the maintainer's jq 1.8.2, failed 55 cases on jq 1.7.1 and failed to compile on jq 1.6 (2026-09-19). After the fix it passes on jq 1.6 (built from the release tarball), 1.7.1, and 1.8.2. `npm test` runs `plugins/**/test-*.sh` only with the `jq` on `PATH`; the GitHub runner provides one version.
-  - **Inferences:** Any plugin that claims "jq ≥ 1.6" (both current plugins do) can regress on older jq without CI noticing; jq 1.6 is what Ubuntu 22.04 ships.
+  - **Confirmed facts:** `verify-completion`'s `analyze.jq` first used `capture(...)?.field` (jq 1.8 syntax) and a variable named `$end` (reserved in jq 1.6). Its 110-case suite passed on the maintainer's jq 1.8.2, failed 55 cases on jq 1.7.1 and failed to compile on jq 1.6 (2026-09-19). After the fix it passes on jq 1.6 (built from the release tarball), 1.7.1, and 1.8.2. Re-verified 2026-09-22: `scripts/plugin_validation/run_plugin_suites.py` (the current Python runner, replacing the removed `npm test` / `scripts/lib/plugin-shell-tests.test.mjs`, wired to `make test-slow`/`make check` at `Makefile:36`) discovers suites via the glob `scripts/plugin_validation/suites/*test-*.sh` (`run_plugin_suites.py:37`) — suites now live at `scripts/plugin_validation/suites/<id>/test-*.sh`, not `plugins/**/test-*.sh` — and runs each against whatever `jq` is first on `PATH`, with no version matrix; grepped every `.github/workflows/*.yml` and the `Makefile` for a jq-version pin or matrix: none exists, so CI still installs and runs against a single `jq`.
+  - **Inferences:** Any plugin that claims "jq ≥ 1.6" (verify-completion's README does; `plugins/verify-completion/README.md` still states the range 1.6–1.8.2) can regress on older jq without CI noticing; jq 1.6 is what Ubuntu 22.04 ships.
   - **Open questions:** Whether to download pinned jq 1.6 and 1.7.1 binaries in CI (Linux x86-64 release assets exist for both) or run the suites in an `ubuntu:22.04` container.
 - **Impact / risk:** A hook that fails to compile fails open, so users on older jq silently lose enforcement.
-- **Owner or responsible area:** `.github/workflows/ci.yml`, `scripts/lib/plugin-shell-tests.test.mjs`
+- **Owner or responsible area:** `.github/workflows/ci.yml`, `scripts/plugin_validation/run_plugin_suites.py`
 - **Next action:** Run every plugin shell suite under each jq version a plugin README claims, with the versions pinned in CI.
 - **Review condition:** Close when CI fails on a jq-1.8-only construct in a plugin that claims jq ≥ 1.6.
 - **Related records:** [verify-completion design](../superpowers/specs/2026-09-19-verify-completion-design.md)
-
-### DEBT-0009 — Released CHANGELOG entries can be rewritten without CI noticing
-
-- **Status:** Pending
-- **Category:** quality
-- **Evidence:**
-  - **Confirmed facts:** In a seeded-defect copy of the repository, the released `## [0.1.0]` entry of `block-no-verify` was edited (a false "Python 3 handler" line) and `npm run check` plus `npm run check:versions` still passed. Only the review skill caught it (2026-09-18).
-  - **Inferences:** A released entry is a record of what shipped under an immutable tag; editing it silently rewrites history for users reading the CHANGELOG.
-  - **Open questions:** Whether `check:versions` should compare each tagged `## [X.Y.Z]` section with its content at tag `<id>--vX.Y.Z`, and how to allow deliberate typo fixes (a label such as `changelog: amend`).
-- **Impact / risk:** Misleading release notes; low frequency.
-- **Owner or responsible area:** `scripts/lib/version-plan.mjs`, `scripts/check-versions.mjs`
-- **Next action:** Extend `check:versions` to diff tagged sections against their tag, with a test and an explicit override label.
-- **Review condition:** Close when CI fails on an edited released entry and the override is documented.
-- **Related records:** DEBT-0008 in [resolved-debt.md](resolved-debt.md)
-
-### DEBT-0006 — The repo marketplace schema rejects `renames: null`
-
-- **Status:** Pending
-- **Category:** correctness
-- **Evidence:**
-  - **Confirmed facts:** In `schemas/marketplace.schema.json`, `renames.additionalProperties` is `{ "type": "string" }`. Ajv rejects `{"renames": {"old": null}}` with `/renames/old must be string` and accepts `{"old": "new"}` (reproduced 2026-09-18). Claude Code documents `null` as the value for a removed plugin ([plugin-marketplaces](https://code.claude.com/docs/en/plugin-marketplaces)). [versioning.md](../contributing/versioning.md) tells contributors to use `null` on removal, and `version-check` requires a `renames` entry for every removed plugin.
-  - **Inferences:** The first plugin removal will fail `npm run validate` while following the documented procedure.
-  - **Open questions:** none.
-- **Impact / risk:** Blocks the documented removal flow. The workaround would be a string value, which misstates the removal as a rename.
-- **Owner or responsible area:** `schemas/marketplace.schema.json`, `scripts/validate-marketplace.mjs`
-- **Next action:** Allow `["string", "null"]` and add a unit test for both values. `schemas/claude-code/marketplace.schema.json` already models this correctly. Planned for phase 1 of the [spec-alignment design](../superpowers/specs/2026-09-18-marketplace-spec-alignment-design.md).
-- **Review condition:** Close when the test passes and a removal fixture validates.
-- **Related records:** [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md)
 
 ### DEBT-0007 — The plugin-shape READMEs link to an `evals/` directory the templates don't ship
 
 - **Status:** Pending
 - **Category:** quality
 - **Evidence:**
-  - **Confirmed facts:** `templates/plugin-{bundle,skill-only,agent-only}/README.md` link to `evals/` in their Verification section. No template contains `evals/` (link check run 2026-09-18, PR #6).
+  - **Confirmed facts:** `templates/plugin-{bundle,skill-only,agent-only}/README.md` still link to `evals/` in their Verification section (re-verified 2026-09-22, exact text: "**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are ..."). None of the three template directories contains an `evals/` subdirectory (`ls templates/plugin-bundle templates/plugin-skill-only templates/plugin-agent-only` each show only `agents/`|`skills/`, `CHANGELOG.md`, `LICENSE`, `README.md`) — unchanged since the debt was filed. By contrast, all five real plugins (`agent-self-knowledge`, `block-no-verify`, `ruff-quality`, `shell-quality`, `verify-completion`) do carry `evals/`, so the eval requirement is enforced for published plugins but the templates that scaffold new ones don't start with it.
   - **Inferences:** A plugin copied from a template ships a broken link until its author adds an eval suite.
   - **Open questions:** The exact grader-file syntax for "skill must not fire" (`tool_used`, `min`/`max`, `arm`) must be verified against [plugin-evals](https://code.claude.com/docs/en/plugin-evals) before scaffolding it.
-- **Impact / risk:** A broken link in every new plugin, and the spec's "evals required" rule is not enforced yet.
-- **Owner or responsible area:** `templates/`, `scripts/lib/`
-- **Next action:** Add a verified `evals/` skeleton (a trigger case and a non-trigger case) to each shape, plus the structural validator. Planned for phase 2 of the [spec-alignment design](../superpowers/specs/2026-09-18-marketplace-spec-alignment-design.md).
-- **Review condition:** Close when every shape ships `evals/`, the link resolves, and `npm run validate` enforces the suite shape.
+- **Impact / risk:** A broken link in every new plugin scaffolded from a template, and no built-in starting point for the eval suite `make validate`'s R-invariants already expect a published plugin to carry.
+- **Owner or responsible area:** `templates/`, `scripts/plugin_validation/`
+- **Next action:** Add a verified `evals/` skeleton (a trigger case and a non-trigger case) to each shape, plus the structural validator.
+- **Review condition:** Close when every shape ships `evals/`, the link resolves, and `make validate` enforces the suite shape.
 - **Related records:** [PR #6](https://github.com/nerymurillohnd/claude-essentials/pull/6)

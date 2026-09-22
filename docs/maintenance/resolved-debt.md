@@ -5,6 +5,42 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0022 — 2026-09-22 — `claude plugin validate --strict` accepts skill frontmatter that no YAML parser can read
+
+- **Original pending record:** `pending-debt.md` DEBT-0022 (opened 2026-09-20): four `SKILL.md` files carried a `description` written as a plain scalar with a colon-space, which the repo's `yaml` dependency rejected while `claude plugin validate --strict` (2.1.278) accepted all four.
+- **Resolved debt:** The repository's own gate had no check for this class of malformed frontmatter, so the only local validator that could catch it before publish didn't.
+- **Resolution:** `scripts/plugin_validation/frontmatter.py` parses every skill's frontmatter with `yaml.safe_load` and raises invariant S1 on a `yaml.YAMLError`; `scripts/plugin_validation/test_frontmatter.py::test_a_plain_scalar_with_a_colon_breaks_the_parse` reproduces the exact defect (`description: a: b Check`) and asserts S1 fires. Wired into `make validate` (repo-verified 2026-09-22, resolution predates this audit).
+- **Positive verification:** `.venv/bin/python -m pytest scripts/plugin_validation/test_frontmatter.py -q -k colon` passes (2026-09-22).
+- **Negative verification:** The test itself is the reproduction: it feeds the frontmatter parser text with an unquoted colon-space in a plain scalar and asserts S1 (parse failure), not a pass — the same input class that `claude plugin validate --strict` was shown to accept in the original report.
+- **Owner or responsible area:** `scripts/plugin_validation/frontmatter.py`, `scripts/plugin_validation/test_frontmatter.py`
+- **Residual risk / follow-up:** The gap between this repo's gate and `claude plugin validate --strict` itself was never reported upstream (the original next action's first half); only the local-gate half was done. Not reopened as pending because the CLI behavior is now moot here — `make validate` fails the case regardless of what `--strict` does.
+- **Related records:** [DEBT-0021](pending-debt.md#debt-0021--plugin-name-restrictions-are-undocumented-upstream), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
+- **Superseded by:** none
+
+### DEBT-0009 — 2026-09-22 — Released CHANGELOG entries are checked against their tagged text
+
+- **Original pending record:** `pending-debt.md` DEBT-0009 (opened 2026-09-18): a seeded-defect test showed a released `## [0.1.0]` entry could be rewritten (a false claim added) while `npm run check` and `npm run check:versions` still passed; only the review skill caught it.
+- **Resolved debt:** Nothing in the automated gate compared a tagged CHANGELOG section's current text against what was published at its tag, so a maintained release note could drift from what actually shipped, silently.
+- **Resolution:** `scripts/versioning/changelog.py` implements invariant C2 (`check_released_bodies`): for every plugin, every released section whose tag exists is re-read from git at that tag (`released_body_at_tag`) and compared verbatim to the working tree's copy; a mismatch is a finding. `scripts/versioning/test_changelog_immutable.py::test_every_released_section_equals_its_text_at_its_tag` runs C2 against every plugin's real CHANGELOG on the current tree, and its docstring states explicitly: "This is the check DEBT-0009 asked for." It is `@pytest.mark.slow`, so it runs under `make test-slow`, which `make check` includes.
+- **Positive verification:** `.venv/bin/python -m pytest scripts/versioning/test_changelog_immutable.py -q` passes (2026-09-22); `make test-slow` is part of `make check`.
+- **Negative verification:** `scripts/versioning/test_changelog.py::test_check_released_bodies_catches_a_rewritten_release` seeds a fixture repo with a released section edited after its tag and asserts `check_released_bodies` reports a finding — `.venv/bin/python -m pytest scripts/versioning/test_changelog.py -q -k released_bodies` passes (2026-09-22), reproducing the original seeded-defect failure this debt was opened from and showing it is now caught.
+- **Owner or responsible area:** `scripts/versioning/changelog.py`, `scripts/versioning/test_changelog_immutable.py`
+- **Residual risk / follow-up:** No override label (an "amend" mechanism for a deliberate typo fix) was added; a genuine correction to a released entry must go under `## [Unreleased]` instead, per C2's own design comment (`changelog.py:12`).
+- **Related records:** DEBT-0008 (superseded reference removed; original mjs tooling this debt was filed against no longer exists — `scripts/lib/version-plan.mjs` and `scripts/check-versions.mjs` were replaced by the Python `scripts/versioning/` package during the toolchain migration)
+- **Superseded by:** none
+
+### DEBT-0006 — 2026-09-22 — The marketplace catalog accepts `renames: null` for a removed plugin
+
+- **Original pending record:** `pending-debt.md` DEBT-0006 (opened 2026-09-18): `schemas/marketplace.schema.json` typed `renames.additionalProperties` as `{"type": "string"}`, so Ajv rejected `{"renames": {"old": null}}` even though Claude Code's own docs and this repo's `versioning.md` document `null` as the required value for a removed plugin.
+- **Resolved debt:** The documented removal flow (map a removed plugin's name to `null` in `renames`) would fail this repo's own validator on the first real removal.
+- **Resolution:** The repo's marketplace validation moved off the Ajv/`.mjs` schema entirely to a Python module (`scripts/marketplace/`, `scripts/versioning/version_plan.py`) during the toolchain migration; no `schemas/marketplace.schema.json` file remains in the repository (confirmed: `find . -iname "*.schema.json"` under the repo now returns only `.github/schemas/issue-forms.schema.json` and `.github/schemas/issue-config.schema.json`, neither of which is the marketplace schema). `version_plan.read_renames` is typed `dict[str, str | None]` and reads the map from JSON, where `null` deserializes to `None` natively; `check_renames` (`scripts/marketplace/catalog.py:299`) implements the check, and `scripts/marketplace/validate_marketplace.py:93` states the contract directly: "`renames` values are a string or null; no key still ships; a null has no README row," enforced as invariant M9.
+- **Positive verification:** `.venv/bin/python -m pytest scripts/marketplace/test_validate_marketplace.py -q -k renames` and `scripts/marketplace/test_catalog.py -k renames` pass (2026-09-22); both suites build fixtures with `catalog["renames"] = {PLUGIN_ID: None}` (a `null` value) and assert on the *other* M9 conditions (a removed plugin must drop its README row, a still-shipping plugin must not appear in `renames`) rather than on the value's type — i.e. `null` is accepted as a normal case, never the thing under test as a rejection.
+- **Negative verification:** `test_check_renames_refuses_a_key_that_still_ships` and `test_m9_fires_on_a_renames_key_that_still_ships` (the latter's docstring: "DEBT-0006: the catalog claimed a rename the tree had not made") confirm M9 still fires on the real defect class (a stale or fabricated rename claim) without rejecting a legitimate `null`.
+- **Owner or responsible area:** `scripts/marketplace/catalog.py`, `scripts/versioning/version_plan.py`
+- **Residual risk / follow-up:** None; the documented removal flow (`docs/contributing/versioning.md`) is unblocked. This resolution happened somewhere in the Python-toolchain migration (PR #19, merged 2026-09-22) and was not itself recorded in `resolved-debt.md` before this audit — recorded now for the first time.
+- **Related records:** [ADR-0003](../decisions/adr-0003-plugin-versioning-and-tagging.md)
+- **Superseded by:** none
+
 ### DEBT-0038 — 2026-09-22 — `marketplace-governance`'s per-file tables were stale and nothing kept them honest
 
 - **Original pending record:** `pending-debt.md` DEBT-0038 (opened 2026-09-22): the GitHub area table was missing six of its nineteen files, and the skill's own note admitted the tables predated the python-toolchain-and-governance migration (PR #19) with step 10 (rewrite them) explicitly deferred.
@@ -131,7 +167,7 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 - **Negative verification:** Rewriting one description as a plain scalar containing a colon followed by a space fails the gate with `Nested mappings are not allowed in compact mappings`, while `claude plugin validate --strict` still passes it — the gap recorded as DEBT-0022.
 - **Owner or responsible area:** `.claude/rules/plugin-authoring.md`, `scripts/lib/skill-frontmatter.test.mjs`, `templates/plugin-*/skills/skill-name/SKILL.md`
 - **Residual risk / follow-up:** The gate checks that frontmatter parses and fits the budget; whether a description opens with an instruction rather than a self-introduction is caught by review, not by a gate. Whether the rewrite changes trigger behaviour is measured by the `claude plugin eval` re-run carried in each plugin's pull request.
-- **Related records:** [ADR-0006](../decisions/adr-0006-changelog-scope-skill-declaration-and-release-tooling.md), [DEBT-0022](pending-debt.md), global memory `bundled-skills-not-authoritative`
+- **Related records:** [ADR-0006](../decisions/adr-0006-changelog-scope-skill-declaration-and-release-tooling.md), [DEBT-0022](#debt-0022--2026-09-22--claude-plugin-validate---strict-accepts-skill-frontmatter-that-no-yaml-parser-can-read) (resolved 2026-09-22), global memory `bundled-skills-not-authoritative`
 - **Superseded by:** none
 
 ### DEBT-0017 — 2026-09-19 — README test-shell variables are checked against the suites that read them
