@@ -5,6 +5,18 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0016 — 2026-09-22 — Python tests and repo scripts have no gates yet
+
+- **Original pending record:** DEBT-0016 in `pending-debt.md` (2026-09-19): the repository's gate ran only `node:test` and bash suites, and nothing linted, type-checked or tested Python.
+- **Resolved debt:** The Node tooling is gone (package.json, Biome, Knip, tsconfig and every `.mjs` removed) and the repository is a uv-managed Python project for development. Every `.py` under `scripts/` is held by Ruff format and check, basedpyright in `all` mode with `failOnWarnings`, and pytest, locally through `make check` and in CI through the same `make` targets after `make setup`.
+- **Resolution:** `Makefile` targets `lint`, `types`, `test-fast` and `test-slow`, all inside `make check`; `.github/workflows/ci.yml` runs `make setup` then `make check`. uv and every tool are pinned by `uv.lock`.
+- **Positive verification:** `make lint` exits 0 on the tree (2026-09-22).
+- **Negative verification:** adding `scripts/common/_neg_probe.py` containing only `import os` makes `make lint` exit 2 with ``F401 `os` imported but unused --> scripts/common/_neg_probe.py:1:8``; removing it returns exit 0.
+- **Owner or responsible area:** `Makefile`, `pyproject.toml`, `.github/workflows/ci.yml`
+- **Residual risk / follow-up:** The review condition also named Python under `plugins/`. That part is not covered yet (`make lint` and `make types` read `scripts/` only) and is tracked, with its evidence, by [DEBT-0029](pending-debt.md).
+- **Related records:** [DEBT-0029](pending-debt.md), [consolidated refactor migration log](../superpowers/specs/2026-09-21-refactor-migration-log.md)
+- **Superseded by:** none
+
 ### DEBT-0025 — 2026-09-20 — A plugin README must document every environment variable its Python scripts read
 
 - **Original pending record:** none. Found during `/plugin-release-review agent-self-knowledge` on 2026-09-20.

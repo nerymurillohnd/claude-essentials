@@ -59,9 +59,6 @@ jobs:
           echo "${RUNNER_TEMP}/claude-code" >>"${GITHUB_PATH}"
           "${RUNNER_TEMP}/claude-code/claude" --version
 
-      - name: Install the plugin Python floor
-        run: uv python install 3.8
-
       # zizmor runs with --offline here as on a laptop (ZIZMOR_OFFLINE in
       # scripts/lint/workflows_files.py): its online audits cannot pass on the untagged
       # validate-plugins pin. No GH_TOKEN is passed because nothing in the gate needs one.

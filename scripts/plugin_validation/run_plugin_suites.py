@@ -5,9 +5,11 @@ macOS ships exactly that at `/bin/bash` while `bash` on `PATH` is usually 5.x. A
 only ever runs under 5.x cannot catch a 3.2 regression, which is the defect this target
 exists for.
 
-The Python floor run is **advisory** until Follow-up PR #1 (`DEBT-0029`): the shipped
-`ccdocs.py` is not yet in `make lint` or `make types`, so making its floor run a gate here
-would fail the pipeline on work that is deliberately scheduled for that pull request.
+Then every shipped Python script is smoke-run once, with this repository's own interpreter.
+That run never installs or downloads an interpreter: a gate that wrote to the maintainer's
+global uv store installed CPython 3.8 there on 2026-09-21. The floor a plugin's README
+declares is therefore reported, not exercised; the line says so, and the run stays
+**advisory** (`DEBT-0029`) because `ccdocs.py` is not yet in `make lint` or `make types`.
 """
 
 from __future__ import annotations
@@ -16,7 +18,6 @@ import argparse
 from dataclasses import dataclass
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import sys
@@ -31,8 +32,17 @@ from scripts.plugin_validation.script_env import SHARED_TEST_BASH
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-SUITE_GLOB: Final = "plugins/*test-*.sh"
-"""Every tracked plugin suite; `tracked_files` matches `*` across directory separators."""
+SUITE_GLOBS: Final[tuple[str, ...]] = (
+    "scripts/plugin_validation/suites/*test-*.sh",
+    "plugins/*test-*.sh",
+)
+"""Where plugin suites live; `tracked_files` matches `*` across directory separators.
+
+A suite belongs to the repository (`scripts/plugin_validation/suites/<id>/`), never to the
+plugin, because a plugin ships only what users run. The `plugins/` pattern remains for one
+exception: `block-no-verify`'s installer runs its own suite at install time, so there the
+suite is runtime (ADR-0007).
+"""
 
 FALLBACK_BASH: Final = "/bin/bash"
 """The system interpreter macOS ships, which is the 3.2 floor the plugins target."""
@@ -44,10 +54,7 @@ PYTHON_ROW: Final = "python"
 """The Requirements label that carries a plugin's declared Python floor."""
 
 ADVISORY_PREFIX: Final = "DEBT-0029 advisory:"
-"""Every line of the Python floor run carries this, so nothing reads it as a gate result."""
-
-DOWNLOADABLE: Final = re.compile(r"cpython-(?P<version>3\.\d+)\.")
-"""A version `uv python list --only-downloads` offers, used when the declared floor is gone."""
+"""Every line of the Python smoke run carries this, so nothing reads it as a gate result."""
 
 SMOKE_ARGUMENT: Final = "--help"
 """The one argument a shipped script is smoke-tested with; it must not touch the network."""
@@ -93,7 +100,8 @@ def suites(root: Path) -> list[str]:
     Returns:
         Sorted repository-relative paths.
     """
-    return [rel for rel in tracked_files(root, SUITE_GLOB) if "/test-" in rel]
+    found = {rel for pattern in SUITE_GLOBS for rel in tracked_files(root, pattern)}
+    return sorted(rel for rel in found if "/test-" in rel)
 
 
 def run_suite(root: Path, suite: str, interpreter: str) -> SuiteResult:
@@ -166,51 +174,11 @@ def declared_python_floor(root: Path, plugin_id: str) -> str | None:
     return None
 
 
-def uv_binary() -> str | None:
-    """Resolve `uv`, which installs the interpreter a plugin's floor names.
-
-    `uv` is maintainer tooling and is never required of a user; the floor run is skipped
-    when it is absent.
-
-    Returns:
-        Its path, or None.
-    """
-    found = shutil.which("uv")
-    if found is not None:
-        return found
-    candidate = Path.home() / ".local" / "bin" / "uv"
-    return str(candidate) if candidate.is_file() else None
-
-
-def _uv(binary: str, args: Sequence[str]) -> tuple[int, str, str]:
-    """Run `uv` and capture what it said, keeping the two streams apart.
-
-    `uv python find` writes its diagnostics to standard error and only the interpreter path
-    to standard output, so a merged capture would hand a warning back as a path.
-
-    Args:
-        binary: The resolved `uv` path.
-        args: Arguments after the binary.
-
-    Returns:
-        Its exit status, its standard output and its standard error, all stripped.
-    """
-    try:
-        completed = subprocess.run(
-            ["/usr/bin/uv", *args],
-            executable=binary,
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=SUITE_TIMEOUT,
-        )
-    except (OSError, subprocess.TimeoutExpired) as error:
-        return 1, "", str(error)
-    return completed.returncode, completed.stdout.strip(), completed.stderr.strip()
-
-
 def floor_run(root: Path, plugin_id: str) -> list[str]:
-    """Run a plugin's shipped Python under the floor its README declares (advisory).
+    """Smoke-run a plugin's shipped Python with this repository's interpreter (advisory).
+
+    Nothing is installed: the interpreter is the one running this module. The README's
+    declared floor is named so a reader never mistakes this run for a floor check.
 
     Args:
         root: The repository root.
@@ -223,76 +191,15 @@ def floor_run(root: Path, plugin_id: str) -> list[str]:
     if not scripts:
         return []
     floor = declared_python_floor(root, plugin_id)
-    if floor is None:
-        return [f"{ADVISORY_PREFIX} {plugin_id} ships Python but its README declares no floor"]
-    binary = uv_binary()
-    if binary is None:
-        return [
-            f"{ADVISORY_PREFIX} {plugin_id}: `uv` is not available, floor {floor} not exercised"
-        ]
-    return _floor_lines(root, plugin_id, floor, binary, scripts)
-
-
-def _floor_lines(
-    root: Path, plugin_id: str, floor: str, binary: str, scripts: Sequence[str]
-) -> list[str]:
-    """Install the declared interpreter and smoke every shipped script under it.
-
-    Args:
-        root: The repository root.
-        plugin_id: The plugin directory name.
-        floor: The declared minimum version.
-        binary: The resolved `uv` path.
-        scripts: The plugin's shipped `.py` files.
-
-    Returns:
-        The advisory lines, starting with what `uv python install` reported.
-    """
-    status, out, err = _uv(binary, ["python", "install", floor])
-    said = (err or out).splitlines()[-1] if (err or out) else ""
-    lines = [f"{ADVISORY_PREFIX} uv python install {floor} -> exit {status}: {said}"]
-    requested = floor
-    found_status, found, found_err = _uv(binary, ["python", "find", floor])
-    if found_status != 0 or not found:
-        lowest = lowest_available(binary)
-        if lowest is None:
-            lines.append(f"{ADVISORY_PREFIX} {plugin_id}: no interpreter for {floor}: {found_err}")
-            return lines
-        lines.append(
-            f"{ADVISORY_PREFIX} {plugin_id}: {floor} is not downloadable;"
-            f" falling back to the lowest uv offers, {lowest}"
-        )
-        requested = lowest
-        _install = _uv(binary, ["python", "install", lowest])
-        found_status, found, found_err = _uv(binary, ["python", "find", lowest])
-        if found_status != 0 or not found:
-            lines.append(f"{ADVISORY_PREFIX} {plugin_id}: no interpreter for {lowest}: {found_err}")
-            return lines
-    interpreter = found.splitlines()[-1].strip()
-    lines.append(f"{ADVISORY_PREFIX} {plugin_id}: interpreter {interpreter} (Python {requested})")
-    lines.extend(_smoke_line(root, interpreter, script) for script in scripts)
+    running = f"{sys.version_info.major}.{sys.version_info.minor}"
+    declared = f"its README declares {floor}" if floor else "its README declares no floor"
+    header = (
+        f"{ADVISORY_PREFIX} {plugin_id}: smoke run under Python {running} only;"
+        f" {declared}, which is not exercised"
+    )
+    lines = [header]
+    lines.extend(_smoke_line(root, sys.executable, script) for script in scripts)
     return lines
-
-
-def lowest_available(binary: str) -> str | None:
-    """Return the lowest CPython minor version `uv` can still download.
-
-    A plugin may declare a floor older than anything `uv` publishes a build for; running the
-    script under the lowest available interpreter is still worth more than not running it.
-
-    Args:
-        binary: The resolved `uv` path.
-
-    Returns:
-        A `3.x` version, or None when the listing cannot be read.
-    """
-    status, out, err = _uv(binary, ["python", "list", "--only-downloads"])
-    if status != 0:
-        return None
-    versions = {match.group("version") for match in DOWNLOADABLE.finditer(out + err)}
-    if not versions:
-        return None
-    return min(versions, key=lambda value: int(value.split(".")[1]))
 
 
 def _smoke_line(root: Path, interpreter: str, script: str) -> str:

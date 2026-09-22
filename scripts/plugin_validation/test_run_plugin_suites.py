@@ -1,4 +1,4 @@
-"""Every plugin suite, under every bash that matters, plus the advisory floor run.
+"""Every plugin suite, under every bash that matters, plus the advisory Python smoke run.
 
 The parameter ids carry the interpreter path, so `pytest -m slow -v -k plugin_suites` shows
 which bash each suite ran under. That is the evidence the 3.2 floor is actually exercised,
@@ -8,19 +8,20 @@ and not merely claimed.
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 from typing import TYPE_CHECKING
 
 import pytest
 
 from scripts.common.plugins import repo_root
+from scripts.plugin_validation import run_plugin_suites
 from scripts.plugin_validation.run_plugin_suites import (
     FALLBACK_BASH,
     declared_python_floor,
+    floor_run,
     interpreters,
-    lowest_available,
     run_suite,
     suites,
-    uv_binary,
 )
 from scripts.plugin_validation.script_env import SHARED_TEST_BASH
 
@@ -81,12 +82,16 @@ def test_the_shared_fallback_is_the_variable_the_suites_read() -> None:
     assert all(SHARED_TEST_BASH in text for text in texts)
 
 
-@pytest.mark.slow
-def test_the_floor_fallback_names_a_version_uv_can_install() -> None:
-    """When a declared floor predates uv's builds, the run says so and uses the lowest."""
-    binary = uv_binary()
-    if binary is None:
-        pytest.skip("uv is not available")
-    lowest = lowest_available(binary)
-    assert lowest is not None
-    assert lowest.startswith("3.")
+def test_the_python_smoke_run_never_installs_an_interpreter() -> None:
+    """A gate that installs interpreters mutates the maintainer's machine (2026-09-21: 3.8).
+
+    The module may not ask `uv` for anything, and a plugin that ships Python gets one line
+    naming the interpreter it really ran under.
+    """
+    source = Path(run_plugin_suites.__file__).read_text(encoding="utf-8")
+    for forbidden in ("python install", "python find", "only-downloads", '"uv"'):
+        assert forbidden not in source, forbidden
+    lines = floor_run(repo_root(), "agent-self-knowledge")
+    running = f"{sys.version_info.major}.{sys.version_info.minor}"
+    assert f"smoke run under Python {running} only" in lines[0]
+    assert "which is not exercised" in lines[0]

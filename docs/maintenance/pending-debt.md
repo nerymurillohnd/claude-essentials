@@ -12,11 +12,13 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Evidence:**
   - **Confirmed facts:** `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py` is the only Python file any plugin ships. `git ls-files -s` records it as `100644` although it declares `#!/usr/bin/env python3`, which is the `EXE001` shape; `scripts/plugin_validation/runtime_boundary.py` reports it as a **warning** tagged `DEBT-0029` rather than an error. `PY_FILES` in the `Makefile` and `include` in `[tool.basedpyright]` both cover `scripts/` only, so `make lint` and `make types` never read the file. `run_plugin_suites` exercises it under the floor its README declares, but prints every line with the prefix `DEBT-0029 advisory:` and never changes the target's exit status. Measured on 2026-09-21: `uv python install 3.7` fails with `No download found for request: cpython-3.7-macos-aarch64-none`, so the runner falls back to 3.8, the lowest version uv publishes a build for, and `ccdocs.py --help` exits 0 under it.
   - **Inferences:** Until the file is inside the lint, type and floor gates, a regression in the one script users actually execute would land without any check refusing it. The floor the README advertises (3.7) is also not the floor that is exercised (3.8).
+  - **Update 2026-09-21:** the exec-bit half is closed. `ccdocs.py` is tracked as `100755` (agent-self-knowledge 0.1.1, content unchanged from 0.1.0), and B1 now reports a shipped script whose shebang lacks the exec bit as an **error** rather than a warning tagged with this entry; `test_a_script_without_the_exec_bit_is_refused` and `test_the_shipped_python_carries_its_exec_bit` pin both. The lint, type and floor gates below are still open.
+  - **Update 2026-09-22:** the floor run no longer installs any interpreter: on 2026-09-21 it had written CPython 3.8 into the maintainer's global uv store (`~/.local/bin/python3.8` included), and CI installed 3.8 the same way. It now smoke-runs `ccdocs.py --help` under the repository's own interpreter (3.14) and prints that the declared 3.7 floor is not exercised; `test_the_python_smoke_run_never_installs_an_interpreter` fails if `run_plugin_suites.py` asks uv for anything again. The `uv python install 3.8` steps are gone from `ci.yml` and `nightly.yml`. Still open: `make lint`/`make types` over `plugins/**/*.py`, and a floor check that never writes to a maintainer's machine.
   - **Open questions:** Whether the declared floor should move to 3.9, the oldest CPython still receiving builds and security support, which would make the advertised floor and the tested floor the same number.
 - **Impact / risk:** Low frequency, high blast radius: the script runs on every installer's machine with a `Bash` grant that needs no per-command approval ([DEBT-0019](#debt-0019--agent-self-knowledge-ships-a-url-fetcher-with-no-scheme-or-host-validation)).
 - **Owner or responsible area:** `scripts/plugin_validation/runtime_boundary.py`, `scripts/plugin_validation/run_plugin_suites.py`, `Makefile`, `pyproject.toml`
-- **Next action:** In Follow-up PR #1, widen `PY_FILES` and basedpyright `include` to `plugins/**/*.py`, add the `executionEnvironments` entry that pins the plugin tree to its declared floor, give `ccdocs.py` the exec bit, and turn the B1 warning and the floor run into errors.
-- **Review condition:** Close when `make lint types` read `ccdocs.py`, `run_plugin_suites` fails the target on a floor-run failure, and the B1 finding for that file is gone rather than downgraded.
+- **Next action:** In Follow-up PR #1, widen `PY_FILES` and basedpyright `include` to `plugins/**/*.py`, add the `executionEnvironments` entry that pins the plugin tree to its declared floor, and turn the floor run into an error.
+- **Review condition:** Close when `make lint types` read `ccdocs.py`, `run_plugin_suites` fails the target on a floor-run failure, and the B1 finding for that file is gone rather than downgraded (done 2026-09-21).
 - **Related records:** [DEBT-0019](#debt-0019--agent-self-knowledge-ships-a-url-fetcher-with-no-scheme-or-host-validation), [ADR-0001](../decisions/adr-0001-marketplace-distribution-model.md)
 
 ### DEBT-0019 — `agent-self-knowledge` ships a URL fetcher with no scheme or host validation
@@ -56,7 +58,7 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
   - **Inferences:** Claude Code either extracts frontmatter line by line or parses it leniently, so a description that a conforming parser truncates or rejects still loads locally. Any consumer that reads the file with a standard YAML parser — an editor, a linter, a marketplace indexer, a future Claude Code release — would see a different description, or none.
   - **Open questions:** Which parser Claude Code uses, and whether the leniency is deliberate. Not established: what the runtime actually loads for such a description.
 - **Impact / risk:** The only validator this repository can run against a published plugin does not catch a malformed skill description, which is the field that decides whether the skill is ever invoked. Four plugins were one commit away from publishing it.
-- **Owner or responsible area:** `scripts/lib/skill-frontmatter.test.mjs`
+- **Owner or responsible area:** `scripts/plugin_validation/test_frontmatter.py`
 - **Next action:** Report the gap upstream with the reproduction above. Locally, keep the repository's own gate as the authority and extend it if other frontmatter fields turn out to be parsed the same way.
 - **Review condition:** Close when `claude plugin validate --strict` fails a plugin whose skill frontmatter is not valid YAML, verified with the same reproduction.
 - **Related records:** [DEBT-0021](#debt-0021--plugin-name-restrictions-are-undocumented-upstream), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
@@ -88,20 +90,6 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Next action:** Run `/plugin-release-review` to completion on `block-no-verify`, `ruff-quality`, `shell-quality`, and `verify-completion` against the content on `main`, and fix whatever they surface in a follow-up change.
 - **Review condition:** Close when all four `.claude/state/checklists/plugin-release-review--<id>.json` records are complete and post-date the last commit touching their plugin.
 - **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md), [DEBT-0011](resolved-debt.md#debt-0011--2026-09-19--non-runtime-changes-are-pushed-directly-to-main-the-checks-run-before-the-push), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
-
-### DEBT-0016 — Python tests and repo scripts have no gates yet
-
-- **Status:** Pending
-- **Category:** tooling
-- **Evidence:**
-  - **Confirmed facts:** The maintainer's environment standard (global CLAUDE.md) runs Python through uv (`#!/usr/bin/env -S uv run --script` with inline dependencies) and gates every Python file with Ruff and Basedpyright. This repo's `npm run check` and CI run only `node:test` and bash suites; nothing installs uv or runs pytest or Basedpyright (2026-09-19). The basedpyright-quality design plans a Python gate core with pytest.
-  - **Inferences:** A Python test or script added today would pass CI unlinted and untested.
-  - **Open questions:** Whether CI installs uv with `astral-sh/setup-uv` (pinned by SHA) or reuses the pinned Ruff install.
-- **Impact / risk:** Python code in plugins or tests would escape the gates every other language has.
-- **Owner or responsible area:** `package.json` scripts, `.github/workflows/ci.yml`, `scripts/lint-*.mjs`
-- **Next action:** Add `lint:py` (Ruff format and check, Basedpyright) and pytest via `uv run --script` to `npm run check` and CI, with uv pinned.
-- **Review condition:** Close when CI fails on a Ruff, Basedpyright, or pytest error in a Python file under `plugins/` or `scripts/`.
-- **Related records:** [basedpyright-quality design](../superpowers/specs/2026-09-19-basedpyright-quality-design.md)
 
 ### DEBT-0012 — Plugin hook suites run only against the CI runner's jq
 

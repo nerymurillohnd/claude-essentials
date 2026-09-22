@@ -66,11 +66,6 @@ jobs:
           echo "${RUNNER_TEMP}/claude-code" >>"${GITHUB_PATH}"
           "${RUNNER_TEMP}/claude-code/claude" --version
 
-      # The lowest interpreter uv can still download; agent-self-knowledge declares 3.7
-      # (DEBT-0029), so run_plugin_suites falls back to this one.
-      - name: Install the plugin Python floor
-        run: uv python install 3.8
-
       # zizmor runs with --offline here as on a laptop (ZIZMOR_OFFLINE in
       # scripts/lint/workflows_files.py): its online audits cannot pass on the untagged
       # validate-plugins pin. No GH_TOKEN is passed because nothing in the gate needs one.

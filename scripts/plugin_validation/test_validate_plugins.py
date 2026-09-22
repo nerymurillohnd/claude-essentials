@@ -192,10 +192,12 @@ def seed_eval_table(root: Path) -> None:
     _edit(
         path,
         "## 🧭 Compatibility",
-        "| Case | Checks | With | Without | Δ | Last run |\n"
-        "| --- | --- | ---: | ---: | ---: | --- |\n"
-        "| `fires` | It fires | 1.00 | 0.00 | +1.00 | 2026-09-20 |\n\n"
-        "## 🧭 Compatibility",
+        (
+            "| Case | Checks | With | Without | Δ | Last run |\n"
+            "| --- | --- | ---: | ---: | ---: | --- |\n"
+            "| `fires` | It fires | 1.00 | 0.00 | +1.00 | 2026-09-20 |\n\n"
+            "## 🧭 Compatibility"
+        ),
     )
 
 

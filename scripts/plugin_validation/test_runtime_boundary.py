@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from scripts.common.plugins import plugin_ids, repo_root
 from scripts.plugin_validation.conftest import PLUGIN_ID, track
 from scripts.plugin_validation.runtime_boundary import (
-    DEBT_TAG,
     check_forbidden,
     check_imports,
     check_shebangs,
@@ -16,6 +15,7 @@ from scripts.plugin_validation.runtime_boundary import (
     invoked_binaries,
     python_commands,
     shell_commands,
+    shipped_scripts,
 )
 
 if TYPE_CHECKING:
@@ -95,11 +95,24 @@ def test_a_non_stdlib_import_is_refused(scratch: Path) -> None:
     assert "B1" in [finding.invariant_id for finding in check_imports(scratch, PLUGIN_ID)]
 
 
-def test_the_shipped_python_is_reported_as_advisory_debt() -> None:
-    """`ccdocs.py` declares a shebang without the exec bit; that is Follow-up PR #1."""
-    findings = check_shebangs(repo_root(), "agent-self-knowledge")
-    assert [(finding.path, finding.severity) for finding in findings] == [(CCDOCS, "warning")]
-    assert DEBT_TAG in findings[0].message
+def test_a_script_without_the_exec_bit_is_refused(scratch: Path) -> None:
+    """A shebang the file mode cannot honour is an error, not advice.
+
+    Args:
+        scratch: The scratch repository root.
+    """
+    path = scratch / "plugins" / PLUGIN_ID / "hooks" / "helper.py"
+    track(scratch, path, "#!/usr/bin/env python3\nprint('hi')\n")
+    findings = check_shebangs(scratch, PLUGIN_ID)
+    assert [(finding.path, finding.severity) for finding in findings] == [
+        (str(path.relative_to(scratch)), "error")
+    ]
+
+
+def test_the_shipped_python_carries_its_exec_bit() -> None:
+    """`ccdocs.py` is tracked as executable, so its shebang holds."""
+    assert CCDOCS in shipped_scripts(repo_root(), "agent-self-knowledge")
+    assert check_shebangs(repo_root(), "agent-self-knowledge") == []
 
 
 def test_every_shipped_plugin_stays_inside_the_boundary() -> None:

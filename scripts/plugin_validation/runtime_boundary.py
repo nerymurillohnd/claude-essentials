@@ -76,19 +76,17 @@ Everything POSIX and every coreutil (`sed`, `awk`, `grep`, `find`, `mktemp`, `pr
 deliberately absent: a requirement row for them would say nothing a reader can act on.
 """
 
-DEBT_TAG: Final = "DEBT-0029"
-"""The ledger entry that keeps the shipped Python findings advisory until Follow-up PR #1."""
-
 MESSAGE_STRING: Final = re.compile(r'"(?:\\.|[^"\\])*"')
 """A double-quoted shell string; only those without a substitution are treated as prose."""
 
 SUBSTITUTION: Final = re.compile(r"\$\(|`")
 """A command substitution, which keeps a double-quoted segment in the scan."""
 
-COMMAND_POSITION: Final = re.compile(
+_COMMAND_POSITION_PATTERN: Final = (
     r"(?:^|[\n;&|(){}]|&&|\|\||\b(?:then|else|elif|do|fi|done|exec|command|env)\s)\s*"
     r"(?P<binary>[A-Za-z][\w.-]*)"
 )
+COMMAND_POSITION: Final = re.compile(_COMMAND_POSITION_PATTERN)
 """A word in command position: at the start of a line or after an operator or keyword."""
 
 PYTHON_SUFFIX: Final = ".py"
@@ -232,8 +230,8 @@ def check_shebangs(root: Path, plugin_id: str) -> list[Finding]:
         plugin_id: The plugin directory name.
 
     Returns:
-        An error per script with an interpreter a user may not have, and a warning tagged
-        with the debt entry per shipped `.py` that declares a shebang without the exec bit.
+        An error per script with no shebang, with an interpreter a user may not have, or
+        without the exec bit its shebang needs.
     """
     findings: list[Finding] = []
     for rel in shipped_scripts(root, plugin_id):
@@ -249,12 +247,7 @@ def check_shebangs(root: Path, plugin_id: str) -> list[Finding]:
             continue
         if git_mode(root, rel) != EXECUTABLE_MODE:
             findings.append(
-                Finding(
-                    "B1",
-                    rel,
-                    f"declares a shebang but is not tracked as {EXECUTABLE_MODE} ({DEBT_TAG})",
-                    "warning",
-                )
+                Finding("B1", rel, f"declares a shebang but is not tracked as {EXECUTABLE_MODE}")
             )
     return findings
 
