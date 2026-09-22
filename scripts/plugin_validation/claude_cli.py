@@ -44,6 +44,30 @@ def executable() -> str:
     return found
 
 
+TEMPLATE_SHAPES_DIR: Final = "templates"
+"""Where the plugin shapes live; each carries a `.claude-plugin/plugin.json`."""
+
+
+def template_shapes(root: Path) -> list[str]:
+    """List the template folders that are plugin-shaped.
+
+    Anthropic's `validate-plugins` action treats every folder holding a
+    `.claude-plugin/plugin.json` as a plugin and validates it when it changes, so the
+    shapes under `templates/` must pass the same `--strict` check the plugins do. Found
+    in CI on 2026-09-22: the shapes' `REPLACE-WITH-*` names were not kebab-case.
+
+    Args:
+        root: The repository root.
+
+    Returns:
+        `templates/<shape>` for every shape with a manifest, sorted.
+    """
+    return sorted(
+        manifest.parent.parent.relative_to(root).as_posix()
+        for manifest in (root / TEMPLATE_SHAPES_DIR).glob("*/.claude-plugin/plugin.json")
+    )
+
+
 def targets(root: Path, plugin_ids_: Sequence[str]) -> list[str]:
     """List what `claude plugin validate` is run against.
 
@@ -52,10 +76,14 @@ def targets(root: Path, plugin_ids_: Sequence[str]) -> list[str]:
         plugin_ids_: The plugin directory names.
 
     Returns:
-        The marketplace root followed by each plugin directory, as relative paths.
+        The marketplace root, each plugin directory, then each plugin-shaped template,
+        as relative paths.
     """
-    _ = root
-    return [MARKETPLACE_TARGET, *(f"plugins/{plugin_id}" for plugin_id in plugin_ids_)]
+    return [
+        MARKETPLACE_TARGET,
+        *(f"plugins/{plugin_id}" for plugin_id in plugin_ids_),
+        *template_shapes(root),
+    ]
 
 
 def validate(root: Path, target: str) -> tuple[bool, str]:

@@ -31,7 +31,7 @@ APACHE_2_0_SHA256: Final = "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb00
 KIND_LINE: Final = re.compile(r"^\*\*Kind:\*\*\s+`(?P<kind>[a-z-]+)`")
 """The README line P1 reads, as the plugin README template writes it."""
 
-PLACEHOLDER: Final = re.compile(r"(?<!\$)\{\{|REPLACE-WITH-[A-Z0-9-]+")
+PLACEHOLDER: Final = re.compile(r"(?<!\$)\{\{|(?i:REPLACE-WITH-[A-Z0-9-]+)")
 """A template leftover: `{{…}}` not preceded by `$`, or a retired `REPLACE-WITH-*` token."""
 
 SKILL_FILE: Final = "SKILL.md"

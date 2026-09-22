@@ -20,7 +20,7 @@ from scripts.common.plugins import working_files
 if TYPE_CHECKING:
     from pathlib import Path
 
-PLACEHOLDER: Final = re.compile(r"(?<!\$)\{\{|REPLACE-WITH-[A-Z0-9-]+")
+PLACEHOLDER: Final = re.compile(r"(?<!\$)\{\{|(?i:REPLACE-WITH-[A-Z0-9-]+)")
 """The same pattern the plugin validator uses for P4, so both halves agree."""
 
 CODE_SPAN: Final = re.compile(r"`[^`]*`")

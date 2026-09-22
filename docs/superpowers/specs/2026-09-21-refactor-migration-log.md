@@ -2291,7 +2291,7 @@ from the pull request head is checked out or executed with the write token.
   All checks passed!
   lint: every file passes (0 warning(s))
   0 errors, 0 warnings, 0 notes
-  899 passed, 1 skipped, 274 deselected, 2 warnings in 7.99s
+  901 passed, 1 skipped, 274 deselected, 2 warnings in 9.26s
   marketplace catalog: M1-M10 pass
   B1 plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py: declares a shebang but is not tracked as 100755 (DEBT-0029)
   plugins: every invariant passes (1 warning(s))
@@ -2307,7 +2307,7 @@ from the pull request head is checked out or executed with the write token.
         ✔ Validation passed
   pass  claude plugin validate plugins/verify-completion --strict
         ✔ Validation passed
-  273 passed, 901 deselected, 2 warnings in 69.19s (0:01:09)
+  273 passed, 903 deselected, 2 warnings in 64.48s (0:01:04)
   pass  plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh  [/opt/homebrew/bin/bash]  PASS
   pass  plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh  [/bin/bash]  PASS
   pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh  [/opt/homebrew/bin/bash]  PASS
@@ -2324,71 +2324,27 @@ from the pull request head is checked out or executed with the write token.
   DEBT-0029 advisory: agent-self-knowledge: 3.7 is not downloadable; falling back to the lowest uv offers, 3.8
   DEBT-0029 advisory: agent-self-knowledge: interpreter /Users/nerymurillohnd/.local/share/uv/python/cpython-3.8-macos-aarch64-none/bin/python3.8 (Python 3.8)
   DEBT-0029 advisory: plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py --help -> exit 0
-  make check  131.77s user 141.69s system 95% cpu 4:46.35 total
+  make check  117.11s user 107.50s system 96% cpu 3:53.04 total
   exit=0
   ```
 
-- [x] `git status --short` and `git diff --stat`, taken before this block was written (so the log's own line count excludes it); nothing committed
+- [x] `git status --short` and `git diff --stat`, taken before this block was written (so the log's own line count excludes it). The orchestrator committed and pushed the step-7 files as `6dd6690` while the final re-run was in progress, so only this log's refreshed evidence is uncommitted here
 
   ```text
   $ git status --short
-  ## refactor/python-toolchain-and-governance
-   M .github/dependabot.yml
-   M .github/labels.json
-   M .github/workflows/ci.yml
-   M .github/workflows/labels.yml
-   M .github/workflows/stale.yml
-   M .github/workflows/tag-versions.yml
-   M .github/workflows/triage.yml
+  ## refactor/python-toolchain-and-governance...origin/refactor/python-toolchain-and-governance
    M docs/superpowers/specs/2026-09-21-refactor-migration-log.md
-   M scripts/github/labels.py
-   M scripts/github/repo_metadata.py
-   M scripts/github/test_labels.py
-   M scripts/github/test_repo_metadata.py
-   M scripts/github/test_triage.py
-   M scripts/github/triage.py
-   M scripts/hygiene/test_tooling_alignment.py
-   M scripts/lint/test_workflows_files.py
-   M scripts/lint/workflows_files.py
-   M scripts/plugin_validation/test_validate_plugins.py
-   M scripts/plugin_validation/validate_plugins.py
-   M scripts/versioning/check_versions.py
-   M scripts/versioning/conftest.py
-   M scripts/versioning/test_check_versions.py
-   M scripts/versioning/test_version_plan.py
-   M scripts/versioning/version_plan.py
-  ?? .github/workflows/close-external-prs.yml
-  ?? .github/workflows/evals.yml
-  ?? .github/workflows/nightly.yml
-  ?? scripts/github/install_claude_code.py
-  ?? scripts/github/test_install_claude_code.py
   $ git diff --stat
-   .github/dependabot.yml                             |  17 +-
-   .github/labels.json                                |  16 +-
-   .github/workflows/ci.yml                           | 200 ++++++------
-   .github/workflows/labels.yml                       |  27 +-
-   .github/workflows/stale.yml                        |  11 +-
-   .github/workflows/tag-versions.yml                 |  63 ++--
-   .github/workflows/triage.yml                       |  56 +++-
-   .../specs/2026-09-21-refactor-migration-log.md     | 338 +++++++++++++++++++++
-   scripts/github/labels.py                           |  10 +-
-   scripts/github/repo_metadata.py                    | 108 ++++---
-   scripts/github/test_labels.py                      |  24 +-
-   scripts/github/test_repo_metadata.py               |  76 +++--
-   scripts/github/test_triage.py                      |  73 ++++-
-   scripts/github/triage.py                           |  53 ++--
-   scripts/hygiene/test_tooling_alignment.py          |  20 +-
-   scripts/lint/test_workflows_files.py               |  55 ++--
-   scripts/lint/workflows_files.py                    | 149 ++++++---
-   scripts/plugin_validation/test_validate_plugins.py |  17 +-
-   scripts/plugin_validation/validate_plugins.py      |   4 +
-   scripts/versioning/check_versions.py               |  23 +-
-   scripts/versioning/conftest.py                     |  67 ++++
-   scripts/versioning/test_check_versions.py          |  35 ++-
-   scripts/versioning/test_version_plan.py            | 118 +++++--
-   scripts/versioning/version_plan.py                 | 146 ++++++---
-   24 files changed, 1307 insertions(+), 399 deletions(-)
+   docs/superpowers/specs/2026-09-21-refactor-migration-log.md | 13 ++++++++++---
+   1 file changed, 10 insertions(+), 3 deletions(-)
   ```
+
+- **Incident, repaired (2026-09-22).** The first draft of `test_the_zizmor_command_line_carries_offline`
+  wrote an empty file to the `tree` fixture's `.venv/bin/zizmor`, which is a symlink to the real
+  binary, and truncated `.venv/bin/zizmor` to 0 bytes; the next `make check` failed in `lint`
+  with ``error: `…/.venv/bin/zizmor` is not on PATH``. Repaired with
+  `uv sync --locked --reinstall-package zizmor` (`zizmor 1.30.1`, 22941440 bytes again); the
+  test no longer writes anything and says why. The gate below ran after the repair.
 
 ### Workflows
 
@@ -2424,3 +2380,11 @@ from the pull request head is checked out or executed with the write token.
 - Installer claim checked against the live setup page: "Binary integrity and code signing" publishes fingerprint `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`, the value `install_claude_code.FINGERPRINT` enforces.
 - `make -s versions` → `Computed label: bump: none`.
 - Maintainer push authorization: "Push y PR con el automatic lifecycle" (2026-09-22).
+
+### PR #19 first CI run — two real failures, fixed at the root (2026-09-22)
+
+- `check` failed on Ubuntu: `test_the_system_bash_is_included` expected the string `/bin/bash`, but on a merged-/usr runner `/bin/bash` and `/usr/bin/bash` are one file and the runner keeps one interpreter per file. The test now compares resolved files. The suites still run under `bash` from PATH and under the system bash wherever it is a different file (macOS 3.2).
+- `official` failed: Anthropic's `validate-plugins` action validates every changed folder holding `.claude-plugin/plugin.json`, so the three `templates/plugin-*/` shapes were checked and their `REPLACE-WITH-*` names are not kebab-case (`--strict`/`fail-on-warnings`). Gap in our gate: `make validate-cli` never ran the CLI on the templates. Fixes: `claude_cli.targets()` adds every plugin-shaped template (`test_the_template_shapes_are_validated_like_plugins`); the shape names become kebab-case sentinels (`replace-with-plugin-name`, …); P4 matches the sentinel case-insensitively so a leftover still fails outside `templates/` (and M1 fails it too, name ≠ directory).
+- Both directions checked: `make validate-cli` → 9 × pass (marketplace, 5 plugins, 3 templates); a copy of `plugin-bundle` with the old uppercase name → `✘ Validation failed (--strict treats warnings as errors)`, the same warning CI printed.
+- `make check` → rc 0 (`902 passed, 1 skipped` fast, 273 slow); `make -s versions` → `Computed label: bump: none`.
+- Step-7 agent incident noted in its own entry: `.venv/bin/zizmor` truncated through a symlinked fixture and repaired with `uv sync --locked --reinstall-package zizmor`; commit `6dd6690` is unaffected (the orchestrator's `make check` before it reported `lint: every file passes`, impossible with an empty zizmor, and CI's `check` passed lint on it).

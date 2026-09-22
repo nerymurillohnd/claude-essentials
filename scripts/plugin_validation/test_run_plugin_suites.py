@@ -39,10 +39,16 @@ def test_every_plugin_suite_is_found() -> None:
 
 
 def test_the_system_bash_is_included() -> None:
-    """MacOS ships bash 3.2 at `/bin/bash`, which is the floor the plugins target."""
-    if not Path(FALLBACK_BASH).is_file():
+    """MacOS ships bash 3.2 at `/bin/bash`, which is the floor the plugins target.
+
+    The runner keeps one interpreter per file, so on a merged-/usr system (Ubuntu:
+    `/bin/bash` and `/usr/bin/bash` are the same file) the system bash is covered by
+    whichever path `bash` resolved to. Compare files, never path strings.
+    """
+    fallback = Path(FALLBACK_BASH)
+    if not fallback.is_file():
         pytest.skip(f"{FALLBACK_BASH} does not exist on this machine")
-    assert FALLBACK_BASH in INTERPRETERS
+    assert fallback.resolve() in {Path(interpreter).resolve() for interpreter in INTERPRETERS}
 
 
 def test_the_declared_floor_is_read_from_the_readme() -> None:
