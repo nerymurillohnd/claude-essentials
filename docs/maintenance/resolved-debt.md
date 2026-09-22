@@ -5,6 +5,21 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0033 — 2026-09-22 — Release-review findings on all five plugins, each class closed with a guard
+
+- **Original pending record:** none; found by the release reviews of agent-self-knowledge 0.2.0, block-no-verify 0.1.3, ruff-quality 0.2.0, shell-quality 0.2.0 and verify-completion 0.1.2 on this branch.
+- **Resolved debt:** Six classes of defect:
+  1. A plugin script's old-Python version check could not run on 3.7: a walrus made the whole file a SyntaxError first.
+  2. `test-*.sh` and `tests/**` were exempt from version bumps at any depth, yet block-no-verify's `manage.sh` runs its shipped `test-handler.sh`: a change to it would reach users without a bump.
+  3. The README templates still prescribed an eval score table that R9 forbids in plugins; a test recorded it as pending instead of failing.
+  4. CHANGELOG link style (C1) was checked against an allowance of four plugins that were already repaired, so a regression in those four could pass.
+  5. shell-quality reported any shfmt failure, a file it could not write included, as a syntax error Claude must fix, and Stop kept Claude working on it.
+  6. An eval grader demanded the opposite of the user's explicit request (verify-completion 02), another hard-coded the CI's Claude Code version (agent-self-knowledge 04), and three maintainer eval commands disagreed with their suites' own.
+- **Resolution:** `scripts/plugin_validation/test_python_version_guard.py` (every shipped `.py` parses at the 3.7 grammar); `EXEMPT_FILE` and `.claude/hooks/lib/plugin-paths.sh` drop the test-file exemption (ADR-0003 amendment 2026-09-22) with parity and route tests; the four templates carry the eval sentence and `test_templates.py` requires zero findings; `test_changelog_immutable.py` fails on any C1 offender; `is_parse_error` in `shell-gate.sh` with a suite case for an unwritable directory; the grader rule in `.claude/skills/marketplace-governance/references/plugin-eval-protocol.md` already covers the eval class, and the plugin READMEs now copy each suite's own command. The `plugin-coherence-auditor` subagent (`/coherence-auditor`) reads a plugin end to end for this kind of drift before the next review.
+- **Positive verification:** `make check` exits 0 (2026-09-22): 910 fast tests, every plugin invariant, `claude plugin validate --strict` on all nine targets, and the suites under both bashes (ruff-quality 81, shell-quality 67 with 1 skip, verify-completion 125, block-no-verify PASS).
+- **Negative verification:** the version-guard test fails when the walrus is restored; the shell-quality suite reports 2 failures when `is_parse_error` is bypassed; the route test expects `pr` for a shipped test file.
+- **Owner or responsible area:** `scripts/plugin_validation/`, `scripts/versioning/`, `.claude/hooks/lib/`, `templates/`, `plugins/*/`
+
 ### DEBT-0030 — 2026-09-22 — Gate-plugin defects the suites could not see, found by live runs, reviews and audits
 
 - **Original pending record:** none; found and fixed in the same branch during the release review of ruff-quality 0.2.0 and shell-quality 0.2.0, and recorded here so each class keeps its guard.
