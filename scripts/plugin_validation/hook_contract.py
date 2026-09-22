@@ -1,4 +1,4 @@
-"""Hook wiring: the six invariants H1 to H6, over `hooks.json` and settings fragments.
+"""Hook wiring: the seven invariants H1 to H7, over `hooks.json` and settings fragments.
 
 Both surfaces are checked, because both end up in a user's settings: `hooks/hooks.json`
 is registered by installing the plugin, and `**/assets/settings-fragment.json` is the
@@ -318,6 +318,87 @@ def _exact_findings(rel: str, event: str, matcher: str) -> list[Finding]:
     ]
 
 
+FILE_TOOL_TWINS: Final[Mapping[str, str]] = {"Edit": "Write", "Write": "Edit"}
+"""File tools whose `if` rules never match each other, unlike permission rules.
+
+Measured on Claude Code 2.1.278 (2026-09-22): in a hook `if`, `Edit(*.py)` fired for the
+Edit tool only and `Write(*.py)` for the Write tool only, in PreToolUse and PostToolUse.
+"""
+
+CONDITION: Final = re.compile(r"^(?P<tool>[A-Za-z]+)\((?P<pattern>.*)\)$")
+"""A permission rule as a hook `if` writes it: `Tool(pattern)`."""
+
+
+def _fires_on(matcher: str | None, tool: str) -> bool:
+    """Report whether a group's matcher fires for one tool.
+
+    Args:
+        matcher: The matcher exactly as written, or None when absent.
+        tool: The tool name.
+
+    Returns:
+        True when the group runs its handlers for that tool.
+    """
+    if matcher is None or matcher in MATCH_ALL:
+        return True
+    if is_regex_matcher(matcher):
+        matched, _ = regex_matches(matcher, [tool])
+        return bool(matched)
+    return tool in {name.strip() for name in re.split(r"[|,]", matcher)}
+
+
+def _twin_message(event: str, tool: str, pattern: str) -> str:
+    """Describe one missing twin condition (H7).
+
+    Args:
+        event: The event the handler sits under.
+        tool: The tool whose condition is missing.
+        pattern: The path pattern both conditions share.
+
+    Returns:
+        The finding's message.
+    """
+    have = f"{FILE_TOOL_TWINS[tool]}({pattern})"
+    need = f"{tool}({pattern})"
+    why = "a hook `if` rule matches one tool only"
+    return f"{event}: `{have}` has no `{need}` twin running the same command ({why})"
+
+
+def check_file_tool_conditions(rel: str, groups: Sequence[MatcherGroup]) -> list[Finding]:
+    """Check that an `Edit(...)` or `Write(...)` condition has its twin (H7).
+
+    A handler filtered by `Edit(P)` in a group that also fires on Write never runs for a
+    written file, so the same group needs a `Write(P)` handler running the same command,
+    and the reverse.
+
+    Args:
+        rel: The file's repository-relative path.
+        groups: The matcher groups read from the file.
+
+    Returns:
+        One error per handler whose twin is missing.
+    """
+    findings: list[Finding] = []
+    for group in groups:
+        present: set[tuple[str, str, str]] = set()
+        wanted: list[tuple[str, str, str]] = []
+        for handler in group.handlers:
+            if not is_json_object(handler):
+                continue
+            match = CONDITION.match(_as_str_or_none(handler.get("if")) or "")
+            if match is None or match["tool"] not in FILE_TOOL_TWINS:
+                continue
+            command = _as_str_or_none(handler.get("command")) or ""
+            present.add((match["tool"], match["pattern"], command))
+            wanted.append((FILE_TOOL_TWINS[match["tool"]], match["pattern"], command))
+        findings.extend(
+            Finding("H7", rel, _twin_message(group.event, tool, pattern))
+            for tool, pattern, command in wanted
+            if _fires_on(group.matcher, tool) and (tool, pattern, command) not in present
+        )
+    return findings
+
+
 def default_timeout(event: str, handler_type: str) -> float:
     """Return the timeout the reference documents for an event and handler type (H6).
 
@@ -512,7 +593,7 @@ def fragment_groups(document: object) -> list[MatcherGroup]:
 
 
 def check_hooks_file(root: Path, plugin_id: str) -> list[Finding]:
-    """Run H1 to H6 over a plugin's `hooks/hooks.json`.
+    """Run H1 to H7 over a plugin's `hooks/hooks.json`.
 
     Args:
         root: The repository root.
@@ -532,12 +613,13 @@ def check_hooks_file(root: Path, plugin_id: str) -> list[Finding]:
         *check_handler_types(rel, groups),
         *check_matchers(rel, groups),
         *check_timeouts(rel, groups),
+        *check_file_tool_conditions(rel, groups),
         *check_commands(root, rel, plugin_id, groups),
     ]
 
 
 def check_fragment(root: Path, plugin_id: str, rel: str) -> list[Finding]:
-    """Run H1 to H6 over one `assets/settings-fragment.json`.
+    """Run H1 to H7 over one `assets/settings-fragment.json`.
 
     Args:
         root: The repository root.
@@ -555,5 +637,6 @@ def check_fragment(root: Path, plugin_id: str, rel: str) -> list[Finding]:
         *check_handler_types(rel, groups),
         *check_matchers(rel, groups),
         *check_timeouts(rel, groups),
+        *check_file_tool_conditions(rel, groups),
         *check_commands(root, rel, plugin_id, groups),
     ]

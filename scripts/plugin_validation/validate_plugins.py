@@ -292,7 +292,7 @@ def check_frontmatter(root: Path, plugin_id: str, known: Sequence[str]) -> list[
 
 
 def check_hooks(root: Path, plugin_id: str) -> list[Finding]:
-    """Run H1 to H6 over a plugin's `hooks.json` and settings fragments.
+    """Run H1 to H7 over a plugin's `hooks.json` and settings fragments.
 
     Args:
         root: The repository root.

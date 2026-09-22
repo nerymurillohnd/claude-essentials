@@ -1,4 +1,4 @@
-"""Hook wiring: H1 to H6, including the path H5 deliberately does not resolve."""
+"""Hook wiring: H1 to H7, including the path H5 deliberately does not resolve."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from scripts.plugin_validation.hook_contract import (
     SESSION_END_EVENT,
     MatcherGroup,
     check_commands,
+    check_file_tool_conditions,
     check_fragment,
     check_handler_types,
     check_hooks_file,
@@ -87,6 +88,51 @@ def test_a_regex_matching_no_known_tool_is_a_warning() -> None:
     group = MatcherGroup("PostToolUse", "^Nothing.*Here$", [])
     findings = check_matchers("hooks.json", [group])
     assert [(finding.invariant_id, finding.severity) for finding in findings] == [("H2", "warning")]
+
+
+def _handler(condition: str, command: str = "gate.sh post") -> dict[str, object]:
+    """Build a command handler filtered by one `if` rule.
+
+    Args:
+        condition: The permission rule.
+        command: The command it runs.
+
+    Returns:
+        The handler object.
+    """
+    return {"type": "command", "if": condition, "command": command}
+
+
+def test_an_edit_condition_without_its_write_twin_is_an_error() -> None:
+    """In a hook `if`, `Edit(...)` never matches the Write tool, so a new file slips past."""
+    group = MatcherGroup("PostToolUse", "Write|Edit", [_handler("Edit(//**/*.py)")])
+    assert ids(list(check_file_tool_conditions("hooks.json", [group]))) == ["H7"]
+
+
+def test_a_write_condition_without_its_edit_twin_is_an_error() -> None:
+    """The reverse gap: an edited file slips past a `Write(...)`-only handler."""
+    group = MatcherGroup("PreToolUse", None, [_handler("Write(*.sh)")])
+    assert ids(list(check_file_tool_conditions("hooks.json", [group]))) == ["H7"]
+
+
+def test_twin_conditions_running_the_same_command_pass() -> None:
+    """One handler per tool with the same pattern and command covers both."""
+    handlers = [_handler("Edit(//**/*.py)"), _handler("Write(//**/*.py)")]
+    group = MatcherGroup("PostToolUse", "Write|Edit", handlers)
+    assert check_file_tool_conditions("hooks.json", [group]) == []
+
+
+def test_a_twin_running_another_command_does_not_count() -> None:
+    """The twin has to do the same work, or one tool still gets the other behavior."""
+    handlers = [_handler("Edit(*.py)", "a.sh"), _handler("Write(*.py)", "b.sh")]
+    group = MatcherGroup("PostToolUse", "Edit|Write", handlers)
+    assert ids(list(check_file_tool_conditions("hooks.json", [group]))) == ["H7", "H7"]
+
+
+def test_a_group_that_only_fires_on_edit_needs_no_write_twin() -> None:
+    """When the matcher cannot fire on Write, there is no gap to close."""
+    group = MatcherGroup("PostToolUse", "Edit", [_handler("Edit(*.py)")])
+    assert check_file_tool_conditions("hooks.json", [group]) == []
 
 
 def test_default_timeouts_follow_the_documented_table() -> None:

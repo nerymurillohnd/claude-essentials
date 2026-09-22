@@ -77,7 +77,7 @@ HOOKS: Final[dict[str, object]] = {
         ]
     },
 }
-"""A hook file that passes H1 to H6 until a probe changes it."""
+"""A hook file that passes H1 to H7 until a probe changes it."""
 
 HANDLER: Final = "#!/usr/bin/env bash\nset -euo pipefail\nexit 0\n"
 """The handler the hook command resolves to; H5 requires it to exist and be executable."""
@@ -92,7 +92,7 @@ FRAGMENT: Final[dict[str, object]] = {
         }
     ],
 }
-"""A settings fragment, the second surface H1 to H6 cover."""
+"""A settings fragment, the second surface H1 to H7 cover."""
 
 WORKFLOW: Final = """export const meta = {
   name: "scratch",
