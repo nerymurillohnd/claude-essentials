@@ -4,10 +4,8 @@ A template is what the next plugin starts from, so template rot becomes plugin r
 placeholders are substituted before the checks run, because `{{Display Name}}` is expected
 there and only there.
 
-One family still fires: R9, the eval score table the master template carries. Removing it is
-step 11 of the migration (§A10), which owns `templates/`; this step owns
-`scripts/plugin_validation/`. The pending set below is that record, and it is exact: a new
-finding fails this test, and so does removing one without updating the set.
+Every shape passes clean, R9 included: the eval score table the templates carried until
+2026-09-22 (§A10) is gone, and this test keeps it from coming back.
 """
 
 from __future__ import annotations
@@ -38,15 +36,6 @@ FILLED: Final = "placeholder"
 BUNDLE_SHAPE: Final = "templates/plugin-bundle/README.md"
 """The only shape that legitimately carries an `Other components` section."""
 
-STEP_11_PENDING: Final[frozenset[tuple[str, str]]] = frozenset(
-    (rel, "R9") for rel in TEMPLATE_SHAPES
-)
-"""The findings step 11 closes: the master template's eval score table (§A10).
-
-Each shape fires R9 twice, once for the `Δ` column and once for the table header; the set
-below is compared against the distinct (path, invariant) pairs.
-"""
-
 
 def _findings(rel: str) -> list[Finding]:
     """Run the README structure checks over one shape template.
@@ -66,14 +55,13 @@ def _findings(rel: str) -> list[Finding]:
 
 
 @pytest.mark.parametrize("rel", sorted(TEMPLATE_SHAPES), ids=sorted(TEMPLATE_SHAPES))
-def test_a_shape_template_only_fires_what_step_eleven_owns(rel: str) -> None:
-    """Every finding on a shape template is one the migration has already scheduled.
+def test_a_shape_template_fires_nothing(rel: str) -> None:
+    """A shape template passes the README structure checks (R1 sections, R9 included).
 
     Args:
         rel: The template's repository-relative path.
     """
-    fired = {(finding.path or rel, finding.invariant_id) for finding in _findings(rel)}
-    assert fired == {pair for pair in STEP_11_PENDING if pair[0] == rel}
+    assert _findings(rel) == []
 
 
 def test_the_master_template_declares_the_kind_line() -> None:
@@ -82,16 +70,6 @@ def test_the_master_template_declares_the_kind_line() -> None:
         encoding="utf-8"
     )
     assert "**Kind:**" in master
-
-
-@pytest.mark.parametrize("rel", sorted(TEMPLATE_SHAPES), ids=sorted(TEMPLATE_SHAPES))
-def test_a_shape_template_keeps_the_required_sections(rel: str) -> None:
-    """R1 holds on every shape once its placeholders are filled in.
-
-    Args:
-        rel: The template's repository-relative path.
-    """
-    assert [finding.invariant_id for finding in _findings(rel)] == ["R9", "R9"]
 
 
 def test_frontmatter_parsing_tolerates_a_placeholder() -> None:

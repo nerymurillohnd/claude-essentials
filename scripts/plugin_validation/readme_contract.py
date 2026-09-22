@@ -114,8 +114,8 @@ EVAL_TABLE_HEADER: Final = re.compile(r"\|\s*Case\s*\|.*\|\s*With\s*\|", re.IGNO
 """An eval score table's header row, which R9 forbids in a README."""
 
 EVAL_SENTENCE: Final = (
-    "Behavioural evals live in `evals/` and run per the maintainer's eval protocol; "
-    "results are reported in the pull request, never here"
+    "**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results "
+    "are reported in the pull request or a dated file under `docs/audits/`, never here"
 )
 """What replaces an eval score table (§A10)."""
 
