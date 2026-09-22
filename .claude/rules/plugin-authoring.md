@@ -12,7 +12,7 @@ between their phases.
 - The design's non-goals and failure modes (missing dependency, timeout,
   unsupported surface) become the README's **What it does not do** and
   **Limitations**, not an afterthought.
-- Run the plugin's own `test-*.sh` suite and `npm run check` after each change,
+- Run the plugin's suite (`scripts/plugin_validation/suites/<id>/`) and `make check` after each change,
   not in a batch before committing.
 - Re-run `/plugin-release-review <id>` after every change that touches runtime
   files, the README, or `plugin.json`. One review pass that finds everything
@@ -26,10 +26,13 @@ between their phases.
   both from the skill's own files (`SKILL.md`, its references, its scripts),
   never from the previous wording, so they state what the skill really does.
   Both are plain YAML scalars, so neither carries quoted trigger phrases nor a
-  colon followed by a space; `scripts/lib/skill-frontmatter.test.mjs` is the
-  gate, because `claude plugin validate --strict` accepts a description that no
+  colon followed by a space; `scripts/plugin_validation/test_frontmatter.py` is
+  the gate, because `claude plugin validate --strict` accepts a description that no
   YAML parser can read.
 - Any change to a skill's `description`, its instructions, or `evals/` re-runs
-  `claude plugin eval` in the **same branch**, and the README eval table is
-  updated before the PR opens. The same applies to test counts and timings
-  quoted in the README or CHANGELOG.
+  `claude plugin eval` in the **same branch**; its numbers go in the PR body or a
+  dated file under `docs/audits/`, never in the README. Test counts and timings
+  quoted in the README or CHANGELOG are re-measured the same way.
+- In a hook `if`, `Edit(P)` matches the Edit tool only and `Write(P)` the Write
+  tool only (measured on 2.1.278, unlike permission rules): give every file
+  condition its twin with the same command. H7 in `make validate` enforces it.

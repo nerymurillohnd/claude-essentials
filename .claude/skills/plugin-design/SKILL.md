@@ -62,7 +62,7 @@ risks per scenario before deciding. Live, current sources win over memory.
 6. Context-dependent work is instructions and checklists.
 7. Fragile, deterministic work is a script.
 8. Pick each component's language: Bash + jq by default for shipped hooks; Python (stdlib, `#!/usr/bin/env python3`) when the logic needs it and the audience already has it, declared in Requirements.
-9. Repo tests today are `node:test` (`scripts/**/*.test.mjs`) and bash suites (`plugins/**/test-*.sh`). Python tests via `uv run --script` need DEBT-0016 closed first (uv, pytest, Ruff, and Basedpyright gates in `npm run check` and CI).
+9. Repo tests are pytest beside each module under `scripts/` and bash suites under `scripts/plugin_validation/suites/<id>/`, never inside the plugin: a plugin ships only what users run. `make test-fast` and `make test-slow` run them.
 10. Never `uv run` in a hook's hot path: it can download an interpreter or packages.
 
 ## Phase 5: Requirements and environments
@@ -106,14 +106,14 @@ risks per scenario before deciding. Live, current sources win over memory.
 ## Phase 10: Verify
 
 1. Run the suites under both bash.
-2. Run `claude plugin eval` and update the README eval table in the same branch.
+2. Run `claude plugin eval` in the same branch; record the numbers in the PR body or `docs/audits/`, never the README.
 3. Run live checks with `claude -p --plugin-dir`.
 4. Run `/code-review high` on the branch diff.
 5. Run `/simplify` on the changed code.
 6. Run `/security-review` when the plugin ships scripts, hooks, MCP, or LSP.
 7. Run `/claude-api prompt-audit` on every `SKILL.md`, agent, and description.
 8. Ask the user to run `/skill-doctor` to see the plugin's context cost (Claude can't invoke it).
-9. Run `npm run check`.
+9. Run `make check`.
 10. Close each finding with its fix and a gate that catches it next time.
 
 ## Phase 11: Review
