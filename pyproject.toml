@@ -79,7 +79,10 @@ extend-exclude = [
   "templates/",
 ]
 
-# Shipped plugin Python targets the floor its README declares, not the maintainer's 3.14.
+# Shipped plugin Python requires 3.14 at run time (its README, enforced by the script's own
+# version check and by run_plugin_suites). Its syntax stays parseable by 3.9, the python3 the
+# Xcode Command Line Tools ship, so an older interpreter reaches that check's message instead
+# of a SyntaxError; this target keeps `ruff format` and `UP` fixes from breaking that.
 per-file-target-version = { "plugins/agent-self-knowledge/**" = "py39" }
 
 [tool.ruff.lint]
@@ -139,37 +142,24 @@ select = [
   "S",    # flake8-bandit
 ]
 
-# Rules that conflict with the formatter (official recommendation)
-# + practical ignores for standalone scripts
+# Only what cannot be fixed in the code. Ruff's formatter documentation lists more rules as
+# potential conflicts (W191, E111, E114, E117, D203, D206, D300, Q000-Q004, COM819, ISC002), but
+# each conflicts only under a setting this file does not use, and `ruff format` warns the moment
+# one does. Re-enabled 2026-09-22 with zero findings; D100, D104, D213 (Google convention) and
+# INP001 likewise raise nothing and are no longer ignored.
 ignore = [
-  # === Formatter conflicts (must ignore) ===
-  "W191",   # tab-indentation
-  "E111",   # indentation-with-invalid-multiple
-  "E114",   # indentation-with-invalid-multiple-comment
-  "E117",   # over-indented
-  "D203",   # incorrect-blank-line-before-class
-  "D206",   # docstring-tab-indentation
-  "D300",   # triple-single-quotes
-  "Q000",   # bad-quotes-inline-string
-  "Q001",   # bad-quotes-multiline-string
-  "Q002",   # bad-quotes-docstring
-  "Q003",   # avoidable-escaped-quote
-  "Q004",   # unnecessary-escaped-quote
-  "COM812", # missing-trailing-comma
-  "COM819", # prohibited-trailing-comma
-  "ISC002", # multi-line-implicit-string-concatenation
-
-  # === Practical for standalone scripts ===
-  "D100",   # Missing docstring in public module
-  "D104",   # Missing docstring in public package
-  "D213",   # Multi-line docstring summary should start at the second line
-  "S101",   # Use of `assert`
-  "S603",   # subprocess-without-shell-equals-true: flags every non-literal argv element; Ruff documents it as prone to false positives (astral-sh/ruff#4045). S607 stays.
-  "INP001", # File is part of an implicit namespace package
+  "COM812", # missing-trailing-comma: the one conflict `ruff format` reports with this config.
+  "S603",   # subprocess-without-shell-equals-true: flags every call without shell=True; Ruff documents it as "prone to false positives" and only a suppression comment could answer it. S607 stays.
 ]
 
 fixable = ["ALL"]
 unfixable = []
+
+# pytest's assertion rewriting is what makes `assert` the test API; everywhere else it is
+# flagged, because `python -O` strips it.
+[tool.ruff.lint.per-file-ignores]
+"scripts/**/test_*.py" = ["S101"]
+"scripts/**/conftest.py" = ["S101"]
 
 [tool.ruff.lint.isort]
 # Only formatter-compatible isort settings
@@ -212,7 +202,7 @@ docstring-code-line-length = 100
 [tool.basedpyright]
 typeCheckingMode = "all"
 failOnWarnings = true
-include = ["scripts"]
+include = ["scripts", "plugins"]
 exclude = [".venv", "docs", "templates", "**/evals/**", "node_modules"]
 # `exclude` alone still reports files reached through imports (basedpyright #31).
 ignore = [".venv", "docs", "templates", "**/evals/**", "node_modules"]
@@ -221,9 +211,6 @@ pythonPlatform = "All"
 reportMissingModuleSource = "error"
 enableTypeIgnoreComments = false
 allowedUntypedLibraries = []
-# The only permitted downgrade: the same check the Ruff floor ignores as a
-# formatter conflict (ISC002). Upstream basedpyright disables it for that reason.
-reportImplicitStringConcatenation = false
 
 [tool.pytest.ini_options]
 testpaths = ["scripts"]

@@ -70,9 +70,10 @@ jobs:
       - name: Diff KNOWN_TOOLS against the live CLI
         run: .venv/bin/python -m pytest -m coverage_matrix
 
-      # The plugin's own probe of the documentation corpus, under the runner's python3.
+      # The plugin's own probe of the documentation corpus, under the Python its README requires
+      # (3.14, the repository's own): the runner's system python3 is older and is refused.
       - name: agent-self-knowledge selfcheck
-        run: python3 plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py selfcheck
+        run: .venv/bin/python plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py selfcheck
 
   # Separate from the job that runs code: the write token never shares a job with the tree.
   report:

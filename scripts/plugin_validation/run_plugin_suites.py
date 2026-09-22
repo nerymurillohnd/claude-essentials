@@ -5,11 +5,12 @@ macOS ships exactly that at `/bin/bash` while `bash` on `PATH` is usually 5.x. A
 only ever runs under 5.x cannot catch a 3.2 regression, which is the defect this target
 exists for.
 
-Then every shipped Python script is smoke-run once, with this repository's own interpreter.
-That run never installs or downloads an interpreter: a gate that wrote to the maintainer's
-global uv store installed CPython 3.8 there on 2026-09-21. The floor a plugin's README
-declares is therefore reported, not exercised; the line says so, and the run stays
-**advisory** (`DEBT-0029`) because `ccdocs.py` is not yet in `make lint` or `make types`.
+Then every shipped Python script is smoke-run once, with this repository's own interpreter,
+and its plugin's declared Python floor has to be that interpreter's version. Ruff and
+basedpyright check `plugins/**/*.py` against the same version (`make lint`, `make types`), so
+the floor a README promises is the one every gate exercises. The run never installs or
+downloads an interpreter: a gate that wrote to the maintainer's global uv store installed
+CPython 3.8 there on 2026-09-21.
 """
 
 from __future__ import annotations
@@ -53,8 +54,6 @@ SUITE_TIMEOUT: Final = 900
 PYTHON_ROW: Final = "python"
 """The Requirements label that carries a plugin's declared Python floor."""
 
-ADVISORY_PREFIX: Final = "DEBT-0029 advisory:"
-"""Every line of the Python smoke run carries this, so nothing reads it as a gate result."""
 
 SMOKE_ARGUMENT: Final = "--help"
 """The one argument a shipped script is smoke-tested with; it must not touch the network."""
@@ -174,50 +173,70 @@ def declared_python_floor(root: Path, plugin_id: str) -> str | None:
     return None
 
 
-def floor_run(root: Path, plugin_id: str) -> list[str]:
-    """Smoke-run a plugin's shipped Python with this repository's interpreter (advisory).
+def floor_problem(floor: str | None, running: str) -> str | None:
+    """Say what is wrong with a plugin's declared Python floor, if anything.
 
-    Nothing is installed: the interpreter is the one running this module. The README's
-    declared floor is named so a reader never mistakes this run for a floor check.
+    Args:
+        floor: The minimum its README declares, or None.
+        running: This repository's interpreter version, `major.minor`.
+
+    Returns:
+        None when the floor is the repository's Python, else the reason it is not.
+    """
+    if floor is None:
+        return (
+            f"its README declares no Python floor; declare {running}, "
+            "the Python every gate checks it with"
+        )
+    if floor != running:
+        return (
+            f"its README declares Python {floor}, but it is linted, type-checked and run only "
+            f"with {running}; declare {running}"
+        )
+    return None
+
+
+def smoke_run(root: Path, plugin_id: str) -> list[SuiteResult]:
+    """Check a plugin's Python floor and smoke-run its shipped Python with this interpreter.
+
+    Nothing is installed: the interpreter is the one running this module.
 
     Args:
         root: The repository root.
         plugin_id: The plugin directory name.
 
     Returns:
-        The lines to print; each one is prefixed as advisory.
+        One result for the floor and one per shipped script; empty when it ships no Python.
     """
     scripts = [rel for rel in shipped_scripts(root, plugin_id) if rel.endswith(PYTHON_SUFFIX)]
     if not scripts:
         return []
-    floor = declared_python_floor(root, plugin_id)
     running = f"{sys.version_info.major}.{sys.version_info.minor}"
-    declared = f"its README declares {floor}" if floor else "its README declares no floor"
-    header = (
-        f"{ADVISORY_PREFIX} {plugin_id}: smoke run under Python {running} only;"
-        f" {declared}, which is not exercised"
-    )
-    lines = [header]
-    lines.extend(_smoke_line(root, sys.executable, script) for script in scripts)
-    return lines
+    readme = f"plugins/{plugin_id}/README.md"
+    problem = floor_problem(declared_python_floor(root, plugin_id), running)
+    results = [
+        SuiteResult(readme, f"Python floor {running}", ok=problem is None, detail=problem or "ok")
+    ]
+    results.extend(_smoke(root, script) for script in scripts)
+    return results
 
 
-def _smoke_line(root: Path, interpreter: str, script: str) -> str:
-    """Run one shipped script's smoke command under a given interpreter.
+def _smoke(root: Path, script: str) -> SuiteResult:
+    """Run one shipped script's smoke command under this interpreter.
 
     Args:
         root: The repository root.
-        interpreter: The interpreter to run it with.
         script: The script's repository-relative path.
 
     Returns:
-        One advisory line reporting the outcome.
+        Its result; a script that cannot start or exits non-zero fails.
     """
+    label = f"{sys.executable} {SMOKE_ARGUMENT}"
     # CPython derives its prefix from argv[0], so the interpreter is passed as argv[0]
     # itself rather than through `executable=`; a placeholder makes it fail to start.
     try:
         completed = subprocess.run(
-            [interpreter, str(root / script), SMOKE_ARGUMENT],
+            [sys.executable, str(root / script), SMOKE_ARGUMENT],
             cwd=root,
             check=False,
             capture_output=True,
@@ -225,19 +244,21 @@ def _smoke_line(root: Path, interpreter: str, script: str) -> str:
             timeout=SUITE_TIMEOUT,
         )
     except (OSError, subprocess.TimeoutExpired) as error:
-        return f"{ADVISORY_PREFIX} {script} {SMOKE_ARGUMENT} -> could not run: {error}"
-    return f"{ADVISORY_PREFIX} {script} {SMOKE_ARGUMENT} -> exit {completed.returncode}"
+        return SuiteResult(script, label, ok=False, detail=f"could not run: {error}")
+    ok = completed.returncode == 0
+    detail = "ok" if ok else f"exit {completed.returncode}: {completed.stderr.strip()[-300:]}"
+    return SuiteResult(script, label, ok=ok, detail=detail)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run every plugin suite, then the advisory Python floor run.
+    """Run every plugin suite, then the Python floor check and smoke run.
 
     Args:
         argv: Arguments without the program name; `sys.argv[1:]` when None.
 
     Returns:
-        0 when every suite passed, 1 when one failed, 2 when the tree is unusable. The
-        floor run never changes the status.
+        0 when every suite, floor and smoke run passed, 1 when one failed, 2 when the tree
+        is unusable.
     """
     parser = argparse.ArgumentParser(
         prog="python -m scripts.plugin_validation.run_plugin_suites",
@@ -251,15 +272,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         root = Path(raw) if isinstance(raw, str) else repo_root()
         results = run_all(root)
-        advisories = [line for plugin_id in plugin_ids(root) for line in floor_run(root, plugin_id)]
+        results.extend(
+            result for plugin_id in plugin_ids(root) for result in smoke_run(root, plugin_id)
+        )
     except (MaintainerError, OSError) as error:
         print(f"error: {error}", file=sys.stderr)
         return int(ExitCode.USAGE)
     for result in results:
         status = "pass" if result.ok else "FAIL"
         print(f"{status}  {result.suite}  [{result.interpreter}]  {result.detail}")
-    for line in advisories:
-        print(line)
     return int(ExitCode.FINDINGS if any(not result.ok for result in results) else ExitCode.OK)
 
 

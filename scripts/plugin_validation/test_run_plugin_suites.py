@@ -1,4 +1,4 @@
-"""Every plugin suite, under every bash that matters, plus the advisory Python smoke run.
+"""Every plugin suite, under every bash that matters, plus the Python smoke run and floor gate.
 
 The parameter ids carry the interpreter path, so `pytest -m slow -v -k plugin_suites` shows
 which bash each suite ran under. That is the evidence the 3.2 floor is actually exercised,
@@ -15,12 +15,15 @@ import pytest
 
 from scripts.common.plugins import repo_root
 from scripts.plugin_validation import run_plugin_suites
+from scripts.plugin_validation.conftest import PLUGIN_ID, SKILL_ID, track
 from scripts.plugin_validation.run_plugin_suites import (
     FALLBACK_BASH,
     declared_python_floor,
-    floor_run,
+    floor_problem,
     interpreters,
+    main,
     run_suite,
+    smoke_run,
     suites,
 )
 from scripts.plugin_validation.script_env import SHARED_TEST_BASH
@@ -54,7 +57,7 @@ def test_the_system_bash_is_included() -> None:
 
 def test_the_declared_floor_is_read_from_the_readme() -> None:
     """The Requirements table is the contract the floor run is measured against."""
-    assert declared_python_floor(repo_root(), "agent-self-knowledge") == "3.7"
+    assert declared_python_floor(repo_root(), "agent-self-knowledge") == "3.14"
     assert declared_python_floor(repo_root(), "verify-completion") is None
 
 
@@ -85,13 +88,44 @@ def test_the_shared_fallback_is_the_variable_the_suites_read() -> None:
 def test_the_python_smoke_run_never_installs_an_interpreter() -> None:
     """A gate that installs interpreters mutates the maintainer's machine (2026-09-21: 3.8).
 
-    The module may not ask `uv` for anything, and a plugin that ships Python gets one line
-    naming the interpreter it really ran under.
+    The module may not ask `uv` for anything, and the shipped script passes its smoke run
+    under the repository's own interpreter, which is the floor its README declares.
     """
     source = Path(run_plugin_suites.__file__).read_text(encoding="utf-8")
     for forbidden in ("python install", "python find", "only-downloads", '"uv"'):
         assert forbidden not in source, forbidden
-    lines = floor_run(repo_root(), "agent-self-knowledge")
+    results = smoke_run(repo_root(), "agent-self-knowledge")
+    assert results
+    assert all(result.ok for result in results), [result.detail for result in results]
+
+
+def test_a_python_floor_must_be_the_repository_interpreter() -> None:
+    """Shipped Python is checked and run only under the repository's Python, so that is the floor.
+
+    A lower floor promises users something no gate exercises; a higher one cannot be run here.
+    """
     running = f"{sys.version_info.major}.{sys.version_info.minor}"
-    assert f"smoke run under Python {running} only" in lines[0]
-    assert "which is not exercised" in lines[0]
+    assert floor_problem(running, running) is None
+    for other in ("3.9", "3.99", None):
+        problem = floor_problem(other, running)
+        assert problem is not None
+        assert running in problem
+
+
+@pytest.mark.slow
+def test_a_shipped_script_that_fails_its_smoke_run_fails_the_target(scratch: Path) -> None:
+    """The smoke run is a gate: a script that exits non-zero fails, one that exits zero passes.
+
+    Args:
+        scratch: The scratch repository root.
+    """
+    scripts = scratch / "plugins" / PLUGIN_ID / "skills" / SKILL_ID / "scripts"
+    track(scratch, scripts / "broken.py", "raise SystemExit(3)\n", executable=True)
+    track(scratch, scripts / "healthy.py", "raise SystemExit(0)\n", executable=True)
+    by_suite = {result.suite: result for result in smoke_run(scratch, PLUGIN_ID)}
+    broken = by_suite[f"plugins/{PLUGIN_ID}/skills/{SKILL_ID}/scripts/broken.py"]
+    healthy = by_suite[f"plugins/{PLUGIN_ID}/skills/{SKILL_ID}/scripts/healthy.py"]
+    assert not broken.ok
+    assert broken.detail.startswith("exit 3")
+    assert healthy.ok
+    assert main(["--root", str(scratch)]) == 1

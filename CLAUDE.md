@@ -23,7 +23,7 @@ make types        # basedpyright, typeCheckingMode=all + failOnWarnings
 make test-fast    # in-process pytest
 make validate     # catalog + plugin invariants (M P C S H R B W E G T Q X)
 make validate-cli # `claude plugin validate --strict` on the marketplace and every plugin (claude on PATH)
-make test-slow    # process-spawning tests + every plugin suite under bash and /bin/bash + advisory Python smoke run
+make test-slow    # process-spawning tests + every plugin suite under bash and /bin/bash + shipped-Python floor and smoke run
 make versions     # plugin version-bump rules and push route vs the latest tags
 make versions VERSIONS_ARGS="--base origin/main --json"   # compare against a ref; machine-readable plan
 make versions VERSIONS_ARGS=--verify-tag                  # also run `claude plugin tag --dry-run`
@@ -191,7 +191,8 @@ in this repo, templates included.
 
 ## Conventions
 
-- Ruff (format and lint) and basedpyright cover every `.py` under `scripts/`;
+- Ruff (format and lint) and basedpyright cover every `.py` under `scripts/` and `plugins/`
+  (a plugin that ships Python declares the repository's Python, 3.14, as its floor);
   every tracked JSON file except the vendored `.github/schemas/` is held to one
   canonical form (`scripts/common/jsontext.py`);
   ShellCheck and shfmt (via `.editorconfig`) cover every shell script. `make lint`

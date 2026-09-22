@@ -84,7 +84,12 @@ def _python_files(repo: Path) -> list[str]:
         Sorted repository-relative paths, this file excluded: it names the markers it bans.
     """
     here = __file__.rsplit("/", 1)[-1]
-    return [rel for rel in working_files(repo, "scripts/*.py") if not rel.endswith(here)]
+    return [
+        rel
+        for pattern in ("scripts/*.py", "plugins/*.py")
+        for rel in working_files(repo, pattern)
+        if not rel.endswith(here)
+    ]
 
 
 def _shell_files(repo: Path) -> list[str]:
@@ -161,6 +166,17 @@ def _shell_comments(repo: Path, rel: str) -> list[tuple[int, str]]:
     found: list[tuple[int, str]] = []
     _comments(tree, found)
     return found
+
+
+def test_the_sweep_covers_the_python_plugins_ship(repo: Path) -> None:
+    """Shipped Python is swept like the maintainer's; a suppression there reaches every user.
+
+    Args:
+        repo: The repository root.
+    """
+    swept = _python_files(repo)
+    assert any(rel.startswith("scripts/") for rel in swept)
+    assert "plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py" in swept
 
 
 @pytest.mark.parametrize(("pattern", "what"), PYTHON_PATTERNS)

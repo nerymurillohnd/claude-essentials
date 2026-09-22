@@ -98,10 +98,9 @@ SHELL_SUFFIX: Final = ".sh"
 STDLIB_MODULES: Final[frozenset[str]] = frozenset(sys.stdlib_module_names)
 """The allowlist for a shipped `.py`'s imports.
 
-This is the standard library of the interpreter running the gate (3.14), not of the floor
-each plugin declares. It is therefore permissive: a module added after the floor would pass
-here. `run_plugin_suites` closes that gap by running the script under the declared floor,
-and `DEBT-0029` records that the floor run is advisory until Follow-up PR #1.
+This is the standard library of the interpreter running the gate (3.14), which is also the
+floor every plugin that ships Python must declare: `run_plugin_suites` fails a plugin whose
+README states another floor, and smoke-runs the script under this interpreter.
 """
 
 

@@ -13,7 +13,7 @@ generate: $(PY) ## 10 regenerate catalog + issue forms, then fail on diff
 	$(PY) -m scripts.marketplace.generate_marketplace
 	$(PY) -m scripts.github.generate_issue_forms
 	git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE
-PY_FILES := $(shell git ls-files --cached --others --exclude-standard -- 'scripts/*.py')
+PY_FILES := $(shell git ls-files --cached --others --exclude-standard -- 'scripts/*.py' 'plugins/*.py')
 lint: $(PY)    ## 20 ruff format --check + ruff check (explicit .py list), shell, json, text bytes, actionlint, zizmor
 	$(PY) -m ruff format --check $(PY_FILES)
 	$(PY) -m ruff check $(PY_FILES)
@@ -29,7 +29,7 @@ validate: $(PY) ## 50 catalog + plugin invariants (M P C S H R B W E G T Q X)
 	$(PY) -m scripts.plugin_validation.validate_plugins
 validate-cli: $(PY) ## 60 claude plugin validate --strict on marketplace + every plugin
 	$(PY) -m scripts.plugin_validation.validate_claude
-test-slow: $(PY) ## 70 process-spawning tests + plugin suites under bash and /bin/bash + advisory smoke run of shipped Python
+test-slow: $(PY) ## 70 process-spawning tests + plugin suites under bash and /bin/bash + Python floor check and smoke run of shipped Python
 	$(PY) -m pytest -m slow
 	$(PY) -m scripts.plugin_validation.run_plugin_suites
 versions: $(PY) ## version-bump rules and route vs the latest tags / origin/main

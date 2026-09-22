@@ -5,6 +5,18 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0029 — 2026-09-22 — Shipped plugin Python is validated only advisorily
+
+- **Original pending record:** DEBT-0029 in `pending-debt.md` (2026-09-21): `ccdocs.py`, the only Python any plugin ships, was outside `make lint` and `make types`; its smoke run printed `DEBT-0029 advisory:` lines and never failed; the README declared a 3.7 floor nothing exercised.
+- **Resolved debt:** Every `.py` under `plugins/` is held by the same gates as `scripts/`: Ruff (`PY_FILES` in the `Makefile`, L5 in `make lint-staged`) and basedpyright (`include = ["scripts", "plugins"]`, L6). The maintainer set the plugin requirement to Python 3.14 (2026-09-22): the README says so in an IMPORTANT block, `ccdocs.py` checks the version when it starts and exits 2 with a message on an older `python3`, and `run_plugin_suites` fails a plugin whose README declares another floor and fails when the script does not start. `ccdocs.py` went from 110 Ruff findings and 271 basedpyright errors to none, with no suppression, and its commands print the same output. Its Ruff target stays `py39` so an older `python3` can still parse it and reach the version message.
+- **Resolution:** `Makefile` (`PY_FILES`), `pyproject.toml` (`[tool.basedpyright] include`, `per-file-target-version`), `scripts/lint/lint_files.py` (`PYTHON_ROOTS`), `scripts/plugin_validation/run_plugin_suites.py` (`floor_problem`, `smoke_run`), `scripts/hygiene/test_suppressions.py` (Q3 sweeps `plugins/*.py`), agent-self-knowledge 0.2.0.
+- **Positive verification:** `make lint` exits 0; the basedpyright language server reports 0 diagnostics across 125 workspace files including `ccdocs.py`; `test_a_python_floor_must_be_the_repository_interpreter` and `test_the_python_smoke_run_never_installs_an_interpreter` pass; `/usr/bin/python3` 3.9.6 running `ccdocs.py version` prints `ccdocs.py needs Python 3.14 or later; this is python3 3.9.6 …` and exits 2 (2026-09-22).
+- **Negative verification:** a probe `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/_neg_probe.py` with `import os` and `X: int = "not an int"` made `make lint` exit 2 (F401, INP001) and the language server report `reportUnusedImport` and `reportAssignmentType`; removing it returned `make lint` to exit 0. `floor_problem("3.9", "3.14")`, `floor_problem("3.99", "3.14")` and `floor_problem(None, "3.14")` each return a problem.
+- **Owner or responsible area:** `Makefile`, `pyproject.toml`, `scripts/lint/lint_files.py`, `scripts/plugin_validation/run_plugin_suites.py`
+- **Residual risk / follow-up:** Users whose `python3` is older than 3.14 (the Xcode Command Line Tools' 3.9.6, Ubuntu 24.04's 3.12, Debian 13's 3.13) cannot use `claude-code-docs` until they install 3.14; accepted by the maintainer, 2026-09-22, and stated in the plugin README.
+- **Related records:** [DEBT-0016](#debt-0016--2026-09-22--python-tests-and-repo-scripts-have-no-gates-yet), [DEBT-0019](pending-debt.md), [consolidated refactor migration log](../superpowers/specs/2026-09-21-refactor-migration-log.md)
+- **Superseded by:** none
+
 ### DEBT-0016 — 2026-09-22 — Python tests and repo scripts have no gates yet
 
 - **Original pending record:** DEBT-0016 in `pending-debt.md` (2026-09-19): the repository's gate ran only `node:test` and bash suites, and nothing linted, type-checked or tested Python.
@@ -13,8 +25,8 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 - **Positive verification:** `make lint` exits 0 on the tree (2026-09-22).
 - **Negative verification:** adding `scripts/common/_neg_probe.py` containing only `import os` makes `make lint` exit 2 with ``F401 `os` imported but unused --> scripts/common/_neg_probe.py:1:8``; removing it returns exit 0.
 - **Owner or responsible area:** `Makefile`, `pyproject.toml`, `.github/workflows/ci.yml`
-- **Residual risk / follow-up:** The review condition also named Python under `plugins/`. That part is not covered yet (`make lint` and `make types` read `scripts/` only) and is tracked, with its evidence, by [DEBT-0029](pending-debt.md).
-- **Related records:** [DEBT-0029](pending-debt.md), [consolidated refactor migration log](../superpowers/specs/2026-09-21-refactor-migration-log.md)
+- **Residual risk / follow-up:** The review condition also named Python under `plugins/`; that part was closed by [DEBT-0029](#debt-0029--2026-09-22--shipped-plugin-python-is-validated-only-advisorily).
+- **Related records:** [DEBT-0029](#debt-0029--2026-09-22--shipped-plugin-python-is-validated-only-advisorily), [consolidated refactor migration log](../superpowers/specs/2026-09-21-refactor-migration-log.md)
 - **Superseded by:** none
 
 ### DEBT-0025 — 2026-09-20 — A plugin README must document every environment variable its Python scripts read

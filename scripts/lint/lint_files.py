@@ -60,8 +60,11 @@ LINT_INVARIANTS: Final[tuple[tuple[str, str, str], ...]] = (
 PYTHON_SUFFIX: Final = ".py"
 """Which staged files L5 and L6 apply to."""
 
-PYTHON_ROOT: Final = "scripts/"
-"""The tree `[tool.basedpyright] include` covers, and so the only one L6 can answer for."""
+PYTHON_ROOTS: Final[tuple[str, ...]] = ("scripts/", "plugins/")
+"""The trees `[tool.basedpyright] include` covers: the maintainer's Python and every plugin's.
+
+Shipped Python is checked like the maintainer's, against the repository's Python, which is
+also the floor each plugin declares (enforced by `run_plugin_suites`)."""
 
 OUTPUT_BUDGET: Final = 4000
 """How much of a tool's own output one finding carries."""
@@ -111,15 +114,15 @@ def changed_paths(root: Path) -> list[str]:
 
 
 def python_paths(paths: Sequence[str]) -> list[str]:
-    """Keep the maintainer Python out of a file set.
+    """Keep the Python the gates cover out of a file set.
 
     Args:
         paths: Repository-relative paths.
 
     Returns:
-        The `.py` files under `scripts/`, which is what the type policy covers.
+        The `.py` files under `scripts/` and `plugins/`, which is what the type policy covers.
     """
-    return [rel for rel in paths if rel.endswith(PYTHON_SUFFIX) and rel.startswith(PYTHON_ROOT)]
+    return [rel for rel in paths if rel.endswith(PYTHON_SUFFIX) and rel.startswith(PYTHON_ROOTS)]
 
 
 def check_python(root: Path, paths: Sequence[str]) -> list[Finding]:

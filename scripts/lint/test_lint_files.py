@@ -44,11 +44,10 @@ def test_list_prints_the_registry_and_checks_nothing(capsys: CaptureFixture[str]
     assert [line.split(maxsplit=1)[0] for line in printed] == ["L1", "L2", "L3", "L4", "L5", "L6"]
 
 
-def test_python_paths_keeps_only_the_maintainer_python() -> None:
-    """L6 can only answer for the tree `[tool.basedpyright] include` covers."""
-    assert python_paths(["scripts/lint/a.py", "plugins/x/b.py", "scripts/c.md"]) == [
-        "scripts/lint/a.py"
-    ]
+def test_python_paths_keeps_the_maintainer_and_the_shipped_python() -> None:
+    """L5 and L6 cover what `[tool.basedpyright] include` covers: scripts/ and plugins/."""
+    paths = ["scripts/lint/a.py", "plugins/x/b.py", "scripts/c.md", "docs/d.py"]
+    assert python_paths(paths) == ["scripts/lint/a.py", "plugins/x/b.py"]
 
 
 @pytest.mark.slow
