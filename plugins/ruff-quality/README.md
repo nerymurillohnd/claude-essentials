@@ -108,7 +108,7 @@ None — this plugin ships one skill and no agents.
 | `PostToolUse` | `Write\|Edit` on `.py`, `.pyw`, `.pyi` | `ruff check --fix --no-unsafe-fixes --unfixable F401`, `ruff format`, `ruff check` on the edited file; rewrites it | No (the edit already happened); findings left go to Claude |
 | `Stop` | — | Re-fixes, re-formats and re-checks every Python file this session touched | Yes: keeps Claude working while the findings change, at most 7 times; then a message lists what still fails and those files are left alone until edited again |
 
-The handler is [`hooks/ruff-gate.sh`](hooks/ruff-gate.sh). It runs the first Ruff
+The handler is [`scripts/ruff-gate.sh`](scripts/ruff-gate.sh). It runs the first Ruff
 it finds: the project's own (`.venv/bin/ruff` or `venv/bin/ruff` between the edited
 file and the project root, owned by you), then `ruff` on `PATH`, then `~/.local/bin`, `/opt/homebrew/bin` and
 `/usr/local/bin`. Ruff then finds your configuration as it always does: the nearest
@@ -225,7 +225,7 @@ ruff-quality: Claude wants to add or widen a suppression in calc.py: # noqa: f82
 
 - **Human approval:** a suppression or a Ruff configuration change reaches your permission prompt before it happens; the hook never denies and never edits configuration.
 - **Never blocks on its own failure:** a missing tool, a malformed payload, an unwritable state directory, or a Ruff tool or configuration error (such as a `required-version` mismatch) ends in a message to you, never in Claude being kept working.
-- **Trust:** review [`hooks/ruff-gate.sh`](hooks/ruff-gate.sh) and [`hooks/hooks.json`](hooks/hooks.json) before installing in a critical repository.
+- **Trust:** review [`scripts/ruff-gate.sh`](scripts/ruff-gate.sh) and [`hooks/hooks.json`](hooks/hooks.json) before installing in a critical repository.
 - **Report a vulnerability** privately via the [security policy](../../SECURITY.md). Never post secrets in issues.
 
 ## 🚧 Limitations
@@ -271,7 +271,7 @@ Every published version is in [CHANGELOG.md](CHANGELOG.md), and each version is 
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Nery Samuel Murillo Tejada.
+[Apache-2.0](LICENSE) © Nery Samuel Murillo.
 
 ---
 

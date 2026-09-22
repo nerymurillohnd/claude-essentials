@@ -166,7 +166,7 @@ maintainer's eval protocol; results are reported in the pull request, never here
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/agent-self-knowledge --strict
 claude plugin eval plugins/agent-self-knowledge --trust-plugin \
   --allow-tools "Bash(python3 *)" "Bash(curl -sS https://*)" "Bash(claude --version)" WebFetch \
@@ -268,7 +268,7 @@ Every published version is in [CHANGELOG.md](CHANGELOG.md), and each version is 
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Nery Samuel Murillo Tejada.
+[Apache-2.0](LICENSE) © Nery Samuel Murillo.
 
 ---
 

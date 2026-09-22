@@ -132,6 +132,19 @@ jobs:
         if: steps.key.outputs.present == 'true'
         run: make setup
 
+      # Plugins that ship Python require the repository's Python (3.14) as `python3`
+      # (agent-self-knowledge's ccdocs.py refuses anything older); the runner's system python3
+      # is older, so the locked interpreter goes first on PATH for the agent's shell commands.
+      - name: Put the locked python3 on PATH
+        if: steps.key.outputs.present == 'true'
+        run: |
+          set -euo pipefail
+          tools="${RUNNER_TEMP}/locked-python"
+          mkdir -p "${tools}"
+          ln -s "${GITHUB_WORKSPACE}/.venv/bin/python" "${tools}/python3"
+          echo "${tools}" >>"${GITHUB_PATH}"
+          "${tools}/python3" --version
+
       - name: Install Claude Code CLI (pinned, signature-verified; CI runner only)
         if: steps.key.outputs.present == 'true'
         run: |

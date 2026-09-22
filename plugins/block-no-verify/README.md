@@ -182,14 +182,14 @@ maintainer's eval protocol; results are reported in the pull request, never here
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/block-no-verify --strict
 bash plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh
 BNV_TEST_BASH=/bin/bash bash plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh
-claude plugin eval plugins/block-no-verify --no-publish --max-cost-usd 5
+claude plugin eval plugins/block-no-verify --allow-tools Bash Write Edit --no-publish --max-cost-usd 5
 ```
 
-`npm test` runs the handler suite on every bash it finds, so CI covers it.
+`make check` runs the handler suite under `bash` and `/bin/bash`, so CI covers it.
 
 </details>
 
@@ -296,7 +296,7 @@ Every published version is in [CHANGELOG.md](CHANGELOG.md), and each version is 
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Nery Samuel Murillo Tejada.
+[Apache-2.0](LICENSE) © Nery Samuel Murillo.
 
 ---
 

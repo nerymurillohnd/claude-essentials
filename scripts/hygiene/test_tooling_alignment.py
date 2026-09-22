@@ -15,6 +15,7 @@ second constant is what keeps the first from looking complete.
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Final
 
 import pytest
@@ -74,6 +75,20 @@ def _pending_id(pending: tuple[str, str]) -> str:
         The tree's paths.
     """
     return pending[0]
+
+
+NODE_COMMAND: Final = re.compile(r"(?:^|`)\s*(?:npm (?:run|test|install|ci)\b|npx |node scripts/)")
+"""A Node command a reader would type. Mentions of the npm registry are not commands."""
+
+INSTRUCTION_PATHS: Final[tuple[str, ...]] = (
+    "plugins/*/README.md",
+    "plugins/*/evals/README.md",
+    "templates/*",
+)
+"""Where a contributor copies commands from: plugin maintainer checks, eval notes, templates.
+
+Measured 2026-09-22: the step-10 rewrite missed two plugin READMEs, which still said
+`npm run check` and `npm test` after Node was gone."""
 
 
 MIN_SWEPT: Final = 10
@@ -139,3 +154,48 @@ def test_the_swept_and_pending_lists_do_not_overlap() -> None:
     pending = " ".join(paths for paths, _ in PENDING_PATHS)
     for pattern in SWEPT_PATHS:
         assert pattern.split("/")[0] not in pending.split(), pattern
+
+
+def _instruction_lines(text: str) -> list[tuple[int, str]]:
+    """Keep the lines a reader copies commands from.
+
+    A plugin README's `Maintainer checks` details block, and every `bash`/`sh` fence
+    elsewhere. Examples that quote a user's own project (such as a verification record for a
+    JavaScript repository) are neither, so they may name npm.
+
+    Args:
+        text: A Markdown document.
+
+    Returns:
+        `(line number, line)` pairs.
+    """
+    kept: list[tuple[int, str]] = []
+    in_checks = in_fence = False
+    for number, line in enumerate(text.splitlines(), 1):
+        stripped = line.strip()
+        if "<summary>Maintainer checks</summary>" in stripped:
+            in_checks = True
+        elif in_checks and stripped == "</details>":
+            in_checks = False
+        if stripped.startswith("```"):
+            in_fence = not in_fence and stripped[3:].strip() in {"bash", "sh"}
+            continue
+        if in_checks or in_fence:
+            kept.append((number, line))
+    return kept
+
+
+def test_no_plugin_instruction_tells_a_reader_to_run_node(repo: Path) -> None:
+    """Every maintainer check a plugin documents uses `make`, since the repository has no Node.
+
+    Args:
+        repo: The repository root.
+    """
+    found = [
+        f"{rel}:{number}"
+        for rel in working_files(repo, *INSTRUCTION_PATHS)
+        if rel.endswith(".md")
+        for number, line in _instruction_lines((repo / rel).read_text(encoding="utf-8"))
+        if NODE_COMMAND.search(line)
+    ]
+    assert not found, found

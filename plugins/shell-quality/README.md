@@ -110,7 +110,7 @@ None — this plugin ships one skill and no agents.
 | `PostToolUse` | `Write\|Edit` on `.sh`, `.bash` | `shfmt -w` (no style flags, so your EditorConfig decides), then `shellcheck -x` on the edited script; rewrites it | No (the edit already happened); findings left go to Claude |
 | `Stop` | — | Re-formats and re-checks every script this session touched | Yes: keeps Claude working while the findings change, at most 7 times; then a message lists what still fails and those scripts are left alone until edited again |
 
-The handler is [`hooks/shell-gate.sh`](hooks/shell-gate.sh). It runs the first
+The handler is [`scripts/shell-gate.sh`](scripts/shell-gate.sh). It runs the first
 shfmt and ShellCheck it finds: the project's own (`.venv/bin/` or `venv/bin/` between
 the edited script and the project root, owned by you, for example from `shellcheck-py` and `shfmt-py`), then `PATH`,
 then `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Each tool then finds
@@ -231,7 +231,7 @@ shell-quality: Claude wants to add or widen a ShellCheck directive in bin/deploy
 
 - **Human approval:** a suppression or a configuration change reaches your permission prompt before it happens; the hook never denies and never edits configuration.
 - **Never blocks on its own failure:** a missing tool, a malformed payload, an unwritable state directory, or a ShellCheck tool or configuration error ends in a message to you, never in Claude being kept working.
-- **Trust:** review [`hooks/shell-gate.sh`](hooks/shell-gate.sh) and [`hooks/hooks.json`](hooks/hooks.json) before installing in a critical repository.
+- **Trust:** review [`scripts/shell-gate.sh`](scripts/shell-gate.sh) and [`hooks/hooks.json`](hooks/hooks.json) before installing in a critical repository.
 - **Report a vulnerability** privately via the [security policy](../../SECURITY.md). Never post secrets in issues.
 
 ## 🚧 Limitations
@@ -279,7 +279,7 @@ Every published version is in [CHANGELOG.md](CHANGELOG.md), and each version is 
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Nery Samuel Murillo Tejada.
+[Apache-2.0](LICENSE) © Nery Samuel Murillo.
 
 ---
 
