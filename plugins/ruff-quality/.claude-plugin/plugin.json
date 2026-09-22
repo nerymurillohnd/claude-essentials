@@ -4,7 +4,7 @@
   "version": "0.2.0",
   "description": "Makes every Python file Claude edits pass Ruff. A plugin hook applies Ruff's safe fixes, formats and re-checks each .py, .pyw and .pyi file with the Ruff already installed in your project or globally, using your own Ruff configuration; asks you before Claude adds a suppression comment or changes Ruff configuration; and keeps Claude working, up to 7 attempts, until the files it touched are clean. Its skill teaches Claude to install, configure, run, integrate and diagnose Ruff from the official documentation.",
   "author": {
-    "name": "Nery Samuel Murillo Tejada",
+    "name": "Nery Samuel Murillo",
     "url": "https://github.com/nerymurillohnd"
   },
   "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/ruff-quality",

@@ -12,6 +12,7 @@ only runs when someone runs it.
 | Display name | `plugin.json` `displayName`, README `# <emoji> <Display Name>`, root catalog link text, Cowork install line ("install **<Display Name>**") | *(CI: README title = displayName; catalog link text)* |
 | One-line purpose | README blockquote outcome, root catalog "Description" cell | Same meaning; the catalog cell may be shorter, never different |
 | Long description | `plugin.json` `description`, `marketplace.json` entry `description` (generated), README intro paragraph | Same claims and the same most important non-goal; no feature in one that the others contradict |
+| Author | `plugin.json` `author`, `marketplace.json` entry `author` (generated), `marketplace.json` `owner.name`, README License line (`© <name>`) | One spelling of the maintainer's name everywhere (the GitHub profile name) |
 | Keywords | `plugin.json` `keywords` | Describe the problem space a user would search for; no brand names |
 | Catalog category and tags | `plugin.json` `metadata.marketplace` (`category`, `tags`), `marketplace.json` entry (generated) | *(CI: entry matches generator; category in the allowed list)*; the category fits what the plugin does; tags are the search terms a user would type, at most eight |
 
@@ -27,7 +28,7 @@ only runs when someone runs it.
 
 | Fact | Must agree across | Notes |
 | --- | --- | --- |
-| License | `plugin.json` `license` = `Apache-2.0`, `LICENSE` verbatim from `templates/LICENSE-Apache-2.0-reusable-template.md`, README license badge and License section | Compare the LICENSE text byte for byte (`diff`); never reformat it |
+| License | `plugin.json` `license` = `Apache-2.0` = `marketplace.json` entry `license` (generated), `LICENSE` verbatim from `templates/LICENSE-Apache-2.0-reusable-template.md`, README license badge and License section | Compare the LICENSE text byte for byte (`diff`); never reformat it |
 | Third-party material | README License section | Declared with its license, or the sentence removed |
 
 ## Behavior and requirements

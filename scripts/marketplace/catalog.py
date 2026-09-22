@@ -66,11 +66,20 @@ MIN_TAGS: Final = 1
 MAX_TAGS: Final = 8
 """An entry carries between one and eight unique tags (M3)."""
 
-CATALOG_ENTRY_KEYS: Final = ("name", "source", "description", "category", "tags")
+CATALOG_ENTRY_KEYS: Final = (
+    "name",
+    "source",
+    "description",
+    "category",
+    "tags",
+    "author",
+    "license",
+)
 """Exactly the keys of one entry, in the order they are written.
 
-`version` is deliberately absent: the catalog never pins a version, so an entry can never go
-stale against the manifest it describes (M8).
+`author` and `license` are copied from the manifest so the catalog shows them before anyone
+installs. `version` is deliberately absent: the catalog never pins a version, so an entry can
+never go stale against the manifest it describes (M8).
 """
 
 SCHEMA_KEY: Final = "$schema"
@@ -180,6 +189,8 @@ def catalog_entry(plugin_id: str, manifest: object, *, path: Path) -> dict[str, 
         "description": as_str(document.get("description"), path=path),
         "category": as_str(marketplace.get("category"), path=path),
         "tags": as_str_list(marketplace.get("tags"), path=path),
+        "author": dict(as_mapping(document.get("author"), path=path)),
+        "license": as_str(document.get("license"), path=path),
     }
 
 

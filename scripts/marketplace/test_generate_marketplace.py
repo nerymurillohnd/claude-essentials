@@ -59,6 +59,8 @@ def test_render_rebuilds_the_array_from_the_manifests(tree: Path) -> None:
             "description": "Changed.",
             "category": "development",
             "tags": ["one", "two"],
+            "author": {"name": "Test"},
+            "license": "Apache-2.0",
         },
     ]
 

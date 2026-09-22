@@ -2,11 +2,9 @@
   "name": "claude-essentials",
   "description": "A public marketplace of Claude Code plugins, skills, and agents — install via /plugin marketplace add nerymurillohnd/claude-essentials.",
   "owner": {
-    "name": "Nery Samuel Murillo Tejada",
-    "url": "https://github.com/nerymurillohnd"
-  },
-  "metadata": {
-    "pluginRoot": "./plugins"
+    "name": "Nery Samuel Murillo",
+    "email": "nerymurillohnd@gmail.com",
+    "url": "https://github.com/nerymurillohnd/claude-essentials"
   },
   "plugins": [
     {
@@ -23,7 +21,12 @@
         "hallucination",
         "self-knowledge",
         "research"
-      ]
+      ],
+      "author": {
+        "name": "Nery Samuel Murillo",
+        "url": "https://github.com/nerymurillohnd"
+      },
+      "license": "Apache-2.0"
     },
     {
       "name": "block-no-verify",
@@ -39,7 +42,12 @@
         "husky",
         "lefthook",
         "guardrails"
-      ]
+      ],
+      "author": {
+        "name": "Nery Samuel Murillo",
+        "url": "https://github.com/nerymurillohnd"
+      },
+      "license": "Apache-2.0"
     },
     {
       "name": "ruff-quality",
@@ -54,7 +62,12 @@
         "pre-commit",
         "quality-gate",
         "guardrails"
-      ]
+      ],
+      "author": {
+        "name": "Nery Samuel Murillo",
+        "url": "https://github.com/nerymurillohnd"
+      },
+      "license": "Apache-2.0"
     },
     {
       "name": "shell-quality",
@@ -70,7 +83,12 @@
         "pre-commit",
         "quality-gate",
         "guardrails"
-      ]
+      ],
+      "author": {
+        "name": "Nery Samuel Murillo",
+        "url": "https://github.com/nerymurillohnd"
+      },
+      "license": "Apache-2.0"
     },
     {
       "name": "verify-completion",
@@ -86,7 +104,12 @@
         "code-review",
         "quality-gate",
         "guardrails"
-      ]
+      ],
+      "author": {
+        "name": "Nery Samuel Murillo",
+        "url": "https://github.com/nerymurillohnd"
+      },
+      "license": "Apache-2.0"
     }
   ]
 }

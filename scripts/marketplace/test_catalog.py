@@ -39,6 +39,15 @@ def test_entry_carries_exactly_the_documented_keys_in_order() -> None:
     assert tuple(entry) == CATALOG_ENTRY_KEYS
 
 
+def test_entry_copies_the_author_and_license_from_the_manifest() -> None:
+    """The catalog shows who wrote a plugin and under what license before anyone installs it."""
+    manifest = manifest_obj()
+    manifest["author"] = {"name": "Someone", "url": "https://example.test/someone"}
+    entry = catalog_entry(PLUGIN_ID, manifest, path=Path("plugin.json"))
+    assert entry["author"] == {"name": "Someone", "url": "https://example.test/someone"}
+    assert entry["license"] == "Apache-2.0"
+
+
 def test_entry_source_is_the_repository_relative_directory() -> None:
     """Claude Code resolves the plugin from this path when the marketplace is added."""
     entry = catalog_entry(PLUGIN_ID, manifest_obj(), path=Path("plugin.json"))

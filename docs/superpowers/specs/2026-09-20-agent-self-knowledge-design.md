@@ -187,7 +187,7 @@ and the `allowed-tools` grant covers the whole script, so
 Both were reproduced. On a public marketplace this is inherited by every
 installer.
 
-**The maintainer, Nery Samuel Murillo Tejada, decided on 2026-09-20 to publish
+**The maintainer, Nery Samuel Murillo, decided on 2026-09-20 to publish
 as is**, after being shown the vector and a four-line host-allowlist fix, and
 after evidence that the fix touches nothing the clean-session test exercised
 (that run used `find`, `grep`, `outline`, `page`, `changelog` and `version` —
