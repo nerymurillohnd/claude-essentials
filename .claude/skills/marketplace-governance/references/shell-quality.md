@@ -26,7 +26,7 @@ rules Claude's own edits pass through. The backlog entry is `DEBT-0003`.
 ## Tests
 
 - `test_shell_files.py` — discovery by extension and by shebang, including a file with no extension and an executable that is not shell.
-- `test_plugin_shell_tests.py` — runs every tracked or new `plugins/**/test-*.sh` suite so CI exercises what plugins actually ship. Each suite runs under `bash` from `PATH` and, when that resolves to a different binary, under `/bin/bash` too.
+- `run_plugin_suites.py` (`make test-slow`) — runs every plugin suite, which lives in the repository at `scripts/plugin_validation/suites/<id>/test-*.sh` (ADR-0007; `block-no-verify`'s runtime suite is the one exception inside `plugins/`). Each suite runs under `bash` from `PATH` and, when that resolves to a different binary, under `/bin/bash` too.
 
 ## Why the suites matter here
 

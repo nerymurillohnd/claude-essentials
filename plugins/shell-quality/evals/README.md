@@ -1,22 +1,23 @@
 # Evals — `shell-quality`
 
-Two skills, one flow each: **`shell-lint` fixes findings instead of disabling them and protects the
-project's configuration; `shell-hooks` installs nothing before the user picks a scope and a mode.**
+One skill and one hook, measured together: **`shell-lint` fixes findings instead of disabling
+them and protects the project's configuration, and whatever ShellCheck still reports after the
+hook formats a script is fixed in the script.**
 
-| Case | Skill | What it can fail at | Tools it needs to be able to fail |
-| --- | --- | --- | --- |
-| `01-fixes-instead-of-disabling` | `shell-lint` | Fixing SC findings rather than adding a `shellcheck disable` | `Write`/`Bash`, and the file is graded on disk |
-| `02-flags-editorconfig-conflict` | `shell-lint` | Warning that *any* shfmt style flag makes shfmt ignore EditorConfig entirely | `Bash` |
-| `03-gate-asks-scope-and-mode` | `shell-hooks` | Stopping for both scope *and* mode, and describing the gate first | `Write`/`Edit` |
-| `04-ignores-unrelated-request` | — | Not firing on a question with no shell in it | — |
+| Case | What it can fail at | Tools it needs to be able to fail |
+| --- | --- | --- |
+| `01-fixes-instead-of-disabling` | Fixing SC findings rather than adding a `shellcheck disable` | `Write`/`Bash`, and the file is graded on disk |
+| `02-flags-editorconfig-conflict` | Warning that *any* shfmt style flag makes shfmt ignore EditorConfig entirely | `Bash` |
+| `03-fixes-what-the-hook-reports` | Fixing the SC2086 and SC2164 the hook reports after an unrelated edit, without a directive, an rc or `SHELLCHECK_OPTS` | `Write`/`Edit`/`Bash`; a scaffold seeds the script and project-level tools |
+| `04-ignores-unrelated-request` | Not firing on a question with no shell in it | — |
 
 ## Running it
 
 ```bash
 # from the marketplace root
-claude plugin eval plugins/shell-quality --ablation with-without \
+claude plugin eval plugins/shell-quality --ablation with-without --scaffold \
   --allow-tools Bash Write Edit \
-  --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
+  --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 15
 ```
 
 The judge is a different model from the agent on purpose: a model grading its own output prefers it.
@@ -39,12 +40,13 @@ suppression added) is only meaningful if the run could have done it: those cases
 ## Sandbox environment
 
 Each run executes in a throwaway sandbox with a synthetic `HOME`, but `PATH` is inherited and
-Homebrew binaries resolve: `shellcheck`, `shfmt`, `jq` and `git` are all **present inside a run**
-(measured 2026-09-20 at `/opt/homebrew/bin`). So `03` should reach the scope-and-mode question
-rather than the fail-closed path; its rubric accepts either, but a fail-closed answer here deserves
-investigation rather than a pass by default.
+Homebrew binaries resolve: `shellcheck`, `shfmt`, `jq` and `git` are **present inside a run** on a
+Mac with Homebrew (measured 2026-09-20 at `/opt/homebrew/bin`). `03` does not rely on that: its
+`scaffold.sh` (written for this suite) copies the marketplace's own `.venv/bin/shellcheck` and
+`.venv/bin/shfmt` into the case project's `.venv/bin/`, where the hook finds a project-level install.
+Run the suite with `--scaffold`; without it `03` starts in an empty workspace and measures nothing.
 
-`01` is graded against the specific findings in the snippet (SC2045, SC2086), never against a clean
+`01` and `03` are graded against the specific findings in their snippets, never against a clean
 ShellCheck exit code, which would depend on whichever `.shellcheckrc` the run happens to discover.
 
 ## CI policy

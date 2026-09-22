@@ -1,8 +1,8 @@
 {
   "name": "shell-quality",
   "displayName": "Shell Quality",
-  "version": "0.1.1",
-  "description": "Teaches Claude the current ShellCheck and shfmt workflow for shell scripts (format, then check; rc files and EditorConfig; correct fixes for common SC codes; macOS Bash 3.2 portability; pre-commit and CI), and, only when you ask and choose a scope and a configuration, installs Claude Code hooks that format and check every shell script Claude edits, deny suppression directives and configuration changes, and keep Claude from finishing until the scripts are clean.",
+  "version": "0.2.0",
+  "description": "Makes every shell script Claude edits pass shfmt and ShellCheck. A plugin hook formats each .sh and .bash file with the shfmt and checks it with the ShellCheck already installed in your project or globally, using your own .shellcheckrc and .editorconfig; asks you before Claude adds a suppression directive or changes that configuration; and keeps Claude working, up to 7 attempts, until the scripts it touched are clean. Its skill teaches Claude to install, configure, run, integrate and fix findings with both tools from the official documentation.",
   "author": {
     "name": "Nery Samuel Murillo Tejada",
     "url": "https://github.com/nerymurillohnd"
@@ -22,6 +22,14 @@
     "quality-gate",
     "guardrails"
   ],
+  "userConfig": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Shell hook",
+      "default": true,
+      "description": "On: after each edit Claude makes to a .sh or .bash file, the hook formats it with shfmt and checks it with ShellCheck, and keeps Claude working until it passes. Off: the hooks do nothing; the skill stays available."
+    }
+  },
   "metadata": {
     "marketplace": {
       "category": "development",

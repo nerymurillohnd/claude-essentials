@@ -15,6 +15,36 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.2.0] - 2026-09-22
+
+### Added
+
+- The plugin now ships its hooks: installing it turns them on, in the scope you install it
+  in, and updating the plugin updates them. After each edit Claude makes to a `.sh` or
+  `.bash` file, the hook formats it with shfmt, checks it with ShellCheck, and hands any
+  finding that is left to Claude. At the end of the turn it re-checks every script the
+  session touched and keeps Claude working, up to 7 attempts, then tells you which scripts
+  still fail. You see a one-line result after each edit and at the end.
+- Before Claude adds a `# shellcheck disable=` or `source=/dev/null` directive, or changes
+  `.shellcheckrc` or the shfmt keys of `.editorconfig`, the hook asks you to confirm. It
+  never denies.
+- An `enabled` option (`/config`) turns the hooks off without removing the skill.
+
+### Changed
+
+- The hook runs the shfmt and ShellCheck already installed in your project or globally, with
+  each tool's own configuration discovery (your nearest `.shellcheckrc`, then
+  `~/.shellcheckrc`, then `$XDG_CONFIG_HOME/shellcheckrc`, plus `SHELLCHECK_OPTS`, which every
+  report names; shfmt reads your `.editorconfig` and gets no style flags). It never
+  downloads anything. Without the tools, or without `jq`, it tells you once per session how
+  to install them and blocks nothing. zsh scripts are skipped and said so.
+- The `shell-lint` skill was rewritten from the official ShellCheck and shfmt documentation.
+
+### Removed
+
+- The `shell-hooks` skill, its `manage.sh` installer, its configuration modes and the bundled
+  `shellcheckrc` and EditorConfig profiles: the plugin no longer writes any configuration.
+
 ## [0.1.1] - 2026-09-20
 
 ### Changed
@@ -91,6 +121,7 @@ heading: [Unreleased] compares the latest tag to HEAD; each version compares the
 previous tag to its own; the first version links to its tag.
 -->
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/shell-quality--v0.1.1...HEAD
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/shell-quality--v0.2.0...HEAD
+[0.2.0]: https://github.com/nerymurillohnd/claude-essentials/compare/shell-quality--v0.1.1...shell-quality--v0.2.0
 [0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/shell-quality--v0.1.0...shell-quality--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/shell-quality--v0.1.0

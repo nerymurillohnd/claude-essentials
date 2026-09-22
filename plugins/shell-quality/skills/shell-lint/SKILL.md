@@ -1,144 +1,170 @@
 ---
 name: shell-lint
-description: Lint and format shell scripts with ShellCheck and shfmt, fixing findings in the script instead of silencing them. Covers the order that works (format, then check), how each tool finds its configuration, the correct fix for the codes you actually meet, where directives apply and which must never be added. Confirm the installed versions with shellcheck --version and shfmt --version and their changelogs before relying on version-specific behavior. For installing the after-edit hook, use the shell-hooks skill.
-when_to_use: On every shell script Claude writes, edits, reviews or fixes (.sh, .bash, .bats, or an extensionless file with a sh, bash, dash or ksh shebang), before calling that work done, not only when the user asks. Also to fix an SC code such as SC2086 or SC2155, set up .shellcheckrc or the shfmt keys of EditorConfig, make a script portable or POSIX or able to run on macOS bash 3.2, migrate from bash -n, beautysh or checkbashisms, or wire either tool into pre-commit, CI or an editor.
-compatibility: Claude Code, Claude Cowork, and any Agent Skills host. Needs shellcheck >= 0.10 and shfmt >= 3.12 to run commands; the guidance works without them.
+description: Lint and format shell scripts with shfmt and ShellCheck, fixing every finding in the script instead of silencing it. Covers installing both tools without breaking a project pin, the order that works (format, then check), exit codes and output formats, how each tool discovers its configuration and which file wins, SHELLCHECK_OPTS, the shfmt keys of EditorConfig, the correct code change for the SC codes met most often, POSIX and macOS bash 3.2 portability, editor, pre-commit and CI wiring, the suppressions that must never be added, and how to answer the shell-quality hook when it reports findings or asks the user to confirm a directive. Confirm the installed versions and read both changelogs before relying on version-specific behavior.
+when_to_use: On every shell script Claude writes, edits, reviews or fixes (.sh, .bash, .bats, or an extensionless file with a sh, bash, dash or ksh shebang), before calling that work done, not only when the user asks. Also when the shell-quality hook reports shfmt or ShellCheck findings, to fix an SC code such as SC2086, SC2155 or SC2016, to install ShellCheck or shfmt, to set up .shellcheckrc or the shfmt keys of .editorconfig, to make a script POSIX or able to run on macOS bash 3.2, or to wire either tool into pre-commit, CI or an editor.
+compatibility: Claude Code, Claude Cowork, and any Agent Skills host. The commands need shellcheck 0.10 or later and shfmt 3.13 or later; the guidance works without them. The after-edit hook runs only where plugin hooks run.
 license: Apache-2.0
 ---
 
 # Shell lint
 
-ShellCheck finds bugs in shell scripts; shfmt formats them. Verified against
-**ShellCheck 0.11.0** and **shfmt 3.14.1** on 2026-09-19. Always check
-`shellcheck --version` and `shfmt --version` and the
+shfmt formats shell scripts; ShellCheck finds their bugs. Verified on
+**2026-09-22** against **ShellCheck 0.11.0** and **shfmt v3.14.1**, by running
+both binaries. Before relying on version-specific behavior, run
+`shellcheck --version` and `shfmt --version` and read the
 [ShellCheck changelog](https://github.com/koalaman/shellcheck/blob/master/CHANGELOG.md)
-before relying on version-specific behavior: a later release may have changed
-it, and this page does not update itself.
+and the [shfmt changelog](https://github.com/mvdan/sh/blob/master/CHANGELOG.md).
+The man pages on `master` can describe unreleased behavior: shfmt's `master`
+page documents `language_dialect`, `case_indent`, `block_next_line`, and `-bl`,
+which v3.14.1 does not have.
 
 ## Non-negotiable rules
 
-1. **Fix findings in the script.** Never add `# shellcheck disable=...`,
-   `# shellcheck disable=all`, or `# shellcheck source=/dev/null` to make a
-   check pass; never add `disable=` to an rc file, set `SHELLCHECK_OPTS`, pass
-   `-e`/`--exclude`/`--severity`/`--norc`, or add `ignore = true` to
-   `.editorconfig` to get a green run. If a finding looks wrong, explain why
-   and let the user decide; the suppression is theirs to add.
+1. **Fix findings in the script.** Never add any of these to get a clean run:
+   `# shellcheck disable=…` (including `disable=all`),
+   `# shellcheck source=/dev/null`, `disable=` in a `.shellcheckrc`,
+   `-e`/`--exclude`, `SHELLCHECK_OPTS='-e …'`, a raised `--severity`,
+   `--norc` to dodge the project rc, or `ignore = true` in `.editorconfig`.
+   If a finding looks wrong, show why and let the user decide; a suppression
+   is theirs to add.
 2. **Respect the project's configuration.** Read `.shellcheckrc` and
-   `.editorconfig` first. Do not pass shfmt style flags (`-i`, `-ci`, `-bn`,
-   `-s`, `-ln`, …) in a project that has EditorConfig: **any** parser or
-   printer flag makes shfmt ignore EditorConfig entirely.
-3. **Stay in scope.** Format and check the scripts being changed; ask before
-   reformatting a whole tree that was never shfmt-formatted.
-4. **Target the real shell.** The shebang decides the dialect. A `#!/bin/sh`
-   script must be POSIX; a `#!/usr/bin/env bash` script may run on macOS's
-   `/bin/bash` 3.2 (see below).
+   `.editorconfig` first. Never pass a shfmt parser or printer flag (`-i`,
+   `-ln`, `-p`, `-s`, `-bn`, `-ci`, `-sr`, `-kp`, `-fn`, `-mn`) where
+   EditorConfig exists: any one of them makes shfmt ignore every EditorConfig
+   formatting key.
+3. **Stay in scope.** Format and check the scripts being changed. Ask before
+   reformatting a tree that was never shfmt-formatted.
+4. **Target the real shell.** The shebang sets the dialect. `#!/bin/sh` means
+   POSIX. `#!/usr/bin/env bash` on a stock Mac runs `/bin/bash` 3.2.
+5. **Never install or upgrade a tool silently.** Use the project's pinned
+   install first; propose an install and let the user run or approve it.
 
 ## The workflow for every change
 
 ```bash
-shfmt -w -- <script>            # format first: it moves lines
-shellcheck -f gcc -- <script>   # then check the settled file; one finding per line
+shfmt -w -- script.sh              # 1. format: it moves lines
+shellcheck -x -f gcc -- script.sh  # 2. check the settled file, one finding per line
 ```
 
-- Order matters: formatting after checking makes the reported line numbers
-  wrong.
-- Exit codes: ShellCheck `0` clean, `1` findings (including parse errors),
-  `2` a file could not be processed, `3` bad syntax in options, `4` bad
-  options. shfmt `-w` exits `0`; `-d` and `-l` exit `1` when a file would
-  change; a parse error exits `1`; a bad flag exits `2`.
-- Read the explanation of every code before fixing it:
+- Format first; checking first leaves stale line numbers.
+- Read the wiki page before fixing an unfamiliar code:
   `https://www.shellcheck.net/wiki/SC2086`.
-- `shfmt -d` shows a diff without writing; `shfmt -l` lists files that would
-  change. `shfmt -p -d` (or `-ln=posix`) is a stricter syntax check than
-  `bash -n` for POSIX scripts, but it is a style flag (rule 2).
-- In CI and loops use `shellcheck file1 file2 …` or
-  `find … -print0 | xargs -0 shellcheck`; `find … -exec shellcheck {} \;`
-  always exits `0` and hides failures.
+- Re-run both tools until ShellCheck exits `0`, then report: scripts touched,
+  what shfmt changed, each finding and its fix, anything left and why.
 
-End with a short report: scripts and scope, what shfmt changed, which findings
-were fixed and how, and anything left with the reason.
+| Tool | Exit codes (verified with the binaries) |
+| --- | --- |
+| ShellCheck | `0` clean · `1` findings, including SC1071 for zsh · `2` a file could not be read · `3` bad invocation syntax (an unknown flag) · `4` bad option value (`-s zsh`, `-f nope`, `-S nope`) |
+| shfmt | `0` success · `1` `-d`/`-l` found differences, or a parse error · `2` bad flag |
+
+Useful ShellCheck flags: `-x` follows `source` into files not on the command
+line; `-P SCRIPTDIR` sets the source search path; `-S error|warning|info|style`
+filters the report (never to hide findings); `-o NAME` enables an optional
+check (`shellcheck --list-optional` lists them); `-f gcc|tty|json1|checkstyle|diff|quiet`
+chooses output. `-f diff` prints a patch for the auto-fixable subset, which
+you review before applying. `-a` also reports findings inside sourced files.
+
+Useful shfmt flags: `-d` prints a diff without writing; `-l` lists files that
+differ; `-f .` lists shell files found by extension and shebang; `--filename`
+names stdin so EditorConfig applies. In loops and CI, pass files as arguments
+or use `xargs`; `find … -exec shellcheck {} \;` exits `0` whatever it finds.
 
 ## How the tools find their configuration
 
-**ShellCheck** reads `.shellcheckrc` or `shellcheckrc` from the script's
-directory and each parent, then `~/.shellcheckrc`, then
-`$XDG_CONFIG_HOME/shellcheckrc` (usually `~/.config/shellcheckrc`;
-`%APPDATA%\shellcheckrc` on Windows). **The first file found wins; nothing
-merges**: a project rc silently replaces a user's global one. `--rcfile FILE`
-(0.10+) forces one file; `--norc` ignores them all. The only environment
-variable is `SHELLCHECK_OPTS` (extra flags, split on spaces); there is no
-`SHELLCHECK_SHELL`, `SHELLCHECK_STRICT`, or `SHELLCHECK_CONFIG`.
+**ShellCheck** looks for `.shellcheckrc`, then `shellcheckrc`, in the script's
+directory and each parent; then `~/.shellcheckrc`; then
+`$XDG_CONFIG_HOME/shellcheckrc` (`%APPDATA%\shellcheckrc` on Windows). **The
+first file found is the only one read; nothing merges.** A project rc hides a
+user's global rc completely. `--rcfile FILE` reads that file instead of
+searching; `--norc` reads none. `SHELLCHECK_OPTS` is split on spaces and
+**prepended** to the arguments: flags given on the command line win, and it
+still applies with `--norc`. When a finding appears or disappears unexpectedly,
+check `echo "${SHELLCHECK_OPTS-}"` and name it in the report.
 
-Useful rc keys: `external-sources=true` (follow `source` outside the checked
-files; only effective in an rc file), `source-path=SCRIPTDIR` (resolve sources
-relative to each script), `enable=<optional check>`. Never put `shell=` in an
-rc file: rc entries apply file-wide, so it overrides every shebang and hides
-POSIX findings. Never `enable=all`: the optional checks are opinions and some
-conflict.
+**shfmt** reads EditorConfig: every `.editorconfig` from the script's directory
+up to one with `root = true`, the nearer file winning per key. `[*.sh]` misses
+extensionless scripts and `.bats`; the shfmt-only sections `[[shell]]`,
+`[[bash]]` and `[[zsh]]` match by detected language. `ignore = true` applies
+when walking a directory and to explicit files only with `--apply-ignore`.
 
-**shfmt** reads EditorConfig (`.editorconfig` files up to one with
-`root = true`). Keys in 3.14: `indent_style`, `indent_size`, `shell_variant`,
-`binary_next_line`, `switch_case_indent`, `space_redirects`,
-`function_next_line`, `simplify`, `minify`, `ignore` (`keep_padding` is
-deprecated). `[*.sh]` sections miss `.bats` files and extensionless scripts;
-shfmt's `[[shell]]` and `[[bash]]` sections match by language instead. `ignore
-= true` applies to explicit file arguments only with `--apply-ignore`.
-
-## Target shell and portability
-
-ShellCheck picks the dialect from a `# shellcheck shell=` directive, then the
-shebang, then the extension (`.bash`, `.bats`, `.dash`, `.ksh`); `-s` overrides
-all of them. A file with none of these gets `SC2148`. zsh is not supported.
-
-`#!/usr/bin/env bash` on a stock Mac finds `/bin/bash` **3.2**. ShellCheck does
-**not** check Bash versions, so these pass lint and then fail at run time:
-`declare -A`, `mapfile`/`readarray`, `${var,,}`/`${var^^}`, `local -n`,
-`[[ -v var ]]`, `wait -n`, `${var@Q}`, `shopt -s inherit_errexit`, and (before
-Bash 4.4) `"${arr[@]}"` of an empty array under `set -u`. Use
-`${arr[@]+"${arr[@]}"}`, `while IFS= read -r` loops, and `tr` for case changes,
-and test with `/bin/bash script.sh` when macOS support matters.
+Depth, verified experiments, and every key:
+[references/configuration.md](references/configuration.md).
 
 ## Fixes for the codes you will meet most
 
-The full list, with correct and incorrect fixes, is in
-[`references/sc-codes.md`](references/sc-codes.md). The essentials:
+| Code | Correct change |
+| --- | --- |
+| SC2086 | Quote the expansion, `"${var}"`; for a deliberate list use an array, `"${args[@]}"` |
+| SC2046 | Quote `"$(cmd)"`; to split on purpose, `read -r -a parts <<<"$(cmd)"` |
+| SC2155 | `local out; out=$(cmd)` so `cmd`'s failure is not masked |
+| SC2016 | Want expansion: double quotes. Want a literal `$`: `jq --arg n "${n}" '…$n…'`, or `"\$HOME"` |
+| SC2034 | Delete the variable or use it; `_` placeholders (`read -r _ b`) are exempt |
+| SC2154 | Assign it, or require it: `: "${VAR:?VAR must be set}"` |
+| SC1090/SC1091 | `source-path=SCRIPTDIR` plus `-x` (or `external-sources=true`), or `# shellcheck source=lib/x.sh` naming the real file |
+| SC2329 | Call the function, delete it, or for a `trap` handler inline the command: `trap 'rm -f -- "${tmp}"' EXIT` |
+| SC2312 | Capture first, `now=$(date)`, then use `"${now}"` |
 
-- **SC2086** unquoted expansion: quote it, `"${var}"`; for deliberate word
-  lists use an array, `"${args[@]}"`.
-- **SC2046** unquoted `$(…)`: quote it; to split on purpose,
-  `read -r -a parts <<<"$(cmd)"`.
-- **SC2155** `local x=$(cmd)` hides `cmd`'s failure: `local x; x=$(cmd)`.
-- **SC2164** `cd dir` without a check: `cd dir || exit 1` (`|| return` in a
-  function).
-- **SC2181** `if [ $? -ne 0 ]`: test the command directly, `if ! cmd; then`.
-- **SC2206/SC2207** array from unquoted expansion: `read -r -a arr <<<"${v}"`;
-  lines: `while IFS= read -r l; do arr+=("${l}"); done < <(cmd)`.
-- **SC2034** unused variable: remove it, or use it; `_`-prefixed names are
-  exempt for deliberate placeholders.
-- **SC1090/SC1091** unresolved `source`: add `source-path=SCRIPTDIR` (rc or a
-  `# shellcheck source-path=` directive before the first command) or a
-  `# shellcheck source=relative/path.sh` directive that names the real file.
-- **SC2312** (optional) status of `$(cmd)` lost inside another command: assign
-  it first, `out=$(cmd)`, then use `"${out}"`.
-- **SC2250** (optional) braces: `${var}`.
+Every other common code, POSIX SC3xxx codes, and the optional checks:
+[references/sc-codes.md](references/sc-codes.md).
 
-`set -e` is not a safety net: it is suspended inside `if`, `&&`, `||`, and
-functions called from them, and it does not see failures masked by SC2155 or
-SC2312. Enable `check-set-e-suppressed` to find those places.
+`set -euo pipefail` is not a safety net: `set -e` is off inside `if`, `&&`,
+`||`, and functions called from them, and it never sees the failures SC2155
+and SC2312 describe.
 
-## Directives: where they apply
+## Portability
 
-A directive before the first command applies to the whole file; otherwise it
-applies to the next command (a whole function, loop, `if`, or `{ }` block), and
-in `a; b` only to `a`. A reason may follow on the same line after another `#`.
-Recognize directives when you read code; adding one is the user's decision.
+ShellCheck takes the dialect from a `# shellcheck shell=` directive, then the
+shebang, then the extension; `-s` overrides all three. zsh is not supported
+(SC1071). ShellCheck does **not** check Bash versions: `declare -A`, `mapfile`,
+`${x,,}`, `[[ -v x ]]`, `local -n`, `${x@Q}`, and `"${a[@]}"` of an empty
+array under `set -u` all pass lint and fail on `/bin/bash` 3.2 (verified on
+macOS). Use `${a[@]+"${a[@]}"}`, `while IFS= read -r` loops, and `tr` for case,
+and test with `/bin/bash script.sh`. Details:
+[references/sc-codes.md](references/sc-codes.md#portability).
+
+## Directives: recognize them, never add them
+
+A directive after the shebang and before the first command applies to the
+whole file; elsewhere it covers only the next command (a whole function, loop,
+`if`, or `case`). Read them when reviewing code, question the ones without a
+reason comment, and propose removing each by fixing the code. Adding one is
+the user's decision.
+
+## Responding to the shell-quality hook
+
+The plugin ships hooks that run after Claude writes or edits a `.sh` or `.bash`
+file: `shfmt -w`, then `shellcheck -x -f gcc` from the script's directory, on
+the whole file, with each tool's native configuration discovery and
+`SHELLCHECK_OPTS`, using the project install or the `PATH` (never a download).
+zsh scripts are skipped.
+
+- **Findings reported after an edit:** fix them in the script, re-read the
+  file (shfmt may have rewritten it), and continue. A long report is cut
+  short; run ShellCheck yourself to see the rest. Do not argue with the hook
+  or reach for a directive.
+- **Stop is blocked:** a touched script still has findings. Fix them; the hook
+  keeps Claude working up to 7 times, and the 8th attempt ends with a failure
+  message to the user. If a finding truly cannot be fixed, say so plainly with
+  the code, the line, and the reason.
+- **A confirmation prompt:** adding a `# shellcheck disable=` or
+  `source=/dev/null` directive, changing `.shellcheckrc` or `shellcheckrc`, or
+  changing the sections or shfmt keys of `.editorconfig` (by an edit or a Bash
+  command) asks the user first. Expect the prompt; never reshape an edit or a
+  command to avoid it.
+- **A tool is missing** (shfmt, ShellCheck, or `jq`, which the hook needs):
+  the hook tells the user once per session how to
+  install it and does not block. Offer the install from
+  [references/pipelines.md](references/pipelines.md#installing); do not run it
+  unasked.
+- **`SHELLCHECK_OPTS` is named in a report:** it changed what ShellCheck saw.
+  Tell the user; do not unset it for them.
 
 ## Additional resources
 
-- [`references/sc-codes.md`](references/sc-codes.md) — the common codes with
-  correct fixes, the optional checks worth enabling, and anti-patterns.
-- [`references/configuration.md`](references/configuration.md) — rc files and
-  EditorConfig in depth, the recommended profile explained, and migration from
-  `bash -n`, beautysh, checkbashisms, and older rc files.
-- [`references/pipelines.md`](references/pipelines.md) — pre-commit, GitHub
-  Actions and other CI, editors, and keeping every version pin equal.
+- [references/sc-codes.md](references/sc-codes.md): code-by-code fixes,
+  POSIX and bash 3.2 portability, the optional checks, and anti-patterns.
+- [references/configuration.md](references/configuration.md): rc discovery,
+  `SHELLCHECK_OPTS`, rc keys, shfmt and EditorConfig keys by version, and
+  migration from other tools.
+- [references/pipelines.md](references/pipelines.md): installing, pinning,
+  pre-commit, GitHub Actions, editors and LSP.
