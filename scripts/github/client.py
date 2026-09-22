@@ -62,8 +62,10 @@ class GitHubTokenMissingError(MaintainerError):
     def __init__(self) -> None:
         """Name the variable and how to fill it."""
         super().__init__(
-            f"{AUTH_ENV_VARIABLE} is not set; run `GITHUB_TOKEN=$(gh auth token) …` locally, or "
-            f"pass `secrets.GITHUB_TOKEN` in the workflow step's env",
+            (
+                f"{AUTH_ENV_VARIABLE} is not set; run `GITHUB_TOKEN=$(gh auth token) …` locally, "
+                f"or pass `secrets.GITHUB_TOKEN` in the workflow step's env"
+            ),
         )
 
 
@@ -73,8 +75,10 @@ class GitHubRepositoryUnknownError(MaintainerError):
     def __init__(self) -> None:
         """Name both ways the slug is normally found."""
         super().__init__(
-            f"{REPOSITORY_VARIABLE} is not set and `git remote get-url origin` does not look "
-            f"like a GitHub remote",
+            (
+                f"{REPOSITORY_VARIABLE} is not set and `git remote get-url origin` does not look "
+                f"like a GitHub remote"
+            ),
         )
 
 

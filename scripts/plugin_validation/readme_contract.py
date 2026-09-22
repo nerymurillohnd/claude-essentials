@@ -434,8 +434,10 @@ def _surface_badge_findings(
                 Finding(
                     "R2",
                     rel,
-                    f"the {alt} badge says {match.group('status')!r};"
-                    f" the table collapses to {expected!r}",
+                    (
+                        f"the {alt} badge says {match.group('status')!r};"
+                        f" the table collapses to {expected!r}"
+                    ),
                 )
             )
     return findings
@@ -863,8 +865,10 @@ def _catalog_row_findings(root: Path, plugin_id: str, cells: Sequence[str]) -> l
                 Finding(
                     "R14",
                     "README.md",
-                    f"the row for {plugin_id!r} shows {cells[index]!r} for"
-                    f" {surface}, not {expected}",
+                    (
+                        f"the row for {plugin_id!r} shows {cells[index]!r} for"
+                        f" {surface}, not {expected}"
+                    ),
                 )
             )
     return findings

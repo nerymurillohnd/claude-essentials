@@ -22,8 +22,10 @@ PRERELEASE_TAGS: Final = ("beta", "rc")
 """The only prerelease identifiers this marketplace publishes, in ascending order."""
 
 VERSION_PATTERN: Final = re.compile(
-    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
-    r"(?:-(?P<tag>beta|rc)\.(?P<number>0|[1-9]\d*))?\Z",
+    (
+        r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
+        r"(?:-(?P<tag>beta|rc)\.(?P<number>0|[1-9]\d*))?\Z"
+    ),
 )
 """The whole grammar, anchored with `\\Z` rather than `$`.
 
@@ -41,8 +43,10 @@ class InvalidVersionError(MaintainerError):
             text: The version string that could not be parsed.
         """
         super().__init__(
-            f"{text!r} is not a canonical version: expected X.Y.Z, X.Y.Z-beta.N or "
-            f"X.Y.Z-rc.N, with no `v` prefix and no build metadata",
+            (
+                f"{text!r} is not a canonical version: expected X.Y.Z, X.Y.Z-beta.N or "
+                f"X.Y.Z-rc.N, with no `v` prefix and no build metadata"
+            ),
         )
 
 

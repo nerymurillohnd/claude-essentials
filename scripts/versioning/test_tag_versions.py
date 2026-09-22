@@ -40,10 +40,12 @@ def _stub(tmp_path: Path, *, exit_code: int) -> Path:
     stub = tmp_path / "claude-stub"
     write_file(
         stub,
-        "#!/usr/bin/env bash\n"
-        f'printf "%s\\n" "$*" >> "{tmp_path / ARGV_LOG}"\n'
-        'echo "stub said something"\n'
-        f"exit {exit_code}\n",
+        (
+            "#!/usr/bin/env bash\n"
+            f'printf "%s\\n" "$*" >> "{tmp_path / ARGV_LOG}"\n'
+            'echo "stub said something"\n'
+            f"exit {exit_code}\n"
+        ),
     )
     stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
     return stub

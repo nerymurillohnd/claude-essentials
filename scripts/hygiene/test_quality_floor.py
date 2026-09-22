@@ -7,7 +7,7 @@ repository looks green and checks less than it did the day before.
 Three shapes of escape hatch are closed here. **A second configuration file** —
 `.ruff.toml`, `ruff.toml` and `pyrightconfig.json` all take precedence over `pyproject.toml`,
 so their existence alone replaces the policy. **A downgraded rule** — a `report* = false`, a
-`diagnosticSeverityOverrides`, a `per-file-ignores`, an `ignore` outside the recorded list.
+`diagnosticSeverityOverrides`, a `per-file-ignores` or an `ignore` outside the recorded one.
 **A baseline** — `baselineFile` and `.basedpyright/` suppress every pre-existing error by
 design and keep doing it as new ones arrive.
 """
@@ -59,32 +59,26 @@ FLOOR_FAMILIES: Final[tuple[str, ...]] = (
 
 ALLOWED_IGNORES: Final[frozenset[str]] = frozenset(
     {
-        # Formatter conflicts, exactly as Ruff's own documentation lists them.
-        "W191",
-        "E111",
-        "E114",
-        "E117",
-        "D203",
-        "D206",
-        "D300",
-        "Q000",
-        "Q001",
-        "Q002",
-        "Q003",
-        "Q004",
+        # The one formatter conflict `ruff format` reports for this configuration.
         "COM812",
-        "COM819",
-        "ISC002",
-        # The recorded practical ignores, identical to the maintainer's global policy.
-        "D100",
-        "D104",
-        "D213",
-        "S101",
+        # Fires on every subprocess call without `shell=True`; Ruff documents it as prone to
+        # false positives, and only a suppression comment could answer it in the code.
         "S603",
-        "INP001",
     }
 )
-"""The closed ignore list. Anything else is a rule someone turned off in place."""
+"""The closed ignore list. Anything else is a rule someone turned off in place.
+
+Measured 2026-09-22 with Ruff 0.16.8: the other formatter rules Ruff's documentation lists
+conflict only under settings this repository does not use (tabs, single quotes, no magic
+trailing comma), and re-enabling each of them, and D100, D104, D213 and INP001, raised zero
+findings. An ignore that suppresses nothing only waits for the defect it hides.
+"""
+
+ALLOWED_PER_FILE_IGNORES: Final[dict[str, list[str]]] = {
+    "scripts/**/test_*.py": ["S101"],
+    "scripts/**/conftest.py": ["S101"],
+}
+"""The only per-file exemption: `assert` is pytest's API, and flagged everywhere else."""
 
 MAX_COMPLEXITY: Final = 8
 """The mccabe ceiling; a higher one would let a branchier function through."""
@@ -92,8 +86,6 @@ MAX_COMPLEXITY: Final = 8
 MAX_LINE_LENGTH: Final = 100
 """The line length the editor's ruler and `.editorconfig` also carry."""
 
-ALLOWED_REPORT_KEY: Final = "reportImplicitStringConcatenation"
-"""The one pre-declared downgrade: the check the Ruff floor itself ignores as `ISC002`."""
 
 REQUIRED_BASEDPYRIGHT: Final[dict[str, object]] = {
     "typeCheckingMode": "all",
@@ -138,10 +130,10 @@ def test_nothing_outside_the_recorded_list_is_ignored(repo: Path) -> None:
     assert sorted(ignored - ALLOWED_IGNORES) == []
 
 
-def test_there_are_no_per_file_ignores(repo: Path) -> None:
-    """A per-file ignore is an exemption with no expiry and no owner."""
+def test_the_per_file_ignores_are_exactly_the_recorded_ones(repo: Path) -> None:
+    """A per-file ignore is an exemption with no expiry and no owner, so only one is allowed."""
     document = toml_document(repo / PYPROJECT)
-    assert nested(document, "tool", "ruff", "lint", "per-file-ignores") is None
+    assert nested(document, "tool", "ruff", "lint", "per-file-ignores") == ALLOWED_PER_FILE_IGNORES
 
 
 def test_the_thresholds_are_at_or_below_the_floor(repo: Path) -> None:
@@ -164,14 +156,18 @@ def test_basedpyright_runs_at_its_strictest(repo: Path, key: str, value: object)
     assert nested(toml_document(repo / PYPROJECT), "tool", "basedpyright", key) == value
 
 
-def test_only_the_pre_declared_rule_is_downgraded(repo: Path) -> None:
-    """One downgrade is a decision; a second is a habit, and it would not be recorded."""
+def test_no_rule_is_downgraded(repo: Path) -> None:
+    """A `report* = false` turns a check off for the whole repository, with no record of why.
+
+    The last one, `reportImplicitStringConcatenation`, was retired on 2026-09-22: every
+    concatenation it reported now sits in its own parentheses, which the check accepts.
+    """
     section = nested(toml_document(repo / PYPROJECT), "tool", "basedpyright")
     assert is_json_object(section)
-    disabled = {
+    disabled = sorted(
         key for key, value in section.items() if value is False and key.startswith("report")
-    }
-    assert disabled <= {ALLOWED_REPORT_KEY}, sorted(disabled - {ALLOWED_REPORT_KEY})
+    )
+    assert disabled == []
 
 
 def test_no_severity_override_and_no_baseline(repo: Path) -> None:

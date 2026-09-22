@@ -1,8 +1,10 @@
 r"""Q3: a finding is fixed, never silenced.
 
 Q1 keeps the configuration strict. This keeps the code honest: a `# noqa`, a `# type: ignore`
-or a file-wide ShellCheck directive turns one real finding off while every gate stays green,
-and each one is a single line that no reviewer is likely to question.
+or a ShellCheck `disable=` turns one real finding off while every gate stays green, and each
+one is a single line that no reviewer is likely to question. Every shell script is swept,
+plugin test suites included, because a suppression there hides a defect in the suite that is
+supposed to catch defects.
 
 `typing.cast` is in the list for the same reason. A cast asserts a type the checker could not
 prove, so an unproven cast is a suppression written as code. The rule is the one §A14.1
@@ -16,11 +18,15 @@ undocumentable.
 from __future__ import annotations
 
 import re
+import subprocess
 from typing import TYPE_CHECKING, Final
 
 import pytest
 
-from scripts.common.plugins import working_files
+from scripts.common.jsontext import is_json_array, is_json_object
+from scripts.common.plugins import parse_json, working_files
+from scripts.lint.shell_files import select
+from scripts.lint.tools import tool_path
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,6 +39,8 @@ PYTHON_PATTERNS: Final[tuple[tuple[str, str], ...]] = (
     (r"#\s*pyright:\s*ignore", "pyright's suppression"),
     (r"#\s*basedpyright:\s*ignore", "basedpyright's suppression"),
     (r"#\s*pyright:\s*(basic|strict)\b", "a per-file type-checking mode"),
+    (r"#\s*shellcheck\s+(?:[a-z-]+=\S+\s+)*disable=", "a ShellCheck suppression in embedded shell"),
+    (r"#\s*shellcheck\s+(?:[a-z-]+=\S+\s+)*source=/dev/null", "ShellCheck told to skip a file"),
 )
 """Every marker that makes a Python finding disappear, with what it is for the message."""
 
@@ -53,23 +61,16 @@ RECIPE_FILES: Final[tuple[str, ...]] = (
 BASELINE_FLAG: Final = "--writebaseline"
 """The flag that creates the baseline; it may appear in no recipe, hook or workflow."""
 
-SHELL_FILE_DIRECTIVE: Final = re.compile(r"^#\s*shellcheck\s+disable=")
-"""A ShellCheck directive before the first statement applies to the whole file."""
+SHELL_SUPPRESSION: Final = re.compile(
+    r"^\s*shellcheck\s+(?:[a-z-]+=\S+\s+)*(?:disable=|source=/dev/null)"
+)
+"""A ShellCheck directive that silences a finding, as the text of a real comment.
 
-SHELL_DISABLE_ALL: Final = re.compile(r"#\s*shellcheck\s+disable=all")
-"""Turning ShellCheck off entirely, wherever it is written."""
+ShellCheck reads a directive as `shellcheck` followed only by `key=value` pairs, so prose that
+merely names one, such as `ShellCheck suppression (# shellcheck disable=...)`, is not matched.
 
-EXEMPT_SHELL: Final[tuple[str, ...]] = ("plugins/*/test-*.sh", "plugins/*/tests/*.sh")
-"""Plugin test suites, excluded for two reasons rather than one.
-
-Their content is sample text for the guard under test: `shell-quality`'s suite writes a
-script containing `# shellcheck disable=all` precisely to assert that its hook denies it, so
-a literal match there is data, not policy. And ADR-0003 already classes `test-*.sh` and
-`tests/` as files Claude never loads, so they are not part of what a user receives.
-
-Measured 2026-09-21: three of them open with a file-wide `# shellcheck disable=SC2016`, which
-is a real defect in those plugins and is recorded for the plugin follow-up rather than fixed
-from the tooling migration that may not touch plugin files.
+`source=<path>` stays allowed: it tells ShellCheck where a sourced file is, so it checks
+more, not less. `source=/dev/null` is the opposite, and is banned with `disable=`.
 """
 
 
@@ -87,16 +88,79 @@ def _python_files(repo: Path) -> list[str]:
 
 
 def _shell_files(repo: Path) -> list[str]:
-    """List the shell scripts this repository owns, plugins included.
+    """List every shell script this repository owns, plugin test suites included.
 
     Args:
         repo: The repository root.
 
     Returns:
-        Sorted repository-relative paths, the plugin test suites excluded.
+        Sorted repository-relative paths.
     """
-    exempt = set(working_files(repo, *EXEMPT_SHELL))
-    return [rel for rel in sorted(working_files(repo, "*.sh")) if rel not in exempt]
+    return select(repo, working_files(repo, "*"))
+
+
+def _comment(entry: object) -> tuple[int, str] | None:
+    """Read one shfmt comment node.
+
+    Args:
+        entry: An element of a node's `Comments` list.
+
+    Returns:
+        `(line, text)`, or None when the node is not a comment; an empty `#` has no `Text`.
+    """
+    if not is_json_object(entry):
+        return None
+    mark = entry.get("Hash")
+    line = mark.get("Line") if is_json_object(mark) else None
+    text = entry.get("Text", "")
+    if isinstance(line, int) and isinstance(text, str):
+        return line, text
+    return None
+
+
+def _comments(node: object, found: list[tuple[int, str]]) -> None:
+    """Collect every comment in a shfmt syntax tree, with its line.
+
+    Args:
+        node: A node of the tree `shfmt --to-json` printed.
+        found: Where each `(line, text)` is appended.
+    """
+    if is_json_object(node):
+        entries = node.get("Comments")
+        if is_json_array(entries):
+            found.extend(comment for entry in entries if (comment := _comment(entry)))
+        for value in node.values():
+            _comments(value, found)
+    elif is_json_array(node):
+        for value in node:
+            _comments(value, found)
+
+
+def _shell_comments(repo: Path, rel: str) -> list[tuple[int, str]]:
+    """Parse one script with shfmt and return its real comments.
+
+    A line that only looks like a directive inside a quoted string is data, and the parser
+    is what tells the two apart: `shell-quality`'s suite writes `# shellcheck disable=all`
+    into fixtures precisely to prove its hook denies it.
+
+    Args:
+        repo: The repository root.
+        rel: The script's repository-relative path.
+
+    Returns:
+        Every comment, as `(line, text)`.
+    """
+    completed = subprocess.run(
+        [str(tool_path(repo, "shfmt")), "--to-json"],
+        input=(repo / rel).read_text(encoding="utf-8"),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    tree = parse_json(completed.stdout, path=repo / rel)
+    found: list[tuple[int, str]] = []
+    _comments(tree, found)
+    return found
 
 
 @pytest.mark.parametrize(("pattern", "what"), PYTHON_PATTERNS)
@@ -142,26 +206,13 @@ def test_the_shell_policy_disables_nothing_repository_wide(repo: Path) -> None:
     assert "disable=" not in text
 
 
-def test_no_shell_script_turns_shellcheck_off(repo: Path) -> None:
-    """`disable=all` is the one directive that can never be narrow enough to justify."""
+@pytest.mark.slow
+def test_no_shell_script_silences_shellcheck(repo: Path) -> None:
+    """A `disable=` hides a real finding; before the first statement it hides a whole file."""
     offenders = [
-        rel
+        f"{rel}:{line}"
         for rel in _shell_files(repo)
-        if SHELL_DISABLE_ALL.search((repo / rel).read_text("utf-8"))
+        for line, text in _shell_comments(repo, rel)
+        if SHELL_SUPPRESSION.search(text)
     ]
-    assert offenders == []
-
-
-def test_no_shell_directive_applies_to_a_whole_file(repo: Path) -> None:
-    """Before the first statement a directive covers everything after it, not one line."""
-    offenders: list[str] = []
-    for rel in _shell_files(repo):
-        for line in (repo / rel).read_text(encoding="utf-8").splitlines():
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#!"):
-                continue
-            if SHELL_FILE_DIRECTIVE.match(stripped):
-                offenders.append(rel)
-            if not stripped.startswith("#"):
-                break
-    assert offenders == [], f"file-wide ShellCheck directives in: {offenders}"
+    assert offenders == [], f"ShellCheck suppressions at: {offenders}"

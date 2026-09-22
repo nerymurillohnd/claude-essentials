@@ -248,8 +248,10 @@ def check_claude_code_versions(root: Path) -> list[Finding]:
                     Finding(
                         "G2",
                         rel,
-                        f"{CLAUDE_CODE_KEY} is {FLOATING_VERSION!r}, which is allowed only on a "
-                        f"workflow triggered solely by {sorted(ON_DEMAND_TRIGGERS)}",
+                        (
+                            f"{CLAUDE_CODE_KEY} is {FLOATING_VERSION!r}, which is allowed only on "
+                            f"a workflow triggered solely by {sorted(ON_DEMAND_TRIGGERS)}"
+                        ),
                     ),
                 )
             continue
@@ -343,8 +345,10 @@ def _check_ruff_pin(root: Path) -> list[Finding]:
             Finding(
                 "G3",
                 PYPROJECT,
-                f"`required-version` is {required!r}; this repository pins a `>=` floor so a "
-                f"Dependabot bump of the lock cannot silently drop below it",
+                (
+                    f"`required-version` is {required!r}; this repository pins a `>=` floor so a "
+                    f"Dependabot bump of the lock cannot silently drop below it"
+                ),
             ),
         ]
     floor = required[2:].strip()
@@ -452,8 +456,10 @@ def _check_advertised_tools(root: Path) -> list[Finding]:
                 Finding(
                     "G3",
                     UV_LOCK,
-                    f"a plugin README advertises {tool} {promised}, but `.venv/bin/{binary}` "
-                    f"reports no version; run `make setup`",
+                    (
+                        f"a plugin README advertises {tool} {promised}, but `.venv/bin/{binary}` "
+                        f"reports no version; run `make setup`"
+                    ),
                 ),
             )
         elif locked < advertised:
@@ -462,8 +468,10 @@ def _check_advertised_tools(root: Path) -> list[Finding]:
                 Finding(
                     "G3",
                     UV_LOCK,
-                    f"the locked {tool} is {found}, below the {promised} a plugin README "
-                    f"advertises",
+                    (
+                        f"the locked {tool} is {found}, below the {promised} a plugin README "
+                        f"advertises"
+                    ),
                 ),
             )
     return findings

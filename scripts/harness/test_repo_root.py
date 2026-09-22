@@ -24,7 +24,6 @@ LIBRARY: Final = "lib/repo-root.sh"
 
 DRIVER: Final = """
 set -euo pipefail
-# shellcheck source=/dev/null
 source "$1"
 printf 'session=%s\\n' "$(session_tree "$2")"
 printf 'project=%s\\n' "$(project_dir "$2")"

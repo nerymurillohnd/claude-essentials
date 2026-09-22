@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 SHELL_EXPANSION: Final = re.compile(r"\$\{?(?P<name>[A-Z][A-Z0-9_]*)")
 """A shell expansion of an upper-case name, in the braced or the bare form."""
 
-SHELL_BINDING: Final = re.compile(
+_SHELL_BINDING_PATTERN: Final = (
     r"(?:\b(?P<assigned>[A-Z][A-Z0-9_]*)\s*\+?=)"
     r"|(?:\b(?:local|readonly|export|declare|typeset)\s+(?:-[A-Za-z]+\s+)*(?P<declared>[A-Z][A-Z0-9_]*))"
     r"|(?:\bfor\s+(?P<loop>[A-Z][A-Z0-9_]*)\s+in\b)"
@@ -32,6 +32,7 @@ SHELL_BINDING: Final = re.compile(
     r"|(?:\bprintf\s+-v\s+(?P<printf>[A-Z][A-Z0-9_]*))"
     r"|(?:\$\{(?P<default>[A-Z][A-Z0-9_]*):=)"
 )
+SHELL_BINDING: Final = re.compile(_SHELL_BINDING_PATTERN)
 """Every binding form the shipped scripts use; a bound name is a local, not an input."""
 
 SINGLE_QUOTED: Final = re.compile(r"'[^']*'")
@@ -44,11 +45,12 @@ COMMENT: Final = re.compile(r"(?m)(?:^[ \t]*#.*$)|(?:(?<=[ \t])#[ \t].*$)")
 prefix does not hide the rest of its line from the scan.
 """
 
-PYTHON_ENV: Final = re.compile(
+_PYTHON_ENV_PATTERN: Final = (
     r"os\.environ\[\s*[\"'](?P<index>[A-Za-z_][A-Za-z0-9_]*)[\"']\s*\]"
     r"|os\.environ\.get\(\s*[\"'](?P<get>[A-Za-z_][A-Za-z0-9_]*)[\"']"
     r"|os\.getenv\(\s*[\"'](?P<getenv>[A-Za-z_][A-Za-z0-9_]*)[\"']"
 )
+PYTHON_ENV: Final = re.compile(_PYTHON_ENV_PATTERN)
 """The three ways a shipped Python script reads the environment."""
 
 ENVIRONMENT_BASELINE: Final[frozenset[str]] = frozenset(

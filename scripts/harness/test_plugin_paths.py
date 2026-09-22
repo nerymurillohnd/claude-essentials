@@ -52,7 +52,6 @@ TABLE: Final[tuple[tuple[str, bool], ...]] = (
 
 SCRIPT: Final = """
 set -euo pipefail
-# shellcheck source=/dev/null
 source "$1"
 shift
 for rel in "$@"; do

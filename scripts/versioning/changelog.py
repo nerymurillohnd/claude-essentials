@@ -422,9 +422,11 @@ def check_released_bodies(
                 Finding(
                     "C2",
                     path,
-                    f"the body of `## [{section.label}]` differs from its text at {tag}; "
-                    f"corrections go under `## [{UNRELEASED_LABEL}]` in an `{ERRATA_HEADING}` "
-                    f"block, and only the footer links may be repaired",
+                    (
+                        f"the body of `## [{section.label}]` differs from its text at {tag}; "
+                        f"corrections go under `## [{UNRELEASED_LABEL}]` in an `{ERRATA_HEADING}` "
+                        f"block, and only the footer links may be repaired"
+                    ),
                 ),
             )
     return findings

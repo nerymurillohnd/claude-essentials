@@ -226,8 +226,10 @@ def check_name(plugin_id: str) -> list[Finding]:
             Finding(
                 "M6",
                 rel,
-                f"{plugin_id!r} is {len(plugin_id)} characters; at most "
-                f"{MAX_PLUGIN_NAME_LENGTH} keeps `plugin: <name>` inside GitHub's limit",
+                (
+                    f"{plugin_id!r} is {len(plugin_id)} characters; at most "
+                    f"{MAX_PLUGIN_NAME_LENGTH} keeps `plugin: <name>` inside GitHub's limit"
+                ),
             ),
         )
     return findings
@@ -317,8 +319,10 @@ def check_renames(root: Path) -> list[Finding]:
                 Finding(
                     "M9",
                     ROOT_README,
-                    f"{old!r} is removed in `renames`, but the catalog table still links to "
-                    f"`{PLUGINS_DIRNAME}/{old}/{ROOT_README}`",
+                    (
+                        f"{old!r} is removed in `renames`, but the catalog table still links to "
+                        f"`{PLUGINS_DIRNAME}/{old}/{ROOT_README}`"
+                    ),
                 ),
             )
     return findings

@@ -85,14 +85,16 @@ PlanLevel = Literal[
 """A plugin's contribution to the pull request's `bump:` label."""
 
 EXEMPT_FILE: Final = re.compile(
-    r"(?:README\.md"
-    r"|CHANGELOG\.md"
-    r"|LICENSE"
-    r"|LICENSE\.[^/]+"
-    r"|docs/.+"
-    r"|evals/.+"
-    r"|(?:.*/)?tests/.+"
-    r"|(?:.*/)?test-[^/]+\.sh)\Z",
+    (
+        r"(?:README\.md"
+        r"|CHANGELOG\.md"
+        r"|LICENSE"
+        r"|LICENSE\.[^/]+"
+        r"|docs/.+"
+        r"|evals/.+"
+        r"|(?:.*/)?tests/.+"
+        r"|(?:.*/)?test-[^/]+\.sh)\Z"
+    ),
 )
 """Paths inside `plugins/<name>/` that Claude never loads, so changing them owes no bump.
 
@@ -954,8 +956,10 @@ def _plan_tagged_plugin(
             Finding(
                 "V2",
                 _manifest_path(context.name),
-                f"{context.version} is lower than the published {tagged}; a version never "
-                f"decreases, so ship a new PATCH that states what was reverted",
+                (
+                    f"{context.version} is lower than the published {tagged}; a version never "
+                    f"decreases, so ship a new PATCH that states what was reverted"
+                ),
             ),
         )
         ok = False
@@ -965,9 +969,11 @@ def _plan_tagged_plugin(
             Finding(
                 "V1",
                 f"{PLUGINS_DIRNAME}/{context.name}/{first}",
-                f"Claude loads this file and it changed since {tag.tag}, but `version` is still "
-                f"{tagged}; installed users would keep the old copy under the same version "
-                f"(ADR-0003)",
+                (
+                    f"Claude loads this file and it changed since {tag.tag}, but `version` is "
+                    f"still {tagged}; installed users would keep the old copy under the same "
+                    f"version (ADR-0003)"
+                ),
             ),
         )
         ok = False
@@ -1041,8 +1047,10 @@ def _removal_findings(
             Finding(
                 "V4",
                 MARKETPLACE_PATH,
-                f'`{PLUGINS_DIRNAME}/{name}/` is gone but `renames` has no `"{name}": null` '
-                f"entry, so the catalog still offers a plugin that no longer exists",
+                (
+                    f'`{PLUGINS_DIRNAME}/{name}/` is gone but `renames` has no `"{name}": null` '
+                    f"entry, so the catalog still offers a plugin that no longer exists"
+                ),
             ),
         ]
     if tag is None:
@@ -1054,9 +1062,11 @@ def _removal_findings(
         Finding(
             "V5",
             MARKETPLACE_PATH,
-            f"{name} was removed without a prior deprecation release: {tag.tag} carries no "
-            f"`### Deprecated` section, so an emergency removal needs a docs/maintenance/ "
-            f"entry and a security advisory",
+            (
+                f"{name} was removed without a prior deprecation release: {tag.tag} carries no "
+                f"`### Deprecated` section, so an emergency removal needs a docs/maintenance/ "
+                f"entry and a security advisory"
+            ),
             "warning",
         ),
     ]

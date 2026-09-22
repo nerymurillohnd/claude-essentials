@@ -178,10 +178,11 @@ def regex_matches(pattern: str, candidates: Sequence[str]) -> tuple[list[str], s
         JavaScriptError: If V8 could not be started.
         JavaScriptShapeError: If the snippet answered off-contract.
     """
-    value, error = run(
+    snippet = (
         f"var re = new RegExp({literal(pattern)});\n"
         f"return {literal(list(candidates))}.filter(function (name) {{ return re.test(name); }});"
     )
+    value, error = run(snippet)
     if error is not None:
         return [], error
     if not is_json_array(value):

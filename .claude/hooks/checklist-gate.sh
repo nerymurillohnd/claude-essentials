@@ -59,7 +59,6 @@ subject=$(jq -r '.subject // ""' "${file}") || subject=""
 ids=$(jq -r '.items[] | select(.verify != null) | .id' "${source_file}") || ids=""
 while IFS= read -r id; do
   [[ -n ${id} ]] || continue
-  # shellcheck disable=SC2016 # $id is a jq variable
   verify=$(jq -r --arg id "${id}" '.items[] | select(.id == $id) | .verify' "${source_file}") || verify=""
   [[ -n ${verify} ]] || continue
   if ! out=$(cd "${root}" && CHECKLIST_SUBJECT=${subject} bash -c "${verify}" 2>&1); then
@@ -76,7 +75,6 @@ if [[ -n ${failures} ]]; then
 fi
 
 finished=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-# shellcheck disable=SC2016 # $at is a jq variable
 jq --arg at "${finished}" '.status = "complete" | .completed = $at' "${file}" >"${file}.tmp.$$" &&
   mv "${file}.tmp.$$" "${file}"
 rm -f "${active}"

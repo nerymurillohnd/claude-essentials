@@ -301,8 +301,10 @@ def _shape_findings(labels: Sequence[Label]) -> list[Finding]:
                 Finding(
                     "G1",
                     LABELS_PATH,
-                    f"{label.name!r} is {len(label.name)} characters; GitHub allows "
-                    f"{MAX_NAME_LENGTH}",
+                    (
+                        f"{label.name!r} is {len(label.name)} characters; GitHub allows "
+                        f"{MAX_NAME_LENGTH}"
+                    ),
                 ),
             )
         if COLOR_RE.match(label.color) is None:
@@ -318,8 +320,10 @@ def _shape_findings(labels: Sequence[Label]) -> list[Finding]:
                 Finding(
                     "G1",
                     LABELS_PATH,
-                    f"{label.name!r} has a {len(label.description)}-character description; "
-                    f"GitHub allows {MAX_DESCRIPTION_LENGTH}",
+                    (
+                        f"{label.name!r} has a {len(label.description)}-character description; "
+                        f"GitHub allows {MAX_DESCRIPTION_LENGTH}"
+                    ),
                 ),
             )
         if label.name in seen:
