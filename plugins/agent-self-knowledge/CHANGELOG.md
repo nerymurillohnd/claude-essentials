@@ -34,6 +34,10 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 - An invalid `CCDOCS_CACHE_TTL` or `CCDOCS_CORPUS_TTL` is named and replaced by its default
   instead of stopping every command with a traceback.
 - `version` reports a registry answer that is not JSON as an error instead of a traceback.
+- An empty `XDG_CACHE_HOME` counts as unset, so the cache no longer lands in `./ccdocs` in the
+  working directory. New cache entries are readable by their owner only.
+- An old `python3` (3.7 or later) prints the version requirement instead of a SyntaxError:
+  the script no longer uses syntax those versions cannot parse.
 - `ccdocs.py` is now tracked as executable (`100755`), so its
   `#!/usr/bin/env python3` shebang works when the script is run by path. The
   skill still calls it as `python3 …/ccdocs.py`, so retrieval behaves exactly

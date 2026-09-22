@@ -26,9 +26,8 @@ Commands
   whatsnew [--last N]     Weekly "What's new" digest entries.
   raw URL [--max N]       Fetch any URL as text (e.g. a GitHub raw file, schemastore).
   selfcheck               Validate every page slug and quoted section name in this skill's SKILL.md
-                          and references/topic-routing.md against the live index and map. Run it \
-when
-                          the skill seems stale; it prints what moved.
+                          and references/topic-routing.md against the live index and map.
+                          Run it when the skill seems stale; it prints what moved.
 
 SLUG examples: hooks, hooks-guide, sub-agents, agent-sdk/hooks, whats-new/2026-w37
 Env: CCDOCS_LANG (default en), CCDOCS_CACHE_TTL seconds (default 900, 0 disables),
@@ -126,7 +125,8 @@ def _positive_int(text: str) -> int:
 # Each variable is read by name here, so the README check (R6) sees every knob.
 TTL = _env_seconds("CCDOCS_CACHE_TTL", os.environ.get("CCDOCS_CACHE_TTL"), 900)
 CORPUS_TTL = _env_seconds("CCDOCS_CORPUS_TTL", os.environ.get("CCDOCS_CORPUS_TTL"), 3600)
-CACHE = Path(os.environ.get("XDG_CACHE_HOME", str(Path("~/.cache").expanduser()))) / "ccdocs"
+# An empty XDG_CACHE_HOME means unset (XDG Base Directory spec), never the working directory.
+CACHE = Path(os.environ.get("XDG_CACHE_HOME") or str(Path("~/.cache").expanduser())) / "ccdocs"
 UA = "ccdocs/1.1 (+claude-code-docs skill)"  # code.claude.com returns 403 without a User-Agent
 ACCEPT = "text/markdown, text/plain, */*"
 FETCH_TIMEOUT = 60
@@ -216,7 +216,8 @@ def _write_cache(key: Path, text: str) -> None:
     """Store a cache entry atomically; a cache that cannot be written only loses caching."""
     tmp = key.with_name(f"{key.name}.{os.getpid()}.tmp")
     try:
-        CACHE.mkdir(parents=True, exist_ok=True)
+        CACHE.mkdir(mode=0o700, parents=True, exist_ok=True)
+        tmp.touch(mode=0o600)  # a cached page is readable by its owner only
         _ = tmp.write_text(text, encoding="utf-8")
         _ = tmp.replace(key)  # atomic: a killed run never leaves a half-written cache entry
     except OSError:
@@ -655,7 +656,7 @@ def _print_gap(lkey: tuple[int, ...], latest: str) -> None:
     if lkey < latest_key:
         headings: list[str] = re.findall(r"(?m)^## (.+)$", fetch(CHANGELOG_RAW))
         versions = [v.strip() for v in headings]
-        behind = [v for v in versions if (key := vkey(v)) and key > lkey]
+        behind = [v for v in versions if (vkey(v) or ()) > lkey]
         local = ".".join(map(str, lkey))
         print(
             f"gap     local is {len(behind)} release(s) behind latest ({latest}); ",

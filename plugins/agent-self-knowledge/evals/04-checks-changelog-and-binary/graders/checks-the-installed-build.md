@@ -1,5 +1,5 @@
 ---
-type: regex
-pattern: '2\.1\.278'
-target: last_message
+type: tool_used
+tool: Bash
+input_match: 'claude (--version|-v)|ccdocs\.py version'
 ---
