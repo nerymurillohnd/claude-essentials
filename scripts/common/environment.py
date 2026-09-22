@@ -1,8 +1,9 @@
 """Where the tooling is running: a maintainer's machine, or a GitHub Actions runner.
 
-Three places need the answer and must agree: `workflows_files` decides whether zizmor may
-reach the network, `test_rigor_floor` skips the comparison against `~/.config` when the
-global policy files are not there, and CI-only output formats hang off the same question.
+Two places need the answer and must agree: `test_rigor_floor` skips the comparison against
+`~/.config` when the global policy files are not there, and CI-only output formats hang off
+the same question. zizmor no longer asks: it runs offline everywhere (`ZIZMOR_OFFLINE` in
+`scripts/lint/workflows_files.py`).
 
 **`GITHUB_ACTIONS` alone is not a reliable answer** (measured 2026-09-21): this repository's
 maintainer exports `GITHUB_ACTIONS=true` from `~/.zshenv`, so every local shell claims to be

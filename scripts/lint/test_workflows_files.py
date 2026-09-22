@@ -1,25 +1,29 @@
-"""Tests for L4: actionlint blocks, the zizmor ignore policy is enforced, zizmor advises."""
+"""Tests for L4 and G2: actionlint, the zizmor ignore policy, and zizmor itself all block."""
 
 from __future__ import annotations
 
+import subprocess
 from typing import TYPE_CHECKING
 
 import pytest
 
+from scripts.lint import workflows_files
 from scripts.lint.conftest import write_file
 from scripts.lint.workflows_files import (
-    ADVISORY_INVARIANT,
-    ADVISORY_PREFIX,
     INVARIANT,
     WORKFLOW_DIR,
     ZIZMOR_BLOCKING,
+    ZIZMOR_INVARIANT,
+    ZIZMOR_OFFLINE,
     check,
     check_ignore_policy,
+    finding_lines,
     select,
     zizmor_summary,
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from pathlib import Path
 
 VALID = """name: Demo
@@ -27,16 +31,19 @@ on:
   push:
     branches: [main]
 permissions: {}
+concurrency:
+  group: demo
+  cancel-in-progress: false
 jobs:
   demo:
     name: Demo
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read # read the tree
     steps:
       - run: echo hi
 """
-"""A workflow actionlint accepts, used as the control."""
+"""A workflow actionlint and zizmor both accept, used as the control."""
 
 BROKEN = """name: Demo
 on:
@@ -75,9 +82,23 @@ def test_select_keeps_both_yaml_spellings() -> None:
     ]
 
 
-def test_zizmor_stays_advisory_until_the_workflows_are_rewritten() -> None:
-    """Today's files carry findings the step-7 rewrite addresses in one piece."""
-    assert ZIZMOR_BLOCKING is False
+def test_zizmor_blocks() -> None:
+    """The step-7 rewrite left zero findings; turning this off again must be a visible edit."""
+    assert ZIZMOR_BLOCKING is True
+
+
+def test_every_finding_is_named_with_its_location() -> None:
+    """A refused commit has to say which audit fired and where, not only a count."""
+    output = (
+        "help[anonymous-definition]: workflow or action definition without a name\n"
+        "  --> .github/workflows/a.yml:3:3\n"
+        "   |\n"
+        "warning[artipacked]: credential persistence through GitHub Actions artifacts\n"
+        " --> .github/workflows/b.yml:9:9\n"
+    )
+    first, second = finding_lines(output)
+    assert first.startswith(".github/workflows/a.yml:3:3: help[anonymous-definition]:")
+    assert second.startswith(".github/workflows/b.yml:9:9: warning[artipacked]:")
 
 
 def test_an_ignore_of_another_rule_is_refused(tree: Path) -> None:
@@ -112,23 +133,52 @@ def test_actionlint_reports_an_undefined_context(tree: Path) -> None:
 
 
 @pytest.mark.slow
-def test_a_valid_workflow_produces_only_the_advisory(tree: Path) -> None:
-    """A clean tree still reports the zizmor count, because reporting is the point of it."""
+def test_a_valid_workflow_is_clean(tree: Path) -> None:
+    """The control: a workflow with minimal, documented grants and named jobs passes both."""
     rel = _write_workflow(tree, "ok.yml", VALID)
-    findings = check(tree, [rel])
-    assert [finding.invariant_id for finding in findings] == [ADVISORY_INVARIANT]
-    assert findings[0].severity == "warning"
-    assert findings[0].message.startswith(ADVISORY_PREFIX)
+    assert check(tree, [rel]) == []
+    assert "No findings" in zizmor_summary(tree, [rel])
 
 
 @pytest.mark.slow
-def test_the_advisory_carries_zizmor_s_own_count(tree: Path) -> None:
-    """The summary is what gate output shows, so it has to be zizmor's line, not a paraphrase."""
-    rel = _write_workflow(tree, "ok.yml", VALID)
-    summary = zizmor_summary(tree, [rel])
-    assert "finding" in summary
+def test_a_zizmor_finding_fails_the_gate(tree: Path) -> None:
+    """An unnamed job with an undocumented grant is what the auditor persona exists to catch."""
+    rel = _write_workflow(tree, "loose.yml", BROKEN.replace("jobs:", "permissions: {}\njobs:"))
+    findings = [f for f in check(tree, [rel]) if f.invariant_id == ZIZMOR_INVARIANT]
+    assert findings
+    assert {finding.severity for finding in findings} == {"error"}
+    assert any("anonymous-definition" in finding.message for finding in findings)
 
 
 def test_nothing_runs_without_a_workflow(tree: Path) -> None:
     """An edit to a plugin must not pay for two audits of files it never touched."""
     assert check(tree, ["README.md"]) == []
+
+
+def test_zizmor_runs_offline_everywhere_including_ci() -> None:
+    """The offline decision is pinned: flipping it back needs a tagged or vendored action."""
+    assert ZIZMOR_OFFLINE
+
+
+def test_the_zizmor_command_line_carries_offline(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The constant is only a promise; this checks the argv zizmor actually receives.
+
+    The fixture's `.venv/bin/zizmor` is a symlink to the real binary, so the test never
+    writes to it; `run` is replaced and nothing is executed.
+    """
+    seen: list[list[str]] = []
+
+    def fake_run(
+        _executable: Path, args: Sequence[str], *, cwd: Path
+    ) -> subprocess.CompletedProcess[str]:
+        del cwd
+        seen.append(list(args))
+        return subprocess.CompletedProcess(list(args), 0, "No findings to report.\n", "")
+
+    monkeypatch.setattr(workflows_files, "run", fake_run)
+    rel = _write_workflow(tree, "ok.yml", VALID)
+    assert workflows_files.zizmor_findings(tree, [rel]) == []
+    assert seen
+    assert seen[0][:4] == ["--persona=auditor", "--format", "plain", "--offline"]

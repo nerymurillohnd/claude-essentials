@@ -26,6 +26,8 @@ from scripts.common.errors import (
     format_finding,
 )
 from scripts.common.plugins import plugin_ids, repo_root, tracked_files
+from scripts.github import labels
+from scripts.github.issue_forms import validate_forms
 from scripts.github.repo_metadata import collect as repo_metadata_collect
 from scripts.lint.lint_files import LINT_INVARIANTS
 from scripts.marketplace.validate_marketplace import (
@@ -455,6 +457,8 @@ def collect(root: Path, *, only: str | None = None) -> list[Finding]:
     findings.extend(readme_contract.check_template_shapes(root))
     findings.extend(readme_contract.check_legal_texts(root))
     findings.extend(marketplace_collect(root))
+    findings.extend(labels.validate(root))
+    findings.extend(validate_forms(root))
     findings.extend(repo_metadata_collect(root))
     return findings
 

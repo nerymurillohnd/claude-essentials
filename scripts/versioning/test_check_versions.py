@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Final
 import pytest
 
 from scripts.common.errors import ExitCode, Finding
+from scripts.common.jsontext import is_json_object
+from scripts.common.plugins import parse_json
 from scripts.versioning.check_versions import (
     DEFAULT_BASE,
     LABEL_PREFIX,
@@ -20,7 +22,7 @@ from scripts.versioning.check_versions import (
     render,
     verify_tags,
 )
-from scripts.versioning.conftest import manifest_text, write_file
+from scripts.versioning.conftest import fetch_as_pull_request, manifest_text, write_file
 from scripts.versioning.tag_versions import CLAUDE_BIN_ENV
 from scripts.versioning.version_plan import (
     Plan,
@@ -81,6 +83,18 @@ def test_parse_args_reads_every_flag_ci_passes() -> None:
     assert options.verify_tag
     assert options.deferred
     assert options.as_json
+
+
+def test_parse_args_reads_the_head_ref_triage_passes() -> None:
+    """`triage.yml` reads the pull request head as git objects, never as a working tree."""
+    assert parse_args([]).head is None
+    assert parse_args(["--head", "FETCH_HEAD"]).head == "FETCH_HEAD"
+
+
+def test_verify_tag_and_head_are_refused_together(capsys: pytest.CaptureFixture[str]) -> None:
+    """`claude plugin tag --dry-run` runs on the working tree, which `--head` never reads."""
+    assert main(["--head", "FETCH_HEAD", "--verify-tag"]) == ExitCode.USAGE
+    assert "cannot run with --head" in capsys.readouterr().err
 
 
 def test_parse_args_reads_the_github_output_format() -> None:
@@ -331,3 +345,22 @@ def test_verify_tag_without_the_cli_is_a_finding(
     assert lines == []
     assert [finding.invariant_id for finding in findings] == ["V6"]
     assert "--verify-tag needs the CLI" in findings[0].message
+
+
+@pytest.mark.slow
+def test_the_head_flag_classifies_a_fetched_pull_request(
+    repo: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The CLI surface triage relies on: base checkout, head as `FETCH_HEAD`, JSON out."""
+    write_file(repo / "plugins/alpha/skills/demo/SKILL.md", "---\nname: alpha\n---\n\nFixed.\n")
+    write_file(repo / "plugins/alpha/.claude-plugin/plugin.json", manifest_text("alpha", "0.1.1"))
+    clone = fetch_as_pull_request(repo, tmp_path_factory.mktemp("probe") / "base")
+    monkeypatch.chdir(clone)
+    assert main(["--base", "main", "--head", "FETCH_HEAD", "--json"]) == int(ExitCode.OK)
+    payload = parse_json(capsys.readouterr().out, path=clone)
+    assert is_json_object(payload)
+    assert payload["label"] == "bump: patch"
+    assert payload["route"] == "pr"

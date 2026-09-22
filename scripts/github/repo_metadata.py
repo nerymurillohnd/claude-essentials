@@ -8,13 +8,12 @@ None of them reads a plugin's behaviour; they read the repository's own wiring:
   check that floats is a check that can go red without a commit.
 * **`check_tool_pins` (G3)** — the Ruff `required-version` is satisfied by the version
   `uv.lock` actually resolves, `.python-version` equals the `requires-python` floor, and the
-  ShellCheck and shfmt versions CI installs are at least what the plugin READMEs promise a
-  user. A README that advertises a minimum CI does not meet is a promise nothing keeps.
+  ShellCheck and shfmt binaries `uv.lock` installs into `.venv/bin` (the ones CI puts on
+  `PATH` for the plugin suites) are at least what the plugin READMEs promise a user. A README
+  that advertises a minimum CI does not meet is a promise nothing keeps.
 * **`check_pipeline_invocation` (G2)** — `ci.yml` drives the gate through `make`, so the gate
-  a maintainer runs and the gate CI runs are the same target list. On this tree `ci.yml`
-  still calls npm, so this check reports a **warning** and never fails; step 7 of the
-  migration rewires the workflow and turns it into an error.
-* **`check_workflow_pins` (G2)** — every `uses:` names a full commit SHA with the tag in a
+  a maintainer runs and the gate CI runs are the same target list.
+* **`check_workflow_pins` (G2)** — every `uses:` names a full commit SHA with the release in a
   comment, which is what makes a third-party action reproducible (DEBT-0004).
 """
 
@@ -27,9 +26,10 @@ from typing import TYPE_CHECKING, Final, TypeIs
 
 import yaml
 
-from scripts.common.errors import Finding
+from scripts.common.errors import ExecutableNotFoundError, Finding
 from scripts.common.jsontext import is_json_array, is_json_object
 from scripts.common.plugins import plugin_ids
+from scripts.lint.tools import run, tool_path
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -56,10 +56,10 @@ TAG_WORKFLOW: Final = "tag-versions.yml"
 """The two workflows whose CLI version must be identical (G3)."""
 
 PINNED_TOOLS: Final[tuple[tuple[str, str], ...]] = (
-    ("SHELLCHECK_VERSION", "ShellCheck"),
-    ("SHFMT_VERSION", "shfmt"),
+    ("shellcheck", "ShellCheck"),
+    ("shfmt", "shfmt"),
 )
-"""Workflow variables paired with the tool name a plugin README advertises."""
+"""Locked binaries in `.venv/bin` paired with the tool name a plugin README advertises."""
 
 REQUIREMENT_ROW: Final = re.compile(r"^\|\s*(?P<tool>[^|]+?)\s*\|\s*(?P<minimum>[^|]*?)\s*\|")
 """One row of a plugin README's Requirements table."""
@@ -73,8 +73,14 @@ USES_LINE: Final = re.compile(r"^\s*(?:-\s*)?uses:\s*(?P<ref>\S+)(?P<rest>.*)$")
 PINNED_USES: Final = re.compile(r"^[^@\s]+@[0-9a-f]{40}$")
 """`owner/repo@<40 hex>`; a tag or a branch is not reproducible."""
 
-VERSION_COMMENT: Final = re.compile(r"#\s*v\d+(?:\.\d+)*")
-"""The `# vX.Y.Z` comment that makes a pinned SHA readable, and Dependabot's anchor."""
+VERSION_COMMENT: Final = re.compile(r"#\s*(?:v\d+(?:\.\d+)*|\d{4}-\d{2}-\d{2}\b)")
+"""The comment that makes a pinned SHA readable.
+
+`# vX.Y.Z` for a released action, which is also Dependabot's anchor. An action that
+publishes no release at all (Anthropic's `validate-plugins`, measured 2026-09-21: zero tags)
+has no version to name, so its pin carries the commit's date instead; Dependabot cannot bump
+it, and the maintainer moves it by hand.
+"""
 
 LOCAL_USES_PREFIX: Final = "./"
 """A `uses:` that points inside this repository needs no SHA."""
@@ -403,34 +409,63 @@ def advertised_minimum(root: Path, tool: str) -> tuple[int, ...]:
     return highest
 
 
+def locked_tool_version(root: Path, binary: str) -> tuple[int, ...] | None:
+    """Ask a locked binary in `.venv/bin` for its version.
+
+    The wheel's own version is not the tool's (`shfmt-py 4.2.0` ships shfmt 3.14.1), so the
+    binary is asked directly.
+
+    Args:
+        root: The repository root.
+        binary: The executable's file name, for example `shfmt`.
+
+    Returns:
+        The version components, or None when the binary is not installed or says no version.
+    """
+    try:
+        executable = tool_path(root, binary)
+        completed = run(executable, ["--version"], cwd=root)
+    except ExecutableNotFoundError:
+        return None
+    version = version_tuple(completed.stdout)
+    return version or None
+
+
 def _check_advertised_tools(root: Path) -> list[Finding]:
-    """Check that CI installs at least the tool versions the READMEs promise (G3).
+    """Check that the locked tools are at least the versions the READMEs promise (G3).
 
     Args:
         root: The repository root.
 
     Returns:
-        One finding per tool CI pins below its advertised minimum.
+        One finding per advertised tool that is missing from `.venv` or older than promised.
     """
     findings: list[Finding] = []
-    for path in workflow_paths(root):
-        env = workflow_env(workflow_document(path))
-        rel = f"{WORKFLOWS_DIR}/{path.name}"
-        for key, tool in PINNED_TOOLS:
-            pinned = env.get(key)
-            if pinned is None:
-                continue
-            advertised = advertised_minimum(root, tool)
-            if advertised and version_tuple(pinned) < advertised:
-                promised = ".".join(str(part) for part in advertised)
-                findings.append(
-                    Finding(
-                        "G3",
-                        rel,
-                        f"{key} is {pinned}, below the {promised} a plugin README advertises "
-                        f"for {tool}",
-                    ),
-                )
+    for binary, tool in PINNED_TOOLS:
+        advertised = advertised_minimum(root, tool)
+        if not advertised:
+            continue
+        promised = ".".join(str(part) for part in advertised)
+        locked = locked_tool_version(root, binary)
+        if locked is None:
+            findings.append(
+                Finding(
+                    "G3",
+                    UV_LOCK,
+                    f"a plugin README advertises {tool} {promised}, but `.venv/bin/{binary}` "
+                    f"reports no version; run `make setup`",
+                ),
+            )
+        elif locked < advertised:
+            found = ".".join(str(part) for part in locked)
+            findings.append(
+                Finding(
+                    "G3",
+                    UV_LOCK,
+                    f"the locked {tool} is {found}, below the {promised} a plugin README "
+                    f"advertises",
+                ),
+            )
     return findings
 
 
@@ -481,14 +516,11 @@ def check_tool_pins(root: Path) -> list[Finding]:
 def check_pipeline_invocation(root: Path) -> list[Finding]:
     """Check that the gate workflow drives the pipeline through `make` (G2).
 
-    Until step 7 of the migration rewires `ci.yml`, the finding is a warning: the workflow
-    still calls npm, and failing on it would block the very commits that fix it.
-
     Args:
         root: The repository root.
 
     Returns:
-        One warning when the gate workflow runs no `make` target.
+        One finding when the gate workflow runs no `make` target.
     """
     path = root / WORKFLOWS_DIR / GATE_WORKFLOW
     if not path.is_file():
@@ -500,9 +532,7 @@ def check_pipeline_invocation(root: Path) -> list[Finding]:
         Finding(
             "G2",
             f"{WORKFLOWS_DIR}/{GATE_WORKFLOW}",
-            "the gate workflow runs no `make` target, so CI and `make check` can drift "
-            "(advisory until step 7)",
-            "warning",
+            "the gate workflow runs no `make` target, so CI and `make check` can drift",
         ),
     ]
 

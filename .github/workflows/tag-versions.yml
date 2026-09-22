@@ -7,46 +7,69 @@ on:
       - "plugins/**"
   workflow_dispatch:
 
-permissions:
-  contents: write
+# No job inherits a grant; the one job below asks for exactly what it uses.
+permissions: {}
 
-# Claude Code CLI used by `claude plugin validate` / `claude plugin tag`. It is
-# installed on the runner only — never as a repo dependency (ADR-0003). Bump it
-# deliberately, in every workflow that sets it.
+# Claude Code CLI used by `claude plugin validate` and `claude plugin tag`. It is installed
+# on the runner only, from Anthropic's signed release manifest (scripts.github.
+# install_claude_code), never as a repo dependency (ADR-0003). Dependabot cannot see an env
+# value, so bump it by hand, in every workflow that sets it (G3 keeps it equal to ci.yml).
 env:
-  CLAUDE_CODE_VERSION: "2.1.276"
+  CLAUDE_CODE_VERSION: "2.1.278"
+  # A pinned CLI that updated itself mid-run would no longer be the version pinned above.
+  DISABLE_AUTOUPDATER: "1"
 
 concurrency:
-  group: tag-versions
+  group: ${{ github.workflow }}
   cancel-in-progress: false
 
 jobs:
   tag:
+    name: Tag untagged plugin versions
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the new {name}--v{version} tags; used only by the tagging step
     steps:
-      # Credentials are persisted on purpose: `claude plugin tag --push` pushes the
-      # version tag to origin with this job's contents:write token.
+      # No persisted credential: the token reaches git only inside the tagging step below.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      # A job holding a write token restores no cache and builds no sdist (A12).
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          node-version-file: .nvmrc
-          cache: npm
+          version: "0.12.17"
+          enable-cache: false
 
-      - run: npm ci
+      # actionlint-py ships only an sdist whose build downloads a binary, and nothing here
+      # lints workflows, so it is left out rather than built with a write token in the job.
+      - name: Create the environment from uv.lock (wheels only)
+        run: uv sync --locked --no-build --no-install-package actionlint-py
 
-      - name: Install Claude Code CLI (pinned; CI runner only)
+      - name: Install Claude Code CLI (pinned, signature-verified; CI runner only)
         run: |
-          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-          claude --version
+          set -euo pipefail
+          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+          echo "${RUNNER_TEMP}/claude-code" >>"${GITHUB_PATH}"
+          "${RUNNER_TEMP}/claude-code/claude" --version
 
       - name: Validate before tagging
-        run: npm run validate && npm run validate:claude
+        run: make validate validate-cli
 
+      # `claude plugin tag --push` runs `git push <remote> <tag>`, so git needs a credential.
+      # It is set here, for this step only, and removed when the step ends.
       - name: Tag untagged plugin versions with claude plugin tag (ADR-0003)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SERVER_URL: ${{ github.server_url }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          node scripts/tag-versions.mjs
+          set -euo pipefail
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          auth="$(printf 'x-access-token:%s' "${GITHUB_TOKEN}" | base64 -w0)"
+          echo "::add-mask::${auth}"
+          header="http.${SERVER_URL}/.extraheader"
+          trap 'git config --local --unset-all "${header}" || true' EXIT
+          git config --local "${header}" "AUTHORIZATION: basic ${auth}"
+          .venv/bin/python -m scripts.versioning.tag_versions --push

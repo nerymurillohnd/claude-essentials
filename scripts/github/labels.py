@@ -92,14 +92,10 @@ REQUIRED_LABELS: Final[tuple[str, ...]] = (
 )
 """Every label an automation applies, so none of them can reference something absent (G1).
 
-`bump: removal` is new with the removal lifecycle case (§A11) and is added to
-`.github/labels.json` at step 7 of the migration. `good first issue` is deliberately not on
-this list any more (D5: this repository takes issues, not external pull requests), but it is
-not an error either while it is still in the file.
+`bump: removal` is the removal lifecycle case (§A11). `good first issue` is not in the
+taxonomy at all (D5: this repository takes issues, not external pull requests); the `Labels`
+workflow never prunes, so the live label stays until a maintainer runs `--prune`.
 """
-
-OPTIONAL_LABELS: Final = frozenset({"good first issue"})
-"""Labels the taxonomy may carry without any automation needing them."""
 
 
 @dataclass(frozen=True, slots=True)

@@ -26,6 +26,14 @@ both are files whose interesting part is generated or purely descriptive:
 Both comparisons are against the **base ref**, not against the plugin's tag: the question is
 what this push adds to `main`, not what the published version contains.
 
+**The head side.** By default the head is the working tree: committed, uncommitted and
+untracked changes all count, which is what `guard-push.sh` and a maintainer need. With
+`head=<ref>` every head-side read comes from that ref instead (`git diff <base> <head>`,
+`git show <head>:<path>`, `git ls-tree <head>`), with no working tree and no untracked files.
+That is how `triage.yml` classifies a pull request under `pull_request_target`: it fetches the
+head commit as git objects and reads them as data, so nothing from the pull request is ever
+checked out, imported or executed (ADR-0004).
+
 `EXEMPT_FILE` is the single copy of the exempt rule. `.claude/hooks/lib/plugin-paths.sh`
 mirrors it for the shell hooks, and `scripts/harness/test_plugin_paths.py` runs both over one
 table so the two can never drift. The defect all of this catches is a plugin whose runtime
@@ -304,29 +312,64 @@ def manifest_runtime_text(obj: object) -> str:
     return json.dumps(manifest_runtime_view(obj), sort_keys=True)
 
 
-def changed_paths(root: Path, base: str, *pathspecs: str) -> list[str]:
+def changed_paths(root: Path, base: str, *pathspecs: str, head: str | None = None) -> list[str]:
     """List every repository path that differs from a base ref.
 
-    The set is the union of what `git diff` reports between the base tree and the working
-    tree (so committed and uncommitted changes both count, deletions included) and the
-    untracked files git does not ignore. Renames are never followed, because a renamed
-    runtime file is a runtime change.
+    Without `head`, the set is the union of what `git diff` reports between the base tree and
+    the working tree (so committed and uncommitted changes both count, deletions included)
+    and the untracked files git does not ignore. With `head`, it is the diff between the two
+    trees and nothing else. Renames are never followed, because a renamed runtime file is a
+    runtime change.
 
     Args:
         root: The repository root.
         base: The ref to compare against: a tag, a branch or a commit.
         *pathspecs: Limit the answer to these paths; no pathspec means the whole tree.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         Sorted repository-relative paths.
 
     Raises:
-        GitCommandFailedError: If the base ref cannot be resolved.
+        GitCommandFailedError: If a ref cannot be resolved.
     """
     limit = ["--", *pathspecs] if pathspecs else []
+    if head is not None:
+        diff = git_output(root, ["diff", "--name-only", "--no-renames", base, head, *limit])
+        return sorted({line for line in diff.splitlines() if line})
     tracked = git_output(root, ["diff", "--name-only", "--no-renames", base, *limit])
     untracked = git_output(root, ["ls-files", "--others", "--exclude-standard", *limit])
     return sorted({line for line in (tracked + untracked).splitlines() if line})
+
+
+def head_text(root: Path, rel: str, *, head: str | None) -> str | None:
+    """Read one file on the head side.
+
+    Args:
+        root: The repository root.
+        rel: The repository-relative path.
+        head: The ref holding the head side; the working tree when None.
+
+    Returns:
+        The file's text, or None when it does not exist on that side.
+    """
+    if head is not None:
+        return git_output_or_none(root, ["show", f"{head}:{rel}"])
+    full = root / rel
+    return full.read_text(encoding="utf-8") if full.is_file() else None
+
+
+def head_plugin_ids(root: Path, *, head: str | None) -> list[str]:
+    """List the plugins that ship on the head side.
+
+    Args:
+        root: The repository root.
+        head: The ref holding the head side; the working tree when None.
+
+    Returns:
+        Sorted plugin directory names.
+    """
+    return plugin_ids(root) if head is None else plugin_ids_at(root, head)
 
 
 def read_renames(root: Path, *, ref: str | None = None) -> dict[str, str | None]:
@@ -452,13 +495,14 @@ def _relative_to_plugin(path: str, names: Sequence[str]) -> str | None:
     return None
 
 
-def _manifest_changed(root: Path, *, tag: str, path: str) -> bool:
+def _manifest_changed(root: Path, *, tag: str, path: str, head: str | None = None) -> bool:
     """Report whether a manifest differs from its tag in anything Claude acts on.
 
     Args:
         root: The repository root.
         tag: The tag to compare against.
         path: The repository-relative path of the manifest in the changed set.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         True when the runtime view differs, so formatting and metadata edits alone are not
@@ -466,7 +510,7 @@ def _manifest_changed(root: Path, *, tag: str, path: str) -> bool:
     """
     old = git_output_or_none(root, ["show", f"{tag}:{path}"])
     full = root / path
-    new = full.read_text(encoding="utf-8") if full.is_file() else None
+    new = head_text(root, path, head=head)
     if old is None or new is None:
         return old != new
     before = manifest_runtime_text(parse_json(old, path=full))
@@ -474,25 +518,28 @@ def _manifest_changed(root: Path, *, tag: str, path: str) -> bool:
     return before != after
 
 
-def first_runtime_change(root: Path, *, tag: str, names: Sequence[str]) -> str | None:
-    """Return the first file Claude loads that differs between a tag and the working tree.
+def first_runtime_change(
+    root: Path, *, tag: str, names: Sequence[str], head: str | None = None
+) -> str | None:
+    """Return the first file Claude loads that differs between a tag and the head side.
 
     Args:
         root: The repository root.
         tag: The tag that published the current version.
         names: The plugin's name followed by its predecessors, so a rename is seen as one
             plugin moving rather than as one plugin vanishing and another appearing.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         The path relative to the plugin directory, or None when only exempt files changed.
     """
     pathspecs = [f"{PLUGINS_DIRNAME}/{name}" for name in names]
-    for path in changed_paths(root, tag, *pathspecs):
+    for path in changed_paths(root, tag, *pathspecs, head=head):
         rel = _relative_to_plugin(path, names)
         if rel is None or is_exempt(rel):
             continue
         if rel == MANIFEST_RELATIVE_PATH.as_posix() and not _manifest_changed(
-            root, tag=tag, path=path
+            root, tag=tag, path=path, head=head
         ):
             continue
         return rel
@@ -524,41 +571,47 @@ CATALOG_GENERATED_KEY: Final = "plugins"
 mechanical rather than a policy change."""
 
 
-def _manifest_is_metadata_only(root: Path, *, base: str, path: str) -> bool:
+def _manifest_is_metadata_only(
+    root: Path, *, base: str, path: str, head: str | None = None
+) -> bool:
     """Report whether a manifest differs from the base in nothing Claude acts on.
 
     Args:
         root: The repository root.
         base: The ref the push is measured against.
         path: The repository-relative path of the manifest.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         True when the runtime views are equal, so only metadata or formatting moved.
     """
     old_text = git_output_or_none(root, ["show", f"{base}:{path}"])
+    new_text = head_text(root, path, head=head)
     full = root / path
-    if old_text is None or not full.is_file():
+    if old_text is None or new_text is None:
         return False
     before = manifest_runtime_text(parse_json(old_text, path=full))
-    return before == manifest_runtime_text(load_json(full))
+    return before == manifest_runtime_text(parse_json(new_text, path=full))
 
 
-def _catalog_is_generated_only(root: Path, *, base: str) -> bool:
+def _catalog_is_generated_only(root: Path, *, base: str, head: str | None = None) -> bool:
     """Report whether the catalog differs from the base only in its generated array.
 
     Args:
         root: The repository root.
         base: The ref the push is measured against.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         True when every top-level key but `plugins` is unchanged.
     """
     path = root / MARKETPLACE_PATH
     old_text = git_output_or_none(root, ["show", f"{base}:{MARKETPLACE_PATH}"])
-    if old_text is None or not path.is_file():
+    new_text = head_text(root, MARKETPLACE_PATH, head=head)
+    if old_text is None or new_text is None:
         return False
     old = parse_json(old_text, path=path)
-    new = load_json(path)
+    new = parse_json(new_text, path=path)
     if not _is_mapping(old) or not _is_mapping(new):
         return False
     authored_old = {key: value for key, value in old.items() if key != CATALOG_GENERATED_KEY}
@@ -566,26 +619,29 @@ def _catalog_is_generated_only(root: Path, *, base: str) -> bool:
     return authored_old == authored_new
 
 
-def _is_content_exempt(root: Path, *, base: str, path: str) -> bool:
+def _is_content_exempt(root: Path, *, base: str, path: str, head: str | None = None) -> bool:
     """Report whether one changed path is cleared by its contents rather than by its name.
 
     Args:
         root: The repository root.
         base: The ref the push is measured against.
         path: A repository-relative path that differs from that ref.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         True for a metadata-only manifest, or a catalog whose only diff is `plugins`.
     """
     if path == MARKETPLACE_PATH:
-        return _catalog_is_generated_only(root, base=base)
+        return _catalog_is_generated_only(root, base=base, head=head)
     manifest_suffix = f"/{MANIFEST_RELATIVE_PATH.as_posix()}"
     if path.startswith(f"{PLUGINS_DIRNAME}/") and path.endswith(manifest_suffix):
-        return _manifest_is_metadata_only(root, base=base, path=path)
+        return _manifest_is_metadata_only(root, base=base, path=path, head=head)
     return False
 
 
-def content_exempt_paths(root: Path, *, base: str, changed: Sequence[str]) -> frozenset[str]:
+def content_exempt_paths(
+    root: Path, *, base: str, changed: Sequence[str], head: str | None = None
+) -> frozenset[str]:
     """Return the changed paths the route treats as exempt because of what they contain.
 
     This is the single home of the content half of the direct-push rule; the name half is
@@ -595,11 +651,14 @@ def content_exempt_paths(root: Path, *, base: str, changed: Sequence[str]) -> fr
         root: The repository root.
         base: The ref the push is measured against.
         changed: Every path that differs from that ref.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         The subset that carries no runtime and no policy change.
     """
-    return frozenset(path for path in changed if _is_content_exempt(root, base=base, path=path))
+    return frozenset(
+        path for path in changed if _is_content_exempt(root, base=base, path=path, head=head)
+    )
 
 
 def is_direct_push_allowed(
@@ -764,19 +823,27 @@ def _manifest_path(name: str) -> str:
     return f"{PLUGINS_DIRNAME}/{name}/{MANIFEST_RELATIVE_PATH.as_posix()}"
 
 
-def _manifest_version(root: Path, name: str) -> tuple[str, Version | None, list[Finding]]:
+def _manifest_version(
+    root: Path, name: str, *, head: str | None = None
+) -> tuple[str, Version | None, list[Finding]]:
     """Read and parse a plugin's declared version.
 
     Args:
         root: The repository root.
         name: The plugin directory name.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         The raw text, the parsed version (None when it is not canonical) and any findings.
     """
     rel = _manifest_path(name)
     full = root / rel
-    manifest = as_mapping(load_json(full), path=full)
+    if head is None:
+        parsed_manifest = load_json(full)
+    else:
+        shown = git_output(root, ["show", f"{head}:{rel}"])
+        parsed_manifest = parse_json(shown, path=full)
+    manifest = as_mapping(parsed_manifest, path=full)
     raw = manifest.get("version")
     if raw is None:
         return "", None, [Finding("M4", rel, "the manifest declares no `version`")]
@@ -861,6 +928,8 @@ def _plan_tagged_plugin(
     root: Path,
     context: _PluginContext,
     tag: TagRef,
+    *,
+    head: str | None = None,
 ) -> tuple[PluginPlan, list[Finding]]:
     """Plan a plugin that already has a published tag.
 
@@ -868,11 +937,12 @@ def _plan_tagged_plugin(
         root: The repository root.
         context: The plugin's name chain and declared version.
         tag: The newest tag across that chain.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         The plan and any findings.
     """
-    first = first_runtime_change(root, tag=tag.tag, names=context.names)
+    first = first_runtime_change(root, tag=tag.tag, names=context.names, head=head)
     tagged = str(tag.version)
     level: PlanLevel = (
         "invalid" if context.parsed is None else bump_level(tag.version, context.parsed)
@@ -922,6 +992,7 @@ def _plan_plugin(
     *,
     renames: Mapping[str, str | None],
     deferred: bool,
+    head: str | None = None,
 ) -> tuple[PluginPlan, list[Finding]]:
     """Plan one plugin that currently ships.
 
@@ -930,11 +1001,12 @@ def _plan_plugin(
         name: The plugin directory name.
         renames: The marketplace `renames` map.
         deferred: Whether the caller declared the runtime drift deliberate.
+        head: The ref holding the head side; the working tree when None.
 
     Returns:
         The plan and any findings.
     """
-    version, parsed, findings = _manifest_version(root, name)
+    version, parsed, findings = _manifest_version(root, name, head=head)
     context = _PluginContext(
         name=name,
         names=(name, *predecessors(name, renames)),
@@ -946,7 +1018,7 @@ def _plan_plugin(
     if tag is None:
         plan, more = _plan_new_plugin(context)
     else:
-        plan, more = _plan_tagged_plugin(root, context, tag)
+        plan, more = _plan_tagged_plugin(root, context, tag, head=head)
     return plan, [*findings, *more]
 
 
@@ -1053,26 +1125,28 @@ def plugin_ids_at(root: Path, ref: str) -> list[str]:
     return sorted(name for name in names if "/" not in name)
 
 
-def build_plan(root: Path, *, base: str, deferred: bool = False) -> Plan:
-    """Answer all three §A11 questions for one working tree against one base.
+def build_plan(root: Path, *, base: str, deferred: bool = False, head: str | None = None) -> Plan:
+    """Answer all three §A11 questions for one head side against one base.
 
     Args:
         root: The repository root.
         base: The ref the route is measured against, normally `origin/main`.
         deferred: Whether the pull request carries the `bump: deferred` label.
+        head: The ref holding the head side, read as git objects only; the working tree
+            (untracked files included) when None.
 
     Returns:
         The plan, with one entry per plugin that ships and per plugin that was removed.
 
     Raises:
-        GitCommandFailedError: If the base ref cannot be resolved.
+        GitCommandFailedError: If a ref cannot be resolved.
     """
-    renames = read_renames(root)
-    known = plugin_ids(root)
+    renames = read_renames(root, ref=head)
+    known = head_plugin_ids(root, head=head)
     plans: list[PluginPlan] = []
     findings: list[Finding] = []
     for name in known:
-        plan, found = _plan_plugin(root, name, renames=renames, deferred=deferred)
+        plan, found = _plan_plugin(root, name, renames=renames, deferred=deferred, head=head)
         plans.append(plan)
         findings.extend(found)
     for name in plugin_ids_at(root, base):
@@ -1081,14 +1155,14 @@ def build_plan(root: Path, *, base: str, deferred: bool = False) -> Plan:
         plan, found = _plan_removed(root, name, renames=renames, declared=name in renames)
         plans.append(plan)
         findings.extend(found)
-    changed = changed_paths(root, base)
+    changed = changed_paths(root, base, head=head)
     return Plan(
         route=route(
             plugins=plans,
             changed=changed,
             known_plugins=known,
             renames_changed=renames != read_renames(root, ref=base),
-            content_exempt=content_exempt_paths(root, base=base, changed=changed),
+            content_exempt=content_exempt_paths(root, base=base, changed=changed, head=head),
         ),
         label=label_for(plans),
         deferred=deferred,

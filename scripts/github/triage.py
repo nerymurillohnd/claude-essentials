@@ -5,13 +5,14 @@ the one hard rule is that nothing from the pull request's head is ever executed.
 this entrypoint learns about a pull request comes through the API as data: the changed file
 list, the current labels, the issue body.
 
-**The `bump:` label and the base checkout.** `check_versions` answers "what does this working
-tree owe against this base", so it is only meaningful when the checkout actually contains the
-pull request's changes. This entrypoint therefore computes the label only when `HEAD` is the
-event's head or merge commit, or when the caller supplies the JSON with `--versions-json`. In
-a base-only checkout it applies no `bump:` label at all rather than a confident `bump: none`
-that would be wrong on every pull request. The workflow that feeds it is rewired at step 7 of
-the migration; until then this is the honest behaviour.
+**The `bump:` label and the base checkout.** `triage.yml` checks out the base only and then
+fetches `refs/pull/<n>/head` as git objects, which leaves the head at `FETCH_HEAD` without
+checking it out (ADR-0004). The bump rules run in-process, from this base checkout's own
+`version_plan`, with `head="FETCH_HEAD"`: the head side is read with `git diff` and `git show`
+as data, and nothing from the pull request is imported, sourced or executed. The label is
+computed only when `FETCH_HEAD` (or `HEAD`, for a checkout that holds the change) is the
+event's head or merge commit, so a push that raced the fetch yields no `bump:` label rather
+than a label for the wrong commit; the next `synchronize` event labels the new head.
 """
 
 from __future__ import annotations
@@ -21,7 +22,6 @@ from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
-import subprocess
 import sys
 from typing import TYPE_CHECKING, Final
 from urllib.parse import quote
@@ -39,6 +39,7 @@ from scripts.github.triage_rules import (
     parse_form_answers,
     reply_label_changes,
 )
+from scripts.versioning.version_plan import build_plan, to_json_obj
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -52,8 +53,8 @@ EVENT_NAME_VARIABLE: Final = "GITHUB_EVENT_NAME"
 PER_PAGE: Final = 100
 """The largest page the pull-request files endpoint serves."""
 
-VERSIONS_MODULE: Final = "scripts.versioning.check_versions"
-"""The single home of the bump rules; triage never reimplements them."""
+FETCHED_HEAD: Final = "FETCH_HEAD"
+"""Where `git fetch origin refs/pull/<n>/head` leaves the pull request's head commit."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -282,26 +283,26 @@ def changed_files(client: GitHubClient, number: int) -> list[str]:
     return paths
 
 
-def run_check_versions(root: Path, base: str) -> object:
-    """Run the version gate in this checkout and return its JSON contract.
+def head_side(root: Path, event: object) -> str | None:
+    """Decide where the pull request's head can be read from in this checkout.
 
     Args:
         root: The repository root.
-        base: The ref to measure against.
+        event: The parsed payload.
 
     Returns:
-        The parsed document, or None when the command could not run.
+        None when `HEAD` itself is the head (the working tree holds the change), `FETCH_HEAD`
+        when that is the head fetched as objects, and the empty string when neither matches,
+        which means the change is not in this checkout at all.
     """
-    completed = subprocess.run(
-        [sys.executable, "-m", VERSIONS_MODULE, "--base", base, "--json"],
-        cwd=root,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if not completed.stdout.strip():
+    expected = head_sha(event)
+    current = git_output_or_none(root, ["rev-parse", "HEAD"])
+    if current is not None and current.strip() in expected:
         return None
-    return parse_json(completed.stdout, path=root)
+    fetched = git_output_or_none(root, ["rev-parse", "--verify", "--quiet", FETCHED_HEAD])
+    if fetched is not None and fetched.strip() in expected:
+        return FETCHED_HEAD
+    return ""
 
 
 def versions_document(root: Path, event: object, options: Options) -> object:
@@ -323,10 +324,10 @@ def versions_document(root: Path, event: object, options: Options) -> object:
     base = base_ref(event)
     if base is None:
         return None
-    current = git_output_or_none(root, ["rev-parse", "HEAD"])
-    if current is None or current.strip() not in head_sha(event):
+    head = head_side(root, event)
+    if head == "":
         return None
-    return run_check_versions(root, base)
+    return to_json_obj(build_plan(root, base=base, head=head))
 
 
 def _escape(name: str) -> str:

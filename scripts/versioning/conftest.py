@@ -9,6 +9,7 @@ tests build a real working tree with a real tag instead, and every test that doe
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 from typing import TYPE_CHECKING, Final
@@ -43,6 +44,72 @@ def git_in(root: Path, *args: str) -> str:
         text=True,
     )
     return completed.stdout
+
+
+PULL_REQUEST_REF: Final = "refs/pull/1/head"
+"""Where the source repository publishes its snapshot, named like GitHub's pull request ref."""
+
+
+def _git_with_index(root: Path, index: Path, *args: str) -> str:
+    """Run git with a private index file, so the real index is never touched.
+
+    Args:
+        root: The repository root.
+        index: The index file to use.
+        *args: The arguments after the binary.
+
+    Returns:
+        Standard output.
+    """
+    executable = shutil.which("git")
+    assert executable is not None, "git must be on PATH for the maintainer test suite"
+    completed = subprocess.run(
+        ["/usr/bin/git", *args],
+        executable=executable,
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GIT_INDEX_FILE": str(index)},
+    )
+    return completed.stdout
+
+
+def fetch_as_pull_request(root: Path, clone: Path) -> Path:
+    """Reproduce what `triage.yml` sees: a base-only checkout plus the head as git objects.
+
+    The source's working tree (untracked files included) is snapshotted into a commit
+    without touching its index or `HEAD`, published at `PULL_REQUEST_REF`, and fetched into a
+    fresh clone of the base as `FETCH_HEAD`. The clone's working tree is the base; the head
+    exists there only as objects, never checked out.
+
+    Args:
+        root: The source repository, whose working tree is the pull request.
+        clone: An empty directory to clone into.
+
+    Returns:
+        The clone's root.
+    """
+    index = clone.parent / f"{clone.name}.index"
+    _ = _git_with_index(root, index, "add", "--all")
+    tree = _git_with_index(root, index, "write-tree").strip()
+    commit = git_in(
+        root,
+        "-c",
+        "user.email=test@example.test",
+        "-c",
+        "user.name=Test",
+        "commit-tree",
+        tree,
+        "-p",
+        "HEAD",
+        "-m",
+        "pull request head",
+    ).strip()
+    _ = git_in(root, "update-ref", PULL_REQUEST_REF, commit)
+    _ = git_in(clone.parent, "clone", "--quiet", str(root), clone.name)
+    _ = git_in(clone, "fetch", "--quiet", "--no-tags", "origin", PULL_REQUEST_REF)
+    return clone
 
 
 def write_file(path: Path, text: str) -> None:

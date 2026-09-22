@@ -1,0 +1,105 @@
+name: Nightly drift
+
+# The whole gate against the latest Claude Code CLI, plus the checks that need the live
+# documentation. A red run opens or updates one `area: tooling` issue titled "Nightly drift".
+on:
+  schedule:
+    - cron: "41 5 * * *"
+  workflow_dispatch:
+
+# No job inherits a grant; each job below asks for exactly what it uses.
+permissions: {}
+
+# Floating on purpose: this workflow exists to find upstream drift before a pinned bump does.
+# G2 allows `latest` only on a workflow triggered solely by schedule or workflow_dispatch.
+env:
+  CLAUDE_CODE_VERSION: latest
+  # The version resolved at install time is the one the whole run is measured against.
+  DISABLE_AUTOUPDATER: "1"
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    name: Gate against the latest CLI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # check out the tree; nothing is written back
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"
+          enable-cache: true
+
+      - name: Create the environment from uv.lock
+        run: make setup
+
+      # Same exposure as ci.yml: only the three locked binaries the plugin suites call.
+      - name: Put the locked lint binaries on PATH
+        run: |
+          set -euo pipefail
+          tools="${RUNNER_TEMP}/locked-tools"
+          mkdir -p "${tools}"
+          for tool in ruff shellcheck shfmt; do
+            ln -s "${GITHUB_WORKSPACE}/.venv/bin/${tool}" "${tools}/${tool}"
+          done
+          echo "${tools}" >>"${GITHUB_PATH}"
+
+      - name: Install Claude Code CLI (latest, signature-verified)
+        run: |
+          set -euo pipefail
+          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+          echo "${RUNNER_TEMP}/claude-code" >>"${GITHUB_PATH}"
+          "${RUNNER_TEMP}/claude-code/claude" --version
+
+      - name: Install the plugin Python floor
+        run: uv python install 3.8
+
+      # zizmor runs with --offline here as on a laptop (ZIZMOR_OFFLINE in
+      # scripts/lint/workflows_files.py): its online audits cannot pass on the untagged
+      # validate-plugins pin. No GH_TOKEN is passed because nothing in the gate needs one.
+      - name: make check
+        env:
+          RUFF_OUTPUT_FORMAT: github
+        run: make check
+
+      - name: Diff KNOWN_TOOLS against the live CLI
+        run: .venv/bin/python -m pytest -m coverage_matrix
+
+      # The plugin's own probe of the documentation corpus, under the runner's python3.
+      - name: agent-self-knowledge selfcheck
+        run: python3 plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py selfcheck
+
+  # Separate from the job that runs code: the write token never shares a job with the tree.
+  report:
+    name: Open or update the drift issue
+    needs: drift
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write # open or comment on the one "Nightly drift" issue
+    steps:
+      - name: Open or update the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          title="Nightly drift"
+          body="The nightly gate against the latest Claude Code CLI failed: ${RUN_URL}"
+          number="$(gh issue list --repo "${REPOSITORY}" --state open --label "area: tooling" \
+            --search "in:title \"${title}\"" --json number,title \
+            --jq "[.[] | select(.title == \"${title}\")][0].number // empty")"
+          if [[ -n "${number}" ]]; then
+            gh issue comment "${number}" --repo "${REPOSITORY}" --body "${body}"
+          else
+            gh issue create --repo "${REPOSITORY}" --title "${title}" --label "area: tooling" --body "${body}"
+          fi

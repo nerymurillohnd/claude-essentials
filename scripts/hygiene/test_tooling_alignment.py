@@ -5,9 +5,10 @@ command fails, and the reader has no way to know whether the instruction is stal
 machine is. The same goes for a recipe that calls a deleted `.mjs`, or an editor setting that
 names a formatter the repository no longer uses.
 
-The sweep grows one step at a time. It cannot be repository-wide today, because the
-workflows, the hooks, the instruction files and the documentation are rewritten at steps 7,
-8, 10 and 11 respectively; sweeping them now would fail on text that is scheduled to change.
+The sweep grows one step at a time. It cannot be repository-wide today, because the hooks,
+the instruction files and the documentation are rewritten at steps 8, 10 and 11; sweeping
+them now would fail on text that is scheduled to change. `.github/` joined at step 7 except
+the pull request template, which is documentation and moves with step 11.
 `SWEPT_PATHS` is what is already migrated, `PENDING_PATHS` is what joins it and when, and the
 second constant is what keeps the first from looking complete.
 """
@@ -32,6 +33,10 @@ SWEPT_PATHS: Final[tuple[str, ...]] = (
     "Makefile",
     ".vscode/*",
     "uv.lock",
+    ".github/workflows/*",
+    ".github/ISSUE_TEMPLATE/*",
+    ".github/dependabot.yml",
+    ".github/labels.json",
 )
 """What is migrated today and therefore has no excuse to name the old toolchain."""
 
@@ -46,10 +51,15 @@ covered. A sweep that flagged those would make the checks undocumentable.
 """
 
 PENDING_PATHS: Final[tuple[tuple[str, str], ...]] = (
-    (".github/**", "step 7 rewrites the workflows"),
     (".claude/hooks/** and .claude/settings.json", "step 8 switches the hooks"),
     ("CLAUDE.md and .claude/**", "step 10 rewrites the instruction files"),
-    ("docs/**, README.md, CONTRIBUTING.md, SECURITY.md, templates/**", "step 11 rewrites the docs"),
+    (
+        (
+            "docs/**, README.md, CONTRIBUTING.md, SECURITY.md, templates/**, "
+            ".github/pull_request_template.md"
+        ),
+        "step 11 rewrites the docs",
+    ),
 )
 """What joins the sweep, and at which step, so the list is never mistaken for finished."""
 

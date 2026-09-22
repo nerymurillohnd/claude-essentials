@@ -13,14 +13,18 @@ from typing import TYPE_CHECKING, Final
 
 import pytest
 
+from scripts.common.errors import Finding
 from scripts.common.jsontext import is_json_object
-from scripts.common.plugins import load_json
+from scripts.common.plugins import load_json, repo_root
+from scripts.github import labels
+from scripts.github.labels import LABELS_PATH
 from scripts.plugin_validation.conftest import PLUGIN_ID, RELEASE_DATE, SKILL_ID, VERSION
 from scripts.plugin_validation.validate_plugins import (
     DEFERRED_INVARIANTS,
     GITHUB_INVARIANTS,
     PLUGIN_INVARIANTS,
     check_plugin,
+    collect,
     registry_lines,
 )
 
@@ -312,3 +316,14 @@ def test_manifest_stays_valid_json(scratch: Path) -> None:
     assert is_json_object(document)
     assert document["version"] == VERSION
     assert RELEASE_DATE in plugin_path(scratch, "CHANGELOG.md").read_text(encoding="utf-8")
+
+
+def test_the_repository_checks_emit_g1(monkeypatch: pytest.MonkeyPatch) -> None:
+    """G1 reaches `make validate`, not only the label and issue-form unit tests."""
+    sentinel = Finding("G1", LABELS_PATH, "seeded by the wiring probe")
+
+    def seeded(_root: Path) -> list[Finding]:
+        return [sentinel]
+
+    monkeypatch.setattr(labels, "validate", seeded)
+    assert sentinel in collect(repo_root())

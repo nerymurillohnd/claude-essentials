@@ -24,7 +24,22 @@ from scripts.github.triage import (
     plan_for_event,
     versions_document,
 )
-from scripts.github.triage_rules import CATALOG_AREA, DOCS_AREA, NEEDS_INFO, NEEDS_TRIAGE
+from scripts.github.triage_rules import (
+    CATALOG_AREA,
+    DOCS_AREA,
+    NEEDS_INFO,
+    NEEDS_TRIAGE,
+    bump_label,
+)
+from scripts.versioning.conftest import (
+    commit_all,
+    fetch_as_pull_request,
+    git_in,
+    make_plugin,
+    manifest_text,
+    marketplace_text,
+    write_file,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -71,10 +86,62 @@ def test_a_supplied_versions_document_is_read(tmp_path: Path) -> None:
 
 
 @pytest.mark.slow
-def test_no_bump_is_computed_from_a_base_only_checkout(tmp_path: Path) -> None:
-    """`check_versions` compares the working tree, so a base checkout knows nothing."""
+def test_no_bump_is_computed_without_the_head(tmp_path: Path) -> None:
+    """Neither `HEAD` nor `FETCH_HEAD` is the pull request, so there is nothing to measure."""
     options = Options(apply=False, versions_json=None)
     assert versions_document(tmp_path, PULL_EVENT, options) is None
+
+
+def _released_marketplace(root: Path) -> None:
+    """Build a repository with `alpha--v0.1.0` released on `main`.
+
+    Args:
+        root: An empty directory.
+    """
+    _ = git_in(root, "init", "--quiet", "--initial-branch=main")
+    write_file(root / ".claude-plugin" / "marketplace.json", marketplace_text())
+    make_plugin(root, "alpha", "0.1.0")
+    _ = commit_all(root, "initial")
+    _ = git_in(root, "tag", "alpha--v0.1.0")
+
+
+def _pull_event(head: str) -> dict[str, object]:
+    """Build a pull request payload against `main` with a given head commit.
+
+    Args:
+        head: The head sha the payload names.
+
+    Returns:
+        The payload.
+    """
+    return {"pull_request": {"number": 1, "base": {"ref": "main"}, "head": {"sha": head}}}
+
+
+@pytest.mark.slow
+def test_the_bump_is_computed_from_the_fetched_head(tmp_path: Path) -> None:
+    """ADR-0004: base checkout plus `refs/pull/<n>/head` as objects still yields the label."""
+    source = tmp_path / "source"
+    source.mkdir()
+    _released_marketplace(source)
+    write_file(source / "plugins/alpha/skills/demo/SKILL.md", "---\nname: alpha\n---\n\nFix.\n")
+    write_file(source / "plugins/alpha/.claude-plugin/plugin.json", manifest_text("alpha", "0.1.1"))
+    clone = fetch_as_pull_request(source, tmp_path / "base")
+    fetched = git_in(clone, "rev-parse", "FETCH_HEAD").strip()
+    options = Options(apply=False, versions_json=None)
+    document = versions_document(clone, _pull_event(fetched), options)
+    assert bump_label(document) == "bump: patch"
+    assert git_in(clone, "status", "--porcelain") == ""
+
+
+@pytest.mark.slow
+def test_a_fetched_head_that_is_not_the_event_head_is_not_trusted(tmp_path: Path) -> None:
+    """A push that raced the fetch must not label the pull request for the wrong commit."""
+    source = tmp_path / "source"
+    source.mkdir()
+    _released_marketplace(source)
+    clone = fetch_as_pull_request(source, tmp_path / "base")
+    options = Options(apply=False, versions_json=None)
+    assert versions_document(clone, _pull_event("0" * 40), options) is None
 
 
 def test_load_event_returns_none_without_the_variable() -> None:

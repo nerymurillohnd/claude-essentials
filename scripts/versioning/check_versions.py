@@ -8,13 +8,16 @@ Three consumers read this entrypoint, and each reads a different part of it:
 * The `version-check` CI job runs it with `--base origin/<base ref> --verify-tag` on a pull
   request and with `--base <before sha>` on a push, adding `--deferred` when the pull request
   carries the `bump: deferred` label, and reads the exit status.
+* `triage.yml` runs it (through `build_plan`) with `--head FETCH_HEAD`: the pull request's
+  head is fetched as git objects into a base-only checkout and read as data, never checked
+  out or executed (ADR-0004).
 * `repo-auditor` and the delivery skill read `--json`, whose shape is fixed:
   `{route, label, deferred, plugins:[{name, predecessor, tagged, version, runtime_changed,
   first_runtime_path, required, ok, reason}]}`.
 
-Nothing here touches the network: the base ref, the tags and the working tree are the only
-inputs, and `--deferred` is passed in rather than looked up, so the same command gives the
-same answer on a laptop and on a runner.
+Nothing here touches the network: the base ref, the tags and the working tree (or the
+`--head` ref) are the only inputs, and `--deferred` is passed in rather than looked up, so
+the same command gives the same answer on a laptop and on a runner.
 """
 
 from __future__ import annotations
@@ -65,6 +68,7 @@ class Options:
         deferred: The pull request carries the `bump: deferred` label.
         as_json: Print the machine contract instead of the human report.
         output_format: How findings are rendered in the human report.
+        head: The ref holding the head side, or None for the working tree.
     """
 
     base: str
@@ -72,6 +76,7 @@ class Options:
     deferred: bool
     as_json: bool
     output_format: OutputFormat
+    head: str | None = None
 
 
 def parse_args(argv: Sequence[str] | None) -> Options:
@@ -101,6 +106,11 @@ def parse_args(argv: Sequence[str] | None) -> Options:
         action="store_true",
         help="the pull request declares its runtime drift deliberate",
     )
+    _ = parser.add_argument(
+        "--head",
+        default=None,
+        help="read the head side from this ref as git objects, not from the working tree",
+    )
     _ = parser.add_argument("--json", action="store_true", help="print the machine contract")
     _ = parser.add_argument(
         "--output-format",
@@ -112,12 +122,14 @@ def parse_args(argv: Sequence[str] | None) -> Options:
     chosen = values["output_format"]
     output_format: OutputFormat = "github" if chosen == "github" else "text"
     base = values["base"]
+    head = values["head"]
     return Options(
         base=base if isinstance(base, str) else DEFAULT_BASE,
         verify_tag=bool(values["verify_tag"]),
         deferred=bool(values["deferred"]),
         as_json=bool(values["json"]),
         output_format=output_format,
+        head=head if isinstance(head, str) else None,
     )
 
 
@@ -231,9 +243,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         0 when every plugin passes, 1 when one does not, 2 when the inputs are unusable.
     """
     options = parse_args(argv)
+    if options.head is not None and options.verify_tag:
+        print("--verify-tag tags the working tree, so it cannot run with --head", file=sys.stderr)
+        return int(ExitCode.USAGE)
     root = repo_root()
     try:
-        plan = build_plan(root, base=options.base, deferred=options.deferred)
+        plan = build_plan(root, base=options.base, deferred=options.deferred, head=options.head)
     except MaintainerError as error:
         print(f"error: {error}", file=sys.stderr)
         return int(ExitCode.USAGE)

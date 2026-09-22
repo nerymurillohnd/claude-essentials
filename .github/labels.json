@@ -86,7 +86,7 @@
   {
     "name": "area: catalog",
     "color": "1d76db",
-    "description": "Marketplace catalog, schemas, and catalog generation"
+    "description": "Marketplace catalog and catalog generation"
   },
   {
     "name": "area: ci",
@@ -96,7 +96,7 @@
   {
     "name": "area: tooling",
     "color": "1d76db",
-    "description": "Repo scripts, npm config, and Claude Code project hooks"
+    "description": "Repo scripts (Python/uv), Makefile, and Claude Code project hooks"
   },
   {
     "name": "area: templates",
@@ -144,18 +144,18 @@
     "description": "Computed: PR changes no plugin version"
   },
   {
+    "name": "bump: removal",
+    "color": "5d0000",
+    "description": "Computed: PR removes a plugin from the marketplace"
+  },
+  {
     "name": "bump: deferred",
     "color": "f9d0c4",
     "description": "Maintainer-applied: runtime files changed without a bump; reaches users with the next bump"
   },
   {
-    "name": "good first issue",
-    "color": "7057ff",
-    "description": "Good for newcomers"
-  },
-  {
     "name": "help wanted",
     "color": "008672",
-    "description": "Extra attention is needed"
+    "description": "Investigation or reproduction welcome in the issue thread"
   }
 ]

@@ -1,6 +1,11 @@
 name: Triage
 
-on:
+# pull_request_target runs with a write token, which is what labelling a fork's pull request
+# needs. It is safe here because the job checks out the BASE branch only (the event's
+# default ref), never the pull request's head, restores no cache, builds no sdist, and reads
+# pull request content as data only: the file list through the API, and the head commit as
+# git objects for the bump rules (ADR-0004).
+on: # zizmor: ignore[dangerous-triggers] ADR-0004: base checkout only, no PR-head code, no cache
   issues:
     types: [opened, edited]
   issue_comment:
@@ -8,35 +13,54 @@ on:
   pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
 
-permissions:
-  contents: read
-  issues: write
-  pull-requests: write
+# No job inherits a grant; the one job below asks for exactly what it uses.
+permissions: {}
 
+# Scoped by event name, so an issue comment (a needs-info reply) cannot cancel a pull
+# request's in-flight labelling run (ADR-0004).
 concurrency:
   group: "triage-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number }}"
   cancel-in-progress: true
 
 jobs:
   triage:
+    name: Apply triage labels
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # base checkout of the triage rules
+      issues: write # add and remove labels on issues and pull requests
+      pull-requests: write # read a pull request's changed files and label it
     steps:
-      # SECURITY: pull_request_target runs with a write token. This checks out the
-      # BASE branch (the event's default ref) and must never check out the PR head.
-      # scripts/triage.mjs reads PR content through the API as data only.
+      # SECURITY: no `ref:`. Under pull_request_target the default ref is the base branch;
+      # this job must never check out the pull request's head.
+      # Full history and tags: the bump rules compare against the plugins' release tags.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
-      # No dependency cache: a cache written by PR-controlled code must never be
-      # restored into a job that holds a write token.
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
+      # ADR-0004: the head arrives as git objects at FETCH_HEAD and is never checked out.
+      # Nothing from it is imported, sourced or executed: the base checkout's own
+      # version_plan reads it with `git diff --name-only` and `git show <rev>:<path>`, which
+      # run no filter or textconv driver (those need config the pull request cannot set).
+      - name: Fetch the pull request head as objects (never checked out)
+        if: github.event_name == 'pull_request_target'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
 
-      - run: npm ci --ignore-scripts
+      # No cache: a cache written by pull-request-controlled code must never be restored
+      # into a job that holds a write token.
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"
+          enable-cache: false
+
+      # Wheels only; actionlint-py ships only an sdist and triage never lints workflows.
+      - name: Create the environment from uv.lock (wheels only)
+        run: uv sync --locked --no-build --no-install-package actionlint-py
 
       - name: Apply triage labels (ADR-0004)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/triage.mjs
+          GITHUB_TOKEN: ${{ github.token }}
+        run: .venv/bin/python -m scripts.github.triage --apply

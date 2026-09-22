@@ -8,7 +8,9 @@ way the shell hook's mirror expects.
 from __future__ import annotations
 
 import json
+from pathlib import Path
 import shutil
+import tempfile
 from typing import TYPE_CHECKING, Final
 
 import pytest
@@ -18,6 +20,7 @@ from scripts.versioning.changelog import announces_deprecation, parse_changelog
 from scripts.versioning.conftest import (
     changelog_text,
     commit_all,
+    fetch_as_pull_request,
     git_in,
     make_plugin,
     manifest_text,
@@ -47,7 +50,6 @@ from scripts.versioning.version_plan import (
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from pathlib import Path
 
     from scripts.common.errors import Finding
 
@@ -63,6 +65,33 @@ JSON_KEYS: Final = (
     "ok",
     "reason",
 )
+
+
+def plan_both(repo: Path, *, base: str, deferred: bool = False) -> Plan:
+    """Plan the working tree, and the same change read as a fetched head ref; they must agree.
+
+    Every route-table case therefore runs twice: once as `guard-push.sh` sees it (working
+    tree, untracked files included) and once as `triage.yml` sees it (`--head FETCH_HEAD` in a
+    base-only clone whose working tree never holds the change).
+
+    Args:
+        repo: The source repository.
+        base: The ref the route is measured against.
+        deferred: Whether the pull request carries `bump: deferred`.
+
+    Returns:
+        The working-tree plan, for the case's own assertions.
+    """
+    from_tree = build_plan(repo, base=base, deferred=deferred)
+    scratch = Path(tempfile.mkdtemp(prefix="head-probe-"))
+    try:
+        clone = fetch_as_pull_request(repo, scratch / "base")
+        from_head = build_plan(clone, base=base, deferred=deferred, head="FETCH_HEAD")
+    finally:
+        shutil.rmtree(scratch)
+    assert to_json_obj(from_head) == to_json_obj(from_tree)
+    assert from_head.findings == from_tree.findings
+    return from_tree
 
 
 def _deprecate_alpha(root: Path) -> None:
@@ -241,7 +270,7 @@ def test_versioning_invariants_are_documented() -> None:
 def test_route_runtime(repo: Path) -> None:
     """A skill edit with no bump: pull request, and the bump is owed (V1)."""
     write_file(repo / "plugins/alpha/skills/demo/SKILL.md", "---\nname: alpha\n---\n\nChanged.\n")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     alpha = _plan_of(plan, "alpha")
     assert plan.route == "pr"
     assert plan.label == "bump: none"
@@ -257,7 +286,7 @@ def test_route_runtime_with_a_bump_passes(repo: Path) -> None:
     """The same edit with a PATCH bump owes nothing and labels the pull request."""
     write_file(repo / "plugins/alpha/skills/demo/SKILL.md", "---\nname: alpha\n---\n\nChanged.\n")
     write_file(repo / "plugins/alpha/.claude-plugin/plugin.json", manifest_text("alpha", "0.1.1"))
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     alpha = _plan_of(plan, "alpha")
     assert plan.route == "pr"
     assert plan.label == "bump: patch"
@@ -273,7 +302,7 @@ def test_route_exempt_only(repo: Path) -> None:
     write_file(
         repo / "plugins/alpha/README.md", "# alpha\n\n**Kind:** skill-only\n\nBetter prose.\n"
     )
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "direct"
     assert plan.label == "bump: none"
     assert not _plan_of(plan, "alpha").runtime_changed
@@ -284,7 +313,7 @@ def test_route_exempt_only(repo: Path) -> None:
 def test_route_evals_only(repo: Path) -> None:
     """Eval cases are never loaded by Claude, so they owe no bump and stay direct."""
     write_file(repo / "plugins/alpha/evals/cases/a.md", "A better case.\n")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "direct"
     assert not _plan_of(plan, "alpha").runtime_changed
 
@@ -294,7 +323,7 @@ def test_route_tests_only(repo: Path) -> None:
     """A plugin's own test suite is exempt at any depth."""
     write_file(repo / "plugins/alpha/tests/run.sh", "#!/usr/bin/env bash\nexit 1\n")
     write_file(repo / "plugins/alpha/skills/demo/tests/unit.sh", "#!/usr/bin/env bash\nexit 0\n")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "direct"
     assert not _plan_of(plan, "alpha").runtime_changed
 
@@ -303,7 +332,7 @@ def test_route_tests_only(repo: Path) -> None:
 def test_route_gate_only(repo: Path) -> None:
     """The gate and its inputs are outside the allowlist: pull request, but no bump."""
     write_file(repo / "scripts" / "versioning" / "thing.py", "# @ts-nothing\n")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "pr"
     assert plan.label == "bump: none"
     assert not _plan_of(plan, "alpha").runtime_changed
@@ -320,7 +349,7 @@ def test_route_formatting_only_plugin_json(repo: Path) -> None:
         repo / "plugins/alpha/.claude-plugin/plugin.json",
         json.dumps(reordered, indent=4) + "\n",
     )
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     alpha = _plan_of(plan, "alpha")
     assert not alpha.runtime_changed
     assert alpha.first_runtime_path is None
@@ -379,7 +408,7 @@ def test_route_metadata_only_plugin_json(repo: Path) -> None:
     manifest["description"] = "A better sentence about alpha."
     manifest["keywords"] = ["alpha", "demo"]
     write_file(path, json.dumps(manifest, indent=2) + "\n")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     alpha = _plan_of(plan, "alpha")
     assert plan.route == "direct"
     assert plan.label == "bump: none"
@@ -396,7 +425,7 @@ def test_route_metadata_edit_that_touches_runtime_is_a_pull_request(repo: Path) 
     manifest["description"] = "A better sentence about alpha."
     manifest["hooks"] = "./hooks/hooks.json"
     write_file(path, json.dumps(manifest, indent=2) + "\n")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "pr"
     assert _plan_of(plan, "alpha").runtime_changed
 
@@ -411,7 +440,7 @@ def test_route_catalog_plugins_array_only(repo: Path) -> None:
     catalog = as_mapping(load_json(repo / ".claude-plugin/marketplace.json"), path=path)
     catalog["plugins"] = [{"name": "alpha", "description": "A better sentence about alpha."}]
     write_file(repo / ".claude-plugin/marketplace.json", json.dumps(catalog, indent=2) + "\n")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "direct"
     assert plan.label == "bump: none"
     assert plan.findings == ()
@@ -421,7 +450,7 @@ def test_route_catalog_plugins_array_only(repo: Path) -> None:
 def test_route_catalog_renames_changed(repo: Path) -> None:
     """`renames` is policy, not generated output: it always takes the pull request route."""
     write_file(repo / ".claude-plugin/marketplace.json", marketplace_text({"ghost": None}))
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "pr"
 
 
@@ -432,7 +461,7 @@ def test_route_catalog_top_level_field_changed(repo: Path) -> None:
     catalog = as_mapping(load_json(path), path=path)
     catalog["name"] = "renamed-market"
     write_file(path, json.dumps(catalog, indent=2) + "\n")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "pr"
 
 
@@ -440,7 +469,7 @@ def test_route_catalog_top_level_field_changed(repo: Path) -> None:
 def test_route_new_plugin(repo: Path) -> None:
     """A plugin with no tag starts at 0.1.0 and labels the pull request `initial`."""
     make_plugin(repo, "beta", "0.1.0")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     beta = _plan_of(plan, "beta")
     assert plan.route == "pr"
     assert plan.label == "bump: initial"
@@ -454,7 +483,7 @@ def test_route_new_plugin(repo: Path) -> None:
 def test_route_new_plugin_must_start_at_the_initial_version(repo: Path) -> None:
     """V3: a first release numbered anything else fails the gate."""
     make_plugin(repo, "beta", "1.0.0")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert not _plan_of(plan, "beta").ok
     assert _ids(plan.findings) == ["V3"]
 
@@ -465,7 +494,7 @@ def test_route_rename(repo: Path) -> None:
     _ = git_in(repo, "mv", "plugins/alpha", "plugins/gamma")
     write_file(repo / "plugins/gamma/.claude-plugin/plugin.json", manifest_text("gamma", "0.2.0"))
     write_file(repo / ".claude-plugin/marketplace.json", marketplace_text({"alpha": "gamma"}))
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     gamma = _plan_of(plan, "gamma")
     assert plan.route == "pr"
     assert plan.label == "bump: minor"
@@ -486,7 +515,7 @@ def test_route_deprecation(repo: Path) -> None:
     write_file(
         repo / "plugins/alpha/skills/demo/SKILL.md", "---\nname: alpha\n---\n\nDeprecated.\n"
     )
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     alpha = _plan_of(plan, "alpha")
     assert plan.route == "pr"
     assert plan.label == "bump: minor"
@@ -502,7 +531,7 @@ def test_route_removal(repo: Path) -> None:
     _deprecate_alpha(repo)
     shutil.rmtree(repo / "plugins" / "alpha")
     write_file(repo / ".claude-plugin/marketplace.json", marketplace_text({"alpha": None}))
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     alpha = _plan_of(plan, "alpha")
     assert plan.route == "pr"
     assert plan.label == "bump: removal"
@@ -517,7 +546,7 @@ def test_route_emergency_removal(repo: Path) -> None:
     """A removal with no deprecation release takes the same route, flagged by a V5 warning."""
     shutil.rmtree(repo / "plugins" / "alpha")
     write_file(repo / ".claude-plugin/marketplace.json", marketplace_text({"alpha": None}))
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "pr"
     assert plan.label == "bump: removal"
     assert _plan_of(plan, "alpha").ok
@@ -529,7 +558,7 @@ def test_route_emergency_removal(repo: Path) -> None:
 def test_route_removal_without_a_renames_entry_fails(repo: Path) -> None:
     """V4: a directory that simply disappears leaves the catalog offering a ghost."""
     shutil.rmtree(repo / "plugins" / "alpha")
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert not _plan_of(plan, "alpha").ok
     assert _ids(plan.findings) == ["V4"]
 
@@ -544,7 +573,7 @@ def test_route_multi_plugin(repo: Path) -> None:
     write_file(repo / "plugins/alpha/.claude-plugin/plugin.json", manifest_text("alpha", "0.1.1"))
     write_file(repo / "plugins/beta/skills/demo/SKILL.md", "---\nname: beta\n---\n\nNew skill.\n")
     write_file(repo / "plugins/beta/.claude-plugin/plugin.json", manifest_text("beta", "0.2.0"))
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     assert plan.route == "pr"
     assert plan.label == "bump: minor"
     assert _plan_of(plan, "alpha").level == "patch"
@@ -556,7 +585,7 @@ def test_route_multi_plugin(repo: Path) -> None:
 def test_route_deferred_merge(repo: Path) -> None:
     """`bump: deferred` allows the drift on purpose: still a pull request, but nothing owed."""
     write_file(repo / "plugins/alpha/skills/demo/SKILL.md", "---\nname: alpha\n---\n\nChanged.\n")
-    plan = build_plan(repo, base="main", deferred=True)
+    plan = plan_both(repo, base="main", deferred=True)
     alpha = _plan_of(plan, "alpha")
     assert plan.route == "pr"
     assert plan.deferred
@@ -573,9 +602,9 @@ def test_route_post_merge_push(repo: Path) -> None:
     write_file(repo / "plugins/alpha/skills/demo/SKILL.md", "---\nname: alpha\n---\n\nChanged.\n")
     write_file(repo / "plugins/alpha/.claude-plugin/plugin.json", manifest_text("alpha", "0.1.1"))
     before = git_in(repo, "rev-parse", "HEAD").strip()
-    from_worktree = build_plan(repo, base="main")
+    from_worktree = plan_both(repo, base="main")
     _ = commit_all(repo, "release alpha 0.1.1")
-    from_push = build_plan(repo, base=before)
+    from_push = plan_both(repo, base=before)
     assert from_push.route == from_worktree.route == "pr"
     assert from_push.label == from_worktree.label == "bump: patch"
     assert to_json_obj(from_push) == to_json_obj(from_worktree)
@@ -589,7 +618,7 @@ def test_route_post_merge_push(repo: Path) -> None:
 @pytest.mark.slow
 def test_json_contract_has_exactly_the_documented_keys(repo: Path) -> None:
     """`guard-push.sh`, CI and `repo-auditor` read this shape; it may not grow silently."""
-    plan = build_plan(repo, base="main")
+    plan = plan_both(repo, base="main")
     payload = to_json_obj(plan)
     assert list(payload) == ["route", "label", "deferred", "plugins"]
     assert tuple(plugin_json_obj(plan.plugins[0])) == JSON_KEYS
@@ -609,3 +638,42 @@ def test_read_renames_reads_both_the_tree_and_a_ref(repo: Path) -> None:
     write_file(repo / ".claude-plugin/marketplace.json", marketplace_text({"alpha": None}))
     assert read_renames(repo) == {"alpha": None}
     assert read_renames(repo, ref="main") == {}
+
+
+# ---------------------------------------------------------------------------
+# The head side read as git objects (triage under pull_request_target, ADR-0004)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.slow
+def test_a_head_ref_never_checked_out_is_classified(
+    repo: Path, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    """The clone's working tree is the base; the runtime change exists only as objects."""
+    skill = "plugins/alpha/skills/demo/SKILL.md"
+    write_file(repo / skill, "---\nname: alpha\n---\n\nChanged.\n")
+    write_file(repo / "plugins/alpha/.claude-plugin/plugin.json", manifest_text("alpha", "0.1.1"))
+    clone = fetch_as_pull_request(repo, tmp_path_factory.mktemp("probe") / "base")
+    assert git_in(clone, "status", "--porcelain") == ""
+    assert (clone / skill).read_text(encoding="utf-8").endswith("Do the thing.\n")
+    plan = build_plan(clone, base="main", head="FETCH_HEAD")
+    alpha = _plan_of(plan, "alpha")
+    assert plan.label == "bump: patch"
+    assert alpha.first_runtime_path == "skills/demo/SKILL.md"
+    assert alpha.version == "0.1.1"
+
+
+@pytest.mark.slow
+def test_the_head_mode_ignores_the_checkout_it_runs_in(
+    repo: Path, tmp_path_factory: pytest.TempPathFactory
+) -> None:
+    """Untracked or edited files in the base checkout must never leak into the head side."""
+    clone = fetch_as_pull_request(repo, tmp_path_factory.mktemp("probe") / "base")
+    write_file(clone / "plugins/alpha/skills/demo/SKILL.md", "---\nname: alpha\n---\n\nLocal.\n")
+    write_file(clone / "plugins/alpha/hooks/hooks.json", "{}\n")
+    assert changed_paths(clone, "main", head="FETCH_HEAD") == []
+    plan = build_plan(clone, base="main", head="FETCH_HEAD")
+    assert plan.label == "bump: none"
+    assert not _plan_of(plan, "alpha").runtime_changed
+    assert build_plan(clone, base="main").label == "bump: none"
+    assert _plan_of(build_plan(clone, base="main"), "alpha").runtime_changed

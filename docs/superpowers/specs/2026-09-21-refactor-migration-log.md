@@ -2062,3 +2062,365 @@ itself is fine, and refusing it would say nothing useful.
 - `post-edit.sh`: a Biome-form JSON written through a Write payload came back canonical; the hook has no `biome`/`node_modules` reference left.
 - JSON churn committed separately as `6b35fd1`; each file parses to the same content as before (`jq -S` comparison), `make -s versions` → `Computed label: bump: none`.
 - Environment finding for the maintainer: `~/.zshenv:127` exports `GITHUB_ACTIONS=true` globally; `scripts/common/environment.py` requires the flag plus a run id before treating a process as CI.
+
+## Gate 7 — CI switch (2026-09-22)
+
+File part only: the workflows, `dependabot.yml`, `labels.json` and the scripts they need are
+rewritten and green locally. Nothing was committed, pushed, tagged or changed on GitHub; the
+push, the draft PR and every check that only GitHub can run are listed at the end of this
+section for the orchestrator.
+
+### What changed
+
+| File | Change |
+| --- | --- |
+| `.github/workflows/ci.yml` | `check` (`make setup` → locked lint binaries on `PATH` → CLI → `uv python install 3.8` → `make check`), `version-check` (`make versions` with `--verify-tag` on PRs, `--base $BEFORE` plus the merged PR's `bump: deferred` on `main`), `official` (pinned `validate-plugins`, PR only). Top-level `permissions: {}`, per-job grants with comments, `concurrency` cancelling on PRs only |
+| `.github/workflows/evals.yml` | new (D2): `select` (no secret) reads `make -s versions --json`; `eval` (matrix, `continue-on-error`, `environment: evals`) skips with a notice without `ANTHROPIC_API_KEY` |
+| `.github/workflows/close-external-prs.yml` | new (D5): comment + close fork PRs, no checkout, `pull-requests: write` only |
+| `.github/workflows/nightly.yml` | new: `make check` against `latest`, `pytest -m coverage_matrix`, `ccdocs.py selfcheck`; a separate `report` job (`issues: write`, no checkout) opens or comments on one "Nightly drift" issue |
+| `.github/workflows/tag-versions.yml` | `persist-credentials: false`; wheels-only env; `make validate validate-cli`; token reaches git only inside the tagging step (`http.<server>/.extraheader`, masked, removed on exit) |
+| `.github/workflows/labels.yml` | wheels-only env; `sync_labels --apply` (never `--prune`) |
+| `.github/workflows/triage.yml` | base checkout with `fetch-depth: 0`, `enable-cache: false`, wheels-only env; on `pull_request_target` `git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"` (objects only, never checked out); `triage --apply`; concurrency still scoped by event name |
+| `.github/workflows/stale.yml` | only what blocking zizmor requires: `permissions: {}` + job grant with comment, job `name:`, `concurrency` |
+| `.github/dependabot.yml` | `uv` ecosystem replaces npm; one group; DEBT-0004 sentence rewritten as prose |
+| `.github/labels.json` | `bump: removal` added (`5d0000`, darker than `bump: major`); `area: tooling`/`area: catalog`/`help wanted` reworded; `good first issue` removed |
+| `scripts/github/install_claude_code.py` + test | new: signature-verified CLI installer (see decision 1) |
+| `scripts/github/repo_metadata.py` + test | G2 pipeline check is an error; G3 reads the locked `shellcheck`/`shfmt` binaries; pin comments may be a date for an untagged action |
+| `scripts/lint/workflows_files.py` + test | `ZIZMOR_BLOCKING = True`; one G2 error per zizmor finding with its location |
+| `scripts/plugin_validation/validate_plugins.py` + test | G1 (`labels.validate`, `validate_forms`) wired into `make validate` |
+| `scripts/github/labels.py` + test | `OPTIONAL_LABELS` and the step-7 carve-outs removed; the taxonomy must be complete |
+| `scripts/hygiene/test_tooling_alignment.py` | X4 sweeps `.github/workflows/*`, `.github/ISSUE_TEMPLATE/*`, `dependabot.yml`, `labels.json` |
+| `scripts/github/triage.py` + test | the `bump:` label is computed in-process with `build_plan(head="FETCH_HEAD")` once `FETCH_HEAD` is verified to be the event's head (see "The `bump:` label under `pull_request_target`") |
+| `scripts/versioning/version_plan.py`, `check_versions.py` + tests | `head=<ref>` / `--head <ref>`: the head side is read from a ref as git objects; the default working-tree behaviour is unchanged |
+
+`scripts/github/triage_rules.py` needed no change: the §A5 path rules (`pyproject.toml`,
+`uv.lock`, `Makefile`, `.python-version`, `.editorconfig` → tooling; `.github/schemas/**` →
+community; `.github/policy/**`, `dependabot.yml` → ci) were already there.
+
+### Decisions beyond the plan, and why
+
+| # | Decision | Reason and evidence |
+| --- | --- | --- |
+| 1 | The CLI is installed by `scripts.github.install_claude_code`, not `npm install --global` | Two gates refuse the plan's command. zizmor `adhoc-packages` (help, blocking now) flags every `npm install --global` step — five of them — and the fix it documents is a lockfile, which would bring npm back into the repo. X4 now sweeps `.github/workflows/*` and `"npm "` is a retired term. The module follows the "Binary integrity and code signing" section of https://code.claude.com/docs/en/setup (read 2026-09-21): it downloads the release key, refuses it unless its fingerprint is `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`, verifies `manifest.json.sig` with gpg (`VALIDSIG` primary key must be that fingerprint), and refuses the binary unless size and SHA-256 equal the signed manifest. No Node is needed on the runner any more; ADR-0007 (step 11) must say the runner needs no Node, instead of recording Node as present only for the CLI. Live smoke on this machine: `install_claude_code 2.1.278 --dest <scratch>` → rc 0, `2.1.278 (Claude Code)`; `2.1.x` → ``error: '2.1.x' is not X.Y.Z, `latest` or `stable` `` rc 2. The upstream `validate-plugins` action still installs its own copy through npm; that is inside the action |
+| 2 | `DISABLE_AUTOUPDATER: "1"` in every workflow that installs the CLI | A pinned CLI that updates itself mid-run is no longer the pinned version (setup docs, "Disable auto-updates") |
+| 3 | `evals.yml`'s `eval` job runs in `environment: evals`; `ANTHROPIC_API_KEY` must be an **environment** secret | zizmor `secrets-outside-env` (warning) fired on both references; the documented fix is an environment. Changes the Part C item: the secret is created under Settings → Environments → `evals`, not as a repository secret |
+| 4 | Write-token jobs (`triage`, `labels`, `tag-versions`) run `uv sync --locked --no-build --no-install-package actionlint-py` instead of `make setup` | §A3/§A12: write-token jobs build no sdist. Measured: `uv sync --locked --no-build --dry-run` fails (`actionlint-py==1.7.12.24 … has no binary distribution`; its lock entry has an sdist only, whose build downloads the binary). None of those jobs lints workflows. A scratch venv built that way ran `validate_marketplace` (M1-M10 pass), `validate_plugins` (pass, 1 warning), `triage --help` and `sync_labels --help` |
+| 5 | zizmor runs with an explicit `--offline` everywhere, CI included (`ZIZMOR_OFFLINE = True` in `scripts/lint/workflows_files.py`; CI passes no `GH_TOKEN` because nothing in the gate needs one) | With a token, zizmor's online audits report `stale-action-refs` and `ref-version-mismatch` on the `validate-plugins` pin: the upstream repository has **no tags** (`gh api repos/anthropics/claude-plugins-community/tags` → empty, 2026-09-21), so no comment can name a ref and no commit points to a tag. Blocking zizmor would fail every run; suppressing them, or running only the other online audits, is forbidden (running a subset is a suppression by another name). Lost: `impostor-commit`, `known-vulnerable-actions`, `ref-confusion`. Pinned by `test_zizmor_runs_offline_everywhere_including_ci` and `test_the_zizmor_command_line_carries_offline` (the argv zizmor receives starts `--persona=auditor --format plain --offline`). Decided 2026-09-22 (option C) |
+| 6 | G2's pin comment accepts `# YYYY-MM-DD` as well as `# vX.Y.Z` | The instructed `# 2026-08-24` comment on the untagged action failed `check_workflow_pins` (`#\s*v\d+`); a test pins the new form |
+| 7 | G3 compares the plugin README minimums against `.venv/bin/shellcheck --version` and `.venv/bin/shfmt --version` | `SHELLCHECK_VERSION`/`SHFMT_VERSION` left the workflows with the checksum downloads, so the env-based check would have passed vacuously. The wheel versions are not the tool versions (`shfmt-py 4.2.0` ships shfmt `v3.14.1`), so the binaries are asked; a missing binary under an advertised tool is a finding |
+| 8 | G1 is wired into `make validate` | It was registered in `validate_plugins --list` but `labels.validate` and `validate_forms` had no caller outside tests (gate 4 carried item). `test_the_repository_checks_emit_g1` seeds a G1 finding and asserts `collect` returns it |
+| 9 | `check` and `nightly` check out with `fetch-depth: 0` | `test_changelog_immutable` (C2) compares against tags and `test_adr_append_only` (X3) skips without `origin/main`; a shallow clone makes both pass vacuously |
+| 10 | CI puts only `ruff`, `shellcheck`, `shfmt` from `.venv/bin` on `PATH` (symlinks in `$RUNNER_TEMP/locked-tools`) | The plugin suites call them from `PATH` (`test-gate.sh`: `for tool in jq git ruff`); adding all of `.venv/bin` would shadow the runner's `python3` with the venv's 3.14, which is not what a plugin user has |
+| 11 | Dependabot `uv` cooldown `default-days: 5`, not 3 | `[tool.uv] exclude-newer = "4 days"`: a release younger than 4 days cannot be locked, so a 3-day cooldown would let Dependabot open PRs `uv lock` refuses. Inference from the two settings, not observed on GitHub yet |
+| 12 | X4 sweeps four `.github/` paths, not `.github/**` | `.github/pull_request_template.md` still names `npm run …` (lines 11–13, 28) and is step-11 documentation (§A10); it moved to the step-11 row of `PENDING_PATHS` |
+
+### The `bump:` label under `pull_request_target` (implemented 2026-09-22)
+
+ADR-0004 stands unamended: pull requests keep getting the computed `bump:` label, and no code
+from the pull request head is checked out or executed with the write token.
+
+- **`version_plan.build_plan(..., head=<ref>)` and `check_versions --head <ref>`.** With a
+  head ref, every head-side read comes from that ref: `git diff --name-only --no-renames
+  <base> <head>` for the changed set (no untracked files), `git show <head>:<path>` for
+  manifests and the catalog (`head_text`), and `git ls-tree <head>` for the plugin list
+  (`head_plugin_ids`). Tags and the base are read exactly as before. With no `--head` the
+  behaviour is the working-tree one, unchanged (`guard-push.sh`, `version-check`, evals).
+  `--verify-tag` with `--head` is a usage error, because the tag dry run needs the working
+  tree.
+- **`triage.yml`.** Base checkout (`persist-credentials: false`, `fetch-depth: 0` for the
+  tags), then `git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"` with the number
+  through `env:`. The head exists only as objects at `FETCH_HEAD`. A workflow comment states
+  that nothing from it is imported, sourced or executed and cites ADR-0004; `git diff
+  --name-only` and `git show <rev>:<path>` run no filter or textconv driver without config
+  the pull request cannot set.
+- **`triage.versions_document`.** `head_side` returns `None` when `HEAD` is the event's head
+  (working-tree mode), `FETCH_HEAD` when that is the event's head or merge commit, and
+  otherwise nothing is computed, so a push that raced the fetch never labels the wrong commit.
+  The plan is built in-process by the base checkout's own `version_plan` and fed to
+  `triage_rules.labels_for_pr` as before; the `check_versions` subprocess is gone.
+- **Tests.**
+  - Every route-table case in `scripts/versioning/test_version_plan.py` now goes through
+    `plan_both`: the working-tree plan, then the same change snapshotted into a commit,
+    fetched into a fresh base-only clone as `FETCH_HEAD` (`conftest.fetch_as_pull_request`),
+    and planned with `head="FETCH_HEAD"`; JSON contract and findings must be equal.
+  - `test_a_head_ref_never_checked_out_is_classified`: the clone's working tree is clean
+    and still holds the base's `SKILL.md`, yet the plan says `bump: patch` with
+    `skills/demo/SKILL.md` as the first runtime path.
+  - `test_the_head_mode_ignores_the_checkout_it_runs_in`: untracked and edited runtime
+    files in the checkout change nothing in head mode, while the working-tree mode sees
+    them.
+  - `test_parse_args_reads_the_head_ref_triage_passes`,
+    `test_verify_tag_and_head_are_refused_together` and
+    `test_the_head_flag_classifies_a_fetched_pull_request` (`scripts/versioning/test_check_versions.py`).
+  - `test_the_bump_is_computed_from_the_fetched_head`,
+    `test_a_fetched_head_that_is_not_the_event_head_is_not_trusted` and
+    `test_no_bump_is_computed_without_the_head` (`scripts/github/test_triage.py`).
+
+### Carried to later steps
+
+1. **zizmor offline in CI** (decision 5): step 11 adds a DEBT entry and an ADR-0004
+   amendment. Reason: the untagged `validate-plugins` pin trips `stale-action-refs` and
+   `ref-version-mismatch` online, so `impostor-commit`, `known-vulnerable-actions` and
+   `ref-confusion` do not run. Closed by upstream tags on `anthropics/claude-plugins-community`
+   or by vendoring the action, and it must be closed **before `official` becomes a required
+   check**; then `ZIZMOR_OFFLINE` flips to False with a token in the `check` step.
+2. **ADR-0007** (decision 1): step 11 states that the runner needs no Node.
+3. **Docs still naming `good first issue`:** `docs/contributing/labels.md:18`,
+   `docs/contributing/issues.md:51` (step 11). `.claude/skills/marketplace-governance/references/github.md`
+   has no entry for `install_claude_code` or the `--head` mode yet (step 10).
+
+### Checklist
+
+- [x] every `uses:` is pinned to a 40-hex SHA with a comment
+
+  ```text
+  $ grep -nE 'uses: ' .github/workflows/*.yml | grep -vE '@[0-9a-f]{40} #'
+  exit=1 (1 = no line matched)
+  ```
+
+- [x] actionlint exit 0
+
+  ```text
+  $ .venv/bin/actionlint; echo exit=$?
+  exit=0
+  ```
+
+- [x] zizmor clean except the two recorded `dangerous-triggers` ignores; `ZIZMOR_BLOCKING = True`
+
+  ```text
+  $ .venv/bin/zizmor --persona=auditor --offline .github/workflows 2>&1 | grep -v " INFO "
+  No findings to report. Good job! (2 ignored)
+  exit=0
+  $ grep -n "zizmor: ignore" .github/workflows/*.yml
+  .github/workflows/close-external-prs.yml:10:on: # zizmor: ignore[dangerous-triggers] ADR-0004: no checkout, no PR-head code, no cache
+  .github/workflows/triage.yml:7:on: # zizmor: ignore[dangerous-triggers] ADR-0004: base checkout only, no PR-head code, no cache
+  $ grep -n "^ZIZMOR_BLOCKING" scripts/lint/workflows_files.py
+  37:ZIZMOR_BLOCKING: Final[bool] = True
+  ```
+
+- [x] `make validate`: G1 (now wired), G2 (pipeline check blocking; `ci.yml` runs `make setup`, `make check`, `make versions`) and G3 pass; `CLAUDE_CODE_VERSION` is `2.1.278` everywhere and `latest` only in `nightly.yml` (schedule + dispatch)
+
+  ```text
+  $ make validate
+  .venv/bin/python -m scripts.marketplace.validate_marketplace
+  marketplace catalog: M1-M10 pass
+  .venv/bin/python -m scripts.plugin_validation.validate_plugins
+  B1 plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py: declares a shebang but is not tracked as 100755 (DEBT-0029)
+  plugins: every invariant passes (1 warning(s))
+  exit=0
+  $ .venv/bin/python -m scripts.plugin_validation.validate_plugins --list | grep -E "^G[123]"
+  G1  `labels.json` shape, required labels and the generated dropdown — taxonomy drift
+  G2  `uses:` pinned to a SHA, `CLAUDE_CODE_VERSION` equal, `make` invoked — DEBT-0004
+  G3  tool pins agree across the lock, the floors and the workflows — a silent mismatch
+  $ grep -n CLAUDE_CODE_VERSION .github/workflows/*.yml
+  .github/workflows/ci.yml:17:  CLAUDE_CODE_VERSION: "2.1.278"
+  .github/workflows/ci.yml:65:          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+  .github/workflows/ci.yml:109:          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+  .github/workflows/ci.yml:153:          claude-cli-version: ${{ env.CLAUDE_CODE_VERSION }}
+  .github/workflows/evals.yml:20:  CLAUDE_CODE_VERSION: "2.1.278"
+  .github/workflows/evals.yml:139:          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+  .github/workflows/nightly.yml:16:  CLAUDE_CODE_VERSION: latest
+  .github/workflows/nightly.yml:58:          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+  .github/workflows/tag-versions.yml:18:  CLAUDE_CODE_VERSION: "2.1.278"
+  .github/workflows/tag-versions.yml:53:          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+  ```
+
+- [x] `sync_labels` dry run: create `bump: removal`, three description updates, and `good first issue` listed as would-prune only. It is **not** pruned without `--prune`: `apply_plan` deletes only under `if prune:` (`scripts/github/sync_labels.py:191`), `test_apply_and_prune_are_separate_decisions` pins `parse_args(["--apply"]).prune is False`, and `labels.yml` passes `--apply` alone
+
+  ```text
+  $ GITHUB_TOKEN=$(gh auth token) .venv/bin/python -m scripts.github.sync_labels
+  create bump: removal
+  update area: catalog
+  update area: tooling
+  update help wanted
+  prune  good first issue
+  (1 label(s) would be pruned; pruning is manual)
+  exit=0
+  ```
+
+- [x] `make generate` clean; the issue forms reference no removed label (`validate_forms` → `[]`)
+
+  ```text
+  $ make generate; echo exit=$?
+  .venv/bin/python -m scripts.marketplace.generate_marketplace
+  .claude-plugin/marketplace.json unchanged
+  .venv/bin/python -m scripts.github.generate_issue_forms
+  .github/ISSUE_TEMPLATE: dropdowns unchanged
+  git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE
+  exit=0
+  ```
+
+- [x] `make -s versions` → `Computed label: bump: none`
+
+  ```text
+  $ make -s versions
+  agent-self-knowledge 0.1.0 exempt
+  block-no-verify 0.1.2 exempt
+  ruff-quality 0.1.1 exempt
+  shell-quality 0.1.1 exempt
+  verify-completion 0.1.1 exempt
+  Computed label: bump: none
+  exit=0
+  ```
+
+- [x] re-run after the `--head` work (2026-09-22): `make -s versions`, zizmor, actionlint
+
+  ```text
+  $ make -s versions
+  agent-self-knowledge 0.1.0 exempt
+  block-no-verify 0.1.2 exempt
+  ruff-quality 0.1.1 exempt
+  shell-quality 0.1.1 exempt
+  verify-completion 0.1.1 exempt
+  Computed label: bump: none
+  exit=0
+  $ .venv/bin/zizmor --persona=auditor --offline .github/workflows 2>&1 | tail -1
+  No findings to report. Good job! (2 ignored)
+  exit=0
+  $ .venv/bin/actionlint
+  exit=0
+  ```
+
+- [x] `time make check` exit 0 with `ZIZMOR_BLOCKING = True` and G2 blocking (lines of the full log that report a result; the ruff file lists and the `py_mini_racer` deprecation warnings are omitted)
+
+  ```text
+  $ time make check
+  .claude-plugin/marketplace.json unchanged
+  .github/ISSUE_TEMPLATE: dropdowns unchanged
+  128 files already formatted
+  All checks passed!
+  lint: every file passes (0 warning(s))
+  0 errors, 0 warnings, 0 notes
+  899 passed, 1 skipped, 274 deselected, 2 warnings in 7.99s
+  marketplace catalog: M1-M10 pass
+  B1 plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py: declares a shebang but is not tracked as 100755 (DEBT-0029)
+  plugins: every invariant passes (1 warning(s))
+  pass  claude plugin validate . --strict
+        ✔ Validation passed
+  pass  claude plugin validate plugins/agent-self-knowledge --strict
+        ✔ Validation passed
+  pass  claude plugin validate plugins/block-no-verify --strict
+        ✔ Validation passed
+  pass  claude plugin validate plugins/ruff-quality --strict
+        ✔ Validation passed
+  pass  claude plugin validate plugins/shell-quality --strict
+        ✔ Validation passed
+  pass  claude plugin validate plugins/verify-completion --strict
+        ✔ Validation passed
+  273 passed, 901 deselected, 2 warnings in 69.19s (0:01:09)
+  pass  plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh  [/bin/bash]  PASS
+  pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh  [/bin/bash]  PASS
+  pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-manage.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-manage.sh  [/bin/bash]  PASS
+  pass  plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh  [/bin/bash]  PASS
+  pass  plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh  [/bin/bash]  PASS
+  pass  plugins/verify-completion/scripts/test-hooks.sh  [/opt/homebrew/bin/bash]  125 passed, 0 failed
+  pass  plugins/verify-completion/scripts/test-hooks.sh  [/bin/bash]  125 passed, 0 failed
+  DEBT-0029 advisory: uv python install 3.7 -> exit 2: error: No download found for request: cpython-3.7-macos-aarch64-none
+  DEBT-0029 advisory: agent-self-knowledge: 3.7 is not downloadable; falling back to the lowest uv offers, 3.8
+  DEBT-0029 advisory: agent-self-knowledge: interpreter /Users/nerymurillohnd/.local/share/uv/python/cpython-3.8-macos-aarch64-none/bin/python3.8 (Python 3.8)
+  DEBT-0029 advisory: plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py --help -> exit 0
+  make check  131.77s user 141.69s system 95% cpu 4:46.35 total
+  exit=0
+  ```
+
+- [x] `git status --short` and `git diff --stat`, taken before this block was written (so the log's own line count excludes it); nothing committed
+
+  ```text
+  $ git status --short
+  ## refactor/python-toolchain-and-governance
+   M .github/dependabot.yml
+   M .github/labels.json
+   M .github/workflows/ci.yml
+   M .github/workflows/labels.yml
+   M .github/workflows/stale.yml
+   M .github/workflows/tag-versions.yml
+   M .github/workflows/triage.yml
+   M docs/superpowers/specs/2026-09-21-refactor-migration-log.md
+   M scripts/github/labels.py
+   M scripts/github/repo_metadata.py
+   M scripts/github/test_labels.py
+   M scripts/github/test_repo_metadata.py
+   M scripts/github/test_triage.py
+   M scripts/github/triage.py
+   M scripts/hygiene/test_tooling_alignment.py
+   M scripts/lint/test_workflows_files.py
+   M scripts/lint/workflows_files.py
+   M scripts/plugin_validation/test_validate_plugins.py
+   M scripts/plugin_validation/validate_plugins.py
+   M scripts/versioning/check_versions.py
+   M scripts/versioning/conftest.py
+   M scripts/versioning/test_check_versions.py
+   M scripts/versioning/test_version_plan.py
+   M scripts/versioning/version_plan.py
+  ?? .github/workflows/close-external-prs.yml
+  ?? .github/workflows/evals.yml
+  ?? .github/workflows/nightly.yml
+  ?? scripts/github/install_claude_code.py
+  ?? scripts/github/test_install_claude_code.py
+  $ git diff --stat
+   .github/dependabot.yml                             |  17 +-
+   .github/labels.json                                |  16 +-
+   .github/workflows/ci.yml                           | 200 ++++++------
+   .github/workflows/labels.yml                       |  27 +-
+   .github/workflows/stale.yml                        |  11 +-
+   .github/workflows/tag-versions.yml                 |  63 ++--
+   .github/workflows/triage.yml                       |  56 +++-
+   .../specs/2026-09-21-refactor-migration-log.md     | 338 +++++++++++++++++++++
+   scripts/github/labels.py                           |  10 +-
+   scripts/github/repo_metadata.py                    | 108 ++++---
+   scripts/github/test_labels.py                      |  24 +-
+   scripts/github/test_repo_metadata.py               |  76 +++--
+   scripts/github/test_triage.py                      |  73 ++++-
+   scripts/github/triage.py                           |  53 ++--
+   scripts/hygiene/test_tooling_alignment.py          |  20 +-
+   scripts/lint/test_workflows_files.py               |  55 ++--
+   scripts/lint/workflows_files.py                    | 149 ++++++---
+   scripts/plugin_validation/test_validate_plugins.py |  17 +-
+   scripts/plugin_validation/validate_plugins.py      |   4 +
+   scripts/versioning/check_versions.py               |  23 +-
+   scripts/versioning/conftest.py                     |  67 ++++
+   scripts/versioning/test_check_versions.py          |  35 ++-
+   scripts/versioning/test_version_plan.py            | 118 +++++--
+   scripts/versioning/version_plan.py                 | 146 ++++++---
+   24 files changed, 1307 insertions(+), 399 deletions(-)
+  ```
+
+### Workflows
+
+| Workflow | Trigger | Jobs | Permissions (per job; top level `{}`) | Required? |
+| --- | --- | --- | --- | --- |
+| `ci.yml` | push `main`; PR opened/synchronize/reopened/labeled/unlabeled | `check`, `version-check`, `official` (PR only) | `check`: contents read · `version-check`: contents read, pull-requests read · `official`: contents read | `check`, `version-check` yes (ruleset 23655894); `official` after its first green run |
+| `evals.yml` | PR opened/synchronize/reopened; dispatch (`plugins`) | `select`, `eval` (matrix, env `evals`) | contents read (both) | never |
+| `close-external-prs.yml` | `pull_request_target` opened/reopened, fork and not owner/dependabot | `close` | pull-requests write | no |
+| `nightly.yml` | cron `41 5 * * *`; dispatch | `drift`, `report` (on failure) | `drift`: contents read · `report`: issues write | no |
+| `tag-versions.yml` | push `main` touching `plugins/**`; dispatch | `tag` | contents write | no |
+| `labels.yml` | push `main` touching `labels.json` or a `plugin.json`; dispatch | `sync` | contents read, issues write | no |
+| `triage.yml` | issues opened/edited; issue_comment created; `pull_request_target` opened/synchronize/reopened/ready_for_review | `triage` | contents read, issues write, pull-requests write | no |
+| `stale.yml` | cron `17 6 * * *`; dispatch | `stale` | issues write | no |
+
+### Verified only on GitHub, after the push
+
+1. `check`, `version-check` and `official` green on the PR head; `official` may need `warn-invariants` tuning (plan step 7).
+2. `install_claude_code` on `ubuntu-latest` (linux-x64, runner gpg) in every job that uses it; `claude --version` prints `2.1.278`, and `latest` in a dispatched `nightly`.
+3. `make check` on the runner: the plugin suites find the locked `ruff`/`shellcheck`/`shfmt`; `run_plugin_suites` uses the preinstalled 3.8; X3 and C2 run (not skip) with the full clone.
+4. `evals.yml` on the PR: `select` prints `no plugin runtime changed` and `eval` is skipped; the `evals` environment is auto-created on first reference (unverified), and `bubblewrap` works under the runner's AppArmor user-namespace policy on the first real eval (Follow-up PR #1).
+5. `version-check` on the merge push: `gh api …/commits/{sha}/pulls` returns the merged PR with `pull-requests: read`.
+6. `tag-versions` after merge: `claude plugin tag --push` authenticates through the step's `extraheader` (Part C: the first real tag push is verified after merge; today every version is tagged, so the first run prints `Every plugin version is already tagged.`).
+7. `triage.yml` on a PR after merge: the fetch of `refs/pull/<n>/head` succeeds anonymously with `persist-credentials: false` (public repository) and the PR gets its computed `bump:` label. On the refactor PR itself it runs `main`'s old Node `triage.yml` under `pull_request_target` until merge, so it may recompute or strip `bump:` with the old rules (plan §A8); self-corrects after merge.
+8. `labels.yml` after merge creates `bump: removal` and updates three descriptions, and does not delete `good first issue`.
+9. `close-external-prs.yml` against a real fork PR; `nightly` issue creation on a red run.
+10. Dependabot parses the `uv` ecosystem and its first grouped PR passes `uv lock` under `exclude-newer`.
+
+### Orchestrator verification of gate 7, file part (2026-09-22)
+
+- `make check` → rc 0 in 240 s: `900 passed, 1 skipped` fast, `273 passed` slow, `✔ Validation passed` ×6, `M1-M10 pass`, `plugins: every invariant passes (1 warning(s))` (the DEBT-0029 B1 warning).
+- `grep -nE 'uses: ' .github/workflows/*.yml | grep -vE '@[0-9a-f]{40} #'` → empty; `actionlint` rc 0; `zizmor --persona=auditor --offline .github/workflows` → `No findings to report. Good job! (2 ignored)`; `CLAUDE_CODE_VERSION` is `"2.1.278"` in `ci.yml`, `tag-versions.yml`, `evals.yml` and `latest` only in `nightly.yml`.
+- zizmor offline everywhere made explicit by the orchestrator: `ZIZMOR_OFFLINE: Final = True` in `scripts/lint/workflows_files.py` with its reason, pinned by `test_zizmor_runs_offline_everywhere_including_ci`; the new `post-edit.sh` caught a wrong import in that test at edit time (F821 + basedpyright `reportUndefinedVariable`), which is the hook doing its job.
+- Installer claim checked against the live setup page: "Binary integrity and code signing" publishes fingerprint `31DDDE24DDFAB679F42D7BD2BAA929FF1A7ECACE`, the value `install_claude_code.FINGERPRINT` enforces.
+- `make -s versions` → `Computed label: bump: none`.
+- Maintainer push authorization: "Push y PR con el automatic lifecycle" (2026-09-22).

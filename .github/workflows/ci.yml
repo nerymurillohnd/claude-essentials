@@ -6,136 +6,149 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
 
-permissions:
-  contents: read
+# No job inherits a grant; each job below asks for exactly what it uses.
+permissions: {}
 
-# Claude Code CLI used by `claude plugin validate` / `claude plugin tag`. It is
-# installed on the runner only — never as a repo dependency (ADR-0003). Bump it
-# deliberately, in every workflow that sets it.
+# Claude Code CLI used by `claude plugin validate` and `claude plugin tag`. It is installed
+# on the runner only, from Anthropic's signed release manifest (scripts.github.
+# install_claude_code), never as a repo dependency (ADR-0003). Dependabot cannot see an env
+# value, so bump it by hand, in every workflow that sets it (G2 keeps them equal).
 env:
-  CLAUDE_CODE_VERSION: "2.1.276"
+  CLAUDE_CODE_VERSION: "2.1.278"
+  # A pinned CLI that updated itself mid-run would no longer be the version pinned above.
+  DISABLE_AUTOUPDATER: "1"
+
+# A new push to a pull request supersedes the run in flight; runs on main always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # The whole gate, exactly as the maintainer runs it: `make check` (G2 asserts it).
   check:
+    name: check
     runs-on: ubuntu-latest
-    env:
-      # Same versions as the maintainer's machine; .shellcheckrc enables optional
-      # checks that older ShellCheck releases don't know (DEBT-0003).
-      SHELLCHECK_VERSION: "0.11.0"
-      SHELLCHECK_SHA256: "8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198"
-      SHFMT_VERSION: "3.14.1"
-      SHFMT_SHA256: "76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf"
-      RUFF_VERSION: "0.16.8"
-      RUFF_SHA256: "c4a8c7c152532bcb7e7ede4bd6ccd440dcacddffcdcdd79b90090ac6021f41c2"
+    permissions:
+      contents: read # check out the tree; nothing is written back
     steps:
+      # Full history and tags: C2 compares released CHANGELOG sections with their tags and X3
+      # diffs the ADRs against origin/main; a shallow clone would let both pass vacuously.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version-file: .nvmrc
-          cache: npm
+          fetch-depth: 0
+          persist-credentials: false
 
-      - run: npm ci
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.12.17"
+          enable-cache: true
 
-      - name: Install Claude Code CLI (pinned; CI runner only)
-        run: |
-          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-          claude --version
+      - name: Create the environment from uv.lock
+        run: make setup
 
-      - name: Format & lint (Biome)
-        run: npm run biome:ci
-
-      - name: Install ShellCheck and shfmt (pinned, checksum-verified)
-        run: |
-          set -euo pipefail
-          tmp="$(mktemp -d)"
-          curl -fsSL -o "${tmp}/shellcheck.tar.xz" \
-            "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
-          echo "${SHELLCHECK_SHA256}  ${tmp}/shellcheck.tar.xz" | sha256sum --check --strict
-          tar -xJf "${tmp}/shellcheck.tar.xz" -C "${tmp}"
-          sudo install -m 0755 "${tmp}/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
-          curl -fsSL -o "${tmp}/shfmt" \
-            "https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_linux_amd64"
-          echo "${SHFMT_SHA256}  ${tmp}/shfmt" | sha256sum --check --strict
-          sudo install -m 0755 "${tmp}/shfmt" /usr/local/bin/shfmt
-          shellcheck --version | sed -n 2p
-          shfmt --version
-
-      # ruff-quality's test suites run the real Ruff; they fail, never skip, without it.
-      - name: Install Ruff (pinned, checksum-verified)
+      # The plugin suites call ruff, shellcheck and shfmt from PATH. Only those three locked
+      # binaries are exposed, so `python3` stays the runner's own interpreter, as it is for a
+      # user of the plugins.
+      - name: Put the locked lint binaries on PATH
         run: |
           set -euo pipefail
-          tmp="$(mktemp -d)"
-          curl -fsSL -o "${tmp}/ruff.tar.gz" \
-            "https://github.com/astral-sh/ruff/releases/download/${RUFF_VERSION}/ruff-x86_64-unknown-linux-gnu.tar.gz"
-          echo "${RUFF_SHA256}  ${tmp}/ruff.tar.gz" | sha256sum --check --strict
-          tar -xzf "${tmp}/ruff.tar.gz" -C "${tmp}"
-          sudo install -m 0755 "${tmp}/ruff-x86_64-unknown-linux-gnu/ruff" /usr/local/bin/ruff
-          ruff --version
+          tools="${RUNNER_TEMP}/locked-tools"
+          mkdir -p "${tools}"
+          for tool in ruff shellcheck shfmt; do
+            ln -s "${GITHUB_WORKSPACE}/.venv/bin/${tool}" "${tools}/${tool}"
+          done
+          echo "${tools}" >>"${GITHUB_PATH}"
 
-      - name: Lint shell scripts (ShellCheck + shfmt)
-        run: npm run lint:sh
-
-      - name: Type check (tsc, max-strict tsconfig.json)
-        run: npm run typecheck
-
-      - name: Unused files, exports, and dependencies (Knip)
-        run: npm run knip -- --reporter github-actions
-
-      - name: Unit tests
-        run: npm test
-
-      - name: Regenerate marketplace catalog and issue forms
-        run: npm run generate
-
-      - name: Fail if generation changed tracked files
+      - name: Install Claude Code CLI (pinned, signature-verified; CI runner only)
         run: |
-          if ! git diff --exit-code -- .claude-plugin/marketplace.json .github/ISSUE_TEMPLATE; then
-            echo "::error::Generated files are out of date — run 'npm run generate' and commit the result."
-            exit 1
-          fi
+          set -euo pipefail
+          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+          echo "${RUNNER_TEMP}/claude-code" >>"${GITHUB_PATH}"
+          "${RUNNER_TEMP}/claude-code/claude" --version
 
-      - name: Validate marketplace + plugin manifests
-        run: npm run validate
+      # The lowest interpreter uv can still download; agent-self-knowledge declares 3.7
+      # (DEBT-0029), so run_plugin_suites falls back to this one.
+      - name: Install the plugin Python floor
+        run: uv python install 3.8
 
-      - name: Validate with Claude Code (official, --strict)
-        run: npm run validate:claude
+      # zizmor runs with --offline here as on a laptop (ZIZMOR_OFFLINE in
+      # scripts/lint/workflows_files.py): its online audits cannot pass on the untagged
+      # validate-plugins pin. No GH_TOKEN is passed because nothing in the gate needs one.
+      - name: make check
+        env:
+          RUFF_OUTPUT_FORMAT: github
+        run: make check
 
   # On pull requests it gates the merge (required check). On direct pushes to main
-  # (non-runtime changes, gated locally by .claude/hooks/guard-push.sh) it checks
-  # the pushed range after the fact, so a runtime change without a bump still
-  # turns main red.
+  # (non-runtime changes, gated locally by .claude/hooks/guard-push.sh) it checks the pushed
+  # range after the fact, so a runtime change without a bump still turns main red.
   version-check:
+    name: version-check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # read the history and the tags the bump rules compare against
+      pull-requests: read # on main, find the merged pull request and its bump: deferred label
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          node-version-file: .nvmrc
-          cache: npm
+          version: "0.12.17"
+          enable-cache: true
 
-      - run: npm ci
+      - name: Create the environment from uv.lock
+        run: make setup
 
-      - name: Install Claude Code CLI (pinned; CI runner only)
+      - name: Install Claude Code CLI (pinned, signature-verified; CI runner only)
         run: |
-          npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
-          claude --version
+          set -euo pipefail
+          .venv/bin/python -m scripts.github.install_claude_code "${CLAUDE_CODE_VERSION}" --dest "${RUNNER_TEMP}/claude-code"
+          echo "${RUNNER_TEMP}/claude-code" >>"${GITHUB_PATH}"
+          "${RUNNER_TEMP}/claude-code/claude" --version
 
+      # After a push the tag workflow runs in parallel and may already have created the tag,
+      # so the tag dry run belongs to pull requests only.
       - name: Enforce plugin version bumps (ADR-0003)
         env:
+          EVENT_NAME: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
           BEFORE: ${{ github.event.before }}
-          DEFERRED: "${{ contains(github.event.pull_request.labels.*.name, 'bump: deferred') }}"
+          SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          PR_DEFERRED: "${{ contains(github.event.pull_request.labels.*.name, 'bump: deferred') }}"
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # After a push the tag workflow runs in parallel and may already have
-          # created the tag, so the tag dry-run belongs to pull requests only.
-          if [[ -n "${BASE_REF}" ]]; then
-            args=(--base "origin/${BASE_REF}" --verify-tag)
+          set -euo pipefail
+          deferred_flag=""
+          if [[ "${EVENT_NAME}" == "pull_request" ]]; then
+            if [[ "${PR_DEFERRED}" == "true" ]]; then deferred_flag=" --deferred"; fi
+            make versions VERSIONS_ARGS="--base origin/${BASE_REF} --verify-tag${deferred_flag} --output-format=github"
           else
-            args=(--base "${BEFORE}")
+            labels="$(gh api "repos/${REPOSITORY}/commits/${SHA}/pulls" --jq '.[].labels[].name')"
+            if grep -qxF 'bump: deferred' <<<"${labels}"; then deferred_flag=" --deferred"; fi
+            make versions VERSIONS_ARGS="--base ${BEFORE}${deferred_flag} --output-format=github"
           fi
-          if [[ "${DEFERRED}" == "true" ]]; then args+=(--deferred); fi
-          node scripts/check-versions.mjs "${args[@]}"
+
+  # Anthropic's canonical marketplace validation. Not a required check until it has been
+  # green once (plan Part C); then it joins check and version-check in ruleset 23655894.
+  official:
+    name: official
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # the action diffs the pull request against its base
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # The action publishes no releases, so the pin names the default-branch commit date.
+      - uses: anthropics/claude-plugins-community/.github/actions/validate-plugins@a727be1c7bd6064419b6f60d71993a19198adc17 # 2026-08-24
+        with:
+          claude-cli-version: ${{ env.CLAUDE_CODE_VERSION }}
+          fail-on-warnings: "true"
+          skip-external: "true"

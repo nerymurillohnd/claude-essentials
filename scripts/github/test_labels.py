@@ -32,10 +32,6 @@ from scripts.marketplace.conftest import PLUGIN_ID, write_file
 if TYPE_CHECKING:
     from pathlib import Path
 
-KNOWN_MISSING_TODAY = frozenset({"bump: removal"})
-"""`bump: removal` is added to `.github/labels.json` at step 7 of the migration; until then
-this is the one required label the file does not declare yet."""
-
 
 def label(name: str, *, color: str = "ededed", aliases: tuple[str, ...] = ()) -> Label:
     """Build a label for a fixture.
@@ -80,17 +76,21 @@ def test_the_tracked_taxonomy_parses() -> None:
 
 
 @pytest.mark.slow
-def test_the_tracked_taxonomy_has_a_clean_shape() -> None:
-    """Names, colors, descriptions and aliases all pass; only completeness can differ."""
-    findings = validate(repo_root())
-    for finding in findings:
-        assert "not declared" in finding.message, finding.message
+def test_the_tracked_taxonomy_is_valid() -> None:
+    """Names, colors, descriptions, aliases and completeness all pass on the real file."""
+    assert validate(repo_root()) == []
 
 
 @pytest.mark.slow
-def test_only_the_step_seven_label_is_missing_today() -> None:
-    """Pins what the taxonomy still owes, without failing once step 7 adds it."""
-    assert set(missing_required(repo_root())) <= KNOWN_MISSING_TODAY
+def test_no_required_label_is_missing() -> None:
+    """Every label an automation applies is declared, `bump: removal` included."""
+    assert missing_required(repo_root()) == []
+
+
+@pytest.mark.slow
+def test_the_taxonomy_no_longer_invites_pull_requests() -> None:
+    """D5: `good first issue` implies an outside pull request, which is closed on arrival."""
+    assert "good first issue" not in {label.name for label in load_labels(repo_root())}
 
 
 @pytest.mark.slow

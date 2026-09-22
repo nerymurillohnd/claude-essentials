@@ -17,6 +17,7 @@ from scripts.github.repo_metadata import (
     check_tool_pins,
     check_workflow_pins,
     collect,
+    locked_tool_version,
     locked_version,
     version_tuple,
     workflow_document,
@@ -148,26 +149,49 @@ def test_the_advertised_shellcheck_minimum_is_read_from_a_readme() -> None:
     assert advertised_minimum(repo_root(), "ShellCheck") >= (0, 10)
 
 
-def test_ci_installing_less_than_a_readme_promises_is_reported(tmp_path: Path) -> None:
-    """A promise nothing keeps: the suites would run under a tool the README rules out."""
+def _advertise_shfmt(root: Path, minimum: str) -> None:
+    """Write a plugin whose README promises a shfmt minimum.
+
+    Args:
+        root: The fixture repository root.
+        minimum: The version the Requirements row advertises.
+    """
     write_file(
-        tmp_path / "plugins" / "alpha" / ".claude-plugin" / "plugin.json",
+        root / "plugins" / "alpha" / ".claude-plugin" / "plugin.json",
         '{"name": "alpha"}',
     )
     write_file(
-        tmp_path / "plugins" / "alpha" / "README.md",
-        "## Requirements\n\n| Requirement | Minimum |\n| --- | --- |\n| shfmt | 3.12 |\n",
+        root / "plugins" / "alpha" / "README.md",
+        f"## Requirements\n\n| Requirement | Minimum |\n| --- | --- |\n| shfmt | {minimum} |\n",
     )
-    workflow(
-        tmp_path,
-        GATE_WORKFLOW,
-        PINNED_STEP.replace(
-            "jobs:\n  check:\n", 'jobs:\n  check:\n    env:\n      SHFMT_VERSION: "3.10"\n'
-        ),
-    )
+
+
+@pytest.mark.slow
+def test_a_locked_tool_older_than_a_readme_promises_is_reported(tmp_path: Path) -> None:
+    """A promise nothing keeps: the suites would run under a tool the README rules out."""
+    _advertise_shfmt(tmp_path, "3.12")
+    fake = tmp_path / ".venv" / "bin" / "shfmt"
+    write_file(fake, "#!/bin/sh\necho v3.10.0\n")
+    fake.chmod(0o755)
     findings = check_tool_pins(tmp_path)
     assert [finding.invariant_id for finding in findings] == ["G3"]
     assert "below the 3.12" in findings[0].message
+
+
+def test_an_advertised_tool_missing_from_the_venv_is_reported(tmp_path: Path) -> None:
+    """Fail closed: an unchecked promise is not a kept one."""
+    _advertise_shfmt(tmp_path, "3.12")
+    findings = check_tool_pins(tmp_path)
+    assert [finding.invariant_id for finding in findings] == ["G3"]
+    assert "run `make setup`" in findings[0].message
+
+
+@pytest.mark.slow
+def test_the_locked_tools_report_their_versions() -> None:
+    """The wheel version is not the tool's, so the binaries themselves are asked."""
+    root = repo_root()
+    assert locked_tool_version(root, "shellcheck") is not None
+    assert locked_tool_version(root, "shfmt") is not None
 
 
 @pytest.mark.slow
@@ -195,6 +219,12 @@ def test_a_pinned_sha_without_its_tag_is_reported(tmp_path: Path) -> None:
     assert "carries no `# vX.Y.Z`" in findings[0].message
 
 
+def test_an_untagged_action_may_carry_its_commit_date(tmp_path: Path) -> None:
+    """An action that publishes no release has no version to name; its date is the anchor."""
+    workflow(tmp_path, "ci.yml", PINNED_STEP.replace(" # v7.0.1", " # 2026-08-24"))
+    assert check_workflow_pins(tmp_path) == []
+
+
 def test_a_local_action_needs_no_sha(tmp_path: Path) -> None:
     """`uses: ./.github/actions/x` is this repository's own code."""
     workflow(
@@ -209,11 +239,16 @@ def test_a_local_action_needs_no_sha(tmp_path: Path) -> None:
 
 
 @pytest.mark.slow
-def test_the_pipeline_check_is_advisory_on_this_tree() -> None:
-    """`ci.yml` still calls npm; step 7 rewires it and turns this into an error."""
-    findings = check_pipeline_invocation(repo_root())
-    assert [finding.severity for finding in findings] == ["warning"]
-    assert "advisory until step 7" in findings[0].message
+def test_the_real_gate_workflow_runs_make() -> None:
+    """`ci.yml` drives the gate through `make check`, the target the maintainer runs."""
+    assert check_pipeline_invocation(repo_root()) == []
+
+
+def test_a_gate_workflow_without_make_is_an_error(tmp_path: Path) -> None:
+    """CI and `make check` would drift, and nothing else would notice."""
+    workflow(tmp_path, GATE_WORKFLOW, PINNED_STEP.replace("make check", "npm test"))
+    findings = check_pipeline_invocation(tmp_path)
+    assert [(finding.invariant_id, finding.severity) for finding in findings] == [("G2", "error")]
 
 
 def test_the_pipeline_check_passes_on_a_make_driven_workflow(tmp_path: Path) -> None:
@@ -223,7 +258,6 @@ def test_the_pipeline_check_passes_on_a_make_driven_workflow(tmp_path: Path) -> 
 
 
 @pytest.mark.slow
-def test_collect_on_this_tree_reports_only_the_advisory_warning() -> None:
-    """Nothing here fails the gate today."""
-    findings = collect(repo_root())
-    assert [finding.severity for finding in findings] == ["warning"]
+def test_collect_on_this_tree_is_clean() -> None:
+    """Every pin, version and pipeline rule holds on the repository as it stands."""
+    assert collect(repo_root()) == []
