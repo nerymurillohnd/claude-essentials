@@ -191,7 +191,6 @@ ALLOWED_PATHS: Final = (
     "plugins/alpha/README.md",
     "plugins/alpha/docs/design.md",
     "plugins/alpha/evals/cases/a.md",
-    "plugins/alpha/tests/run.sh",
 )
 """Everything the §A11 allowlist names, which may be pushed straight to `main`."""
 
@@ -199,6 +198,7 @@ DENIED_PATHS: Final = (
     ".claude/skills/pr-delivery/checklist.json",
     "plugins/alpha/skills/demo/SKILL.md",
     "plugins/alpha/.claude-plugin/plugin.json",
+    "plugins/alpha/tests/run.sh",
     "plugins/ghost/README.md",
     "scripts/versioning/version_plan.py",
     "Makefile",
@@ -320,12 +320,11 @@ def test_route_evals_only(repo: Path) -> None:
 
 @pytest.mark.slow
 def test_route_tests_only(repo: Path) -> None:
-    """A plugin's own test suite is exempt at any depth."""
-    write_file(repo / "plugins/alpha/tests/run.sh", "#!/usr/bin/env bash\nexit 1\n")
-    write_file(repo / "plugins/alpha/skills/demo/tests/unit.sh", "#!/usr/bin/env bash\nexit 0\n")
+    """A test file a plugin ships is runtime: it installs with the plugin, so it owes a bump."""
+    write_file(repo / "plugins/alpha/skills/demo/scripts/test-handler.sh", "#!/usr/bin/env bash\n")
     plan = plan_both(repo, base="main")
-    assert plan.route == "direct"
-    assert not _plan_of(plan, "alpha").runtime_changed
+    assert plan.route == "pr"
+    assert _plan_of(plan, "alpha").runtime_changed
 
 
 @pytest.mark.slow

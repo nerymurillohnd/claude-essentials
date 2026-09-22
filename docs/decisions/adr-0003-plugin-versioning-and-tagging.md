@@ -172,3 +172,15 @@ Chosen option: "Explicit semver, enforced in CI, tagged by CI with
 - Evals in CI select a plugin only when this runtime classification reports a
   change for it; an `evals/**`-only diff never runs a suite and never blocks a
   merge.
+
+### Amendment — 2026-09-22: a test file a plugin ships is runtime
+
+- `test-*.sh` files and `tests/**` directories leave the exempt list; the 2026-09-21 amendment
+  exempted them while plugins kept their own suites. Suites now live in the repository
+  (ADR-0007), so a test file still under `plugins/` is one the plugin ships on purpose, and the
+  one that exists proves why it is runtime: `block-no-verify`'s `manage.sh` runs
+  `skills/block-no-verify/scripts/test-handler.sh` against the installed handler during
+  `install` and `verify`. A change to it reaches users and owes a version bump.
+- The exempt list is `README.md`, `CHANGELOG.md`, `LICENSE*` at the plugin root, `docs/**`,
+  `evals/**`, and `plugin.json` metadata. Both copies of the rule (`EXEMPT_FILE` and
+  `.claude/hooks/lib/plugin-paths.sh`) change together, held by the parity test.

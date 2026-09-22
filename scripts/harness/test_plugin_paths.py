@@ -33,12 +33,13 @@ TABLE: Final[tuple[tuple[str, bool], ...]] = (
     ("evals/a/b.md", True),
     ("evalsx/b.md", False),
     ("skills/x/evals/y", False),
-    ("test-x.sh", True),
-    ("scripts/test-hooks.sh", True),
+    ("test-x.sh", False),
+    ("scripts/test-hooks.sh", False),
+    ("skills/block-no-verify/scripts/test-handler.sh", False),
     ("test-x/y.sh", False),
     ("skills/test-a.sh.bak", False),
-    ("tests/a.sh", True),
-    ("skills/x/tests/a.sh", True),
+    ("tests/a.sh", False),
+    ("skills/x/tests/a.sh", False),
     ("tests", False),
     ("testsuite/a", False),
     ("hooks/hooks.json", False),
@@ -46,8 +47,8 @@ TABLE: Final[tuple[tuple[str, bool], ...]] = (
 )
 """Every edge the two implementations could disagree on, with the answer both must give.
 
-`docs/` and `evals/` count only at the plugin root, `tests/` and `test-*.sh` at any depth, and
-`LICENSE.<ext>` only when it sits directly in the plugin directory.
+`docs/` and `evals/` count only at the plugin root, `LICENSE.<ext>` only when it sits directly in
+the plugin directory, and a test file is runtime at any depth.
 """
 
 SCRIPT: Final = """

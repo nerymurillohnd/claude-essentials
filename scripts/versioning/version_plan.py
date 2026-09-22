@@ -91,16 +91,15 @@ EXEMPT_FILE: Final = re.compile(
         r"|LICENSE"
         r"|LICENSE\.[^/]+"
         r"|docs/.+"
-        r"|evals/.+"
-        r"|(?:.*/)?tests/.+"
-        r"|(?:.*/)?test-[^/]+\.sh)\Z"
+        r"|evals/.+)\Z"
     ),
 )
 """Paths inside `plugins/<name>/` that Claude never loads, so changing them owes no bump.
 
 Anchored with `\\Z` rather than `$` so a stray trailing newline cannot make a path exempt.
-`docs/` and `evals/` count only at the plugin root; `tests/` and `test-*.sh` count at any
-depth. The list is closed: anything not matched here is runtime.
+`docs/` and `evals/` count only at the plugin root. A test file is runtime: suites live in the
+repository (ADR-0007), so the only one a plugin ships is one its own scripts run (ADR-0003
+amendment 2026-09-22). The list is closed: anything not matched here is runtime.
 """
 
 METADATA_KEYS: Final = (

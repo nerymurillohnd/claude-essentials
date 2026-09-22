@@ -8,22 +8,17 @@
 # plugin_path_is_exempt <rel>
 # Returns 0 when a path relative to plugins/<name>/ is never loaded by Claude
 # (EXEMPT_FILE): README.md, CHANGELOG.md, LICENSE or LICENSE.<ext> at the plugin
-# root; anything under docs/ or evals/ at the plugin root; and, at any depth, a
-# file named test-*.sh or anything under a directory named tests/ (ADR-0003
-# amendment 2026-09-21). In a `case` pattern `*` also matches `/`, so the
-# LICENSE.* and test-*.sh arms check the basename explicitly.
+# root, and anything under docs/ or evals/ at the plugin root. A test file is
+# runtime (ADR-0003 amendment 2026-09-22). In a `case` pattern `*` also matches
+# `/`, so the LICENSE.* arm checks that the path has no directory.
 plugin_path_is_exempt() {
-  local rel="$1" base="${1##*/}"
+  local rel="$1"
   case "${rel}" in
   README.md | CHANGELOG.md | LICENSE | docs/?* | evals/?*) return 0 ;;
-  tests/?* | */tests/?*) return 0 ;;
   LICENSE.?*) [[ "${rel}" != */* ]] && return 0 ;;
   *) ;;
   esac
-  case "${base}" in
-  test-?*.sh) return 0 ;;
-  *) return 1 ;;
-  esac
+  return 1
 }
 
 # Reads a plugin.json on stdin; prints it without metadata keys, keys sorted.

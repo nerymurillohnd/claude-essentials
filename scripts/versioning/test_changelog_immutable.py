@@ -8,7 +8,7 @@ version that users already installed.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -18,23 +18,6 @@ from scripts.versioning.version_plan import predecessors, read_renames
 
 if TYPE_CHECKING:
     from scripts.common.errors import Finding
-
-C1_DEBT: Final = frozenset(
-    {
-        "block-no-verify",
-        "ruff-quality",
-        "shell-quality",
-        "verify-completion",
-    }
-)
-"""Plugins whose footer links a later release with `tree/` instead of `compare/`.
-
-Measured 2026-09-21: four, not the three the migration plan predicted. `block-no-verify`
-links `0.1.1` correctly with `compare/` and then links `0.1.2` with `tree/`, so the defect is
-"the newest release is linked as a snapshot", not "only ever one compare link". The validator
-that fails on C1 lands with `validate_plugins`; until the four CHANGELOGs are repaired, this
-set records the debt so no fifth plugin can join it.
-"""
 
 
 def _root() -> Path:
@@ -90,8 +73,12 @@ def test_every_released_section_equals_its_text_at_its_tag() -> None:
 
 
 @pytest.mark.slow
-def test_no_plugin_outside_the_recorded_debt_mixes_link_styles() -> None:
-    """C1 is not yet a gate, so this keeps the known defect from spreading."""
+def test_no_plugin_mixes_link_styles() -> None:
+    """C1: every release after a plugin's first links with `compare/`, in every CHANGELOG.
+
+    Until 2026-09-22 four plugins linked their newest release with `tree/`; all four are
+    repaired, so the allowance that recorded them is gone and any offender fails.
+    """
     root = _root()
     tags = _known_tags(root)
     renames = read_renames(root)
@@ -106,4 +93,4 @@ def test_no_plugin_outside_the_recorded_debt_mixes_link_styles() -> None:
         )
         if findings:
             offenders.add(name)
-    assert offenders <= set(C1_DEBT), f"new C1 offenders: {sorted(offenders - set(C1_DEBT))}"
+    assert not offenders, f"C1 offenders: {sorted(offenders)}"
