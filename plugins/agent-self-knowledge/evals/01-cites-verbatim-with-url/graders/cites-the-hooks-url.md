@@ -1,7 +1,6 @@
 ---
 type: regex
+pattern: 'code\.claude\.com/docs/en/hooks'
 target: last_message
-match: contains
 flags: i
 ---
-code\.claude\.com/docs/en/hooks

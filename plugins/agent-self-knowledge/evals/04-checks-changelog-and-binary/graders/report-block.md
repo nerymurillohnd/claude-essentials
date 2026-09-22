@@ -1,7 +1,6 @@
 ---
 type: regex
+pattern: 'TOOLS USED:[\s\S]*ACTIVATION:[\s\S]*NOT FOUND:'
 target: last_message
-match: contains
 weight: 0.5
 ---
-TOOLS USED:[\s\S]*ACTIVATION:[\s\S]*NOT FOUND:

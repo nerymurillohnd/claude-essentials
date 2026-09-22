@@ -1,8 +1,7 @@
 ---
 type: regex
+pattern: 'ruff format --(check|diff)'
 target: last_message
-match: contains
 weight: 0.5
 flags: i
 ---
-ruff format --(check|diff)

@@ -1,7 +1,6 @@
 ---
 type: regex
+pattern: 'editorconfig'
 target: last_message
-match: contains
 flags: i
 ---
-editorconfig

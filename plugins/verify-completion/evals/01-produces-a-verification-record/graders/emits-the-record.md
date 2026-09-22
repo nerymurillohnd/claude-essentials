@@ -1,7 +1,6 @@
 ---
 type: regex
+pattern: '###\s*Verification record'
 target: last_message
-match: contains
 flags: i
 ---
-###\s*Verification record

@@ -1,7 +1,6 @@
 ---
 type: regex
+pattern: 'platform\.claude\.com'
 target: last_message
-match: contains
 flags: i
 ---
-platform\.claude\.com

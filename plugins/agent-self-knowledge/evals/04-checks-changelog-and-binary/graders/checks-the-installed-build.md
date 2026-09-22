@@ -1,6 +1,5 @@
 ---
 type: regex
+pattern: '2\.1\.278'
 target: last_message
-match: contains
 ---
-2\.1\.278

@@ -6,8 +6,8 @@ stays in scope, and whatever Ruff still reports after the hook's safe fixes is f
 | Case | What it can fail at | Tools it needs to be able to fail |
 | --- | --- | --- |
 | `01-fixes-instead-of-silencing` | Fixing the findings rather than adding `noqa` | `Write`/`Bash`, and the file is graded on disk |
-| `02-asks-before-mass-reformat` | Not reformatting a whole codebase unasked | `Bash` |
-| `03-fixes-what-the-hook-reports` | Fixing the F841 and F821 the hook reports after an unrelated edit, without a suppression or a `[tool.ruff]` change | `Write`/`Edit`/`Bash`; a scaffold seeds the project and a project-level Ruff |
+| `02-scopes-a-requested-mass-reformat` | Sizing a requested whole-project `ruff format` before or while applying it, without lint fixes nobody asked for | `Bash`; a scaffold seeds an unformatted project and a project-level Ruff |
+| `03-fixes-what-the-hook-reports` | Handling the F841 and F821 the hook reports after an unrelated edit (fixed in the code, or reported to the user because the prompt forbids behavior changes) without a suppression or a `[tool.ruff]` change | `Write`/`Edit`/`Bash`; a scaffold seeds the project and a project-level Ruff |
 | `04-ignores-unrelated-request` | Not firing on a question with no Python in it | — |
 
 ## Running it
