@@ -118,6 +118,9 @@ expect_in "the question names the script" "${REASON}" "bin/a.sh"
 mk_edit "${proj}/bin/a.sh" "echo \"\$1\"" "printf '%s\\n' \"\$1\""
 fire guard Edit s1 false
 expect_silent "a plain edit is not questioned"
+INPUT=$(jq -cn --arg f "${proj}/bin/a.sh" '{file_path: $f, edits: [{old_string: "# shellcheck disable=SC2034\nold=1", new_string: "old=1"}, {old_string: "echo $1", new_string: "# shellcheck disable=SC2086\necho $1"}]}') || INPUT=""
+fire guard Edit s1 false
+expect_ask "a batch that removes one directive and adds another still asks"
 mk_write "${proj}/bin/b.sh" "$(printf '#!/bin/sh\n# shellcheck source=/dev/null\n. ./env\n')"
 fire guard Write s1 false
 expect_ask "writing source=/dev/null asks"

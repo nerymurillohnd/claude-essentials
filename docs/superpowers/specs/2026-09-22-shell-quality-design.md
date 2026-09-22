@@ -83,7 +83,7 @@ Git Bash. Not Cowork.
 ## Verification
 
 - Suite `scripts/plugin_validation/suites/shell-quality/test-gate.sh` under `bash` and
-  `/bin/bash`: 37 cases plus 1 skip on machines where the tools sit at a fixed fallback path
+  `/bin/bash`: 40 cases plus 1 skip on machines where the tools sit at a fixed fallback path
   (the missing-tool case cannot hide them there).
 - Static gates: H1–H7, B1, `claude plugin validate --strict`.
 - Live `[observed]`, 2026-09-22, Claude Code 2.1.278, `claude -p --plugin-dir`: Write of

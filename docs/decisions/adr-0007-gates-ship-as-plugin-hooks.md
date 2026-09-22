@@ -100,7 +100,7 @@ matches the surveyed references, none of which runs `uvx` in a hook.
 
 | Criterion or claim | Verification method | Evidence or result | Responsible party | Review condition |
 | --- | --- | --- | --- | --- |
-| Hooks behave as described | `scripts/plugin_validation/suites/{ruff,shell}-quality/test-gate.sh` under `bash` and `/bin/bash` (`make test-slow`) | 48 and 37 cases passing, 2026-09-22 | Maintainer | Every change to a handler |
+| Hooks behave as described | `scripts/plugin_validation/suites/{ruff,shell}-quality/test-gate.sh` under `bash` and `/bin/bash` (`make test-slow`) | 51 and 40 cases passing (40 plus 1 skip on a machine with the tools at a fixed fallback path), 2026-09-22 | Maintainer | Every change to a handler |
 | No shipped script runs `uv`/`uvx` | B1 (`scripts/plugin_validation/runtime_boundary.py`) in `make validate` | Passing | Maintainer | Every change under `plugins/` |
 | No gate installs an interpreter | `test_the_python_smoke_run_never_installs_an_interpreter` | Passing | Maintainer | Every change to `run_plugin_suites.py` |
 | Hooks load and fire in a real session | `claude -p --plugin-dir` in a scratch project: Write and Edit of a failing file, a `# noqa` edit, Stop | Both plugins, 2026-09-22 on 2.1.278: block, fix, `✓ clean`, Stop `✓`; the guard returned `ask`. The run found that `Edit(...)` in a hook `if` skips the Write tool; fixed with `Write(...)` twins and gated by H7 | Maintainer | Before the PR is marked ready |

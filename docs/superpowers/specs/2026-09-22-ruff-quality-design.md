@@ -45,7 +45,8 @@ plugin component. There is no migration: nothing of 0.1.x was ever installed by 
   edit adds `noqa`, `ruff: noqa|ignore|disable|file-ignore`, `fmt: off|skip`,
   `yapf: disable` or `isort: skip`, before `ruff check --add-noqa`/`--add-ignore`, and before
   a change to `ruff.toml`, `.ruff.toml` or the `[tool.ruff*]` tables of `pyproject.toml`.
-  A suppression that already existed does not ask again (count comparison).
+  Each replacement is compared with its own `old_string`, so a marker that already existed
+  does not ask again and removing one marker never offsets adding another in the same call.
 - **PostToolUse** (`Write|Edit` on `.py`, `.pyw`, `.pyi`): `ruff check --fix
   --no-unsafe-fixes --unfixable F401`, `ruff format`, `ruff check --no-fix`, all with
   `--force-exclude --no-cache`, on the whole file. `F401` is unfixable so an import added in
@@ -94,7 +95,7 @@ Linux, WSL, Windows with Git Bash. Not Cowork (hooks may not run there).
 ## Verification
 
 - Suite `scripts/plugin_validation/suites/ruff-quality/test-gate.sh`, run by `make test-slow`
-  under `bash` and `/bin/bash`: 50 cases, both directions (suppression asks vs plain edit
+  under `bash` and `/bin/bash`: 51 cases, both directions (suppression asks vs plain edit
   silent; config asks vs other `pyproject` table silent; fix, findings, tool break, Stop 7+1,
   missing tool, switch off).
 - Static gates: H1–H7 and B1 in `make validate`; `claude plugin validate --strict` in

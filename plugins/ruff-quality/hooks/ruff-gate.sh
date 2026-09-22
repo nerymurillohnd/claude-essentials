@@ -108,6 +108,23 @@ ruff_section() { # the [tool.ruff*] tables of a pyproject.toml text
 }
 rel() { case $1 in "${cwd%/}"/*) printf '%s' "${1#"${cwd%/}"/}" ;; *) printf '%s' "$1" ;; esac }
 
+# Whether the edit adds a suppression. Write compares the new content with the file on
+# disk. Edit compares each replacement with its own old_string, so removing a marker in
+# one replacement never offsets adding one in another.
+adds_suppression() { # adds_suppression NEW OLD (Write: content, current file)
+  local grows added removed
+  if [[ ${tool} == Write ]]; then
+    added=$(count_supp "$1")
+    removed=$(count_supp "$2")
+    ((added > removed))
+    return
+  fi
+  grows=$(jq -r --arg re "${SUPP_RE}" \
+    '[.tool_input | (.edits // [.])[] | [(.new_string // ""), (.old_string // "")] | map([scan($re; "i")] | length) | .[0] > .[1]] | any' \
+    <<<"${payload}" 2>/dev/null) || grows=false
+  [[ ${grows} == true ]]
+}
+
 # ------------------------------------------------------------------ guard ---
 
 do_guard() {
@@ -149,10 +166,7 @@ do_guard() {
     ;;
   *)
     is_python "${file}" || exit 0
-    local added removed
-    added=$(count_supp "${new}")
-    removed=$(count_supp "${old}")
-    ((added > removed)) &&
+    adds_suppression "${new}" "${old}" &&
       ask "Claude wants to add a suppression comment (noqa, ruff: noqa, fmt: off/skip, yapf: disable or isort: skip) to ${where}. Allow it only if you want that finding silenced instead of fixed."
     ;;
   esac

@@ -109,6 +109,23 @@ count_supp() { # how many suppression directives a text carries
 ec_view() { grep -E "${EC_KEYS_RE}" <<<"$1" || true; } # the lines that decide shfmt style
 rel() { case $1 in "${cwd%/}"/*) printf '%s' "${1#"${cwd%/}"/}" ;; *) printf '%s' "$1" ;; esac }
 
+# Whether the edit adds a suppression. Write compares the new content with the file on
+# disk. Edit compares each replacement with its own old_string, so removing a marker in
+# one replacement never offsets adding one in another.
+adds_suppression() { # adds_suppression NEW OLD (Write: content, current file)
+  local grows added removed
+  if [[ ${tool} == Write ]]; then
+    added=$(count_supp "$1")
+    removed=$(count_supp "$2")
+    ((added > removed))
+    return
+  fi
+  grows=$(jq -r --arg re "${SUPP_RE}" \
+    '[.tool_input | (.edits // [.])[] | [(.new_string // ""), (.old_string // "")] | map([scan($re)] | length) | .[0] > .[1]] | any' \
+    <<<"${payload}" 2>/dev/null) || grows=false
+  [[ ${grows} == true ]]
+}
+
 # ------------------------------------------------------------------ guard ---
 
 do_guard() {
@@ -144,10 +161,7 @@ do_guard() {
     ;;
   *)
     is_shell "${file}" || exit 0
-    local added removed
-    added=$(count_supp "${new}")
-    removed=$(count_supp "${old}")
-    ((added > removed)) &&
+    adds_suppression "${new}" "${old}" &&
       ask "Claude wants to add a ShellCheck suppression (# shellcheck disable=... or source=/dev/null) to ${where}. Allow it only if you want that finding silenced instead of fixed."
     ;;
   esac
@@ -192,6 +206,17 @@ opts_note() { [[ -n ${SHELLCHECK_OPTS:-} ]] && printf ' (SHELLCHECK_OPTS=%s appl
 
 FINDINGS=""
 CHANGED=0
+# First MAX_LINES non-empty lines of a tool's report, with the script's absolute path at
+# the start of a line shortened to the project-relative one. ShellCheck runs from the
+# script's directory so `source` resolves as it does at run time, and both tools print
+# the path they were given. awk keeps this linear on long reports.
+trim_findings() { # trim_findings FILE TEXT
+  local short
+  short=$(rel "$1")
+  awk -v max="${MAX_LINES}" -v abs="$1:" -v short="${short}:" \
+    'NF { if (index($0, abs) == 1) $0 = short substr($0, length(abs) + 1); print; if (++n >= max) exit }' <<<"$2"
+}
+
 # Format and check one script. Returns 0 clean, 1 findings, 2 cannot be checked, 3 zsh.
 correct() {
   local f=$1 before after out rc first
@@ -203,17 +228,13 @@ correct() {
   after=$(cksum <"${f}" 2>/dev/null)
   [[ ${before} == "${after}" ]] || CHANGED=1
   if ((rc != 0)); then
-    out=${out//"${f}:"/"$(rel "${f}"):"}
-    FINDINGS=$(awk -v max="${MAX_LINES}" 'NF { print; if (++n >= max) exit }' <<<"shfmt could not parse the script:
+    FINDINGS=$(trim_findings "${f}" "shfmt could not parse the script:
 ${out}")
     return 1
   fi
   out=$(cd "${f%/*}" && "${SHELLCHECK}" -x -f gcc "${f}" 2>&1)
   rc=$?
-  # ShellCheck runs from the script's directory, so `source` resolves as it does at run
-  # time, and prints the path it was given; report it relative to the project instead.
-  out=${out//"${f}:"/"$(rel "${f}"):"}
-  FINDINGS=$(awk -v max="${MAX_LINES}" 'NF { print; if (++n >= max) exit }' <<<"${out}")
+  FINDINGS=$(trim_findings "${f}" "${out}")
   ((rc > 1)) && return 2
   return "${rc}"
 }

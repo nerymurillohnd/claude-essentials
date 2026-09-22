@@ -128,6 +128,9 @@ expect_silent "a plain edit is not questioned"
 mk_edit "${proj}/pkg/a.py" 'import os  # noqa: F401' 'import os  # noqa: F401, E501'
 fire guard Edit s1 false
 expect_silent "editing an existing noqa line without adding one is not questioned"
+INPUT=$(jq -cn --arg f "${proj}/pkg/a.py" '{file_path: $f, edits: [{old_string: "import a  # noqa: F401", new_string: "import a"}, {old_string: "y = 2", new_string: "y = 2  # noqa: F841"}]}') || INPUT=""
+fire guard Edit s1 false
+expect_ask "a batch that removes one noqa and adds another still asks"
 mk_write "${proj}/pkg/b.py" 'x = 1  # fmt: skip'
 fire guard Write s1 false
 expect_ask "writing a file with fmt: skip asks"
