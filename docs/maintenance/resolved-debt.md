@@ -5,6 +5,21 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0037 — 2026-09-22 — Post-merge audit findings: private paths, stale schema links, an undocumented upgrade
+
+- **Original pending record:** none; `repo-auditor` returned `VERDICT: FAIL` on `a58e326`, and the pull request merged anyway, so these are fixed on a fresh branch per `.claude/rules/plugin-delivery.md`.
+- **Resolved debt:**
+  1. The migration log carried the maintainer's home directory and a private plan path.
+  2. The root README, its template, the contributing guide and the governance skill linked `schemas/`, which moved to `.github/schemas/` or was deleted.
+  3. `good first issue` was still documented after it left the taxonomy.
+  4. ruff-quality and shell-quality 0.2.0 removed their installer skills without saying how to remove a 0.1.x settings gate.
+  5. agent-self-knowledge carried two top alerts, and its catalog row omitted `curl`.
+  6. Two READMEs claimed the `enabled` option needs 2.1.269, which the changelog does not back.
+- **Resolution:** `scripts/hygiene/test_private_paths.py` refuses the home directory and any path into the private Claude plans folder in every shipped file; the links, label docs (plus an ADR-0004 amendment), upgrade notes, alert and catalog row are corrected; the unbacked version claim is removed. The released 0.2.0 CHANGELOG sections stay as tagged (C2), so the upgrade path lives in the READMEs.
+- **Positive verification:** `make check` exits 0 on the fix branch.
+- **Negative verification:** `test_private_paths.py` reports the migration log's lines when the unfixed log is restored.
+- **Owner or responsible area:** `docs/`, `README.md`, `templates/`, `plugins/{ruff,shell}-quality/README.md`, `plugins/agent-self-knowledge/README.md`
+
 ### DEBT-0034 — 2026-09-22 — An eval scaffold counted as a plugin requirement, and a local green never saw it
 
 - **Original pending record:** none; CI on `c5027fb` failed `test_the_binaries_each_plugin_invokes_are_the_ones_its_readme_lists` with `{'bash', 'git', 'jq'} != {'bash', 'jq'}` after `make check` had exited 0 locally.

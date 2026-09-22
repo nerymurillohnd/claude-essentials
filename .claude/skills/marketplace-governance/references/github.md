@@ -69,7 +69,7 @@
 
 ## `repo_metadata.py`
 
-- Validates every issue form against the SchemaStore schemas vendored in `schemas/github/`, since GitHub publishes none.
+- Validates every issue form against the SchemaStore schemas vendored in `.github/schemas/`, since GitHub publishes none.
 - `check_labels()` verifies each label's own fields and that every required label and alias resolves.
 - `check_issue_form()` cross-checks a form against the live label names and plugin names.
 - `check_node_version_source()` requires every `setup-node` step to read `node-version-file` rather than a floating version, so CI runs the repository's own runtime.

@@ -40,7 +40,7 @@ loads any of it. The user-facing surface is `plugins/`.
 | `generate_issue_forms.py` | Regenerates the **Affected plugin** dropdown from `plugins/` on disk. |
 | `issue_forms.py` | Contract for the issue forms parsed by the triage bot; it must not drift. |
 | `test_issue_forms.py` | Covers the issue form contract. |
-| `repo_metadata.py` | Validates issue forms against `schemas/github/` and validates the shape of `labels.json`. |
+| `repo_metadata.py` | Validates issue forms against `.github/schemas/` and validates the shape of `labels.json`. |
 | `test_repo_metadata.py` | Covers repository metadata validation. |
 
 ## 2. Versioning and releases
@@ -76,7 +76,6 @@ loads any of it. The user-facing surface is `plugins/`.
 | `validate_claude.py` | Runs `claude plugin validate --strict` against the marketplace and every plugin. |
 | `claude_cli.py` | Executes the CLI found on `PATH`; it is never a repository dependency. |
 | `test_claude_cli.py` | Covers invocation and findings parsing. |
-| `test_claude_code_schemas.py` | Ensures the `schemas/claude-code/` schema skeletons accept the documentation examples. |
 | `test_skill_frontmatter.py` | Ensures frontmatter parses as YAML and fits within the 1,536-character budget. |
 | `readme_contract.py` | Defines the plugin `README` contract and the catalog row in the root `README`. |
 | `test_readme_contract.py` | Covers missing sections, template drift, and badges. |

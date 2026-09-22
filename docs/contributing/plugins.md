@@ -27,8 +27,8 @@ cp -R templates/plugin-skill-only plugins/my-new-skill
 Required fields: `name` (must equal the directory name, kebab-case, at most 42
 characters), `description`, `version` (explicit semver; new plugins usually
 start at `0.1.0`, see [versioning.md](versioning.md)), and
-`metadata.marketplace.category` (see below). See
-`schemas/plugin.schema.json` for the full field list, and
+`metadata.marketplace.category` (see below). `claude plugin validate --strict`
+(`make validate-cli`) checks the manifest against the official schema; see
 [plugins-reference.md](https://code.claude.com/docs/en/plugins-reference.md)
 for everything Claude Code itself understands (author, license, keywords,
 component paths, hooks, mcpServers, dependencies, ...).
@@ -55,11 +55,11 @@ entry, after `name`, `source`, and `description`:
 
 - `metadata.marketplace` and its `category` are always required. The category
   must be one of the values in
-  `schemas/plugin.schema.json#/definitions/marketplaceCategory` (`automation`,
+  `MARKETPLACE_CATEGORIES` (`scripts/marketplace/catalog.py`: `automation`,
   `database`, `deployment`, `design`, `development`, `learning`, `monitoring`,
   `productivity`, `security`, `testing`: a curated subset of the official
-  Anthropic marketplace's categories). To allow a new one, add it there;
-  `marketplace.schema.json` references the same list.
+  Anthropic marketplace's categories). To allow a new one, add it there; that
+  constant is its only home.
 - `tags` is optional: at least one, unique, lowercase kebab-case, at most
   eight. They are the catalog's search terms; overlap with `keywords` is
   expected (the docs define both as discovery tags), so pick the terms a user

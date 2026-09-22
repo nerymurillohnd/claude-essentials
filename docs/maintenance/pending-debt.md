@@ -5,6 +5,34 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0035 — Rewritten eval cases of three plugins were never measured, and their "Last verified" dates predate their releases
+
+- **Status:** Pending
+- **Category:** testing
+- **Evidence:**
+  - **Confirmed facts:** `repo-auditor` on `a58e326` (2026-09-22): agent-self-knowledge cases 01, 02, 03 and 05, block-no-verify 01-04, and verify-completion 01, 03 and 04 were rewritten on that branch and never run; `docs/audits/2026-09-22-final-head-evals.md` measures only ruff-quality, shell-quality, agent-self-knowledge 04 and verify-completion 02. CI's `Eval <plugin>` jobs skip because the repository has no `ANTHROPIC_API_KEY` (log of job 106763388263: "ANTHROPIC_API_KEY is not set; the eval of ruff-quality is skipped") and still report success. The Compatibility "Last verified" dates of agent-self-knowledge (2026-09-20), block-no-verify and verify-completion (2026-09-19) predate their 0.2.0, 0.1.3 and 0.1.2 releases. The PR merged with the auditor's FAIL (maintainer's decision).
+  - **Inferences:** A suite that was never run can carry a grader defect like the one verify-completion 02 had (it graded a `CLAUDE.md` rule that eval runs never load).
+  - **Open questions:** Whether the maintainer adds `ANTHROPIC_API_KEY` to the `evals` environment, which makes CI measure every runtime change.
+- **Impact / risk:** Unmeasured behavior claims; a skipped eval reads as a passed check.
+- **Owner or responsible area:** `plugins/*/evals/`, `.github/workflows/evals.yml`, the three plugin READMEs
+- **Next action:** Run the listed cases pinned (3 runs per arm) and record them in `docs/audits/`; re-verify each plugin on its new version and update or downgrade its "Last verified" row; make a skipped eval job visible as skipped rather than green.
+- **Review condition:** Close when every case has a dated result on the current head and every "Last verified" date is on or after its plugin's current version.
+- **Related records:** `docs/audits/2026-09-22-final-head-evals.md`
+
+### DEBT-0036 — Workflows call uv and pytest directly, one pin has no version comment, and gate suites discard stderr
+
+- **Status:** Pending
+- **Category:** tooling
+- **Evidence:**
+  - **Confirmed facts:** `repo-auditor` on `a58e326`: `tag-versions.yml:48`, `labels.yml:37` and `triage.yml:61` run `uv sync --locked --no-build …` instead of `make setup`; `nightly.yml:71` runs `.venv/bin/python -m pytest -m coverage_matrix` with no make target; `ci.yml:145` pins `validate-plugins@a727be1…` with a date comment, not the `# vX.Y.Z` CLAUDE.md asks for, and `check_workflow_pins` accepts it. The ruff-quality and shell-quality suites run the gate with `2>/dev/null` (`test-gate.sh:71` in each), so a "command not found" in the handler would not fail a case.
+  - **Inferences:** The CLAUDE.md rule "every make target runs it from .venv" and the pin rule each have an unrecorded exception.
+  - **Open questions:** Whether the write-token workflows need `--no-build` wheels that `make setup` does not give.
+- **Impact / risk:** Low; drift between the stated rules and the workflows, and a class of handler error the suites would not see.
+- **Owner or responsible area:** `.github/workflows/`, `Makefile`, `scripts/plugin_validation/suites/`
+- **Next action:** Add `make` targets (or record the exceptions in CLAUDE.md), align the pin rule with its checker, and make both suites fail a case whose stderr contains "command not found".
+- **Review condition:** Close when no workflow calls uv or pytest outside a make target, the pin rule and `check_workflow_pins` agree, and a suite case proves the stderr check.
+- **Related records:** `.github/workflows/`
+
 ### DEBT-0031 — `verify-completion`'s `/tmp` state fallback trusts a directory it did not create
 
 - **Status:** Pending

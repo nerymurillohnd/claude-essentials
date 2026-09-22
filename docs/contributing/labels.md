@@ -15,7 +15,7 @@ drift on the next run.
 | `plugin:` | one per plugin, derived | Triage bot | Issues, PRs |
 | `bump:` | `major`, `minor`, `patch`, `prerelease`, `initial`, `none` | Triage bot, computed with the same rules as `version-check` | PRs |
 | `bump: deferred` | — | **Maintainer only** | PRs |
-| community | `good first issue`, `help wanted` | Maintainer | Issues |
+| community | `help wanted` | Maintainer | Issues |
 
 Resolution isn't a label. Close with GitHub's native reason (*completed*,
 *not planned*, or *duplicate*) and a comment.

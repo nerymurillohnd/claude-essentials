@@ -126,3 +126,13 @@ script".
   - GitHub's own secret scanning, push protection, and private vulnerability reporting are enabled.
   - `delete_branch_on_merge` is enabled.
 
+
+### Amendment — 2026-09-22: `good first issue` leaves the taxonomy; schemas move to `.github/schemas/`
+
+- `good first issue` is no longer part of the taxonomy (`.github/labels.json`): outside pull
+  requests are closed automatically, so a label inviting a first contribution promised
+  something the repository does not accept. `help wanted` stays for accepted issues.
+- The vendored SchemaStore issue-form and issue-config schemas live in `.github/schemas/`, and
+  `make validate` (not `npm run validate`) checks every form against them. The Node tooling
+  this record names (`npm run generate`, `scripts/sync-labels.mjs`) is replaced by
+  `make generate` and `python -m scripts.github.sync_labels`.

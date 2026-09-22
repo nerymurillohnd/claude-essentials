@@ -66,6 +66,5 @@ as errors here rather than left to `--strict` alone.
 ## Tests
 
 - `test_claude_cli.py` — invocation shaping and findings parsing, including the tolerated empty-marketplace warning.
-- `test_claude_code_schemas.py` — every skeleton in `schemas/claude-code/` compiles, accepts the complete examples from the official docs, and rejects known mistakes. The fixtures are the docs' own examples, so a failure means the docs moved.
 - `test_skill_frontmatter.py` — every `plugins/*/skills/*/SKILL.md` frontmatter parses as YAML and `description` plus `when_to_use` fit the 1,536-character budget. Both failures are silent under the official validator, and an unparseable description is the defect that reaches users.
 - `test_readme_contract.py` — missing sections, template drift, badge mismatches, and the missing-Network-badge case.

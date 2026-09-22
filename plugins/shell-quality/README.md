@@ -93,6 +93,15 @@ session to the new version. To keep the skill but stop the hook, set the plugin'
 `enabled` option to off in `/config`. In Cowork, use **Update** on the marketplace,
 and **Uninstall** on the plugin under **Customize → Plugins**.
 
+**Upgrading from 0.1.x:** 0.2.0 removes the `shell-hooks` skill and its `manage.sh`, but not a
+gate that 0.1.x installed into your settings: that gate is a standalone copy, and it would run
+beside the new hooks. Remove it by hand, since the old gate denies Claude changing it: in the
+settings file you installed it to (`.claude/settings.json`, `.claude/settings.local.json` or
+`~/.claude/settings.json`), delete every hook group whose command contains
+`shell-quality-gate.sh`, then delete that handler from `.claude/hooks/` or `~/.claude/hooks/`.
+Or restore the backup the installer printed (`<git dir>/shell-quality-backups/` or
+`~/.claude/backups/shell-quality/`). Open `/hooks` to confirm only the plugin's hooks remain.
+
 ## 🧠 Skills
 
 | Skill | Invoke | Claude uses it when | Invocation |
@@ -131,7 +140,7 @@ None — no MCP servers, no network access, no credentials.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.222 | `claude --version` | Loads the skill and the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222. The `enabled` row in `/config` needs 2.1.269 |
+| Claude Code | 2.1.222 | `claude --version` | Loads the skill and the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222. |
 | ShellCheck | 0.10 | `shellcheck --version` | Checks every edited script. 0.10 is the first release that reads the `extended-analysis` key and `--rcfile` the skill's configuration guidance uses; tested with 0.11.0 |
 | shfmt | 3.12 | `shfmt --version` | Formats every edited script. 3.12 is the first release that reads the `simplify` and `minify` EditorConfig keys; the `[[shell]]` sections the skill describes need 3.13; tested with 3.14.1 |
 | Bash | 3.2 | `bash --version` | Runs the handler (macOS's stock `/bin/bash` 3.2 works) |

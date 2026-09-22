@@ -165,7 +165,7 @@ unpatched one, and never include secrets in any report.
 | --- | --- |
 | [`plugins/<plugin-id>/`](plugins/) | Self-contained, distributable plugins |
 | [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) | The catalog Claude reads — generated from each `plugin.json`, never hand-edited |
-| [`schemas/`](schemas/) | This repo's manifest contract, plus [upstream-faithful Claude Code schemas](schemas/claude-code/) and [vendored GitHub issue-form schemas](schemas/github/) |
+| [`.github/schemas/`](.github/schemas/) | Vendored SchemaStore issue-form and issue-config schemas that `make validate` checks every issue form against; the plugin and marketplace manifests are checked by `claude plugin validate --strict` |
 | [`scripts/`](scripts/), [`templates/`](templates/) | Maintainer tooling and starting points — never installed into your project |
 | [`docs/`](docs/) | Decisions, contributor guides, maintenance ledgers, audits |
 | [`.github/`](.github/) | CI, issue forms, labels, triage |

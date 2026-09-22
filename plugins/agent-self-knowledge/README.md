@@ -29,14 +29,6 @@ find — and it does **not** cover any product other than Claude Code.
 > `skills/claude-code-docs/scripts/ccdocs.py` before enabling this in a
 > sensitive environment.
 
-> [!IMPORTANT]
-> **Requires Python 3.14 or later as `python3` on your `PATH`.** The skill runs
-> `python3 …/ccdocs.py`, and the script stops with a message naming the version it
-> found when `python3` is older. The Python that ships with the Xcode Command Line
-> Tools on macOS (3.9) and the default `python3` of Ubuntu 24.04 (3.12) or Debian 13
-> (3.13) are too old: install 3.14 from python.org, with `brew install python@3.14`,
-> or with `uv python install 3.14 --default`.
-
 ## 🎯 What it does
 
 | Scenario | How this plugin helps | Expected result |
@@ -124,6 +116,14 @@ command. It is a suggestion you approve and own, and it registers a server in
 your **user** scope, outside this plugin.
 
 ## 📋 Requirements
+
+> [!IMPORTANT]
+> **Requires Python 3.14 or later as `python3` on your `PATH`.** The skill runs
+> `python3 …/ccdocs.py`, and the script stops with a message naming the version it
+> found when `python3` is older. The Python that ships with the Xcode Command Line
+> Tools on macOS (3.9) and the default `python3` of Ubuntu 24.04 (3.12) or Debian 13
+> (3.13) are too old: install 3.14 from python.org, with `brew install python@3.14`,
+> or with `uv python install 3.14 --default`.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |

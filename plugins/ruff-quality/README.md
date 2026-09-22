@@ -92,6 +92,15 @@ session to the new version. To keep the skill but stop the hook, set the plugin'
 `enabled` option to off in `/config`. In Cowork, use **Update** on the marketplace,
 and **Uninstall** on the plugin under **Customize → Plugins**.
 
+**Upgrading from 0.1.x:** 0.2.0 removes the `ruff-hooks` skill and its `manage.sh`, but not a
+gate that 0.1.x installed into your settings: that gate is a standalone copy, and it would run
+beside the new hooks. Remove it by hand, since the old gate denies Claude changing it: in the
+settings file you installed it to (`.claude/settings.json`, `.claude/settings.local.json` or
+`~/.claude/settings.json`), delete every hook group whose command contains
+`ruff-quality-gate.sh`, then delete that handler from `.claude/hooks/` or `~/.claude/hooks/`.
+Or restore the backup the installer printed (`<git dir>/ruff-quality-backups/` or
+`~/.claude/backups/ruff-quality/`). Open `/hooks` to confirm only the plugin's hooks remain.
+
 ## 🧠 Skills
 
 | Skill | Invoke | Claude uses it when | Invocation |
@@ -129,7 +138,7 @@ None — no MCP servers, no network access, no credentials.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.222 | `claude --version` | Loads the skill and the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222. The `enabled` row in `/config` needs 2.1.269 |
+| Claude Code | 2.1.222 | `claude --version` | Loads the skill and the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222. |
 | Ruff | 0.16 | `ruff --version` | Every hook step; install it in the project or globally. Without a Ruff configuration the hook applies Ruff's default rules, and the skill describes the 0.16 defaults |
 | Bash | 3.2 | `bash --version` | Runs the handler (macOS's stock `/bin/bash` 3.2 works) |
 | jq | 1.6 | `jq --version` | Reads hook payloads and writes hook answers |

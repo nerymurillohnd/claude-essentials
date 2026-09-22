@@ -48,8 +48,7 @@ opened ── status: needs-triage
   not a guarantee: the project is community-maintained.
 - `priority: critical` is reserved for broken installs, data loss, or a
   security-relevant defect. Unlabeled means normal priority.
-- `good first issue` and `help wanted` mark issues open to outside
-  contributors. Keep them on accepted issues only.
+- `help wanted` marks an accepted issue open to outside contributors.
 - Only issues labeled `status: needs-info` ever go stale. The stale bot never
   touches other issues or any PR.
 
