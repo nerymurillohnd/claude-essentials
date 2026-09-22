@@ -210,14 +210,15 @@ maintainer's eval protocol; results are reported in the pull request, never here
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/verify-completion --strict
-BNV_TEST_BASH=/bin/bash plugins/verify-completion/scripts/test-hooks.sh
+scripts/plugin_validation/suites/verify-completion/test-hooks.sh
 claude plugin eval plugins/verify-completion --scaffold --judge-model sonnet --allow-tools Write Edit "Bash(node *)" "Bash(npm test*)" "Bash(cat *)" "Bash(od *)" "Bash(grep *)" "Bash(git status*)" "Bash(git diff*)" --no-publish --max-cost-usd 15
 ```
 
-`make check` runs the suite under `bash` and under `/bin/bash`; the repository's runner
-exports `BNV_TEST_BASH` with the interpreter in use, and the suite runs the handler with it.
+`make check` runs the suite under `bash` and under `/bin/bash`, and the suite runs the
+handler with the same interpreter. The suite lives in the repository, not in the plugin,
+so it is never installed.
 
 </details>
 

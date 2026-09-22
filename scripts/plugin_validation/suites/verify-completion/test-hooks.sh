@@ -2,19 +2,19 @@
 # Behavioral tests for verify-completion's hooks: analyze.jq (claim detection,
 # record validation) and gate.sh (mark/stop state machine, modes, degraded
 # modes, timing). Runs the handler under $BNV_TEST_BASH (set by the repo's
-# `npm test` to each bash it finds, including /bin/bash 3.2), else `bash`.
+# `make test-slow` to each bash it finds, including /bin/bash 3.2), else `bash`.
+# It lives in the repository, not in the plugin: a plugin ships only what users run.
 #
-# Test data is literal Markdown handed to the hooks, so single-quoted backticks
-# and $ are intended; helpers compare what producers print, so a failing
-# producer shows up as a failed comparison rather than a masked return code.
-# shellcheck disable=SC2016,SC2312
+# Test data is literal Markdown handed to the hooks: any $, backtick or double
+# quote in it is escaped, so nothing expands here.
 
 set -uo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-gate="${here}/gate.sh"
-analyze="${here}/analyze.jq"
-hooks_json="${here}/../hooks/hooks.json"
+plugin="${here}/../../../../plugins/verify-completion"
+gate="${plugin}/scripts/gate.sh"
+analyze="${plugin}/scripts/analyze.jq"
+hooks_json="${plugin}/hooks/hooks.json"
 run_bash=${BNV_TEST_BASH:-bash}
 
 work=$(mktemp -d)
@@ -58,8 +58,11 @@ expect_no_claim() {
 expect_record_ok() { # message verdict
   local got
   got=$(record_of "$1")
-  if [[ $(jq -r '.present and (.errors | length == 0)' <<<"${got}") == true &&
-  $(jq -r '.verdict' <<<"${got}") == "$2" ]]; then ok; else bad "record should be valid ($2): ${3:-}" "${got}"; fi
+  if jq -e --arg v "$2" '.present and (.errors | length == 0) and .verdict == $v' <<<"${got}" >/dev/null; then
+    ok
+  else
+    bad "record should be valid ($2): ${3:-}" "${got}"
+  fi
 }
 
 expect_record_error() { # message error-substring label
@@ -102,21 +105,33 @@ reset_state() { rm -rf "${work}/data"; }
 
 mark() { run_gate mark "{\"session_id\":\"${1:-sess-1}\",\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Edit\",\"tool_input\":{}}" "${@:2}"; }
 
-RECORD='### Verification record
+RECORD="### Verification record
 
 Requirement: add a --dry-run flag to the deploy script
 
-1. Adversarial review: PASS — read the full `git diff` of deploy.sh and re-ran it
-2. Outcome: PASS — ran `./deploy.sh --dry-run`; nothing was uploaded, plan printed
+1. Adversarial review: PASS — read the full \`git diff\` of deploy.sh and re-ran it
+2. Outcome: PASS — ran \`./deploy.sh --dry-run\`; nothing was uploaded, plan printed
 3. Counterpart: N/A — no other script or pipeline calls deploy.sh with flags
-4. Distrust the green: PASS — no skipped tests; `bats tests/` ran 14 cases, 0 skipped
-5. Both directions: PASS — `--dry` (typo) exits 2 with usage; valid flag exits 0
-6. Evidence: PASS — commands and trimmed outputs are quoted above in this reply'
+4. Distrust the green: PASS — no skipped tests; \`bats tests/\` ran 14 cases, 0 skipped
+5. Both directions: PASS — \`--dry\` (typo) exits 2 with usage; valid flag exits 0
+6. Evidence: PASS — commands and trimmed outputs are quoted above in this reply"
 
-record_with() { # sed-like: replace $1 with $2 in RECORD, then append verdict $3
-  local r=${RECORD}
-  r=${r/"$1"/"$2"}
-  printf '%s\n\nVerdict: %s' "${r}" "$3"
+record_with() { # sed-like: replace $1 with $2 in RECORD, then append verdict $3; sets REC
+  REC=${RECORD/"$1"/"$2"}
+  REC="${REC}
+
+Verdict: $3"
+}
+
+# Runs the Stop gate on a payload built here; a payload jq could not build is a
+# failed case, never an empty input that happens to pass.
+gate_stop() { # message [stop_hook_active] [session]
+  local input
+  input=$(payload "$@") || {
+    bad "could not build the Stop payload for: $1"
+    return 0
+  }
+  run_gate stop "${input}"
 }
 
 # --------------------------------------------------- claim detection ---
@@ -163,7 +178,7 @@ expect_no_claim "Here is the plan for the refactor."
 expect_no_claim "Ready to start when you are."
 expect_no_claim "Read the file; it has three functions."
 expect_no_claim '> The ticket said: "all tests pass"'
-expect_no_claim 'Run `echo done` to see it.'
+expect_no_claim "Run \`echo done\` to see it."
 expect_no_claim 'Example output:
 ```
 All tests pass. Done.
@@ -172,89 +187,115 @@ expect_no_claim ""
 
 # -------------------------------------------------- record validation ---
 
-expect_record_ok "$(record_with x x VERIFIED)" VERIFIED "canonical"
+record_with x x VERIFIED
+expect_record_ok "${REC}" VERIFIED "canonical"
+record_with x x '**VERIFIED**'
 expect_record_ok "All tests pass.
 
-$(record_with x x '**VERIFIED**')" VERIFIED "claim + record, bold verdict"
-expect_record_ok "$(record_with '1. Adversarial review: PASS' '1. Adversarial review: FAIL' 'NOT VERIFIED')" "NOT VERIFIED" "honest failure"
-expect_record_ok "$(record_with '2. Outcome: PASS' '2. Outcome: BLOCKED' 'NOT VERIFIED')" "NOT VERIFIED" "blocked gate"
-expect_record_ok '## Registro de verificación
+${REC}" VERIFIED "claim + record, bold verdict"
+record_with '1. Adversarial review: PASS' '1. Adversarial review: FAIL' 'NOT VERIFIED'
+expect_record_ok "${REC}" "NOT VERIFIED" "honest failure"
+record_with '2. Outcome: PASS' '2. Outcome: BLOCKED' 'NOT VERIFIED'
+expect_record_ok "${REC}" "NOT VERIFIED" "blocked gate"
+expect_record_ok "## Registro de verificación
 
 **Requisito:** validar el correo antes de guardarlo en la base de datos
 
 | # | Compuerta | Estado | Evidencia |
 | --- | --- | --- | --- |
-| 1 | Revisión adversarial | PASS | leí el diff completo de `src/user.ts` y reejecuté las pruebas |
-| 2 | Resultado | PASS | `npm test -- user` cubre el guardado con correo válido |
+| 1 | Revisión adversarial | PASS | leí el diff completo de \`src/user.ts\` y reejecuté las pruebas |
+| 2 | Resultado | PASS | \`npm test -- user\` cubre el guardado con correo válido |
 | 3 | Contraparte | PASS | la API rechaza correo vacío con 422 y mensaje claro |
 | 4 | Desconfiar del verde | PASS | sin skip ni only; 0 reglas de lint desactivadas |
 | 5 | Ambas direcciones | PASS | válido guarda; inválido devuelve 422 y no escribe |
 | 6 | Evidencia | PASS | comandos y salidas citados arriba en esta respuesta |
 
-**Veredicto:** VERIFIED' VERIFIED "Spanish table"
-expect_record_ok "$(record_with x x VERIFIED)
+**Veredicto:** VERIFIED" VERIFIED "Spanish table"
+record_with x x VERIFIED
+expect_record_ok "${REC}
 
 ## Next steps
 
 - 1 file changed; waiting for your approval to commit." VERIFIED "section after record is excluded"
 
-expect_record_error "$(record_with 'Requirement: add a --dry-run flag to the deploy script' '' VERIFIED)" 'missing a "Requirement:"' "no requirement"
-expect_record_error "$(record_with 'Requirement: add a --dry-run flag to the deploy script' 'Requirement: fix' VERIFIED)" "too short" "short requirement"
+record_with 'Requirement: add a --dry-run flag to the deploy script' '' VERIFIED
+expect_record_error "${REC}" 'missing a "Requirement:"' "no requirement"
+record_with 'Requirement: add a --dry-run flag to the deploy script' 'Requirement: fix' VERIFIED
+expect_record_error "${REC}" "too short" "short requirement"
 expect_record_error "${RECORD}" "missing a \"Verdict" "no verdict"
-expect_record_error "$(record_with '3. Counterpart: N/A — no other script or pipeline calls deploy.sh with flags' '' VERIFIED)" "gate 3 is missing" "missing gate"
-expect_record_error "$(record_with '5. Both directions' '5. Dup: PASS — duplicate line for gate five here
-5. Both directions' VERIFIED)" "gate 5 appears 2 times" "duplicate gate"
-expect_record_error "$(record_with '6. Evidence: PASS — commands and trimmed outputs are quoted above in this reply' '6. Evidence: PASS — ok' VERIFIED)" "gate 6 (PASS) has no evidence" "hollow evidence"
-expect_record_error "$(record_with '2. Outcome: PASS' '2. Outcome: FAIL' VERIFIED)" "verdict is VERIFIED but gate 2 is FAIL" "inconsistent verdict"
-expect_record_error "$(record_with '4. Distrust the green: PASS' '4. Distrust the green: N/A' VERIFIED)" "gate 4 always applies" "N/A on a mandatory gate"
-expect_record_error "$(record_with '1. Adversarial review: PASS' '1. Adversarial review: pass' VERIFIED)" "gate 1 is missing" "lowercase status token"
-no_code=$(record_with x x VERIFIED | tr -d '`')
+record_with '3. Counterpart: N/A — no other script or pipeline calls deploy.sh with flags' '' VERIFIED
+expect_record_error "${REC}" "gate 3 is missing" "missing gate"
+record_with '5. Both directions' '5. Dup: PASS — duplicate line for gate five here
+5. Both directions' VERIFIED
+expect_record_error "${REC}" "gate 5 appears 2 times" "duplicate gate"
+record_with '6. Evidence: PASS — commands and trimmed outputs are quoted above in this reply' '6. Evidence: PASS — ok' VERIFIED
+expect_record_error "${REC}" "gate 6 (PASS) has no evidence" "hollow evidence"
+record_with '2. Outcome: PASS' '2. Outcome: FAIL' VERIFIED
+expect_record_error "${REC}" "verdict is VERIFIED but gate 2 is FAIL" "inconsistent verdict"
+record_with '4. Distrust the green: PASS' '4. Distrust the green: N/A' VERIFIED
+expect_record_error "${REC}" "gate 4 always applies" "N/A on a mandatory gate"
+record_with '1. Adversarial review: PASS' '1. Adversarial review: pass' VERIFIED
+expect_record_error "${REC}" "gate 1 is missing" "lowercase status token"
+record_with x x VERIFIED
+no_code=${REC//\`/}
 expect_record_error "${no_code}" "re-runnable artifact" "no code evidence"
 
+record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED'
 expect_record_error "All tests pass, the feature is done.
 
-$(record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED')" "while its verdict is NOT VERIFIED" "done-claim contradicting NOT VERIFIED"
+${REC}" "while its verdict is NOT VERIFIED" "done-claim contradicting NOT VERIFIED"
+record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED'
 expect_record_ok "The parser change is not verified yet: gate 5 is blocked.
 
-$(record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED')" "NOT VERIFIED" "honest partial report"
-got=$(claims_of "$(record_with x x VERIFIED)")
+${REC}" "NOT VERIFIED" "honest partial report"
+record_with x x VERIFIED
+got=$(claims_of "${REC}")
 if [[ ${got} == "[]" ]]; then ok; else bad "record lines were read as claims" "${got}"; fi
 
 # Review findings (2026-09-19): forms a model writes in good faith.
 expect_claim "I'm done with the refactor."
 expect_claim "I am finished."
-expect_record_ok "$(record_with '6. Evidence: PASS — commands and trimmed outputs are quoted above in this reply' '6. Evidence: PASS — ran `npm test`, output below
-   ```
+record_with '6. Evidence: PASS — commands and trimmed outputs are quoted above in this reply' "6. Evidence: PASS — ran \`npm test\`, output below
+   \`\`\`
    # tests 42
    # pass 42
    ## fail 0
-   ```' VERIFIED)" VERIFIED "fenced output with # lines inside the record"
-expect_record_ok "$(record_with '2. Outcome: PASS — ran `./deploy.sh --dry-run`; nothing was uploaded, plan printed' '2. Outcome: PASS — requirement mapped to evidence:
-   1. flag parsed: PASS — `./deploy.sh --dry-run` prints the plan
-   2. no upload: PASS — no network calls in the dry-run branch' VERIFIED)" VERIFIED "indented numbered sub-list is not a gate"
-expect_record_ok "$(record_with '### Verification record' '### 🔍 Final verification record' VERIFIED)" VERIFIED "heading with a short prefix"
-expect_record_ok "$(record_with x x VERIFIED)
+   \`\`\`" VERIFIED
+expect_record_ok "${REC}" VERIFIED "fenced output with # lines inside the record"
+record_with "2. Outcome: PASS — ran \`./deploy.sh --dry-run\`; nothing was uploaded, plan printed" "2. Outcome: PASS — requirement mapped to evidence:
+   1. flag parsed: PASS — \`./deploy.sh --dry-run\` prints the plan
+   2. no upload: PASS — no network calls in the dry-run branch" VERIFIED
+expect_record_ok "${REC}" VERIFIED "indented numbered sub-list is not a gate"
+record_with '### Verification record' '### 🔍 Final verification record' VERIFIED
+expect_record_ok "${REC}" VERIFIED "heading with a short prefix"
+record_with x x VERIFIED
+expect_record_ok "${REC}
 
 The Verification record above lists every command I ran." VERIFIED "later prose line mentioning the record"
-expect_record_ok "$(record_with 'Requirement: add a --dry-run flag to the deploy script' 'Requirements:
-add a --dry-run flag to the deploy script' VERIFIED)" VERIFIED "plural label, text on the next line"
-expect_record_ok "$(record_with x x '' | sed '$d')
+record_with 'Requirement: add a --dry-run flag to the deploy script' 'Requirements:
+add a --dry-run flag to the deploy script' VERIFIED
+expect_record_ok "${REC}" VERIFIED "plural label, text on the next line"
+expect_record_ok "${RECORD}
 Verdict — Verified" VERIFIED "verdict with a dash and mixed case"
+record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED'
 expect_record_ok "Unit tests are passing and the parser bug is fixed, but the e2e run is blocked.
 
-$(record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED')" "NOT VERIFIED" "partial successes in honest prose"
+${REC}" "NOT VERIFIED" "partial successes in honest prose"
+record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED'
 expect_record_error "Everything is ready to merge.
 
-$(record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED')" "while its verdict is NOT VERIFIED" "global readiness claim still contradicts"
+${REC}" "while its verdict is NOT VERIFIED" "global readiness claim still contradicts"
 
 got=$(record_of "Nothing to see here.")
-if [[ $(jq -r '.present' <<<"${got}") == false ]]; then ok; else bad "record detected where there is none" "${got}"; fi
+if jq -e '.present == false' <<<"${got}" >/dev/null; then ok; else bad "record detected where there is none" "${got}"; fi
 
 # ---------------------------------------------------- gate: state flow ---
 
 claim=$(payload "All tests pass. The feature is done.")
-valid=$(payload "$(record_with x x VERIFIED)")
-invalid=$(payload "$(record_with '2. Outcome: PASS' '2. Outcome: FAIL' VERIFIED)")
+record_with x x VERIFIED
+valid=$(payload "${REC}")
+record_with '2. Outcome: PASS' '2. Outcome: FAIL' VERIFIED
+invalid=$(payload "${REC}")
 
 reset_state
 run_gate stop "${claim}"
@@ -264,7 +305,7 @@ mark
 expect_gate "mark prints nothing" none
 if [[ -e "${work}/data/sessions/sess-1.work" ]]; then ok; else bad "mark did not record work"; fi
 
-run_gate stop "$(payload "Here is what I changed in the parser.")"
+gate_stop "Here is what I changed in the parser."
 expect_gate "no claim after work" none
 
 run_gate stop "${claim}"
@@ -274,14 +315,18 @@ if [[ ${OUT} == *"Verification record"* && ${OUT} == *"never authorizes"* ]]; th
 # carries a template, and that template is itself a valid record once filled.
 template=$(jq -r '.hookSpecificOutput.additionalContext' <<<"${OUT}" | sed -n '/^### Verification record/,/^Verdict:/p')
 if [[ ${template} == *"1. Adversarial review: PASS"* && ${template} == *"Verdict: VERIFIED"* ]]; then ok; else bad "nudge lacks the record template" "${OUT}"; fi
-# shellcheck disable=SC2001 # each <placeholder> separately; a glob would span several
-filled=$(sed -e 's/<[^>]*>/checked `npm test` output and the full diff by hand/g' <<<"${template}")
+# Each <placeholder> separately: a glob such as <*> would span several on a line.
+filled=${template}
+placeholder='<[^>]*>'
+while [[ ${filled} =~ ${placeholder} ]]; do
+  filled=${filled/"${BASH_REMATCH[0]}"/"checked \`npm test\` output and the full diff by hand"}
+done
 expect_record_ok "${filled}" VERIFIED "template from the nudge, filled in"
 
-run_gate stop "$(payload "All tests pass. The feature is done." true)"
+gate_stop "All tests pass. The feature is done." true
 expect_gate "second claim warns the user" warning
 
-run_gate stop "$(payload "All tests pass. The feature is done." true)"
+gate_stop "All tests pass. The feature is done." true
 expect_gate "still only a warning, never a loop" warning
 
 mark
@@ -304,15 +349,16 @@ expect_gate "invalid record twice warns" warning
 
 reset_state
 mark
-run_gate stop "$(payload "$(record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED')")"
+record_with '5. Both directions: PASS' '5. Both directions: BLOCKED' 'NOT VERIFIED'
+gate_stop "${REC}"
 expect_gate "honest NOT VERIFIED passes" none
 
 # Sessions are independent.
 reset_state
 mark sess-A
-run_gate stop "$(payload "Done." false sess-B)"
+gate_stop "Done." false sess-B
 expect_gate "other session's work does not count" none
-run_gate stop "$(payload "Done." false sess-A)"
+gate_stop "Done." false sess-A
 expect_gate "own session's work counts" context
 
 # ------------------------------------------------------------- modes ---
@@ -349,7 +395,8 @@ expect_gate "empty stdin fails open" none
 nosess_claim=$(jq -n '{hook_event_name: "Stop", stop_hook_active: false, last_assistant_message: "All tests pass."}')
 run_gate stop "${nosess_claim}"
 expect_gate "no session id: nudge on first stop" context
-run_gate stop "$(jq '.stop_hook_active = true' <<<"${nosess_claim}")"
+nosess_continuing=$(jq '.stop_hook_active = true' <<<"${nosess_claim}")
+run_gate stop "${nosess_continuing}"
 expect_gate "no session id: warn when already continuing" warning
 
 # State directory not writable: treated as work done; stop_hook_active decides.
@@ -373,7 +420,7 @@ if [[ -e "${work}/escape.work" || -e "${work}/data/escape.work" ]]; then bad "se
 reset_state
 mark sess-old
 touch -t 202001010000 "${work}/data/sessions/sess-old.work"
-run_gate stop "$(payload "Hello." false sess-new)"
+gate_stop "Hello." false sess-new
 if [[ ! -e "${work}/data/sessions/sess-old.work" ]]; then ok; else bad "stale state not pruned"; fi
 
 # Without jq: fail open, tell the user once per session.
@@ -445,8 +492,8 @@ timed_stop "long reply, near-miss claims on every line" "Step %d is not done; is
 reset_state
 mark
 prose=$(awk 'BEGIN { for (i = 0; i < 250; i++) printf "Paragraph %d about the parser.\n", i }')
-run_gate stop "$(payload "${prose}
-All tests pass.")"
+gate_stop "${prose}
+All tests pass."
 expect_gate "claim at the end of a long reply" context
 
 printf '%d passed, %d failed\n' "${pass}" "${fail}"
