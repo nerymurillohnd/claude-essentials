@@ -11,6 +11,7 @@ person, so every process-spawning test here runs under both.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -99,6 +100,21 @@ def edit_payload(file_path: Path, cwd: Path, **extra: object) -> str:
     return payload(tool_name="Edit", tool_input=tool_input, cwd=str(cwd), session_id="test-session")
 
 
+SESSION_ONLY_VARIABLES: Final[frozenset[str]] = frozenset({"CLAUDE_PROJECT_DIR"})
+"""What Claude Code exports to its own hooks; a test inheriting it would aim a hook at this
+checkout instead of the scratch repository, so the suite passes in a shell and fails in a
+session (measured 2026-09-22 when the checklist gate ran `make test-slow` from a Stop hook)."""
+
+
+def ambient_env() -> dict[str, str]:
+    """This process's environment without the variables a Claude Code session sets.
+
+    Returns:
+        A copy the caller may extend.
+    """
+    return {key: value for key, value in os.environ.items() if key not in SESSION_ONLY_VARIABLES}
+
+
 def run_hook(
     script: Path,
     text: str,
@@ -114,7 +130,7 @@ def run_hook(
         text: The payload.
         binary: The bash binary to run it under.
         cwd: The working directory, which is what a hook falls back to.
-        env: The environment; this process's own when None.
+        env: The environment; `ambient_env()` when None.
 
     Returns:
         The completed process, with both streams as text.
@@ -127,7 +143,7 @@ def run_hook(
         check=False,
         capture_output=True,
         text=True,
-        env=None if env is None else dict(env),
+        env=ambient_env() if env is None else dict(env),
     )
 
 

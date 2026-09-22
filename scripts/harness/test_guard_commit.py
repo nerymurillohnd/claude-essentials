@@ -8,13 +8,19 @@ because `.claude/settings.json` still names the shim's path until step 8.
 
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING, Final
 
 import pytest
 
 from scripts.common.errors import ExitCode
-from scripts.harness.conftest import BASH_BINARIES, bash_payload, decision, reason, run_hook
+from scripts.harness.conftest import (
+    BASH_BINARIES,
+    ambient_env,
+    bash_payload,
+    decision,
+    reason,
+    run_hook,
+)
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -44,7 +50,7 @@ def _env(lint_cmd: str) -> dict[str, str]:
     Returns:
         This process's environment with the seam set.
     """
-    return {**os.environ, "GUARD_COMMIT_LINT_CMD": lint_cmd}
+    return {**ambient_env(), "GUARD_COMMIT_LINT_CMD": lint_cmd}
 
 
 @pytest.mark.slow

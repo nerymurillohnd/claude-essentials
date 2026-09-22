@@ -15,14 +15,20 @@ the versioning area's golden test for `Computed label: bump: none`.
 
 from __future__ import annotations
 
-import os
 import shlex
 from typing import TYPE_CHECKING, Final
 
 import pytest
 
 from scripts.common.errors import ExitCode
-from scripts.harness.conftest import BASH_BINARIES, bash_payload, commit_all, git_in, run_hook
+from scripts.harness.conftest import (
+    BASH_BINARIES,
+    ambient_env,
+    bash_payload,
+    commit_all,
+    git_in,
+    run_hook,
+)
 from scripts.versioning.check_versions import LABEL_PREFIX
 
 if TYPE_CHECKING:
@@ -50,7 +56,7 @@ def _env(lines: Sequence[str]) -> dict[str, str]:
     """
     quoted = " ".join(shlex.quote(line) for line in lines)
     return {
-        **os.environ,
+        **ambient_env(),
         "GUARD_PUSH_VERSIONS_CMD": f"printf '%s\\n' {quoted}",
         "GUARD_PUSH_CHECK_CMD": "true",
     }

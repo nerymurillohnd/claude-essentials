@@ -5,6 +5,23 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0030 — 2026-09-22 — Gate-plugin defects the suites could not see, found by live runs, reviews and audits
+
+- **Original pending record:** none; found and fixed in the same branch during the release review of ruff-quality 0.2.0 and shell-quality 0.2.0, and recorded here so each class keeps its guard.
+- **Resolved debt:** Five classes of defect that every unit suite missed because the suites call the handler directly:
+  1. A hook `if` of `Edit(P)` never matches the Write tool (live `claude -p --plugin-dir` run): a new file skipped the gate.
+  2. Suppression checks netted counts across a batched Edit, ignored widened markers and repeated copies, and failed open when jq could not read the file (code review, plugin audits, cross-checked verification).
+  3. The project tool search climbed above the project root and the TMPDIR state fallback trusted directories it did not own (security review).
+  4. Stop looped on configuration errors and on findings only the user could settle, and restarted on every later turn (audits).
+  5. Eval graders demanded fixes the pinned Ruff no longer reports by default (E711, E741) and used `file_exists` on scaffolded files (eval pilot).
+- **Resolution:** invariant H7 in `scripts/plugin_validation/hook_contract.py`; regression cases in `scripts/plugin_validation/suites/{ruff,shell}-quality/test-gate.sh` (79 and 63), each failing before its fix; the grader rules in `.claude/skills/marketplace-governance/references/plugin-eval-protocol.md`; the `if`-twin rule in `.claude/rules/plugin-authoring.md`.
+- **Positive verification:** `make check` exits 0 with both suites passing under `bash` and `/bin/bash` (2026-09-22).
+- **Negative verification:** H7 reports 9 findings on the pre-fix `hooks.json`; each new suite case failed against the pre-fix handler (recorded per commit: a08b366, efbf5b1, fcb958e).
+- **Owner or responsible area:** `plugins/ruff-quality/hooks/`, `plugins/shell-quality/hooks/`, `scripts/plugin_validation/`
+- **Residual risk / follow-up:** The Bash guard stays textual (a write through `cp`, `mv` or a script is not caught); both READMEs state it under Limitations.
+- **Related records:** [ADR-0007](../decisions/adr-0007-gates-ship-as-plugin-hooks.md), [DEBT-0029](#debt-0029--2026-09-22--shipped-plugin-python-is-validated-only-advisorily)
+- **Superseded by:** none
+
 ### DEBT-0029 — 2026-09-22 — Shipped plugin Python is validated only advisorily
 
 - **Original pending record:** DEBT-0029 in `pending-debt.md` (2026-09-21): `ccdocs.py`, the only Python any plugin ships, was outside `make lint` and `make types`; its smoke run printed `DEBT-0029 advisory:` lines and never failed; the README declared a 3.7 floor nothing exercised.
