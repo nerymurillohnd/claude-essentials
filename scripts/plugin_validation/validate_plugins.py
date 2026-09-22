@@ -25,7 +25,13 @@ from scripts.common.errors import (
     MissingPathError,
     format_finding,
 )
-from scripts.common.plugins import plugin_ids, repo_root, tracked_files
+from scripts.common.plugins import (
+    PLUGINS_DIRNAME,
+    plugin_ids,
+    repo_root,
+    tracked_files,
+    working_files,
+)
 from scripts.github import labels
 from scripts.github.issue_forms import validate_forms
 from scripts.github.repo_metadata import collect as repo_metadata_collect
@@ -69,6 +75,7 @@ PLUGIN_INVARIANTS: Final[tuple[tuple[str, str, str], ...]] = (
     ),
     ("P4", "no `{{placeholder}}` survives in a shipped file", "template leftovers"),
     ("P5", "no top-level `bin/` in a plugin", "an undeclared runtime"),
+    ("P6", "no untracked file under the plugin", "a green run that never saw the file"),
     ("C1", "CHANGELOG footer links use one style, `tree/` then `compare/`", "mixed link styles"),
     ("C2", "a released section still reads as it did at its tag", "DEBT-0009: rewritten history"),
     (
@@ -402,6 +409,30 @@ def _skill_facts(root: Path, plugin_id: str) -> tuple[list[str], list[str], list
     return grants, compatibilities, modules
 
 
+def check_untracked(root: Path, plugin_id: str) -> list[Finding]:
+    """Refuse a file under the plugin that git does not track (P6).
+
+    Every invariant reads the files git tracks, which is what the plugin ships, so a new file
+    that was never added is invisible to all of them: `make check` passes locally and CI,
+    which sees the committed file, fails. Measured 2026-09-22: an eval scaffold's `git init`
+    passed R5 locally and failed it in CI.
+
+    Args:
+        root: The repository root.
+        plugin_id: The plugin directory name.
+
+    Returns:
+        One error per untracked, non-ignored file.
+    """
+    pattern = f"{PLUGINS_DIRNAME}/{plugin_id}/*"
+    tracked = set(tracked_files(root, pattern))
+    return [
+        Finding("P6", rel, "untracked, so every check here skips it; `git add` it or delete it")
+        for rel in working_files(root, pattern)
+        if rel not in tracked
+    ]
+
+
 def check_plugin(root: Path, plugin_id: str, known: Sequence[str]) -> list[Finding]:
     """Run every per-plugin invariant over one plugin.
 
@@ -417,6 +448,7 @@ def check_plugin(root: Path, plugin_id: str, known: Sequence[str]) -> list[Findi
         *kind.check_license(root, plugin_id),
         *kind.check_placeholders(root, plugin_id),
         *kind.check_no_bin(root, plugin_id),
+        *check_untracked(root, plugin_id),
         *check_changelog(root, plugin_id),
         *check_frontmatter(root, plugin_id, known),
         *check_hooks(root, plugin_id),

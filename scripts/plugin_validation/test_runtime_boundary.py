@@ -14,6 +14,7 @@ from scripts.plugin_validation.runtime_boundary import (
     imported_modules,
     invoked_binaries,
     python_commands,
+    runtime_scripts,
     shell_commands,
     shipped_scripts,
 )
@@ -132,3 +133,15 @@ def test_the_binaries_each_plugin_invokes_are_the_ones_its_readme_lists() -> Non
     root = repo_root()
     assert invoked_binaries(root, "verify-completion") == {"bash", "jq"}
     assert invoked_binaries(root, "agent-self-knowledge") == {"curl", "python3"}
+
+
+def test_an_eval_scaffold_is_no_requirement_of_the_plugin() -> None:
+    """A scaffold's `git init` is the maintainer's to run, not the user's (R5, R6 inputs).
+
+    verify-completion's case 02 scaffolds a git repository; `git` must not enter the set of
+    binaries its README has to list, and the scaffold must still count as shipped for B1.
+    """
+    root = repo_root()
+    scaffold = "plugins/verify-completion/evals/02-verdict-is-not-permission/scaffold.sh"
+    assert scaffold in shipped_scripts(root, "verify-completion")
+    assert scaffold not in runtime_scripts(root, "verify-completion")

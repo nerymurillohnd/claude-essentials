@@ -33,6 +33,7 @@ from scripts.plugin_validation.hook_contract import (
 )
 from scripts.plugin_validation.kind import agent_names, skill_names
 from scripts.plugin_validation.script_env import COMMENT, SINGLE_QUOTED
+from scripts.versioning.version_plan import is_exempt
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -221,6 +222,27 @@ def shipped_scripts(root: Path, plugin_id: str) -> list[str]:
     ]
 
 
+def runtime_scripts(root: Path, plugin_id: str) -> list[str]:
+    """List the shipped scripts Claude Code can run for a user.
+
+    An eval scaffold ships inside `evals/` but only `claude plugin eval` runs it, on the
+    maintainer's machine, so what it invokes or reads is no requirement of the plugin. The
+    exempt rule is the versioning one (`EXEMPT_FILE`), so "runtime" means the same thing here
+    as it does for a version bump.
+
+    Args:
+        root: The repository root.
+        plugin_id: The plugin directory name.
+
+    Returns:
+        Sorted repository-relative paths.
+    """
+    prefix = f"{PLUGINS_DIRNAME}/{plugin_id}/"
+    return [
+        rel for rel in shipped_scripts(root, plugin_id) if not is_exempt(rel.removeprefix(prefix))
+    ]
+
+
 def check_shebangs(root: Path, plugin_id: str) -> list[Finding]:
     """Check every shipped script's shebang and exec bit (B1).
 
@@ -405,7 +427,7 @@ def invoked_binaries(root: Path, plugin_id: str) -> set[str]:
         grants actually run.
     """
     used: set[str] = set()
-    for rel in shipped_scripts(root, plugin_id):
+    for rel in runtime_scripts(root, plugin_id):
         text = (root / rel).read_text(encoding="utf-8")
         used |= shell_commands(text) if rel.endswith(SHELL_SUFFIX) else python_commands(text)
     used |= {_first_word(command) for _, command in hook_commands(root, plugin_id)}
@@ -436,7 +458,7 @@ def env_var_sources(root: Path, plugin_id: str) -> Iterable[str]:
     Yields:
         Repository-relative paths of shipped shell and Python scripts.
     """
-    yield from shipped_scripts(root, plugin_id)
+    yield from runtime_scripts(root, plugin_id)
 
 
 def collect(root: Path, plugin_id: str) -> list[Finding]:

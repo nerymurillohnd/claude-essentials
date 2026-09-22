@@ -5,6 +5,17 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0034 — 2026-09-22 — An eval scaffold counted as a plugin requirement, and a local green never saw it
+
+- **Original pending record:** none; CI on `c5027fb` failed `test_the_binaries_each_plugin_invokes_are_the_ones_its_readme_lists` with `{'bash', 'git', 'jq'} != {'bash', 'jq'}` after `make check` had exited 0 locally.
+- **Resolved debt:** Two defects:
+  1. `invoked_binaries` (R5) and `env_var_sources` (R6) read every script under the plugin, `evals/` included, so verify-completion's case 02 scaffold (`git init`) made `git` a requirement users would have to install. Only `claude plugin eval` runs a scaffold, on the maintainer's machine.
+  2. Every invariant reads the files git tracks, so the scaffold, still untracked when `make check` ran, was invisible locally; CI saw the committed file.
+- **Resolution:** `runtime_scripts` in `scripts/plugin_validation/runtime_boundary.py` drops the paths `EXEMPT_FILE` exempts, the same rule that decides a version bump, and feeds R5 and R6; B1 still checks every shipped script. New invariant P6 (`check_untracked` in `validate_plugins.py`) fails on any untracked, non-ignored file under a plugin. Declaring `git` in the README was rejected: it would be false for users.
+- **Positive verification:** `make validate` passes; `test_an_eval_scaffold_is_no_requirement_of_the_plugin` and `test_an_untracked_file_fires_p6_until_it_is_added` pass.
+- **Negative verification:** the CI failure itself for (1); an untracked `plugins/verify-completion/evals/zz-untracked.md` makes `make validate` print P6 and fail, and removing it passes.
+- **Owner or responsible area:** `scripts/plugin_validation/`
+
 ### DEBT-0033 — 2026-09-22 — Release-review findings on all five plugins, each class closed with a guard
 
 - **Original pending record:** none; found by the release reviews of agent-self-knowledge 0.2.0, block-no-verify 0.1.3, ruff-quality 0.2.0, shell-quality 0.2.0 and verify-completion 0.1.2 on this branch.

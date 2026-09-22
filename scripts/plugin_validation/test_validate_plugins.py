@@ -18,7 +18,7 @@ from scripts.common.jsontext import is_json_object
 from scripts.common.plugins import load_json, repo_root
 from scripts.github import labels
 from scripts.github.labels import LABELS_PATH
-from scripts.plugin_validation.conftest import PLUGIN_ID, RELEASE_DATE, SKILL_ID, VERSION
+from scripts.plugin_validation.conftest import PLUGIN_ID, RELEASE_DATE, SKILL_ID, VERSION, track
 from scripts.plugin_validation.validate_plugins import (
     DEFERRED_INVARIANTS,
     GITHUB_INVARIANTS,
@@ -295,6 +295,20 @@ def restore(root: Path, snapshot: dict[str, str]) -> None:
         _ = (root / rel).write_text(text, encoding="utf-8")
 
 
+def test_an_untracked_file_fires_p6_until_it_is_added(scratch: Path) -> None:
+    """A file git does not track is invisible to every other check, so P6 names it.
+
+    Args:
+        scratch: The scratch repository root.
+    """
+    extra = plugin_path(scratch, "evals", "01-fires", "scaffold.sh")
+    text = "#!/usr/bin/env bash\ngit init -q\n"
+    _ = extra.write_text(text, encoding="utf-8")
+    assert "P6" in ids_for(scratch)
+    track(scratch, extra, text, executable=True)
+    assert "P6" not in ids_for(scratch)
+
+
 def test_registry_lists_every_family() -> None:
     """`--list` prints every ID this repository speaks with."""
     printed = {line.split(maxsplit=1)[0] for line in registry_lines()}
@@ -302,7 +316,7 @@ def test_registry_lists_every_family() -> None:
         ident for ident, _, _ in (*PLUGIN_INVARIANTS, *GITHUB_INVARIANTS, *DEFERRED_INVARIANTS)
     }
     assert expected <= printed
-    for family, count in (("M", 10), ("P", 5), ("S", 6), ("H", 6), ("R", 14), ("E", 4), ("V", 6)):
+    for family, count in (("M", 10), ("P", 6), ("S", 6), ("H", 6), ("R", 14), ("E", 4), ("V", 6)):
         assert (
             sum(1 for ident in printed if ident.startswith(family) and ident[1:].isdigit()) == count
         )
