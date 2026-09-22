@@ -20,7 +20,7 @@ both together: the extractor suite fails when a copy differs.
 
 ```bash
 # from the marketplace root
-claude plugin eval plugins/evidence-reader --ablation with-without --allow-tools Bash Write Edit --no-publish --max-cost-usd 12
+claude plugin eval plugins/evidence-reader --ablation with-without --allow-tools Bash Write Edit --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
 ```
 
 ## Why the cases grant the tools they grant

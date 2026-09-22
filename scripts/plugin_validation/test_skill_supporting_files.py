@@ -54,3 +54,19 @@ def test_a_supporting_file_does_not_use_the_skill_dir_variable(rel: str) -> None
     assert SKILL_DIR_VARIABLE not in text, (
         f"{rel} uses {SKILL_DIR_VARIABLE}, which only SKILL.md resolves"
     )
+
+
+COMPONENT_DEPTH: Final = 3
+"""Slashes in `plugins/<id>/skills/<entry>`: a file at this depth sits where a folder goes."""
+
+
+def test_component_folders_hold_only_components() -> None:
+    """A stray file beside the skill folders ships to every user; found in evidence-reader."""
+    root = repo_root()
+    skills = working_files(root, f"{PLUGINS_DIRNAME}/*/skills/*")
+    agents = working_files(root, f"{PLUGINS_DIRNAME}/*/agents/*")
+    strays = [rel for rel in skills if rel.count("/") == COMPONENT_DEPTH]
+    strays += [
+        rel for rel in agents if rel.count("/") == COMPONENT_DEPTH and not rel.endswith(".md")
+    ]
+    assert strays == [], f"not a skill folder or agent file: {strays}"

@@ -171,6 +171,12 @@ if [ ! -e "${CLAUDE_PLUGIN_DATA}/evidence-reader-gate/x8.handback" ]; then
 else
   flunk "foreign agent handback not stored" "state written for a foreign agent"
 fi
+run_gate handback "${tmp}/h8.json" CLAUDE_PLUGIN_DATA="${tmp}/foreign-data"
+if [ ! -e "${tmp}/foreign-data" ]; then
+  pass "foreign agent handback creates no state directory"
+else
+  flunk "foreign agent handback creates no state directory" "created ${tmp}/foreign-data"
+fi
 
 # 9. Large adversarial report (about 1 MB) stays fast. The report goes to jq through a file:
 # Linux caps one argument at 128 KB, so --arg would leave an empty payload on CI.

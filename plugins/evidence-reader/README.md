@@ -79,7 +79,7 @@ plugin's install directory (under `~/.claude/plugins/`), because your shell does
 | | Effect |
 | --- | --- |
 | **Does** | Registers four skills, three subagents and two hooks (`SubagentStop`, `PreToolUse` on `SubagentHandback`) in Claude Code's plugin state, and adds an `enforcement` row to `/config` (default `block`). |
-| **Does not** | Touch your files, repositories, settings files or CLAUDE.md. Nothing runs until Claude reads a file with the plugin. |
+| **Does not** | Touch your files, repositories, settings files or CLAUDE.md. The skills and agents run only when Claude reads files with them; the `PreToolUse` hook runs on every `SubagentHandback` in a session and exits at once, writing nothing, for any agent that is not one of the three. |
 
 ### Update, disable, or remove
 
@@ -92,7 +92,9 @@ plugin's install directory (under `~/.claude/plugins/`), because your shell does
 In Cowork, use **Update** on the marketplace, and **Uninstall** on the plugin
 under **Customize → Plugins**. Uninstalling removes the hooks at once.
 Uninstalling from the last scope also deletes the plugin's data directory, which
-holds only the gate's retry counters and report copies. Converted images and crops
+holds only the gate's retry counters and report copies. When Claude Code sets no data
+directory, the gate keeps them in `$TMPDIR/evidence-reader-gate-<uid>` instead, which
+uninstalling does not remove; each file there is deleted when its agent finishes. Converted images and crops
 live in private folders in your system temp folder (`$TMPDIR/evidence-reader-*`),
 one per conversion, and are removed by the operating system's normal temp cleanup.
 
@@ -200,7 +202,7 @@ make check
 claude plugin validate plugins/evidence-reader --strict
 scripts/plugin_validation/suites/evidence-reader/test-hooks.sh
 scripts/plugin_validation/suites/evidence-reader/test-scripts.sh
-claude plugin eval plugins/evidence-reader --ablation with-without --allow-tools Bash Write Edit --no-publish --max-cost-usd 12
+claude plugin eval plugins/evidence-reader --ablation with-without --allow-tools Bash Write Edit --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
 ```
 
 `make check` runs both suites under `bash` and under `/bin/bash`, and each suite runs
@@ -216,7 +218,7 @@ also checks that an older interpreter gets each extractor's version message and 
 
 | Surface | Status | Last verified | Notes |
 | --- | --- | --- | --- |
-| Claude Code | 🧪 Not tested | 2026-09-21, Claude Code 2.1.278, local checkout only | Live `claude -p --plugin-dir` runs: the three agents load, `document-reader` preloads both skills, resolves its reference files and scripts, reads a 45-page PDF in 20-page chunks and returns the report template; the report gate blocks an incomplete report and the agent completes it. Extractor suite (101 cases) and hook suite (21 cases) pass on bash 3.2 and 5.x with Python 3.14; Python 3.9 gets the version message and exit 5 (measured 2026-09-22). Not yet installed from the remote marketplace |
+| Claude Code | 🧪 Not tested | 2026-09-21, Claude Code 2.1.278, local checkout only | Live `claude -p --plugin-dir` runs: the three agents load, `document-reader` preloads both skills, resolves its reference files and scripts, reads a 45-page PDF in 20-page chunks and returns the report template; the report gate blocks an incomplete report and the agent completes it. Extractor suite (101 cases) and hook suite (22 cases) pass on bash 3.2 and 5.x with Python 3.14; Python 3.9 gets the version message and exit 5 (measured 2026-09-22). Not yet installed from the remote marketplace |
 | Claude Cowork | 🧪 Not tested | — | Skills and agents should load; extractors need `python3` and the optional tools in the sandbox; hooks need `bash` and `jq` there |
 | Claude Chat (web, desktop) | ❌ Not supported | — | Plugins aren't used in Chat. |
 

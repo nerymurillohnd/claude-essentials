@@ -375,7 +375,32 @@ def check_badges(root: Path, plugin_id: str, rel: str, text: str) -> list[Findin
         )
     findings.extend(_kind_badge_findings(root, plugin_id, rel, found))
     findings.extend(_surface_badge_findings(rel, found, compatibility_rows(text)))
+    findings.extend(_catalog_badge_findings(root, rel, found))
     return findings
+
+
+def _catalog_badge_findings(
+    root: Path, rel: str, found: Sequence[tuple[str, str]]
+) -> list[Finding]:
+    """Check that every badge is one the master template's badge catalog lists (R2).
+
+    Args:
+        root: The repository root.
+        rel: The README's repository-relative path.
+        found: The badges read from the row.
+
+    Returns:
+        One finding per badge the catalog does not list.
+    """
+    template = root / TEMPLATE_MASTER
+    if not template.is_file():
+        return []
+    catalog = {match["alt"] for match in BADGE.finditer(template.read_text(encoding="utf-8"))}
+    return [
+        Finding("R2", rel, f"the `{alt}` badge is not in the master template's badge catalog")
+        for alt, _ in found
+        if alt not in catalog
+    ]
 
 
 def _kind_badge_findings(

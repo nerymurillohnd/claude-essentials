@@ -1,4 +1,4 @@
-"""Which environment variables a shipped script reads, and the `*_TEST_BASH` convention.
+"""Which variables a shipped script reads; the `*_TEST_BASH` and `BNV_TEST_PYTHON` conventions.
 
 R6 says a plugin's README names every variable its own scripts read. Finding that set means
 reading the scripts the way the interpreter does:

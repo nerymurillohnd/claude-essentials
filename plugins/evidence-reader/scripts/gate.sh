@@ -64,6 +64,16 @@ if [ -z "${payload}" ] || ! printf '%s' "${payload}" | jq -e 'type == "object"' 
   exit 0
 fi
 
+# PreToolUse on SubagentHandback fires for every subagent in the session: leave before
+# touching the disk unless the report is one of our own agents'.
+if [ "${mode}" = handback ]; then
+  handback_type=$(printf '%s' "${payload}" | jq -r '.agent_type // empty' 2>/dev/null || true)
+  case "${handback_type}" in
+  evidence-reader:document-reader | evidence-reader:tabular-auditor | evidence-reader:image-inspector) ;;
+  *) exit 0 ;;
+  esac
+fi
+
 agent_id=$(printf '%s' "${payload}" | jq -r '.agent_id // empty' 2>/dev/null || true)
 safe_id=$(printf '%s' "${agent_id}" | tr -c 'A-Za-z0-9_.-' '_')
 
@@ -76,13 +86,6 @@ fi
 
 case "${mode}" in
 handback)
-  # PreToolUse fires for every subagent in the session: keep only our own agents'
-  # reports, never another agent's.
-  handback_type=$(printf '%s' "${payload}" | jq -r '.agent_type // empty' 2>/dev/null || true)
-  case "${handback_type}" in
-  evidence-reader:document-reader | evidence-reader:tabular-auditor | evidence-reader:image-inspector) ;;
-  *) exit 0 ;;
-  esac
   if [ -n "${safe_id}" ] && [ -n "${STATE_DIR}" ]; then
     printf '%s' "${payload}" | jq -r '.tool_input.message // empty' >"${STATE_DIR}/${safe_id}.handback" 2>/dev/null || true
   fi

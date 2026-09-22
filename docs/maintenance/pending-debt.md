@@ -5,6 +5,34 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0041 — evidence-reader shipped without a `/plugin-design` checklist
+
+- **Status:** Pending (accepted by the maintainer)
+- **Category:** governance
+- **Evidence:**
+  - **Confirmed facts:** evidence-reader was built outside this repository and moved into `plugins/evidence-reader/` complete on 2026-09-22, so `/plugin-design` never ran and `.claude/state/checklists/plugin-design--evidence-reader.json` does not exist. `repo-auditor` on `1c347b6` failed N1 and N2 for it. Asked to choose between running `/plugin-design` in full and a derived spec with a waiver, the maintainer chose "Spec derivado + exención" (2026-09-22). The derived spec is [`2026-09-22-evidence-reader-design.md`](../superpowers/specs/2026-09-22-evidence-reader-design.md).
+  - **Inferences:** No component or requirement decision went through the design checklist's research and approval steps before the code existed; the release review and three completion verifiers reviewed it afterwards instead.
+  - **Open questions:** None.
+- **Impact / risk:** A design choice that `/plugin-design`'s research would have challenged may stand unexamined.
+- **Owner or responsible area:** `plugins/evidence-reader/`, `docs/superpowers/specs/`
+- **Next action:** Run `/plugin-design evidence-reader` before the next minor version, starting from the derived spec.
+- **Review condition:** Close when `plugin-design--evidence-reader.json` is complete for a later version.
+- **Related records:** DEBT-0040, DEBT-0042
+
+### DEBT-0042 — evidence-reader 0.1.0 shipped with its eval suite never run
+
+- **Status:** Pending (accepted by the maintainer)
+- **Category:** testing
+- **Evidence:**
+  - **Confirmed facts:** `.claude/rules/plugin-authoring.md` requires `claude plugin eval` in the same branch after a change to a skill's instructions or `when_to_use`; evidence-reader's changed on `feat/evidence-reader`. The maintainer skipped the paid run for this PR ("autoriza saltarlo", 2026-09-22). The five cases in `plugins/evidence-reader/evals/` have no recorded result.
+  - **Inferences:** A grader defect like the one case 05 had (it asserted on `Agent` without granting it, fixed on this branch) can hide in cases that never ran.
+  - **Open questions:** None.
+- **Impact / risk:** The README's behavioral claims (delegation, full coverage, no invented values, injection handling) are covered by the extractor and hook suites but not measured end to end.
+- **Owner or responsible area:** `plugins/evidence-reader/evals/`
+- **Next action:** Run the pinned command in `plugins/evidence-reader/evals/README.md` and record the result in `docs/audits/`.
+- **Review condition:** Close when every case has a dated result on the current version.
+- **Related records:** DEBT-0035, DEBT-0041
+
 ### DEBT-0039 — H2 checks a `SubagentStop` matcher against tool names, but `SubagentStop` matches agent types
 
 - **Status:** Pending
