@@ -7,7 +7,7 @@
     },
     {
       "id": "numbers",
-      "text": "README eval table, test counts, timings, and Compatibility dates re-measured in this branch when the skill description, evals, or scripts changed; CHANGELOG matches what ships"
+      "text": "Eval numbers (PR body or docs/audits/, never the README), test counts, timings, and Compatibility dates re-measured in this branch when the skill description, evals, or scripts changed; CHANGELOG matches what ships"
     },
     {
       "id": "audit",
@@ -40,7 +40,7 @@
     {
       "id": "clean",
       "text": "Working tree clean and the repo gate passes on main",
-      "verify": "[ -z \"$(git status --porcelain)\" ] || { git status --short; exit 1; }; npm run validate --silent"
+      "verify": "[ -z \"$(git status --porcelain)\" ] || { git status --short; exit 1; }; make -s validate"
     }
   ]
 }

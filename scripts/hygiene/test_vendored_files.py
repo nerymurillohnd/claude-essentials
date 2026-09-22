@@ -23,7 +23,7 @@ from scripts.lint.json_files import is_excluded
 if TYPE_CHECKING:
     from pathlib import Path
 
-VENDORED_DIR: Final = "schemas/github"
+VENDORED_DIR: Final = ".github/schemas"
 """Where the copies live until step 9 moves them to `.github/schemas`."""
 
 HASHES: Final[dict[str, str]] = {

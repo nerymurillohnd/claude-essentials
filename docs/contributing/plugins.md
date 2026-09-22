@@ -41,7 +41,7 @@ such fields
 plugin entries). Declare them in `plugin.json` under `metadata.marketplace`,
 the free-form object Claude Code never reads
 ([plugins-reference](https://code.claude.com/docs/en/plugins-reference),
-plugin manifest schema), and `npm run generate` copies them into the plugin's
+plugin manifest schema), and `make generate` copies them into the plugin's
 entry, after `name`, `source`, and `description`:
 
 ```json
@@ -64,13 +64,13 @@ entry, after `name`, `source`, and `description`:
   eight. They are the catalog's search terms; overlap with `keywords` is
   expected (the docs define both as discovery tags), so pick the terms a user
   would type to find the plugin.
-- `npm run validate` fails when a catalog entry differs from what
-  `npm run generate` would write, so edit `plugin.json` and regenerate; never
+- `make validate` fails when a catalog entry differs from what
+  `make generate` would write, so edit `plugin.json` and regenerate; never
   edit the entry.
 - Editing `metadata` needs no version bump: it's in the exempt manifest fields
   ([versioning.md](versioning.md)).
 
-Don't declare a `kind`. `npm run validate` derives it from what the plugin
+Don't declare a `kind`. `make validate` derives it from what the plugin
 ships, and it must match the `**Kind:**` line in the plugin's README:
 exactly one `skills/<name>/SKILL.md` and nothing else is `skill-only`, exactly
 one `agents/<name>.md` and nothing else is `agent-only`, and anything else is
@@ -88,10 +88,14 @@ component paths in `plugin.json` makes a plugin a bundle.
   share one 1,536-character budget. Both are plain YAML scalars: no quoted
   trigger phrases, and no colon followed by a space, which a YAML parser reads
   as a nested mapping even though `claude plugin validate --strict` accepts it.
-  `scripts/lib/skill-frontmatter.test.mjs` is the gate.
+  `scripts/plugin_validation/test_frontmatter.py` is the gate.
 - Agents: `agents/<agent-name>.md` — see [sub-agents.md](https://code.claude.com/docs/en/sub-agents.md)
   for frontmatter fields (`name`, `description`, `tools`, `model`, `color`, ...).
 - Commands, hooks, MCP servers: see [plugins.md](https://code.claude.com/docs/en/plugins.md).
+- A quality gate ships as plugin hooks: `hooks/hooks.json` with its handler beside it
+  (`hooks/<name>.sh`), running only tools the user already installed and never `uv`/`uvx`
+  ([ADR-0007](../decisions/adr-0007-gates-ship-as-plugin-hooks.md)). Its test suite goes in
+  `scripts/plugin_validation/suites/<id>/`, never inside the plugin.
 
 Fill in the plugin's `README.md` (already copied from the shape). It follows the
 [master plugin README](../../templates/plugin-README-reusable-template.md):
@@ -113,18 +117,18 @@ listed in the master template's badge catalog; add a new one there first.
 ## 4. Regenerate and validate the catalog
 
 ```bash
-npm run generate   # rebuilds .claude-plugin/marketplace.json from plugins/*
-npm run validate   # schemas, README contract, and the root README catalog row
-npm run check       # everything CI runs
+make generate   # rebuilds .claude-plugin/marketplace.json from plugins/*
+make validate   # schemas, README contract, and the root README catalog row
+make check       # everything CI runs
 ```
 
-`npm run validate` fails when a plugin README drifts from the template (missing,
+`make validate` fails when a plugin README drifts from the template (missing,
 unknown, or reordered sections; leftover `{{placeholders}}`; more than one alert
 per section; code blocks without a language; badges outside the catalog; missing
 Claude Code or Cowork install steps) or when the root catalog doesn't list every
 plugin exactly once with matching kind and statuses.
 
-`npm run generate` is what actually adds your plugin to the marketplace
+`make generate` is what actually adds your plugin to the marketplace
 catalog — don't hand-edit the `plugins` array in `.claude-plugin/marketplace.json`,
 it will just get overwritten.
 
@@ -144,7 +148,7 @@ requires a `## [X.Y.Z] - YYYY-MM-DD` entry matching `version`.
 
 ## 6. Open a PR
 
-Fill in the pull request template. CI runs `npm run check` and
+Fill in the pull request template. CI runs `make check` and
 `version-check`, and both must pass before merge. After merge, the new
 version reaches users through the marketplace (`/plugin update` or
 auto-update), and the `Tag plugin versions` workflow tags `<name>--v<version>`

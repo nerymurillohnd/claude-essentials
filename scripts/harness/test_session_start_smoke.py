@@ -54,6 +54,10 @@ def test_a_startup_produces_a_snapshot(repo: Path, hooks: Path, binary: str) -> 
     context = _context(completed.stdout)
     assert context.strip()
     assert "Git" in context
+    toolchain = context.split("## Toolchain", 1)[1].split("\n## ", 1)[0].lower()
+    assert "(.venv)" in toolchain, toolchain
+    for retired in ("node ", "npm", "biome"):
+        assert retired not in toolchain, retired
 
 
 @pytest.mark.slow

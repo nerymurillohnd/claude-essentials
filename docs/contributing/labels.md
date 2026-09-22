@@ -22,7 +22,7 @@ Resolution isn't a label. Close with GitHub's native reason (*completed*,
 
 ## How a PR's `bump:` label is computed
 
-The triage bot runs the same `planVersions` rules as `npm run check:versions`
+The triage bot runs the same `version_plan` rules as `make versions`
 ([versioning.md](versioning.md)). The label reflects the highest-impact change
 across all touched plugins: `major` > `minor` > `patch` > `prerelease` >
 `initial`. `none` means no plugin version changes. A PR that violates the
@@ -32,10 +32,10 @@ rules gets no `bump:` label, and its `version-check` job fails.
 
 1. Edit `.github/labels.json`. To rename a label while keeping it on existing
    issues, add the old name to `aliases`.
-2. Run `npm run check`, which validates names, colors, lengths, and every
+2. Run `make check`, which validates names, colors, lengths, and every
    label automation depends on.
-3. Run `npm run labels:sync` to preview the changes against GitHub. It's a dry
+3. Run `.venv/bin/python -m scripts.github.sync_labels` to preview the changes against GitHub. It's a dry
    run. Merging to `main` applies them through the `Labels` workflow.
 4. Deleting labels that are no longer in the taxonomy is manual and must be
-   reviewed first: run `npm run labels:sync -- --prune`, then
-   `npm run labels:sync -- --apply --prune`.
+   reviewed first: run `.venv/bin/python -m scripts.github.sync_labels --prune`, then
+   `.venv/bin/python -m scripts.github.sync_labels --apply --prune`.

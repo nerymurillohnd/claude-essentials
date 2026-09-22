@@ -16,15 +16,15 @@ The `check` and `version-check` CI jobs must be green before a pull request
 can merge into `main`, and `main` can't be deleted or force-pushed (repository
 rulesets).
 
-Local prerequisites: Node 24.21.0 (`nvm use` reads `.nvmrc`), [typescript-language-server](https://github.com/typescript-language-server/typescript-language-server) on `PATH` for editor/Claude Code diagnostics, [ShellCheck](https://www.shellcheck.net/) and
-[shfmt](https://github.com/mvdan/sh) (`brew install shellcheck shfmt`), and the
+Local prerequisites: [uv](https://docs.astral.sh/uv/) (it installs the pinned Python and every
+tool from `uv.lock`, ShellCheck and shfmt included), GNU Make, `jq`, and the
 [Claude Code](https://code.claude.com/docs) CLI on `PATH`.
 
 ```bash
-npm install
-npm run check          # Biome, shell lint, type check, knip, unit tests, generate, validate — the CI gate
-npm run biome:fix      # apply safe Biome fixes before re-running check
-npm run check:versions  # plugin version-bump rules against origin/main
+make setup
+make check      # generate, lint, types, tests, validate, validate-cli — the CI gate
+make fix        # apply safe fixes (Ruff, shfmt, canonical JSON) before re-running check
+make versions   # plugin version-bump rules against the latest tags
 ```
 
 - Adding a plugin: [docs/contributing/plugins.md](docs/contributing/plugins.md).

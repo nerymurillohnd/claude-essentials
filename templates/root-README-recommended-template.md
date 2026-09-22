@@ -173,8 +173,8 @@ unpatched one, and never include secrets in any report.
 ## 🤝 Contributing
 
 ```bash
-npm install
-npm run check
+make setup
+make check
 ```
 
 Every change to what Claude loads bumps the plugin's `version` and adds a dated

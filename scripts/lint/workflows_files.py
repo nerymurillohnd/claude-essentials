@@ -175,7 +175,9 @@ def _zizmor(root: Path, paths: Sequence[str]) -> tuple[int, str]:
         ExecutableNotFoundError: If `.venv/bin/zizmor` is missing.
     """
     executable = tool_path(root, "zizmor")
-    args = ["--persona=auditor", "--format", "plain"]
+    # `--color never`: under a GitHub Actions environment zizmor forces ANSI colors even
+    # into a pipe, which broke the summary and finding parsers in CI (PR #19, 2026-09-22).
+    args = ["--persona=auditor", "--format", "plain", "--color", "never"]
     if _offline():
         args.append("--offline")
     completed = run(executable, [*args, *paths], cwd=root)

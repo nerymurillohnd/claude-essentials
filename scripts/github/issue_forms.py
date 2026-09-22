@@ -1,6 +1,6 @@
 """The issue forms: schema-valid, label-consistent, and carrying the generated dropdown (G1).
 
-GitHub publishes no schema for issue forms, so `schemas/github/` vendors SchemaStore's two,
+GitHub publishes no schema for issue forms, so `.github/schemas/` vendors SchemaStore's two,
 unmodified except for a `$comment` naming the source. This module is their only consumer: it
 parses each form with PyYAML into untyped data, narrows it to plain JSON values, and hands
 that to `jsonschema` with the draft the schema itself declares.
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 type JsonValue = str | int | float | bool | Mapping[str, JsonValue] | Sequence[JsonValue] | None
 """Exactly the shape `jsonschema` accepts as a schema and as an instance."""
 
-GITHUB_SCHEMAS_DIR: Final = "schemas/github"
+GITHUB_SCHEMAS_DIR: Final = ".github/schemas"
 """The one place schema paths are spelled; step 9 of the migration moves it to
 `.github/schemas` by changing this constant and nothing else."""
 

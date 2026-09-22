@@ -25,10 +25,10 @@ proposals ask for target surfaces, external requirements, and one request that
 should trigger the plugin and one that shouldn't. Those become its eval cases.
 
 Every form and `config.yml` is validated against the vendored GitHub schemas in
-`schemas/github/` by `npm run validate`.
+`.github/schemas/` by `make validate`.
 
 The **Affected plugin** dropdown is generated from `plugins/` by
-`npm run generate`. When an issue is opened, the triage bot adds the matching
+`make generate`. When an issue is opened, the triage bot adds the matching
 `plugin: <name>` label, or `area: catalog` for installation and catalog
 problems.
 

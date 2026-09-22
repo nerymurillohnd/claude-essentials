@@ -30,7 +30,7 @@ it identical to what is on disk. The distribution model is `ADR-0001`.
 - Verifies that each manifest `name` matches its directory.
 - Runs the repository-metadata checks: issue forms, labels, the Node version source, and the pinned CLI version.
 - Runs the README contract: plugin README sections and the root README catalog row.
-- This is `npm run validate`'s successor and the cheapest full check available. Run it alone after editing a single manifest.
+- This is `make validate`'s successor and the cheapest full check available. Run it alone after editing a single manifest.
 
 ## Tests
 

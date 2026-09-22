@@ -36,19 +36,8 @@ JSONC_PATTERNS: Final[tuple[str, ...]] = ("*.jsonc", "tsconfig*.json", "*/tsconf
 
 JSON_EXCLUDED: Final[tuple[str, ...]] = (
     # Vendored verbatim from SchemaStore and byte-pinned by X2: reformatting would break the
-    # hash and lose the "unmodified except one `$comment`" claim. Moves to
-    # `.github/schemas/*` at step 9, which is the only edit this constant then needs.
-    "schemas/github/*",
-    # Node-era files, each deleted at step 9. Excluded rather than rewritten so the deletion
-    # commit stays a deletion and this step's churn stays small.
-    "package.json",  # deleted at step 9
-    "package-lock.json",  # deleted at step 9
-    "biome.json",  # deleted at step 9
-    "knip.jsonc",  # deleted at step 9
-    "tsconfig.json",  # deleted at step 9
-    ".mcp.json",  # deleted at step 9
-    "schemas/claude-code/*",  # deleted at step 9
-    "schemas/*.schema.json",  # deleted at step 9
+    # hash and lose the "unmodified except one `$comment`" claim.
+    ".github/schemas/*",
 )
 """The one exclusion list. Everything else that parses as JSON is held to the canonical form."""
 

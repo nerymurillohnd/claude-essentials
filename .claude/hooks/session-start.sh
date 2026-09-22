@@ -39,7 +39,7 @@ warn() { warnings+=("$1"); }
 first_line() { head -n 1 | tr -d '\r'; }
 
 section_git() {
-  local status branch files count
+  local status branch files count path shown tick=$'\x60' # a Markdown code-span backtick
   echo "## Git"
   if ! status="$(git status --porcelain=v1 --branch 2>/dev/null)"; then
     echo "- git status failed"
@@ -53,36 +53,44 @@ section_git() {
   else
     count="$(wc -l <<<"${files}" | tr -d ' ')"
     echo "- ${count} uncommitted path(s):"
-    # shellcheck disable=SC2016 # literal backticks: markdown code spans
-    head -n 10 <<<"${files}" | sed 's/^/  - `/; s/$/`/'
+    shown=0
+    while IFS= read -r path && ((shown < 10)); do
+      printf '  - %s%s%s\n' "${tick}" "${path}" "${tick}"
+      shown=$((shown + 1))
+    done <<<"${files}"
     ((count > 10)) && echo "  - …and $((count - 10)) more"
   fi
 }
 
 version_of() { if command -v "$1" >/dev/null 2>&1; then "$@" 2>/dev/null | first_line; else echo MISSING; fi; }
 
+venv_tool() { if [[ -x ".venv/bin/$1" ]]; then ".venv/bin/$1" --version 2>/dev/null | first_line; else echo MISSING; fi; }
+
 section_toolchain() {
-  local biome="MISSING" node npm git gh jq curl
-  [[ -x node_modules/.bin/biome ]] && biome="$(node_modules/.bin/biome --version | first_line)"
-  node="$(version_of node --version)"
-  npm="$(version_of npm --version)"
+  local python uv ruff shellcheck shfmt git gh jq curl
+  python="$(venv_tool python)"
+  uv="$(version_of uv --version)"
+  ruff="$(venv_tool ruff)"
+  shellcheck=""
+  [[ -x .venv/bin/shellcheck ]] && shellcheck="$(.venv/bin/shellcheck --version 2>/dev/null | sed -n 's/^version: //p')"
+  shfmt="$(venv_tool shfmt)"
   git="$(version_of git --version)"
   gh="$(version_of gh --version)"
   jq="$(version_of jq --version)"
   curl="$(version_of curl --version)"
   echo "## Toolchain"
-  echo "- node ${node} | npm ${npm} | ${git} | ${gh}"
-  echo "- biome (local): ${biome#Version: }"
+  echo "- ${python} (.venv) | ${uv} | ${git} | ${gh}"
+  echo "- gate (.venv): ${ruff} | shellcheck ${shellcheck:-MISSING} | shfmt ${shfmt}"
   echo "- hook deps: bash ${BASH_VERSION} | ${jq} | ${curl%% (*}"
 }
 
 check_toolchain() {
-  local ci_node local_node
-  [[ -d node_modules ]] || warn "node_modules missing — run \`npm install\`"
-  ci_node="$(sed -nE 's/.*node-version:[[:space:]]*["'\'']?([0-9]+).*/\1/p' .github/workflows/ci.yml 2>/dev/null | first_line)"
-  local_node="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/')"
-  if [[ -n "${ci_node}" && -n "${local_node}" && "${ci_node}" != "${local_node}" ]]; then
-    warn "Node major mismatch: local ${local_node} vs CI ${ci_node}"
+  local pinned local_py
+  [[ -x .venv/bin/python ]] || warn ".venv missing — run \`make setup\`"
+  pinned="$(first_line <.python-version 2>/dev/null)"
+  local_py="$(.venv/bin/python -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")' 2>/dev/null)"
+  if [[ -n "${pinned}" && -n "${local_py}" && "${pinned}" != "${local_py}" ]]; then
+    warn "Python mismatch: .venv ${local_py} vs .python-version ${pinned} — run \`make setup\`"
   fi
 }
 
@@ -182,8 +190,8 @@ repo_validate_ok=""
 repo_validate_out=""
 official_report=""
 collect_catalog() {
-  if [[ -d node_modules ]]; then
-    if repo_validate_out="$(node scripts/validate-marketplace.mjs 2>&1)"; then repo_validate_ok=1; else repo_validate_ok=0; fi
+  if [[ -x .venv/bin/python ]]; then
+    if repo_validate_out="$(make -s validate 2>&1)"; then repo_validate_ok=1; else repo_validate_ok=0; fi
   fi
   official_report="$(claude plugin validate . --json 2>/dev/null)"
   jq -e . >/dev/null 2>&1 <<<"${official_report}" || official_report=""
@@ -192,9 +200,9 @@ collect_catalog() {
 section_catalog() {
   echo "## Catalog validation"
   if [[ -n "${repo_validate_ok}" ]]; then
-    if [[ "${repo_validate_ok}" == 1 ]]; then echo "- npm run validate: pass"; else
-      echo "- npm run validate: FAIL"
-      grep '^✗' <<<"${repo_validate_out}" | head -n 8 | sed 's/^/  /'
+    if [[ "${repo_validate_ok}" == 1 ]]; then echo "- make validate: pass"; else
+      echo "- make validate: FAIL"
+      tail -n 8 <<<"${repo_validate_out}" | sed 's/^/  /'
     fi
   fi
   if [[ -z "${official_report}" ]]; then

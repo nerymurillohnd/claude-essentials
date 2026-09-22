@@ -37,8 +37,6 @@ HOOK_TESTS: Final[Mapping[str, str]] = {
     "bash-stamp.sh": "test_bash_stamp.py",
     "checklist-gate.sh": "test_checklist_gate.py",
     "guard-commit.sh": "test_guard_commit.py",
-    # The step-8 migration shim; its behaviour is covered through the guard's own cases.
-    "guard-commit-biome.sh": "test_guard_commit.py",
     "guard-marketplace-catalog.sh": "test_guard_catalog.py",
     "guard-push.sh": "test_push_guard.py",
     "post-edit.sh": "test_post_edit.py",
@@ -51,7 +49,7 @@ HOOK_TESTS: Final[Mapping[str, str]] = {
 """Which test covers which hook. Two hooks may share one test; none may have none."""
 
 SHIM_MARKER: Final = "exec "
-"""How one hook hands over to another, which is what keeps the shim wired."""
+"""How one hook hands over to another: a hook reached only through `exec` still counts as wired."""
 
 
 def _hook_names(repo: Path) -> list[str]:

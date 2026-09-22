@@ -12,9 +12,9 @@ against a real fixture rather than read.
 | `SessionStart` | `session-start.sh` | Reports repository state, including a marketplace validation run |
 | `PreToolUse` | `guard-marketplace-catalog.sh` | Denies hand-edits to the generated `plugins` array |
 | `PreToolUse` | `bash-stamp.sh` | Records shell invocations for later evidence |
-| `PreToolUse` | `guard-commit-biome.sh` | Blocks a commit that skips the formatter gate |
+| `PreToolUse` | `guard-commit.sh` | Denies a `git commit` when `make lint-staged` fails |
 | `PreToolUse` | `guard-push.sh` | Denies a push to a branch the remote no longer has |
-| `PostToolUse` | `post-edit.sh` | Applies the shell and plugin gates to Claude's own edits |
+| `PostToolUse` | `post-edit.sh` | Reminds once per session that a plugin runtime change needs a version bump |
 | `SubagentStop` | `record-audit.sh` | Records the `repo-auditor` verdict per audited head |
 
 ## Ground rules

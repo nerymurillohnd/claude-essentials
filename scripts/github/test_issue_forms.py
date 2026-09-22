@@ -46,7 +46,7 @@ def test_every_form_is_found() -> None:
 
 @pytest.mark.slow
 def test_both_vendored_schemas_load() -> None:
-    """They are the only consumers of `schemas/github/`, through one constant."""
+    """They are the only consumers of `.github/schemas/`, through one constant."""
     root = repo_root()
     assert (root / GITHUB_SCHEMAS_DIR).is_dir()
     assert load_schema(root, FORMS_SCHEMA)

@@ -29,7 +29,7 @@ validate: $(PY) ## 50 catalog + plugin invariants (M P C S H R B W E G T Q X)
 	$(PY) -m scripts.plugin_validation.validate_plugins
 validate-cli: $(PY) ## 60 claude plugin validate --strict on marketplace + every plugin
 	$(PY) -m scripts.plugin_validation.validate_claude
-test-slow: $(PY) ## 70 process-spawning tests + plugin suites under bash and /bin/bash + plugin Python under its floor
+test-slow: $(PY) ## 70 process-spawning tests + plugin suites under bash and /bin/bash + advisory smoke run of shipped Python
 	$(PY) -m pytest -m slow
 	$(PY) -m scripts.plugin_validation.run_plugin_suites
 versions: $(PY) ## version-bump rules and route vs the latest tags / origin/main
@@ -38,7 +38,7 @@ fix: $(PY)     ## writer: ruff format, ruff check --fix (safe), shfmt -w, canoni
 	$(PY) -m ruff format $(PY_FILES)
 	$(PY) -m ruff check --fix $(PY_FILES)
 	$(PY) -m scripts.lint.lint_files --fix
-fix-file: $(PY) ## writer for one file (post-edit hook): make fix-file FILE=path
+fix-file: $(PY) ## writer for one file, on demand: make fix-file FILE=path
 	$(PY) -m scripts.lint.lint_files --fix --file "$(FILE)"
 clean: $(PY)   ## prune .claude/.cache/hooks stamps and stale state
 	$(PY) -m scripts.harness.inventory --clean --apply

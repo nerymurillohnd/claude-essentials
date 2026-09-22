@@ -1,7 +1,7 @@
 # Consistency matrix
 
 Check each row by opening the sources, not from memory. Rows marked *(CI)* are
-also enforced by `npm run validate`; still confirm them, because the validator
+also enforced by `make validate`; still confirm them, because the validator
 only runs when someone runs it.
 
 ## Identity
@@ -55,7 +55,7 @@ only runs when someone runs it.
 | Surface | Check |
 | --- | --- |
 | Root README catalog | Row present, sorted, wording current *(CI: structure)* |
-| `marketplace.json` | Regenerated (`npm run generate` leaves no diff) *(CI)* |
+| `marketplace.json` | Regenerated (`make generate` leaves no diff) *(CI)* |
 | Issue forms | "Affected plugin" dropdown lists the plugin *(CI)* |
 | Labels | `plugin: <id>` exists on GitHub after the Labels workflow runs (`gh label list`) |
 | Tags | After merge: `git ls-remote --tags origin '<id>--v*'` shows the new version |

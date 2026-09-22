@@ -46,8 +46,8 @@ EXEMPT_PATHS: Final[tuple[str, ...]] = ("scripts/*/test_*.py",)
 Measured 2026-09-21: five occurrences, each one the check itself — a guard's deny text
 asserted *not* to name `.mjs` or `npm run`, a fixture seeding `npx` so the runtime-boundary
 validator rejects it, a parametrised example of the `npm run validate` a checklist still
-carries until step 10, and a docstring recording why the post-edit hook's Biome branch is not
-covered. A sweep that flagged those would make the checks undocumentable.
+carries until step 10, and a test pinning that the post-edit hook calls no Biome or other
+writer. A sweep that flagged those would make the checks undocumentable.
 """
 
 PENDING_PATHS: Final[tuple[tuple[str, str], ...]] = (

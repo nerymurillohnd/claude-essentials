@@ -5,7 +5,7 @@ so a quoting bug or an unset variable reaches the maintainer as a hook that sile
 nothing. ShellCheck reads `.shellcheckrc` (the repository policy, Q2's floor) and shfmt reads
 `.editorconfig`, so the editor, this gate and CI agree by construction.
 
-Discovery matches `post-edit.sh`: a file counts as shell when its name ends in `.sh` or its
+Discovery: a file counts as shell when its name ends in `.sh` or its
 first line is a `sh`/`bash` shebang. Nothing is classified by directory, so a shell script
 without an extension inside a plugin is still checked.
 """
@@ -29,7 +29,7 @@ SHELL_SUFFIX: Final = ".sh"
 """The extension that makes a file shell without reading it."""
 
 SHEBANG: Final = re.compile(r"^#!.*[/ ](ba)?sh(\s|$)")
-"""A `sh` or `bash` shebang, the same shape `post-edit.sh` matches."""
+"""A `sh` or `bash` shebang: an extensionless script is still shell."""
 
 GCC_LINE: Final = re.compile(r"^(?P<path>[^:]+):(?P<line>\d+):(?P<column>\d+):\s*(?P<rest>.+)$")
 """One ShellCheck finding in `gcc` format: path, line, column, then level and message."""

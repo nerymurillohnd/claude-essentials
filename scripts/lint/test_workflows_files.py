@@ -181,4 +181,34 @@ def test_the_zizmor_command_line_carries_offline(
     rel = _write_workflow(tree, "ok.yml", VALID)
     assert workflows_files.zizmor_findings(tree, [rel]) == []
     assert seen
-    assert seen[0][:4] == ["--persona=auditor", "--format", "plain", "--offline"]
+    assert seen[0][:6] == [
+        "--persona=auditor",
+        "--format",
+        "plain",
+        "--color",
+        "never",
+        "--offline",
+    ]
+
+
+@pytest.mark.slow
+def test_zizmor_output_parses_under_a_github_actions_environment(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Under Actions zizmor colors its output even into a pipe; the parsers must still work.
+
+    Reproduces the PR #19 CI failure: with `GITHUB_ACTIONS`/`CI` set, the summary line
+    came back as ANSI-colored text and `zizmor_summary` found "no summary".
+
+    Args:
+        tree: A scratch repository whose `.venv` points at the locked tools.
+        monkeypatch: pytest's environment patcher.
+    """
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setenv("CI", "true")
+    monkeypatch.setenv("GITHUB_RUN_ID", "1")
+    clean = _write_workflow(tree, "ok.yml", VALID)
+    assert "No findings" in zizmor_summary(tree, [clean])
+    loose = _write_workflow(tree, "loose.yml", BROKEN.replace("jobs:", "permissions: {}\njobs:"))
+    findings = check(tree, [loose])
+    assert any("anonymous-definition" in finding.message for finding in findings)

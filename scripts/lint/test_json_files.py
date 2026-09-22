@@ -89,7 +89,7 @@ def test_every_excluded_pattern_excludes_itself(rel: str) -> None:
 
 def test_the_vendored_schemas_are_excluded() -> None:
     """X2 pins those files byte for byte; reformatting them would break the hash."""
-    assert is_excluded("schemas/github/issue-forms.schema.json")
+    assert is_excluded(".github/schemas/issue-forms.schema.json")
 
 
 def test_an_ordinary_manifest_is_not_excluded() -> None:
@@ -99,4 +99,6 @@ def test_an_ordinary_manifest_is_not_excluded() -> None:
 
 def test_select_drops_everything_the_gate_does_not_own() -> None:
     """One candidate list reaches every checker; each keeps only what it answers for."""
-    assert select(["a.json", "b.md", "knip.jsonc", ".mcp.json"]) == ["a.json"]
+    assert select(["a.json", "b.md", "x.jsonc", ".github/schemas/issue-forms.schema.json"]) == [
+        "a.json"
+    ]

@@ -10,7 +10,7 @@
 | Each plugin is **self-contained** — no `../` references | An installed plugin is copied on its own into the user's plugin cache |
 | Each plugin ships `README.md`, `CHANGELOG.md`, and `LICENSE` | Users judge, update, and reuse a plugin from these alone |
 
-Claude never reads this folder directly: `npm run generate` scans it to build
+Claude never reads this folder directly: `make generate` scans it to build
 [`.claude-plugin/marketplace.json`](../.claude-plugin/marketplace.json), and that
 catalog is what users install from.
 

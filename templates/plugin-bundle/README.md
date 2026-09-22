@@ -156,7 +156,7 @@ run with the plugin against a baseline without it:
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/{{plugin-id}} --strict
 claude plugin eval plugins/{{plugin-id}} --no-publish --max-cost-usd {{5}}
 ```

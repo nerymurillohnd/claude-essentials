@@ -22,14 +22,8 @@ if TYPE_CHECKING:
 GUARD: Final = "guard-commit.sh"
 """The hook under test."""
 
-SHIM: Final = "guard-commit-biome.sh"
-"""The path `.claude/settings.json` still names, which `exec`s the guard (removed at step 9)."""
-
-SHIM_LINES: Final = 3
-"""A shebang, the comment saying why it exists, and the `exec`. Nothing else."""
-
-SCRIPTS: Final[tuple[str, ...]] = (GUARD, SHIM)
-"""Both entry points; every behaviour has to be identical through either."""
+SCRIPTS: Final[tuple[str, ...]] = (GUARD,)
+"""The entry point `.claude/settings.json` wires; the step-8 shim was removed at step 9."""
 
 COMMIT: Final = "git commit -m 'a change'"
 """The command the guard exists to check."""
@@ -148,12 +142,3 @@ def test_a_directory_that_is_not_a_working_tree_is_refused(
         env=_env(PASSING),
     )
     assert "not a git working tree" in reason(completed)
-
-
-def test_the_shim_execs_the_guard(hooks: Path) -> None:
-    """The shim exists only so `settings.json` keeps working until the session restarts."""
-    text = (hooks / SHIM).read_text(encoding="utf-8")
-    assert text.splitlines()[0] == "#!/usr/bin/env bash"
-    assert "migration shim" in text
-    assert GUARD in text
-    assert len(text.splitlines()) == SHIM_LINES

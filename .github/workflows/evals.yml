@@ -155,7 +155,9 @@ jobs:
           if ((${#tools[@]})); then allow=(--allow-tools "${tools[@]}"); fi
           out="${RUNNER_TEMP}/eval"
           mkdir -p "${out}"
-          claude plugin eval "plugins/${PLUGIN}" --trust-plugin --ablation with-without \
+          # --scaffold: every case's scaffold_script in this repository is written by its maintainer
+          # (plugin-eval-protocol.md), and cases that seed fixtures measure nothing without it.
+          claude plugin eval "plugins/${PLUGIN}" --trust-plugin --scaffold --ablation with-without \
             --runs 3 --no-publish --max-cost-usd "${MAX_COST_USD}" \
             --model claude-sonnet-5 --judge-model claude-opus-5 "${allow[@]}" \
             --json "${out}/results.json" --report "${out}/report.html"

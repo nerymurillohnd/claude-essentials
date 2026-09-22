@@ -8,8 +8,8 @@
 #    per pushed branch; fails open when the remote can't be reached.
 # 2. Direct pushes to main (the maintainer's bypass of the required-checks
 #    ruleset): allowed only for changes that don't alter a plugin's behavior.
-#    The tree must be clean, `check:versions` must report `bump: none` (a runtime
-#    change goes through a PR so version-check and tagging run), and `npm run
+#    The tree must be clean, `make versions` must report `bump: none` (a runtime
+#    change goes through a PR so version-check and tagging run), and `make
 #    check` must pass. This is the gate CI would have run, moved before the push.
 #
 # Read-only. See docs/decisions/adr-0002-project-hooks.md and ADR-0003.
@@ -44,8 +44,8 @@ deny() {
 current="$(git -C "${root}" symbolic-ref --quiet --short HEAD 2>/dev/null)" || current=""
 main_push=""
 # Commands of the main gate; tests replace them, Claude's command line can't.
-versions_cmd=${GUARD_PUSH_VERSIONS_CMD:-npm run check:versions --silent}
-check_cmd=${GUARD_PUSH_CHECK_CMD:-npm run check --silent}
+versions_cmd=${GUARD_PUSH_VERSIONS_CMD:-make -s versions}
+check_cmd=${GUARD_PUSH_CHECK_CMD:-make -s check}
 
 # check_branch <remote> <local-branch> <remote-branch>
 check_branch() {
@@ -159,7 +159,7 @@ if [[ ${versions_out} != *"bump: none"* ]]; then
   deny "Direct push to main refused: this push changes plugin runtime files (${label:-a version bump}). Behavior changes go through a pull request so version-check and the tag workflow run (ADR-0003). Ask the maintainer to say \"PR\", then move these commits to a branch."
 fi
 if ! check_out="$(cd "${root}" && bash -c "${check_cmd}" 2>&1)"; then
-  deny "Direct push to main refused: npm run check fails. Fix it, then push again:
+  deny "Direct push to main refused: make check fails. Fix it, then push again:
 ${check_out:${#check_out}>3000?${#check_out}-3000:0}"
 fi
 exit 0

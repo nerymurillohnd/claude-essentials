@@ -3,6 +3,7 @@ paths:
   - "plugins/**/*.sh"
   - "plugins/**/hooks/hooks.json"
   - ".claude/hooks/**/*.sh"
+  - "scripts/plugin_validation/suites/**/*.sh"
 ---
 
 # Shell scripts and hooks
@@ -10,8 +11,8 @@ paths:
 - Scripts shipped in plugins run on whatever Bash the user has.
   `#!/usr/bin/env bash` picks the first `bash` on `PATH`, which on a stock Mac
   without Homebrew is `/bin/bash` 3.2, and hooks invoked as `bash script.sh` do
-  the same. `npm test` runs every suite under both `bash` and `/bin/bash`; keep
-  it that way.
+  the same. `make test-slow` runs every plugin suite under both `bash` and
+  `/bin/bash`; keep it that way.
 - Hooks sit in the hot path of every matching tool call. Time them against large
   adversarial inputs (long commands, heredocs, deep nesting) under `/bin/bash`
   3.2. Avoid constructs that go quadratic there: `${var%%pat}`, `${var//pat/}`,
