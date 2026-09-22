@@ -22,7 +22,9 @@ Ruff Quality helps Python developers who use Claude Code keep Ruff green without
 babysitting it. Its hook runs the Ruff you already have, in your project or
 globally, with your own Ruff configuration, after every edit Claude makes to a
 `.py`, `.pyw` or `.pyi` file. Its `ruff` skill teaches Claude to install,
-configure, run, integrate, and diagnose Ruff from the official documentation.
+configure, run, integrate, and diagnose Ruff from the official documentation. It does
+**not** change your configuration or silence a finding on its own: a suppression or a
+configuration edit waits for your answer.
 
 > [!CAUTION]
 > Installing the plugin turns its hooks on in the scope you install it in. From
@@ -116,7 +118,8 @@ file and the project root, owned by you), then `ruff` on `PATH`, then `~/.local/
 user-level file, else its defaults; a file it excludes is reported as not checked.
 Every result reaches you as one `ruff-quality` line (see [Examples](#-examples)), and
 Claude is told when the hook rewrote a file so it re-reads it. Per-session state (the files touched and the Stop
-count) lives in `${CLAUDE_PLUGIN_DATA}` and is pruned after 7 days.
+count) lives in `${CLAUDE_PLUGIN_DATA}` (or, when Claude Code does not set it, a private
+`$TMPDIR/ruff-quality-<uid>`) and is pruned after 7 days.
 
 ## 🔌 MCP, permissions, and network
 
@@ -127,7 +130,7 @@ None — no MCP servers, no network access, no credentials.
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
 | Claude Code | 2.1.222 | `claude --version` | Loads the skill and the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222. The `enabled` row in `/config` needs 2.1.269 |
-| Ruff | 0.16 | `ruff --version` | Every hook step; install it in the project or globally |
+| Ruff | 0.16 | `ruff --version` | Every hook step; install it in the project or globally. Without a Ruff configuration the hook applies Ruff's default rules, and the skill describes the 0.16 defaults |
 | Bash | 3.2 | `bash --version` | Runs the handler (macOS's stock `/bin/bash` 3.2 works) |
 | jq | 1.6 | `jq --version` | Reads hook payloads and writes hook answers |
 | Windows only | Git for Windows (Git Bash) | `bash --version` in Git Bash | Without Git Bash, hooks run in PowerShell and a Bash handler cannot run |
@@ -158,8 +161,8 @@ Expected result: a `ruff-quality` line after the write, `demo.py` rewritten by t
 safe fixes and the formatter, and Claude fixing the finding Ruff could not fix
 (`F841`) before it finishes.
 
-**Behavioural evals** — Behavioural evals live in [`evals/`](evals/) and run per the
-maintainer's eval protocol; results are reported in the pull request, never here.
+**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are
+reported in the pull request or a dated file under `docs/audits/`, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -218,7 +221,7 @@ ruff-quality: Claude wants to add or widen a suppression in calc.py: # noqa: f82
 | Access | What it may do |
 | --- | --- |
 | Read | The Python files Claude edits; the file an edit targets, to compare suppressions and `[tool.ruff]` tables before and after |
-| Write | The Python files Claude edits (Ruff's safe fixes and formatting) and per-session state in `${CLAUDE_PLUGIN_DATA}` |
+| Write | The Python files Claude edits (Ruff's safe fixes and formatting) and per-session state in `${CLAUDE_PLUGIN_DATA}`, else `$TMPDIR/ruff-quality-<uid>` |
 | Process | `bash`, `jq`, the bundled handler, and a `ruff` executable: one you own in a `.venv/` or `venv/` inside the project (a repository can commit one, so it runs on Claude's first edit there, as an editor would), else the one on `PATH` or in `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Never one above the project root |
 | Network | Not used |
 | Credentials | None |
@@ -236,8 +239,8 @@ ruff-quality: Claude wants to add or widen a suppression in calc.py: # noqa: f82
 | Files written through `Bash` (`sed`, heredocs) are not fixed after the command | No `ruff-quality` line for that file | The guard still asks before a Bash command writes a suppression; ask Claude to edit with its file tools |
 | `.ipynb` notebooks are not checked | No `ruff-quality` line for a notebook | Run `ruff check` on notebooks yourself |
 | The Bash guard is textual | It asks only for commands with a visible write (`>`, `tee`, `sed -i`, heredocs); `cp`, `mv` or a script Claude writes and runs are not caught | Review what Claude runs; the Python file's own edits through Write and Edit are still checked |
-| Ruff not installed | `ruff-quality: Ruff is not installed …`, once per session; nothing is checked | Install Ruff in the project or globally |
-| `jq` not installed | `ruff-quality: jq is not installed …`, once per session; nothing is checked | Install `jq` |
+| Ruff not installed | `ruff-quality: Ruff is not installed …`, once per session (on every edit when no state directory can be written); nothing is checked | Install Ruff in the project or globally |
+| `jq` not installed | `ruff-quality: jq is not installed …`, once per session (on every edit when no state directory can be written); nothing is checked | Install `jq` |
 | Stop limit reached, or no change between two attempts | `ruff-quality ✗ gave up after 7 attempts …` or `… with no change since the last attempt …`, with the findings | Fix what is listed or ask Claude to; the hook leaves those files alone until they are edited again |
 | A file your Ruff configuration excludes | `ruff-quality: … is excluded by the project's Ruff configuration, so it was not checked` | Intended; change `exclude` if you want it checked |
 | Hook timeout (10 s guard, 60 s post, 120 s Stop) | The call proceeds without the hook's answer | Measured runs take well under a second per file; report very slow projects |

@@ -33,7 +33,8 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
   `isort: skip`, or `ruff check --add-noqa`/`--add-ignore`) or changes Ruff configuration
   (`ruff.toml`, `.ruff.toml`, the Ruff settings of `pyproject.toml`), the hook asks you,
   naming the marker. It never denies.
-- An `enabled` option (`/config`) turns the hooks off without removing the skill.
+- An `enabled` option (`/config`) turns the hooks off without removing the skill; `false`,
+  `0`, `no` and `off`, in any case, all count as off.
 
 ### Changed
 

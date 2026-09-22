@@ -72,7 +72,7 @@
     {
       "name": "shell-quality",
       "source": "./plugins/shell-quality",
-      "description": "Makes every shell script Claude edits pass shfmt and ShellCheck. A plugin hook formats each .sh and .bash file with the shfmt and checks it with the ShellCheck already installed in your project or globally, using your own .shellcheckrc and .editorconfig; asks you before Claude adds a suppression directive or changes that configuration; and keeps Claude working, up to 7 attempts, until the scripts it touched are clean. Its skill teaches Claude to install, configure, run, integrate and fix findings with both tools from the official documentation.",
+      "description": "Makes every shell script Claude edits pass shfmt and ShellCheck. A plugin hook formats each .sh and .bash file with the shfmt and checks it with the ShellCheck you already have installed, in your project or globally, using your own .shellcheckrc and .editorconfig; asks you before Claude adds a suppression directive or changes that configuration; and keeps Claude working, up to 7 attempts, until the scripts it touched are clean. Its skill teaches Claude to install, configure, run, integrate and fix findings with both tools from the official documentation.",
       "category": "development",
       "tags": [
         "shell",

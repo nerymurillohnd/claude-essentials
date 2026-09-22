@@ -24,7 +24,8 @@ without babysitting them. Its hook runs the shfmt and ShellCheck you already hav
 in your project or globally, with your own `.shellcheckrc` and `.editorconfig`,
 after every edit Claude makes to a `.sh` or `.bash` file. Its `shell-lint` skill
 teaches Claude to install, configure, run, integrate, and fix findings with both
-tools from the official documentation.
+tools from the official documentation. It does **not** change your configuration or
+silence a finding on its own: a directive or a configuration edit waits for your answer.
 
 > [!CAUTION]
 > Installing the plugin turns its hooks on in the scope you install it in. From
@@ -116,11 +117,11 @@ the edited script and the project root, owned by you, for example from `shellche
 then `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Each tool then finds
 your configuration as it always does: ShellCheck the nearest `.shellcheckrc`, then
 `~/.shellcheckrc`, then `$XDG_CONFIG_HOME/shellcheckrc`, plus `SHELLCHECK_OPTS`,
-which every report names when it is set; shfmt the `.editorconfig` files above the
+which every ShellCheck report names when it is set; shfmt the `.editorconfig` files above the
 script. Every result reaches you as one `shell-quality` line (see [Examples](#-examples)), and
 Claude is told when shfmt rewrote a script so it re-reads it. Per-session
-state (the scripts touched and the Stop count) lives in `${CLAUDE_PLUGIN_DATA}` and
-is pruned after 7 days.
+state (the scripts touched and the Stop count) lives in `${CLAUDE_PLUGIN_DATA}` (or, when
+Claude Code does not set it, a private `$TMPDIR/shell-quality-<uid>`) and is pruned after 7 days.
 
 ## 🔌 MCP, permissions, and network
 
@@ -131,8 +132,8 @@ None — no MCP servers, no network access, no credentials.
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
 | Claude Code | 2.1.222 | `claude --version` | Loads the skill and the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222. The `enabled` row in `/config` needs 2.1.269 |
-| ShellCheck | 0.10 | `shellcheck --version` | Checks every edited script; tested with 0.11.0 |
-| shfmt | 3.12 | `shfmt --version` | Formats every edited script; tested with 3.14.1. The `[[shell]]` EditorConfig sections the skill describes need 3.13 |
+| ShellCheck | 0.10 | `shellcheck --version` | Checks every edited script. 0.10 is the first release that reads the `extended-analysis` key and `--rcfile` the skill's configuration guidance uses; tested with 0.11.0 |
+| shfmt | 3.12 | `shfmt --version` | Formats every edited script. 3.12 is the first release that reads the `simplify` and `minify` EditorConfig keys; the `[[shell]]` sections the skill describes need 3.13; tested with 3.14.1 |
 | Bash | 3.2 | `bash --version` | Runs the handler (macOS's stock `/bin/bash` 3.2 works) |
 | jq | 1.6 | `jq --version` | Reads hook payloads and writes hook answers |
 | Windows only | Git for Windows (Git Bash) | `bash --version` in Git Bash | Without Git Bash, hooks run in PowerShell and a Bash handler cannot run |
@@ -164,8 +165,8 @@ Create hello.sh that prints its first argument without quoting it, then tell me 
 Expected result: a `shell-quality` line after the write, and Claude quoting the
 expansion because ShellCheck reported `SC2086`, before it finishes.
 
-**Behavioural evals** — Behavioural evals live in [`evals/`](evals/) and run per the
-maintainer's eval protocol; results are reported in the pull request, never here.
+**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are
+reported in the pull request or a dated file under `docs/audits/`, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -224,7 +225,7 @@ shell-quality: Claude wants to add or widen a ShellCheck directive in bin/deploy
 | Access | What it may do |
 | --- | --- |
 | Read | The shell scripts Claude edits; the file an edit targets, to compare directives and shfmt keys before and after |
-| Write | The shell scripts Claude edits (shfmt formatting) and per-session state in `${CLAUDE_PLUGIN_DATA}` |
+| Write | The shell scripts Claude edits (shfmt formatting) and per-session state in `${CLAUDE_PLUGIN_DATA}`, else `$TMPDIR/shell-quality-<uid>` |
 | Process | `bash`, `jq`, the bundled handler, and `shfmt` and `shellcheck` executables: ones you own in a `.venv/` or `venv/` inside the project (a repository can commit them, so they run on Claude's first edit there, as an editor would), else the ones on `PATH` or in `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Never ones above the project root |
 | Network | Not used |
 | Credentials | None |
@@ -244,8 +245,8 @@ shell-quality: Claude wants to add or widen a ShellCheck directive in bin/deploy
 | Files written through `Bash` (`sed`, heredocs) are not checked after the command | No `shell-quality` line for that file | The guard still asks before a Bash command writes a directive; ask Claude to edit with its file tools |
 | `SHELLCHECK_OPTS` in your environment applies, including any `-e` exclusions | Every report says `(SHELLCHECK_OPTS=… applies)` | Unset it, or move what you want into `.shellcheckrc` |
 | The Bash guard is textual | It asks only for commands with a visible write (`>`, `tee`, `sed -i`, heredocs); `cp`, `mv`, `rm` or a script Claude writes and runs are not caught | Review what Claude runs; the script's own edits through Write and Edit are still checked |
-| ShellCheck or shfmt not installed | `shell-quality: … not installed …`, once per session; nothing is checked | Install them in the project or globally |
-| `jq` not installed | `shell-quality: jq is not installed …`, once per session; nothing is checked | Install `jq` |
+| ShellCheck or shfmt not installed | `shell-quality: … not installed …`, once per session (on every edit when no state directory can be written); nothing is checked | Install them in the project or globally |
+| `jq` not installed | `shell-quality: jq is not installed …`, once per session (on every edit when no state directory can be written); nothing is checked | Install `jq` |
 | Stop limit reached, or no change between two attempts | `shell-quality ✗ gave up after 7 attempts …` or `… with no change since the last attempt …`, with the findings | Fix what is listed or ask Claude to; the hook leaves those scripts alone until they are edited again |
 | Your `.editorconfig` sets a `shell_variant` the script is not written in | `… could not be checked … a tool or configuration error` | Fix `.editorconfig` (a `[[bash]]` section, or `shell_variant = auto`); Claude does not rewrite a correct script to fit it |
 | Hook timeout (10 s guard, 60 s post, 120 s Stop) | The call proceeds without the hook's answer | Measured runs take well under a second per script; report very slow projects |

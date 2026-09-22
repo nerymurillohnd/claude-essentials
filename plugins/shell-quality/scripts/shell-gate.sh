@@ -17,7 +17,7 @@
 # then ~/.shellcheckrc, then $XDG_CONFIG_HOME/shellcheckrc, plus SHELLCHECK_OPTS;
 # shfmt the .editorconfig files above the script (no style flags are passed).
 # Without the tools or jq the hook says so once per session and never blocks.
-# CLAUDE_PLUGIN_OPTION_ENABLED=false (the plugin's `enabled` option) turns it off.
+# CLAUDE_PLUGIN_OPTION_ENABLED false, 0, no or off (the plugin's `enabled` option) turns it off.
 set -u
 
 readonly TAG="shell-quality"
@@ -29,7 +29,12 @@ readonly EC_KEYS_RE='^[[:space:]]*(\[|root|indent_style|indent_size|shell_varian
 readonly WRITE_RE='(>|[[:space:]]tee[[:space:]]|sed[[:space:]]+-[a-zA-Z]*i|perl[[:space:]]+-[a-zA-Z]*i|<<)'
 
 event=${1:-}
-[[ ${CLAUDE_PLUGIN_OPTION_ENABLED:-true} == false ]] && exit 0
+# How Claude Code writes a boolean option into the environment is not documented, so every
+# common spelling of "off" counts.
+case $(printf '%s' "${CLAUDE_PLUGIN_OPTION_ENABLED:-true}" | tr '[:upper:]' '[:lower:]') in
+false | 0 | no | off) exit 0 ;;
+*) ;;
+esac
 payload=$(cat)
 
 # ------------------------------------------------------------------ state ---
@@ -245,6 +250,16 @@ trim_findings() { # trim_findings FILE TEXT
     END { if (total > max) printf "... first %d of %d lines shown; run `shellcheck -x -f gcc` on %s from its directory for the rest\n", max, total, file }' <<<"$2"
 }
 
+# Report whether shfmt's output is a parse error, which it prints as FILE:LINE:COL: message.
+# Anything else it prints on failure (a file it cannot write, a bad flag) is a tool error.
+is_parse_error() { # is_parse_error FILE OUTPUT
+  local line
+  while IFS= read -r line; do
+    [[ ${line} == "$1:"* && ${line#"$1:"} =~ ^[0-9]+:[0-9]+: ]] && return 0
+  done <<<"$2"
+  return 1
+}
+
 # Format and check one script. Returns 0 clean, 1 findings, 2 cannot be checked (a tool or
 # configuration error), 3 zsh, 4 shfmt could not parse it (Claude's edit broke the syntax).
 correct() {
@@ -264,8 +279,13 @@ correct() {
 ${out}")
       return 2
     fi
-    FINDINGS=$(trim_findings "${f}" "${out}")
-    return 4
+    if is_parse_error "${f}" "${out}"; then
+      FINDINGS=$(trim_findings "${f}" "${out}")
+      return 4
+    fi
+    FINDINGS=$(trim_findings "${f}" "shfmt failed on the script without reporting a syntax error:
+${out}")
+    return 2
   fi
   out=$(cd "${f%/*}" && "${SHELLCHECK}" -x -f gcc -- "${f}" 2>&1)
   rc=$?
@@ -310,7 +330,7 @@ ${FINDINGS}" --arg m "${TAG}: ${r} has findings left; Claude is fixing them" \
     say_user "${TAG}: ${r} is a zsh script; ShellCheck does not support zsh, so it was not checked"
     ;;
   *)
-    jq -cn --arg r "${TAG}: ${r} could not be checked (exit ${rc}). This is a tool or configuration error, not a finding in the script; tell the user what it says and do not change the script to work around it:
+    jq -cn --arg r "${TAG}: ${r} could not be checked (exit ${rc})${note}. This is a tool or configuration error, not a finding in the script; tell the user what it says and do not change the script to work around it:
 ${FINDINGS}" --arg m "${TAG}: ${r} could not be checked (exit ${rc}); a tool or configuration error" \
       '{decision: "block", reason: $r, systemMessage: $m}'
     ;;
@@ -354,6 +374,11 @@ ${FINDINGS}
 "
     fi
   done <<<"${files}"
+  if ((${#broken} > MAX_REPORT)); then
+    broken="${broken:0:MAX_REPORT}
+... cut at ${MAX_REPORT} characters
+"
+  fi
   [[ -n ${broken} ]] && bnote="
 ${TAG}: ShellCheck could not check these scripts (a tool or configuration error, not a finding)${note}:
 ${broken}"

@@ -216,6 +216,19 @@ if [[ ${BLOCK} == *"after formatting"* || ${BLOCK} == *"shellcheck.net"* ]]; the
   bad "a parse error is not described as a ShellCheck finding" "${BLOCK}"
 else ok; fi
 
+mkdir -p "${proj}/ro"
+printf '#!/usr/bin/env bash\nif true;then echo a;fi\n' >"${proj}/ro/unformatted.sh"
+chmod 555 "${proj}/ro"
+mk_edit "${proj}/ro/unformatted.sh" '' ''
+fire post Edit s2w false
+parse
+chmod 755 "${proj}/ro"
+expect_in "shfmt failing to write the script is a tool error" "${BLOCK}" "tool or configuration error"
+if [[ ${BLOCK} == *"could not parse"* ]]; then
+  bad "shfmt failing to write the script is not reported as a syntax error" "${BLOCK}"
+else ok; fi
+rm -rf "${proj}/ro"
+
 printf 'root = true\n[*.sh]\nshell_variant = posix\n' >"${proj}/.editorconfig"
 printf "#!/usr/bin/env bash\narr=(a b)\necho \"\${arr[0]}\"\n" >"${proj}/bin/arr.sh"
 mk_edit "${proj}/bin/arr.sh" '' ''
@@ -385,6 +398,10 @@ if [[ ${RC} -eq 0 && ${OUT} == *"jq is not installed"* ]]; then ok; else bad "wi
 
 fire post Edit s6 false CLAUDE_PLUGIN_OPTION_ENABLED=false
 expect_silent "the enabled=false option turns the hook off"
+fire post Edit s6 false CLAUDE_PLUGIN_OPTION_ENABLED=False
+expect_silent "the enabled option turns the hook off whatever its case"
+fire post Edit s6 false CLAUDE_PLUGIN_OPTION_ENABLED=0
+expect_silent "the enabled option turns the hook off when written as 0"
 
 if printf '{"session_id":"s7","tool_name":"Edit"' | env CLAUDE_PLUGIN_DATA="${work}/data" "${run_bash}" "${gate}" guard >/dev/null 2>&1; then
   ok

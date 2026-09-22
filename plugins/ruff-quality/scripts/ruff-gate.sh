@@ -15,7 +15,7 @@
 # Ruff finds its own configuration (nearest ruff.toml, .ruff.toml or
 # pyproject.toml [tool.ruff], then the user-level file, then its defaults).
 # Without Ruff or jq the hook says so once per session and never blocks.
-# CLAUDE_PLUGIN_OPTION_ENABLED=false (the plugin's `enabled` option) turns it off.
+# CLAUDE_PLUGIN_OPTION_ENABLED false, 0, no or off (the plugin's `enabled` option) turns it off.
 set -u
 
 readonly TAG="ruff-quality"
@@ -26,7 +26,12 @@ readonly SUPP_RE='#[[:space:]]*(noqa|flake8:[[:space:]]*noqa|ruff:[[:space:]]*(n
 readonly WRITE_RE='(>|[[:space:]]tee[[:space:]]|sed[[:space:]]+-[a-zA-Z]*i|perl[[:space:]]+-[a-zA-Z]*i|<<)'
 
 event=${1:-}
-[[ ${CLAUDE_PLUGIN_OPTION_ENABLED:-true} == false ]] && exit 0
+# How Claude Code writes a boolean option into the environment is not documented, so every
+# common spelling of "off" counts.
+case $(printf '%s' "${CLAUDE_PLUGIN_OPTION_ENABLED:-true}" | tr '[:upper:]' '[:lower:]') in
+false | 0 | no | off) exit 0 ;;
+*) ;;
+esac
 payload=$(cat)
 
 # ------------------------------------------------------------------ state ---
@@ -335,6 +340,11 @@ ${FINDINGS}
 "
     fi
   done <<<"${files}"
+  if ((${#broken} > MAX_REPORT)); then
+    broken="${broken:0:MAX_REPORT}
+... cut at ${MAX_REPORT} characters
+"
+  fi
   [[ -n ${broken} ]] && note="
 ${TAG}: Ruff could not check these files (a tool or configuration error, not a finding):
 ${broken}"
