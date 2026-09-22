@@ -1,150 +1,181 @@
 ---
 name: ruff
-description: Lint and format Python with Ruff, fixing findings in the code instead of silencing them. Covers which command route to use (uv run, the project venv, PATH or uvx), the order that works (safe fixes, then format, then check), how configuration is discovered, why unsafe fixes need a preview first, why a whole codebase is never reformatted unasked, and every suppression that must never be added. Confirm the installed version with ruff --version and its changelog before relying on version-specific behavior. For installing the after-edit hook, use the ruff-hooks skill.
-when_to_use: On every Python file Claude writes, edits, reviews or fixes (.py, .pyi, .ipynb), before calling that work done, not only when the user asks. Also to explain or choose rules, configure ruff.toml or [tool.ruff], migrate from black, isort, flake8, pylint or pyupgrade, bring a configuration written for an older Ruff up to the current defaults, wire Ruff into pre-commit, GitHub Actions, an editor or Claude Code, or resolve a required-version error.
-compatibility: Claude Code, Claude Cowork, and any Agent Skills host. Needs ruff >= 0.16 on PATH, in the project's virtual environment, or through uv to run commands; the guidance works without it.
+description: Lint and format Python with Ruff and fix every finding in the code, never by silencing it. Covers installing Ruff, choosing the command route (project venv, uv run --locked --no-python-downloads, PATH, uvx only with consent), the working order (safe fixes, format, check), native configuration discovery, rule selection and formatter-compatible settings, migrating from black, isort, flake8, pylint, pyupgrade and autoflake, the native language server, pre-commit and CI, diagnosing exit codes and required-version errors, preview and unsafe fixes, and how to respond to the ruff-quality hook. Confirm ruff --version against the official changelog before relying on version-specific behavior.
+when_to_use: On every Python file Claude writes, edits, reviews or fixes (.py, .pyw, .pyi, .ipynb) before calling that work done, not only when asked. Also when the ruff-quality hook reports findings or asks to confirm a suppression, and to install Ruff, explain or choose rules, write ruff.toml or [tool.ruff], upgrade a configuration written for an older Ruff, migrate from black, isort, flake8, pylint, pyupgrade or autoflake, set up the Ruff language server in an editor, wire Ruff into pre-commit or CI, or resolve a required-version or exit code 2 error.
+compatibility: Claude Code, Claude Cowork, and any Agent Skills host. Running commands needs Ruff >= 0.16 from the project's own install or PATH; the guidance works without it. The after-edit hook runs only in Claude Code.
 license: Apache-2.0
 ---
 
 # Ruff
 
-Ruff is the linter and formatter for Python from Astral. It replaces Black,
-isort, Flake8 and most of its plugins, pyupgrade, autoflake, pydocstyle, and
-large parts of Pylint and Bandit. Verified against **Ruff 0.16.8** on
-2026-09-19. Always check `ruff --version` and the
-[changelog](https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md) before
-relying on version-specific behavior: a later release may have changed it, and
-this page does not update itself.
+Ruff is Astral's Python linter (`ruff check`) and formatter (`ruff format`),
+one binary that replaces Black, isort, Flake8 and its common plugins,
+pyupgrade, autoflake, and part of Pylint.
+
+Verified against **Ruff 0.16.8** (released 2026-09-16) and **uv 0.12.17** on
+2026-09-22. Ruff changes rules, defaults, and formatter style in minor
+releases ([versioning policy](https://docs.astral.sh/ruff/versioning/)). Run
+`ruff --version`, then read the
+[changelog](https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md) and
+[BREAKING_CHANGES.md](https://github.com/astral-sh/ruff/blob/main/BREAKING_CHANGES.md)
+for every release after 0.16.8 before relying on anything below that can drift.
 
 ## Non-negotiable rules
 
-1. **Fix findings in the code.** Never add `# noqa`, `# ruff: noqa`,
-   `# ruff: ignore[...]`, `# ruff: disable[...]`, `# ruff: file-ignore[...]`,
-   `# fmt: off` / `# fmt: skip`, or `# isort: skip` to make a check pass, and
-   never add rules to `ignore`, `per-file-ignores`, or `exclude`, lower
-   `select`, or pass `--ignore`/`--isolated` to get a green run. If a finding
-   seems wrong, explain why and let the user decide; the suppression or
-   configuration change is theirs to make.
-2. **Only safe fixes by default.** `--unsafe-fixes` may change behavior or drop
-   comments. Use it only when the user asks, preview it first with
-   `ruff check --unsafe-fixes --diff <paths>`, and show what changes.
-3. **Stay in scope.** Lint, fix, and format the files being changed. Do not
-   reformat a whole codebase that is not already Ruff-formatted: check first
-   with `ruff format --check .` and ask before a mass reformat.
-4. **Respect the project's configuration.** Read it before running Ruff; never
-   pass flags that override it unless the user asks.
+1. **Fix the code, never silence it.** Never add or widen `# noqa`,
+   `# flake8: noqa`, `# ruff: noqa`, `# ruff: ignore[...]`, `# ruff: file-ignore[...]`,
+   `# ruff: disable[...]`, `# fmt: off`/`# fmt: on`, `# fmt: skip`,
+   `# yapf: disable`, or `# isort: skip` to get a green run. Never add codes to
+   `ignore`, `per-file-ignores`, `exclude`, or `unfixable`, narrow `select`, or
+   pass `--ignore`, `--select`, `--exit-zero`, or `--isolated` for the same
+   purpose. If a finding looks wrong, read `ruff rule <CODE>`, explain why,
+   and let the user decide; a suppression or policy change is theirs.
+2. **Safe fixes only by default.** Unsafe fixes can change behavior or drop
+   comments. Use them only when the user asks, after showing
+   `ruff check --unsafe-fixes --diff <files>`.
+3. **Stay in scope.** Fix and format the files being changed. Never reformat
+   or bulk-fix a whole codebase unasked. Before the first edit to a file, if
+   `ruff format --diff <file>` would change lines you are not touching, the
+   project probably does not use `ruff format`: say so and ask the user before
+   editing it, because formatting (yours, or the hook's) rewrites the whole file.
+4. **The project's configuration rules.** Run Ruff with native discovery.
+   Never override the project's configuration with flags unless the user asks.
 
 ## Pick the command route once
 
-Resolve how to run Ruff before the first command, then reuse it:
+Resolve how to run Ruff before the first command, then reuse it. Details and
+the flags' evidence are in [install-and-run.md](references/install-and-run.md).
+
+Use the first row that applies:
 
 | Situation | Command |
 | --- | --- |
-| Ruff is a dependency of a uv project (`uv.lock` or `[dependency-groups]`) | `uv run ruff …` (in hooks and scripts: `uv run --no-sync ruff …`) |
-| The project has a virtual environment with Ruff | `.venv/bin/ruff …` |
-| Ruff is on `PATH` | `ruff …` |
-| None of the above, and the user agrees | `uvx ruff@<version> …` (downloads a tool; pin the version the project uses) |
+| 1. The project has a virtual environment with Ruff | `.venv/bin/ruff …` (Windows: `.venv\Scripts\ruff.exe`) |
+| 2. Ruff is a dev dependency of a uv project (`uv.lock`), with no `.venv` yet | `uv run --locked --no-python-downloads ruff …` |
+| 3. Ruff is on `PATH` and the project pins no other version | `ruff …` |
+| 4. None of these, and the user agrees to a download | `uvx --no-python-downloads ruff@<version> …` |
 
-If `required-version` is set in the configuration, a different Ruff exits
-with an error: install the required version rather than removing the pin.
+- Without `--no-python-downloads`, `uv run` and `uvx` may silently download
+  a Python interpreter ([uv docs](https://docs.astral.sh/uv/concepts/python-versions/)).
+- `--locked` makes `uv run` fail when `uv.lock` is stale instead of rewriting
+  it ([uv docs](https://docs.astral.sh/uv/concepts/projects/sync/)).
+- `uvx` downloads a tool from PyPI: never use it without the user's consent,
+  and pin the version the project uses.
+- Ruff is missing: tell the user how to install it (dev dependency first) and
+  stop; never install it yourself unasked.
 
-## The workflow for every change
+## The working order
 
-Run these on the files you changed, in this order:
+Run on the files you changed, in this order:
 
 ```bash
-ruff check --fix <files>      # safe fixes first (they can reorder or remove imports)
-ruff format <files>           # then format; the formatter does not sort imports
-ruff check <files>            # then read what is left and fix it by hand
+ruff check --fix <files>   # safe fixes first: they can add, remove, or reorder code and imports
+ruff format <files>        # then format; the formatter does not sort imports
+ruff check <files>         # then read what is left and fix it by hand
 ```
 
-- Pass `--force-exclude` whenever you name files explicitly (scripts, hooks,
-  editors): without it Ruff lints a named file even when the configuration
-  excludes it.
-- Read a rule before fixing it: `ruff rule F841` prints its rationale, an
-  example, and whether its fix is safe.
-- Stop and ask when a finding needs a product decision (a public API rename, a
-  behavior change), when several fixes are valid, or when the count of findings
-  stops falling between iterations.
-- When you add an import in one edit and use it in the next, run `ruff check
-  --fix` only after both edits: `F401` (unused import) has a **safe** fix and
-  would delete it.
-- `ruff check` exits `0` when clean, `1` when findings remain, `2` on a usage
-  or configuration error. `ruff format --check` and `--diff` exit `1` when a
-  file would change.
+- `ruff check --diff <files>` previews safe fixes without writing.
+- Read a rule before fixing it: `ruff rule F841` prints what it checks, why,
+  an example, and its fix safety.
+- `F401` (unused import) has a safe fix outside `__init__.py`: if you add an
+  import in one edit and use it in the next, a `--fix` in between deletes it.
+- When you name files explicitly (scripts, hooks), add `--force-exclude` so
+  the project's `exclude` still applies.
+- Stop and ask when a fix needs a product decision (public API rename,
+  behavior change), when several fixes are valid, or when the finding count
+  stops falling between iterations. Ask in one message and end your turn; do
+  not keep editing while you wait.
 
-End with a short report: files and scope, what was fixed automatically, what
-was fixed by hand, and anything left with the reason.
+Finish with a short report: files in scope, what was fixed automatically,
+what was fixed by hand, and anything left with its reason.
 
-## Configuration in one page
+## When the ruff-quality hook is active (Claude Code)
 
-- **Files:** `.ruff.toml` > `ruff.toml` > `pyproject.toml` (only if it has a
-  `[tool.ruff]` table), in that order within one directory.
-- **Discovery:** each file uses the **closest** configuration above it. Ruff
-  never merges configurations; a nested file replaces the parent unless it
-  says `extend = "../ruff.toml"`.
-- **User-level fallback:** `~/.config/ruff/` (or `$XDG_CONFIG_HOME/ruff/`;
-  `%APPDATA%\ruff\` on Windows) applies **only when no project configuration
-  exists**. It is not a layer on top of the project's.
-- **Command line wins:** `--select`, `--config KEY=VALUE`, and
-  `--config FILE` override every discovered file. `--isolated` ignores all of
-  them.
-- **Debugging:** `ruff check --show-settings path/to/file.py` prints the
-  configuration file in use ("Settings path") and every resolved value.
-- **Target version:** when `target-version` is not set, Ruff infers it from
-  `requires-python` in the `pyproject.toml` next to the configuration.
+The plugin's hooks run after Claude writes or edits a `.py`, `.pyw`, or `.pyi`
+file with its Write or Edit tools. They use a Ruff the user owns inside the
+project, or the one on `PATH` (never `uvx`, never a download), with native
+configuration discovery, on the whole file:
 
-## Choosing rules when the defaults change
+1. `ruff check --fix --no-unsafe-fixes --unfixable F401`, then `ruff format`,
+   then `ruff check --no-fix`, all with `--force-exclude`. A file the project
+   excludes is not checked, and the user is told so.
+2. **After every edit**, if the hook changed the file you are told to re-read
+   it; do that before the next edit. Findings left come back to you: fix them
+   in the code. An `F401` it reports is left on purpose: use the import or
+   delete it.
+3. At Stop, the hook re-fixes, re-formats and re-checks every file you touched
+   and keeps you working while the findings change, up to 7 times; then it
+   tells the user what still fails and stops asking until those files are
+   edited again. If a finding needs the user's decision, ask them once and end
+   your turn: when nothing changes between two attempts, the hook stops asking.
+4. Edits through Write or Edit that add or widen a suppression, change
+   `ruff.toml`, `.ruff.toml` or the Ruff settings of `pyproject.toml`, and
+   shell commands with a visible write (`>`, `tee`, `sed -i`, heredocs) that
+   carry a suppression, `--add-noqa` or `--add-ignore`, ask the user; nothing
+   is denied. Other shell routes (`cp`, `mv`, a script) are not detected: never
+   use them to change configuration. The prompt is not a way around rule 1.
+5. A tool or configuration error (exit 2, such as a `required-version`
+   mismatch) is reported, not a finding: tell the user what it says and do not
+   change the code to work around it.
+6. Ruff (or `jq`, which the hook needs) not installed: you and the user are
+   told once per session. Offer the install routes above; do not run them.
 
-Ruff 0.16 turned on **413 rules by default** (up from 59), including isort
-(`I`), bugbear (`B`), pyupgrade (`UP`), `RUF`, and `PGH004` (bare `noqa`), and
-dropped 18 opinionated `E`/`F` rules from the defaults (`E401`, `E402`,
-`E701`–`E703`, `E711`–`E714`, `E721`, `E731`, `E741`–`E743`, `F403`, `F405`,
-`F406`, `F722`). Consequences:
+## Configuration in brief
 
-- `lint.select` **replaces** the defaults; `lint.extend-select` **adds** to
-  them. A configuration written for Ruff 0.15 with `select = [...]` silently
-  turns the new defaults off. Prefer `extend-select`.
-- `select = ["ALL"]` changes on every Ruff upgrade; use it only with a plan to
-  review new rules.
-- Never enable rules that conflict with the formatter: `W191`, `E111`,
-  `E114`, `E117`, `D203`, `D206`, `D300`, `Q000`–`Q004`, `COM812`, `COM819`,
-  and `ISC002` when used without `ISC001` and with
-  `flake8-implicit-str-concat.allow-multiline = false`. `ruff format` warns
-  and names the rule.
-- Rules marked *preview* need `lint.preview = true` and an explicit selection.
+Full detail, every claim checked with `ruff check --show-settings`, is in
+[configuration.md](references/configuration.md).
 
-The plugin's recommended profile, with the reasoning for each choice, is in
-[`references/configuration.md`](references/configuration.md).
+- **Per file, the closest configuration wins.** In one directory,
+  `.ruff.toml` beats `ruff.toml` beats `pyproject.toml`; a `pyproject.toml`
+  without `[tool.ruff]` is skipped. Configurations never merge: a nested file
+  replaces its parent unless it says `extend = "../pyproject.toml"`.
+- **User-level configuration** (`~/.config/ruff/`, or `$XDG_CONFIG_HOME/ruff/`;
+  `%APPDATA%\ruff\` on Windows) applies only when no project configuration is
+  found.
+- **Command line:** `--config <file>` replaces discovery; `--config "KEY = VALUE"`
+  overrides one key everywhere; a dedicated flag beats both; `--isolated`
+  ignores every file.
+- **`target-version`** is inferred from `requires-python` in the
+  `pyproject.toml` next to the discovered configuration, or, when no
+  configuration file is found, in the nearest `pyproject.toml`; otherwise it
+  defaults to `py310`.
+- **Rules:** Ruff 0.16.8 enables 413 rules by default. `lint.select`
+  replaces that set; `lint.extend-select` adds to it. Choose deliberately:
+  see [configuration.md](references/configuration.md#rule-selection-strategy).
+- **Formatter conflicts:** keep `W191`, `E111`, `E114`, `E117`, `D203`,
+  `D206`, `D300`, `Q000`–`Q004`, `COM812`, `COM819` (and `ISC002` in one
+  setup) off when using `ruff format`
+  ([official list](https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules)).
+  In 0.16.8 `E111`, `E114` and `E117` are preview-only, so selecting them
+  without preview does nothing (Ruff warns).
+- **Preview** (`lint.preview`, `format.preview`, `--preview`) is opt-in and
+  unstable; preview rules are never selected without it.
 
-## Suppressions: what exists, and why this skill does not add them
+## Diagnosing
 
-Ruff understands `# noqa: CODE`, `# ruff: ignore[CODE]` (end of line or the
-line before, 0.16+), `# ruff: disable[CODE]` … `# ruff: enable[CODE]` ranges
-(0.15+), `# ruff: file-ignore[CODE]` and `# ruff: noqa: CODE` for a whole
-file, `per-file-ignores`, and `--add-noqa`/`--add-ignore` to baseline a legacy
-codebase. Recognize them when you read code; remove the ones `RUF100` reports
-as unused. Adding one is the user's decision, never a way to finish a task.
+| Symptom | Next step |
+| --- | --- |
+| Exit `1` from `check` | Findings remain (syntax errors are reported as `invalid-syntax` findings) |
+| Exit `1` from `format --check`/`--diff` | A file would be reformatted |
+| Exit `2` | Usage or configuration error, including a `required-version` mismatch and a file `format` cannot parse |
+| Unexpected rules or settings | `ruff check --show-settings <file>` (prints `Settings path` and every resolved value) |
+| A file is or is not checked | `ruff check --show-files` |
+| Planning a large fix | `ruff check --statistics` |
 
-## Formatter facts that prevent surprises
+More in [diagnosing.md](references/diagnosing.md).
 
-- `ruff format` is a Black-compatible formatter (over 99.9% identical output on
-  Black-formatted code); differences are mostly around end-of-line comments.
-- It also formats Python code blocks in Markdown (`python`, `py`, `pyi`,
-  `pycon`, and Quarto's `{python}` fences) since 0.16; `ruff check` does not
-  lint Markdown.
-- Notebooks (`.ipynb`) are linted and formatted by default.
-- `# fmt: off` / `# fmt: on` and `# fmt: skip` exist; they are suppressions
-  under rule 1.
+## References
 
-## Additional resources
-
-- [`references/configuration.md`](references/configuration.md) — discovery
-  edge cases, the recommended profile explained, rule selection strategy,
-  per-file policy, preview, and common configuration mistakes.
-- [`references/migration.md`](references/migration.md) — moving from Black,
-  isort, Flake8 (and plugins), Pylint, pyupgrade, autoflake, pydocstyle, and
-  Bandit, and upgrading a Ruff 0.15 configuration to 0.16.
-- [`references/pipelines.md`](references/pipelines.md) — pre-commit and prek,
-  GitHub Actions and other CI, the Ruff language server, and keeping every pin
-  on the same version.
+- [install-and-run.md](references/install-and-run.md): install routes,
+  command routes, uv flags, keeping one version everywhere.
+- [configuration.md](references/configuration.md): discovery and precedence,
+  rule selection, per-file policy, target version, formatter settings,
+  preview, unsafe fixes, legacy codebases.
+- [migration.md](references/migration.md): Black, isort, Flake8 and plugins,
+  Pylint, pyupgrade, autoflake, pydocstyle, Bandit, and upgrading an older
+  Ruff configuration.
+- [pipelines.md](references/pipelines.md): the `ruff server` language server
+  and editors, migrating off `ruff-lsp`, pre-commit, GitHub Actions and other
+  CI.
+- [diagnosing.md](references/diagnosing.md): exit codes, inspection commands,
+  syntax errors, `required-version`, and the suppression forms to recognize.

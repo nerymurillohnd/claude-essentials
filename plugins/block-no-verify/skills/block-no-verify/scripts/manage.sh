@@ -95,17 +95,15 @@ scope_paths() {
   project | local)
     if [[ $1 == project ]]; then SETTINGS="${ROOT}/.claude/settings.json"; else SETTINGS="${ROOT}/.claude/settings.local.json"; fi
     HOOK_DIR="${ROOT}/.claude/hooks"
-    # shellcheck disable=SC2016 # expanded by the hook shell at run time, not here
-    COMMAND='bash "$CLAUDE_PROJECT_DIR/.claude/hooks/block-no-verify.sh"'
+    COMMAND="bash \"\$CLAUDE_PROJECT_DIR/.claude/hooks/block-no-verify.sh\""
     ;;
   user)
     SETTINGS="${CFG_DIR}/settings.json"
     HOOK_DIR="${CFG_DIR}/hooks"
-    # shellcheck disable=SC2016 # expanded by the hook shell at run time, not here
     if [[ -n ${CLAUDE_CONFIG_DIR:-} ]]; then
-      COMMAND='bash "$CLAUDE_CONFIG_DIR/hooks/block-no-verify.sh"'
+      COMMAND="bash \"\$CLAUDE_CONFIG_DIR/hooks/block-no-verify.sh\""
     else
-      COMMAND='bash "$HOME/.claude/hooks/block-no-verify.sh"'
+      COMMAND="bash \"\$HOME/.claude/hooks/block-no-verify.sh\""
     fi
     ;;
   *) return 1 ;;
@@ -588,16 +586,15 @@ cmd_install() {
   say "handler: ${HANDLER_DST} (byte-identical to the bundled copy, version ${ver})"
 
   group=$(group_json) || restore
-  # shellcheck disable=SC2016 # $x and $g are jq variables, not shell expansions
-  write_json "${SETTINGS}" "${JQ_OURS}"'
+  write_json "${SETTINGS}" "${JQ_OURS}
     .hooks = (.hooks // {})
     | .hooks.PreToolUse = (.hooks.PreToolUse // [])
     | if any(.hooks.PreToolUse[]; ours_group) then
-        .hooks.PreToolUse |= (reduce .[] as $x ({out: [], done: false};
-          if ($x | ours_group) then
-            (if .done then . else {out: (.out + [$g]), done: true} end)
-          else .out += [$x] end) | .out)
-      else .hooks.PreToolUse += [$g] end' --argjson g "${group}" || restore
+        .hooks.PreToolUse |= (reduce .[] as \$x ({out: [], done: false};
+          if (\$x | ours_group) then
+            (if .done then . else {out: (.out + [\$g]), done: true} end)
+          else .out += [\$x] end) | .out)
+      else .hooks.PreToolUse += [\$g] end" --argjson g "${group}" || restore
   say "settings: merged one PreToolUse group into ${SETTINGS} (other keys and hooks untouched; whitespace normalized by jq)"
   say "== verify"
   run_verify || restore

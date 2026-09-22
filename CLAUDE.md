@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## What this is
 
 A public, git-backed marketplace of Claude Code plugins, skills, and agents
@@ -11,68 +9,50 @@ work.
 
 ## Commands
 
+The repository is a uv-managed Python project for development only; nothing in it is a
+runtime dependency of any plugin. Every tool is pinned in `uv.lock` and reads `pyproject.toml`,
+and every `make` target runs it from `.venv`. `make help` lists the targets.
+
 ```bash
-nvm use           # Node from .nvmrc (24.21.0)
-npm install       # once
-npm run generate  # rebuild .claude-plugin/marketplace.json's plugins[] from plugins/*/.claude-plugin/plugin.json
-npm run validate  # schema-check marketplace.json + every plugin.json; cross-check disk <-> catalog; plugin README template contract + root README catalog row
-npm run check     # biome:ci, lint:sh, typecheck, knip, tests, generate, validate, validate:claude — the CI gate
-npm run biome:fix # apply safe Biome fixes (format + lint + assist); biome:fix:unsafe only by hand, then review
-npm run biome:ci  # read-only Biome gate (format, lint, assist) that fails on warnings — used by check and CI
-npm run format    # read-only format check (format:fix writes); lint / lint:fix likewise
-npm run biome:check / biome:staged / biome:watch  # strict checks: whole repo, staged files, watch mode
-npm run lint:sh   # ShellCheck (.shellcheckrc) + shfmt -d on every tracked or new (not ignored) shell script
-npm run typecheck # tsc -p tsconfig.json: max-strict type check of scripts/**/*.mjs (part of npm run check)
-npm run knip      # unused files, exports, and dependencies (knip.jsonc; part of npm run check; CI adds --reporter github-actions)
-npm test                # node:test unit tests for scripts/lib, plus every tracked or new plugins/**/test-*.sh suite under bash and /bin/bash (part of npm run check)
-npm run validate:claude # `claude plugin validate --strict` (claude on PATH; CI pins CLAUDE_CODE_VERSION) on the marketplace + every plugin
-npm run check:versions  # plugin version-bump rules vs origin/main; add -- --verify-tag for claude plugin tag --dry-run (CI job version-check)
-npm run labels:sync     # dry-run diff of GitHub labels vs .github/labels.json (--apply/--prune are outward-facing)
+make setup        # create/refresh .venv from uv.lock (the only target that calls uv)
+make check        # the whole gate, in order: generate, lint, types, test-fast, validate, validate-cli, test-slow
+make generate     # rebuild marketplace.json plugins[] and the issue-form dropdown, then fail on a diff
+make lint         # Ruff format --check + check, ShellCheck, shfmt, canonical JSON, text bytes, actionlint, zizmor
+make lint-staged  # the same checks on staged + modified + untracked files (what the commit guard runs)
+make types        # basedpyright, typeCheckingMode=all + failOnWarnings
+make test-fast    # in-process pytest
+make validate     # catalog + plugin invariants (M P C S H R B W E G T Q X)
+make validate-cli # `claude plugin validate --strict` on the marketplace and every plugin (claude on PATH)
+make test-slow    # process-spawning tests + every plugin suite under bash and /bin/bash + shipped-Python floor and smoke run
+make versions     # plugin version-bump rules and push route vs the latest tags
+make versions VERSIONS_ARGS="--base origin/main --json"   # compare against a ref; machine-readable plan
+make versions VERSIONS_ARGS=--verify-tag                  # also run `claude plugin tag --dry-run`
+make fix          # writer: ruff format, ruff check --fix (safe), shfmt -w, canonical JSON
+make fix-file FILE=path   # the same writers on one file
+make clean        # prune .claude/.cache/hooks stamps and stale state
+.venv/bin/python -m scripts.github.sync_labels            # dry-run diff of GitHub labels vs .github/labels.json
+.venv/bin/python -m scripts.github.sync_labels --apply    # outward-facing: changes GitHub (add --prune to delete)
+claude plugin eval plugins/<id> --scaffold --allow-tools Bash Write Edit --no-publish --max-cost-usd 15   # behavioural evals, paid, never a gate
 ```
 
-Run `npm run check` before any commit touching `plugins/`, `schemas/`, or
-`scripts/`. Unit tests live next to the modules they test
-(`scripts/lib/*.test.mjs`); `npm run validate` checks manifests, labels, and
-issue forms. Run validate alone after editing a single plugin manifest when
-you don't also need formatting/lint.
+Run `make check` before any commit touching `plugins/` or `scripts/`; the commit guard
+(`.claude/hooks/guard-commit.sh`) runs `make lint-staged` on every `git commit`. Tests live
+next to the modules they test (`scripts/<area>/test_*.py`); plugin hook suites live in
+`scripts/plugin_validation/suites/<id>/test-*.sh`, never inside the plugin (ADR-0007). Evals
+follow `.claude/skills/marketplace-governance/references/plugin-eval-protocol.md`. CI
+(`.github/workflows/ci.yml`) runs `make setup` and the same `make check`, and fails if
+`make generate` produces an uncommitted diff.
 
-CI (`.github/workflows/ci.yml`) runs the same `npm run check` pipeline and
-additionally fails if `npm run generate` produces a diff that wasn't
-committed.
+Python conventions: no module carries a suppression (`# noqa`, `type: ignore`,
+`pyright: ignore`); modules run as `python -m scripts.<area>.<name>` through `.venv/bin/python`,
+so they carry no shebang and no exec bit. `make setup` is the only target that installs
+anything (uv may fetch the pinned Python); no other target installs or downloads an
+interpreter. The hook/CI "runtime vs exempt" rules exist twice (`scripts/versioning/version_plan.py` and
+`.claude/hooks/lib/plugin-paths.sh`); `scripts/harness/test_plugin_paths.py` runs the bash
+functions to keep them identical.
 
-**TypeScript tooling:** `tsconfig.json` type-checks every `scripts/**/*.mjs`
-(`allowJs` + `checkJs`, full `strict` plus the stricter extras, `noEmit` — tsc
-never compiles anything) and must stay at 0 errors: it is part of `npm run check`
-and a CI step. Type external data honestly (`unknown`, or `any` only where a
-schema validates it next), narrow `catch` values with `scripts/lib/errors.mjs`,
-and read `process.env` with bracket access plus an explicit missing-value check.
-
-**Knip (`knip.jsonc`):** fix findings, don't ignore them — config hints fail the
-run, and entry exports count. `ignoreDependencies` holds only documented,
-accepted exceptions. When a plugin ships Node code with its own
-`package.json`, add it under `workspaces` with an explicit `entry` (Knip can't
-infer an MCP server entry from `.mcp.json`). Never run `knip --fix` in CI.
-The hook/CI "runtime vs exempt" rules exist twice (`scripts/lib/version-plan.mjs`
-and `.claude/hooks/lib/plugin-paths.sh`); `scripts/lib/plugin-paths.test.mjs`
-runs the bash functions to keep them identical. `typescript`, `typescript-language-server`, and
-`@types/node` are pinned exactly to the maintainer's globals (6.0.3 / 6.0.0 /
-Node 24 line); Claude Code's `typescript-lsp` plugin still runs the global
-`typescript-language-server` from `PATH`, which loads this repo's workspace
-TypeScript. Never upgrade to TypeScript 7 in this repo or globally without the
-official side-by-side recipe: TS 7 ships no `tsserver` API and breaks the LSP.
-Every `.mjs` starts with `// @ts-check`; Node scripts are run with `node`
-(or `npm run`), so they carry no shebang and no exec bit.
-
-**Knip MCP server:** `.mcp.json` registers a project-scoped `knip` server
-(`npx --no-install knip-mcp`) from the exactly pinned `@knip/mcp` devDependency,
-so it never downloads anything and analyzes with the same deduped `knip` as
-`npm run knip` and CI; `scripts/lib/tooling-alignment.test.mjs` fails if either
-stops holding. Approve it once with `/mcp` (project servers need approval).
-
-`npm run check` needs ShellCheck, shfmt, Ruff (the ruff-quality suites run it;
-CI pins `RUFF_VERSION`), and `claude` on `PATH`. Claude Code is
-never a repo dependency: CI installs the version pinned by `CLAUDE_CODE_VERSION`
-in `ci.yml` and `tag-versions.yml` (`npm run validate` keeps them equal).
+Claude Code is never a repo dependency: CI installs the version pinned by
+`CLAUDE_CODE_VERSION`, and `make validate` keeps that pin equal across workflows.
 
 ## Architecture
 
@@ -94,25 +74,19 @@ docs at https://code.claude.com/docs/en/plugin-marketplaces.md — don't assume
 the constraint from memory, it may have changed since this was written.
 
 **Generated vs. authored files:** `.claude-plugin/marketplace.json`'s
-`plugins` array is generated by `scripts/generate-marketplace.mjs` from every
+`plugins` array is generated by `scripts/marketplace/generate_marketplace.py` from every
 `plugins/<name>/.claude-plugin/plugin.json` on disk — never hand-edit that
 array. A plugin's manifest `name` must equal its directory name under
-`plugins/`; both the generator and `scripts/validate-marketplace.mjs` enforce
+`plugins/`; both the generator and `scripts/marketplace/validate_marketplace.py` enforce
 this and fail the build otherwise. Each entry also carries `category` and
 `tags`, copied from `plugin.json` `metadata.marketplace` — a required object
-whose allowed categories live in
-`schemas/plugin.schema.json#/definitions/marketplaceCategory` and whose tags
-are capped at eight. `schemas/marketplace.schema.json` and
-`schemas/plugin.schema.json` are the source of truth both scripts validate
-against — they encode *this repo's* contract. `schemas/claude-code/` holds
-separate, upstream-faithful skeletons of every documented field (plugin
-manifest, marketplace, `hooks.json`, `.mcp.json`, `.lsp.json`,
-`monitors.json`), each with its docs source in `$comment`; they carry no repo
-policy, and `scripts/lib/claude-code-schemas.test.mjs` checks them against the
-docs' own examples. When live docs change, update them first.
-`schemas/github/` vendors SchemaStore's issue-form and issue-config schemas,
-unmodified except for a source `$comment` (GitHub publishes none); `npm run validate` checks every issue form
-against them.
+whose allowed categories live in `MARKETPLACE_CATEGORIES`
+(`scripts/marketplace/catalog.py`) and whose tags are capped at eight. The
+schema of each file Claude Code reads is the official CLI's: `make validate-cli`
+runs `claude plugin validate --strict`, and `make validate` adds this repo's own
+invariants on top. `.github/schemas/` vendors SchemaStore's issue-form and
+issue-config schemas, unmodified except for a source `$comment` (GitHub
+publishes none); `make validate` checks every issue form against them.
 
 **Designing a plugin:** before writing any plugin file, run the repo skill
 `/plugin-design <id>` (`.claude/skills/plugin-design/`): research, the
@@ -122,9 +96,15 @@ Stop hook checklist.
 **Reviewing a plugin:** before calling a plugin done, and before any plugin
 PR, run the repo skill `/plugin-release-review <id>`
 (`.claude/skills/plugin-release-review/`). It adds the judgment layer on top of
-`npm run validate`: accuracy against the files, cross-artifact consistency,
+`make validate`: accuracy against the files, cross-artifact consistency,
 and README quality. Its checklist is enforced by a Stop hook (ADR-0002
 amendment).
+
+**Coherence audit:** the read-only `plugin-coherence-auditor` subagent
+(`.claude/agents/plugin-coherence-auditor.md`) reads one plugin's files and every document
+about it end to end, and reports each gap, inconsistency, broken reference or ambiguity
+that would change how Claude acts, with `file:line`. Run it on a plugin before
+`/plugin-release-review`, one agent per plugin.
 
 **Final audit:** before any PR, the read-only `repo-auditor` subagent
 (`.claude/agents/repo-auditor.md`) audits the branch point by point;
@@ -150,6 +130,26 @@ what), `contributing/` (how to add a plugin), `maintenance/` (pending/resolved
 technical-debt ledgers — entries need a stable ID and evidence, not vibes),
 `audits/` (dated point-in-time review reports), `superpowers/` (design
 plans/specs from skill-driven work, kept after landing).
+
+**Quality gates:** a gate plugin ships its hooks as a plugin component (`hooks/hooks.json`,
+with its handler in the plugin's `scripts/`; component directories sit flat at the plugin
+root, never nested), runs only tools the user already installed (never `uv`/`uvx`),
+uses each tool's own configuration discovery, and asks rather than denies
+([ADR-0007](docs/decisions/adr-0007-gates-ship-as-plugin-hooks.md)).
+
+**Versioning, issues, and labels:** plugins use explicit semver. Every change
+to a plugin's runtime files (anything Claude loads; README/docs/LICENSE/CHANGELOG
+and `plugin.json` metadata are exempt) bumps `version` and adds a dated CHANGELOG entry, and
+CI tags `{name}--v{version}` on merge
+([ADR-0003](docs/decisions/adr-0003-plugin-versioning-and-tagging.md),
+[versioning.md](docs/contributing/versioning.md)). Issue forms, triage, and the
+label taxonomy follow
+[ADR-0004](docs/decisions/adr-0004-issue-and-label-protocol.md). Labels live in
+`.github/labels.json`, never in the GitHub UI. Generated artifacts:
+`marketplace.json` `plugins[]` and the issue forms' **Affected plugin**
+dropdown, both from `make generate`. Plugins aren't packages: no GitHub
+Releases. `*--v*` tags come only from the `Tag plugin versions` workflow and are
+immutable (tag ruleset).
 
 ## Reference documentation
 
@@ -196,28 +196,14 @@ There is no single "plugin lifecycle" page; the `Plugin lifecycle — *` rows
 above are the sections that together define it. Live docs win over anything
 in this repo, templates included.
 
-**Versioning, issues, and labels:** plugins use explicit semver. Every change
-to a plugin's runtime files (anything Claude loads; README/docs/LICENSE/CHANGELOG
-and `plugin.json` metadata are exempt) bumps `version` and adds a dated CHANGELOG entry, and
-CI tags `{name}--v{version}` on merge
-([ADR-0003](docs/decisions/adr-0003-plugin-versioning-and-tagging.md),
-[versioning.md](docs/contributing/versioning.md)). Issue forms, triage, and the
-label taxonomy follow
-[ADR-0004](docs/decisions/adr-0004-issue-and-label-protocol.md). Labels live in
-`.github/labels.json`, never in the GitHub UI. Generated artifacts:
-`marketplace.json` `plugins[]` and the issue forms' **Affected plugin**
-dropdown, both from `npm run generate`. Plugins aren't packages: no GitHub
-Releases. `*--v*` tags come only from the `Tag plugin versions` workflow and are
-immutable (tag ruleset).
-
 ## Conventions
 
-- Biome (`biome.json`, pinned exactly: nursery rules are enabled) formats/lints
-  all JSON/JS and fails on warnings too (`--error-on-warnings`); JSON is strict
-  except `tsconfig*.json`/`*.jsonc`; `noConsole` is off only for the CLI entry
-  points `scripts/*.mjs`; `useLiteralKeys` is off because tsconfig's
-  `noPropertyAccessFromIndexSignature` requires `process.env["X"]`. ShellCheck and
-  shfmt (via `.editorconfig`) cover every `.sh` file.
+- Ruff (format and lint) and basedpyright cover every `.py` under `scripts/` and `plugins/`
+  (a plugin that ships Python declares the repository's Python, 3.14, as its floor);
+  every tracked JSON file except the vendored `.github/schemas/` is held to one
+  canonical form (`scripts/common/jsontext.py`);
+  ShellCheck and shfmt (via `.editorconfig`) cover every shell script. `make lint`
+  runs them all.
 - The repo and every plugin are Apache-2.0
   ([ADR-0005](docs/decisions/adr-0005-apache-2-0-license.md)): each `LICENSE`
   (no extension) is the verbatim text from
@@ -229,24 +215,25 @@ immutable (tag ruleset).
   headers/bold/blockquotes — that weakens GitHub/SPDX license detection.
 - `main`: changes that don't alter a plugin's behavior (docs, READMEs, root
   files, tooling) are pushed directly to `main`; `.claude/hooks/guard-push.sh`
-  first requires a clean tree, `bump: none`, and a passing `npm run check`.
+  first requires a clean tree, `bump: none`, and a passing `make check`.
   Plugin runtime changes (a version bump) go through a PR with green `check` +
   `version-check`. `main` can't be deleted or force-pushed (rulesets). Label
   PRs from `.github/labels.json`. DEBT-0011 records this policy.
 - Plugin workflow scripts (`plugins/*/workflows/*.js`) use the dynamic
-  workflow dialect (top-level `return`, runtime globals), which Biome can't
-  parse, so `biome.json` excludes them; `scripts/lib/plugin-workflows.test.mjs`
+  workflow dialect (top-level `return`, runtime globals);
+  `scripts/plugin_validation/workflows.py` (W invariants, `test_workflows.py`)
   is their gate (pure-literal `meta`, declared phases, body compiles, and the
   orchestration logic against a stub runtime).
 - Workflows pin every `uses:` to a full commit SHA with a `# vX.Y.Z` comment
   (Dependabot updates them).
-- Every `actions/setup-node` step reads `node-version-file: .nvmrc` (never a
-  floating `node-version`), so CI runs the exact local Node; `npm run validate`
-  enforces it.
+- `.python-version` equals the `requires-python` floor in `pyproject.toml`, so
+  CI and every machine run the same interpreter; `make validate` enforces it (G3).
 - New shell scripts need the exec bit (`git ls-files -s` → `100755`); test
   them by path, not via `bash script.sh`.
 - Accepted ADRs are amended by appending `### Amendment — YYYY-MM-DD`, never
   rewritten; resolved debt moves from `pending-debt.md` to `resolved-debt.md`.
+- The Bash tool runs zsh, which does not word-split `$VAR`: pass lists as arrays, call
+  `bash -c`, or write the paths out; `for f in $LIST` silently runs once.
 - Keep searches scoped to the repo — never `find /` or `find ~` (it triggers
   macOS privacy prompts for Desktop, Downloads, and network volumes).
 - Nothing here is pushed to the public GitHub remote, and no GitHub

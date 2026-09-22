@@ -18,7 +18,7 @@ text *is* code: a one-word fix in a `SKILL.md` changes what the model does.
 | Surface | Paths (relative to `plugins/<name>/`) | Bump? |
 | --- | --- | --- |
 | **Runtime**: Claude loads it | `skills/**` (including `references/` and skill scripts), `agents/**`, `commands/**`, `hooks/**`, `.mcp.json`, `.lsp.json`, `output-styles/**`, `monitors/**`, and every `plugin.json` field except the metadata below | **Yes**, at least PATCH |
-| **Not runtime**: only people read it | `README.md`, `CHANGELOG.md`, `LICENSE*`, `docs/**`, and `plugin.json` metadata: `description`, `displayName`, `keywords`, `author`, `homepage`, `repository`, `license`, `metadata` | **No** |
+| **Not runtime**: only people read it | `README.md`, `CHANGELOG.md`, `LICENSE*`, `docs/**` and `evals/**` at the plugin root (eval cases are never loaded by Claude), and `plugin.json` metadata: `description`, `displayName`, `keywords`, `author`, `homepage`, `repository`, `license`, `metadata` | **No** |
 | **Anything else** | any path not listed above | **Yes**. The exempt list is closed, so unknown paths count as runtime |
 
 A PR that changes runtime paths must:
@@ -31,12 +31,12 @@ A PR that changes only non-runtime paths needs no bump, and its PR gets
 `## [Unreleased]` in the CHANGELOG, which moves into the next versioned
 section. It's recommended, not enforced: don't log every README typo.
 
-The `version-check` CI job (`npm run check:versions` locally) enforces this
-with the same classification (`scripts/lib/version-plan.mjs`). Its error lists
+The `version-check` CI job (`make versions` locally) enforces this
+with the same classification (`scripts/versioning/version_plan.py`). Its error lists
 the runtime files that need the bump. A change that needs no bump (docs,
 READMEs, metadata, tooling) is pushed straight to `main`: the maintainer's
 push guard (`.claude/hooks/guard-push.sh`) first requires a clean tree,
-`bump: none`, and a passing `npm run check`, and CI re-runs both after the
+`bump: none`, and a passing `make check`, and CI re-runs both after the
 push. A change that bumps a version goes through a PR, so `version-check`
 gates the merge and the tag workflow runs on it. Never
 put `version` in `.claude-plugin/marketplace.json`: the generator doesn't emit
@@ -103,7 +103,7 @@ The workflow is idempotent: re-running it tags only what's missing. Tags
 matching `*--v*` are protected against updates and deletion, so a tagged
 version is never moved. To fix a bad version, ship a new one.
 
-Run `scripts/tag-versions.mjs` without `--dry-run` only in that workflow: it
+Run `python -m scripts.versioning.tag_versions` without `--dry-run` only in that workflow: it
 relies on a fresh checkout whose tags mirror `origin`. Locally, use
 `--dry-run`.
 
@@ -122,9 +122,9 @@ history ([renames](https://code.claude.com/docs/en/plugin-marketplaces)).
 ## Commands
 
 ```bash
-npm run check:versions                  # compare against origin/main
-npm run check:versions -- --base main   # compare against another ref
-npm run check:versions -- --json        # machine-readable plan
-npm run check:versions -- --verify-tag   # also run claude plugin tag --dry-run (needs a clean tree)
-node scripts/tag-versions.mjs --dry-run  # which versions the tagging workflow would tag
+make versions                  # compare against origin/main
+make versions VERSIONS_ARGS="--base main"   # compare against another ref
+make -s versions VERSIONS_ARGS=--json        # machine-readable plan
+make versions VERSIONS_ARGS=--verify-tag   # also run claude plugin tag --dry-run (needs a clean tree)
+.venv/bin/python -m scripts.versioning.tag_versions --dry-run  # which versions the tagging workflow would tag
 ```

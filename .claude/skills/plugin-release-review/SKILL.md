@@ -21,7 +21,7 @@ tags) is how the marketplace presents it. This review makes sure all of that is
 
 Two layers, and the review needs both:
 
-1. **Mechanical floor.** `npm run validate` (part of `npm run check` and CI)
+1. **Mechanical floor.** `make validate` (part of `make check` and CI)
    enforces structure: schemas, kind, template sections and order,
    placeholders, alerts, code-block languages, badge catalog, install steps, and
    the root catalog row. If it fails, nothing else matters yet.
@@ -52,8 +52,8 @@ summary, file:line references, counts):
 
 This skill registers a Stop hook (`checklist-gate.sh`). While the checklist is
 in progress, it will not let the turn end: it lists what is still open, and
-once every item is marked it re-runs each item's verify command (`npm run
-validate`, `check:versions`, tests) and reopens items whose verification fails.
+once every item is marked it re-runs each item's verify command (`make
+validate`, `make versions`, tests) and reopens items whose verification fails.
 That is the point: a review that skips a phase, or claims a green floor that
 isn't green, cannot finish.
 
@@ -76,7 +76,7 @@ against, so read them fresh each time rather than from memory.
 
 ### 2. Mechanical floor
 
-Run `npm run check` and `npm run check:versions` (CI runs the second as the
+Run `make check` and `make versions` (CI runs the second as the
 separate `version-check` job, so `check` alone can pass while CI fails). Fix
 every failure before continuing. A failing floor means the structure is wrong,
 and polishing prose on top of it wastes effort.
@@ -129,7 +129,7 @@ match. A difference is a finding unless the template changed on purpose.
 
 1. Read `plugin.json` against every field the live plugin manifest schema offers.
 2. Each field the plugin's nature calls for is set (keywords for its problem space, `userConfig`, `dependencies`, `defaultEnabled`, component paths).
-3. Read `plugin.json` `metadata.marketplace` (`category`, `tags`): `npm run generate` copies it into the `marketplace.json` entry, so fix it there, never in the entry.
+3. Read `plugin.json` `metadata.marketplace` (`category`, `tags`): `make generate` copies it into the `marketplace.json` entry, so fix it there, never in the entry.
 4. A value a generator copied unchanged where the plugin needs more is a finding.
 
 ### 5c. Bundled reviews
@@ -151,7 +151,7 @@ Present findings before changing anything substantial. Use this shape:
 | --- | --- | --- | --- | --- | --- |
 | 1 | high | accuracy | README says "no network"; `scripts/sync.sh:14` calls curl | file:line | Declare the destination in Security and MCP, permissions, and network |
 
-**Mechanical floor:** `npm run check` result.
+**Mechanical floor:** `make check` result.
 **Consistency matrix:** rows checked, rows failing.
 **Editorial:** strengths worth keeping, then the issues above.
 **Prevention:** new guards added or proposed (see phase 7).
@@ -168,14 +168,14 @@ per `docs/contributing/versioning.md`). Then, for each finding, ask whether
 it is a new *class* of gap. If it is, close the class, not just the instance:
 
 - if a script can detect it reliably, add the check to
-  `scripts/lib/readme-contract.mjs` (or the relevant validator) with a test;
+  `scripts/plugin_validation/readme_contract.py` (or the relevant validator) with a test;
 - if it needs judgment, add it to the matching reference in this skill;
 - update `docs/contributing/plugins.md` and the PR template if contributors
   would otherwise miss it;
 - record it in `docs/maintenance/resolved-debt.md` (or `pending-debt.md` if not
   fixed now).
 
-Rerun `npm run check` after fixing. Report what changed and which guards now
+Rerun `make check` after fixing. Report what changed and which guards now
 prevent each class of finding.
 
 ## Principles

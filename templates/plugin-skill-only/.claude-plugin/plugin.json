@@ -1,5 +1,5 @@
 {
-  "name": "REPLACE-WITH-SKILL-NAME",
+  "name": "replace-with-skill-name",
   "displayName": "Replace With Skill Name",
   "version": "0.1.0",
   "description": "One sentence: what this skill does and why someone would install it on its own.",
@@ -7,11 +7,19 @@
     "name": "Your Name"
   },
   "license": "Apache-2.0",
-  "keywords": ["replace", "with", "keywords"],
+  "keywords": [
+    "replace",
+    "with",
+    "keywords"
+  ],
   "metadata": {
     "marketplace": {
       "category": "REPLACE-WITH-CATEGORY",
-      "tags": ["replace", "with", "tags"]
+      "tags": [
+        "replace",
+        "with",
+        "tags"
+      ]
     }
   }
 }

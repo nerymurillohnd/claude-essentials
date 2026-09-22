@@ -142,13 +142,8 @@ It only checks; it never installs anything or asks for credentials.
 
 Expected result: {{observable outcome}}.
 
-**Behavioral evals** — [`evals/`](evals/) runs with `claude plugin eval`, which compares a
-run with the plugin against a baseline without it:
-
-| Case | Checks | With | Without | Δ | Last run |
-| --- | --- | ---: | ---: | ---: | --- |
-| `{{triggers-on-natural-request}}` | Skill fires on natural phrasing | {{0.00}} | {{0.00}} | {{+0.00}} | {{YYYY-MM-DD, model}} |
-| `{{ignores-unrelated-request}}` | Skill does **not** fire on unrelated work | {{0.00}} | {{0.00}} | {{0.00}} | {{YYYY-MM-DD, model}} |
+**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are
+reported in the pull request or a dated file under `docs/audits/`, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -156,7 +151,7 @@ run with the plugin against a baseline without it:
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/{{plugin-id}} --strict
 claude plugin eval plugins/{{plugin-id}} --no-publish --max-cost-usd {{5}}
 ```

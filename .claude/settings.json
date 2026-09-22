@@ -1,25 +1,21 @@
 {
-  "enabledPlugins": {
-    "plugin-dev@claude-plugins-official": true
-  },
   "env": {
     "CLAUDE_BASH_MAINTAIN_PROJECT_WORKING_DIR": "1"
   },
   "permissions": {
     "allow": [
-      "Bash(npm run generate)",
-      "Bash(npm run validate)",
-      "Bash(npm run format)",
-      "Bash(npm run lint)",
-      "Bash(npm run check)",
-      "Bash(npm test)",
-      "Bash(npm run validate:claude)",
-      "Bash(npm run check:versions)",
-      "Bash(npm run check:versions -- *)",
+      "Bash(make *)",
+      "Bash(uv sync*)",
+      "Bash(uv lock*)",
+      "Bash(.venv/bin/python -m scripts.*)",
+      "Bash(.venv/bin/pytest*)",
+      "Bash(.venv/bin/ruff*)",
+      "Bash(.venv/bin/basedpyright*)",
       "Bash(claude plugin validate *)",
       "Bash(claude plugin list *)",
       "Bash(claude plugin details *)",
-      "Bash(claude plugin marketplace list *)"
+      "Bash(claude plugin marketplace list *)",
+      "mcp__ide__getDiagnostics"
     ]
   },
   "hooks": {
@@ -56,7 +52,7 @@
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-commit-biome.sh",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-commit.sh",
             "timeout": 60
           },
           {
@@ -92,10 +88,14 @@
       }
     ]
   },
-  "enableWorkflows": true,
-  "todoFeatureEnabled": true,
   "worktree": {
-    "baseRef": "head",
-    "symlinkDirectories": ["node_modules"]
-  }
+    "baseRef": "head"
+  },
+  "enableWorkflows": true,
+  "enabledPlugins": {
+    "plugin-dev@claude-plugins-official": true,
+    "basedpyright@claude-code-lsps": true,
+    "bash-language-server@claude-code-lsps": true
+  },
+  "todoFeatureEnabled": true
 }

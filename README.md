@@ -42,10 +42,10 @@ kinds ([ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md)):
 
 | Plugin | Description | Kind | Claude Code | Claude Cowork | Additional requirements |
 | --- | --- | --- | :---: | :---: | --- |
-| [Agent Self-Knowledge](plugins/agent-self-knowledge/README.md) | Claude answers questions about Claude Code from the live official docs, quoting the exact sentence with its URL and version, instead of from memory. | `skill-only` | ⚠️ | 🧪 | Python ≥ 3.7 |
+| [Agent Self-Knowledge](plugins/agent-self-knowledge/README.md) | Claude answers questions about Claude Code from the live official docs, quoting the exact sentence with its URL and version, instead of from memory. | `skill-only` | ⚠️ | 🧪 | Python ≥ 3.14 |
 | [Block No Verify](plugins/block-no-verify/README.md) | Stop Claude from skipping your Git hooks or commit signing, in the scope you choose, only when you ask for it. | `skill-only` | ⚠️ | ❌ | Bash ≥ 3.2, `jq` ≥ 1.6, Git ≥ 2.18 |
-| [Ruff Quality](plugins/ruff-quality/README.md) | Claude writes Python that passes Ruff, and, when you ask for it, cannot finish until every file it touched is fixed, formatted, and clean, without silencing a single rule. | `bundle` | 🧪 | 🧪 | Ruff ≥ 0.16, Bash ≥ 3.2, `jq` ≥ 1.6, Git ≥ 2.18 |
-| [Shell Quality](plugins/shell-quality/README.md) | Claude writes shell scripts that pass ShellCheck and shfmt, and, when you ask for it, cannot finish until every script it touched is formatted and clean, without silencing a single check. | `bundle` | 🧪 | 🧪 | ShellCheck ≥ 0.10, shfmt ≥ 3.12, Bash ≥ 3.2, `jq` ≥ 1.6, Git ≥ 2.18 |
+| [Ruff Quality](plugins/ruff-quality/README.md) | Every Python file Claude edits is fixed, formatted, and checked with your own Ruff, and Claude keeps working until what is left is fixed in the code, never silenced. | `bundle` | 🧪 | 🧪 | Ruff ≥ 0.16, Bash ≥ 3.2, `jq` ≥ 1.6 |
+| [Shell Quality](plugins/shell-quality/README.md) | Every shell script Claude edits is formatted with your shfmt and checked with your ShellCheck, and Claude keeps working until what is left is fixed in the script, never disabled. | `bundle` | 🧪 | 🧪 | ShellCheck ≥ 0.10, shfmt ≥ 3.12, Bash ≥ 3.2, `jq` ≥ 1.6 |
 | [Verify Completion](plugins/verify-completion/README.md) | When Claude tells you something is done, it has shown you the evidence, or it tells you plainly what it couldn't verify. | `bundle` | 🧪 | 🧪 | Bash ≥ 3.2, `jq` ≥ 1.6 |
 
 Pick by outcome, then read the plugin's README — **What it does not do**,
@@ -155,8 +155,8 @@ unpatched one, and never include secrets in any report.
 ## 🤝 Contributing
 
 ```bash
-npm install
-npm run check
+make setup
+make check
 ```
 
 Every change to what Claude loads bumps the plugin's `version` and adds a dated
@@ -200,4 +200,4 @@ version when the plugin's `version` changes.
 
 ---
 
-<div align="center"><sub>Maintained by <a href="https://github.com/nerymurillohnd">Nery Samuel Murillo Tejada</a> · Not an official Anthropic product · <a href="CODE_OF_CONDUCT.md">Code of Conduct</a></sub></div>
+<div align="center"><sub>Maintained by <a href="https://github.com/nerymurillohnd">Nery Samuel Murillo</a> · Not an official Anthropic product · <a href="CODE_OF_CONDUCT.md">Code of Conduct</a></sub></div>

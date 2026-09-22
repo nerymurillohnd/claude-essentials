@@ -36,12 +36,10 @@ current() {
   printf '%s' "${file}"
 }
 
-update() { # update <jq program> [jq args...]
-  local file tmp prog=$1
-  shift
-  file=$(current)
-  tmp="${file}.tmp.$$"
-  jq "$@" "${prog}" "${file}" >"${tmp}" && mv "${tmp}" "${file}"
+# Each rewrite calls jq directly, with the program as a literal argument, and
+# lands through a temporary file so a failed jq never truncates the checklist.
+save() { # save <file> <tmp>: move a finished rewrite into place
+  mv "$2" "$1"
 }
 
 require_item() {
@@ -86,21 +84,27 @@ start)
 check)
   [[ $# -eq 2 && -n $2 ]] || die "usage: check <item-id> <evidence>"
   require_item "$1"
-  # shellcheck disable=SC2016 # $id and $ev are jq variables
-  update '(.items[] | select(.id == $id)) |= (.state = "done" | .evidence = $ev)' --arg id "$1" --arg ev "$2"
+  file=$(current)
+  jq --arg id "$1" --arg ev "$2" '(.items[] | select(.id == $id)) |= (.state = "done" | .evidence = $ev)' \
+    "${file}" >"${file}.tmp.$$" || die "cannot update ${file#"${root}"/}"
+  save "${file}" "${file}.tmp.$$"
   printf 'done: %s\n' "$1"
   ;;
 needs-user)
   [[ $# -eq 2 && -n $2 ]] || die "usage: needs-user <item-id> <question>"
   require_item "$1"
-  # shellcheck disable=SC2016 # $id and $q are jq variables
-  update '(.items[] | select(.id == $id)) |= (.state = "needs_user" | .evidence = $q)' --arg id "$1" --arg q "$2"
+  file=$(current)
+  jq --arg id "$1" --arg q "$2" '(.items[] | select(.id == $id)) |= (.state = "needs_user" | .evidence = $q)' \
+    "${file}" >"${file}.tmp.$$" || die "cannot update ${file#"${root}"/}"
+  save "${file}" "${file}.tmp.$$"
   printf 'needs user: %s\n' "$1"
   ;;
 abort)
   [[ $# -eq 1 && -n $1 ]] || die "usage: abort <the user's instruction, quoted>"
-  # shellcheck disable=SC2016 # $why is a jq variable
-  update '.status = "aborted" | .aborted_because = $why' --arg why "$1"
+  file=$(current)
+  jq --arg why "$1" '.status = "aborted" | .aborted_because = $why' \
+    "${file}" >"${file}.tmp.$$" || die "cannot update ${file#"${root}"/}"
+  save "${file}" "${file}.tmp.$$"
   rm -f "${active}"
   printf 'aborted\n'
   ;;

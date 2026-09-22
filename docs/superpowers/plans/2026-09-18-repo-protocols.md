@@ -3874,7 +3874,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 status: accepted
 date: 2026-09-18
-decision-makers: Nery Samuel Murillo Tejada
+decision-makers: Nery Samuel Murillo
 consulted: Claude Code (Opus 5) — live docs, changelog, and CLI verification
 informed: Contributors to this repository
 supersedes: none
@@ -4012,7 +4012,7 @@ Chosen option: "Explicit semver, enforced in CI, tagged by CI with
 
 status: accepted
 date: 2026-09-18
-decision-makers: Nery Samuel Murillo Tejada
+decision-makers: Nery Samuel Murillo
 consulted: Claude Code (Opus 5) — live docs research
 informed: Contributors to this repository
 supersedes: none

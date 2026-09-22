@@ -1,0 +1,45 @@
+name: Close external pull requests
+
+# Contributions arrive through the issue forms; changes are made by the maintainer with
+# Claude Code (D5). A pull request from a fork is answered with where to go instead, then
+# closed. Dependabot and the repository owner are never closed.
+#
+# pull_request_target is required to write to a fork's pull request. It is safe here because
+# the job never checks out anything, runs no code from the pull request, restores no cache,
+# and only calls `gh` with a pull-requests:write token (ADR-0004).
+on: # zizmor: ignore[dangerous-triggers] ADR-0004: no checkout, no PR-head code, no cache
+  pull_request_target:
+    types: [opened, reopened]
+
+# No job inherits a grant; the one job below asks for exactly what it uses.
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  close:
+    name: Point to the issue forms and close
+    if: >-
+      github.event.pull_request.head.repo.full_name != github.repository &&
+      github.event.pull_request.user.login != github.repository_owner &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # comment on and close this pull request; nothing else
+    steps:
+      - name: Comment and close
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          set -euo pipefail
+          body="Thanks for your interest in claude-essentials. This repository does not accept pull requests from outside contributors: changes are made by the maintainer with Claude Code, and every report is attended.
+
+          Please open an issue instead, using one of the forms: ${REPO_URL}/issues/new/choose
+
+          ${REPO_URL}/blob/main/CONTRIBUTING.md explains what to file where and what happens next. This pull request is being closed automatically."
+          gh pr comment "${PR_URL}" --body "${body}"
+          gh pr close "${PR_URL}"

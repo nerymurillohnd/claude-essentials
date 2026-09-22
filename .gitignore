@@ -6,6 +6,8 @@ Thumbs.db
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
 .idea/
 *.swp
 *.swo
@@ -53,8 +55,11 @@ tmp/
 temp/
 .cache/
 
-# claude plugin eval output
-plugins/*/evals/results/
+# Generated Claude Code plugin-eval reports and run output
+**/evals/results/
+
+# Local machine-readable reports
+artifacts/
 
 # Maintenance-skill checklist state (.claude/hooks/lib/checklist.sh)
 .claude/state/

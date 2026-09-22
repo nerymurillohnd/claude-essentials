@@ -45,7 +45,7 @@ evidence that proves it:
 
 While items are open, the Stop hook will not let the turn end. Once all are
 marked, it re-runs the verify commands (remote tags, branch gone, main synced,
-clean tree plus `npm run validate`) with `$CHECKLIST_SUBJECT` set to the branch,
+clean tree plus `make validate`) with `$CHECKLIST_SUBJECT` set to the branch,
 and reopens any that fail.
 
 ## Flow
@@ -53,7 +53,7 @@ and reopens any that fail.
 1. **Before the PR.** For changes under `plugins/`, run `/plugin-release-review
    <id>` to completion on the final head. When the skill description, evals, or
    scripts changed, re-measure the README numbers (eval table, test counts,
-   timings) in this branch. Run `npm run check` and `npm run check:versions`.
+   timings) in this branch. Run `make check` and `make versions`.
 2. **Audit.** Commit everything, then run the `repo-auditor` subagent
    (`.claude/agents/repo-auditor.md`) on the branch, passing the planned PR
    title and labels. It is read-only and audits the diff against `main` point

@@ -1,0 +1,128 @@
+{
+  "description": "Format every shell script Claude edits with the installed shfmt and check it with ShellCheck; ask before a suppression or a configuration change; keep Claude working until the scripts it touched pass.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(//**/*.sh)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.sh)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/*.bash)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.bash)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/.shellcheckrc)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/.shellcheckrc)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/shellcheckrc)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/shellcheckrc)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/.editorconfig)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/.editorconfig)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(//**/*.sh)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "shell-quality: formatting and checking the edited shell script"
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.sh)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "shell-quality: formatting and checking the edited shell script"
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/*.bash)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "shell-quality: formatting and checking the edited shell script"
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.bash)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "shell-quality: formatting and checking the edited shell script"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" stop",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

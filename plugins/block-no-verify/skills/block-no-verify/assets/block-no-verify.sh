@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# block-no-verify-version: 0.1.1
+# block-no-verify-version: 0.1.3
 #
 # Claude Code PreToolUse handler (Bash and PowerShell tools). Denies Git
 # commands that bypass local verification (Git hooks: pre-commit, husky,
@@ -79,7 +79,6 @@ deny() {
   exit 2
 }
 
-# shellcheck disable=SC2329 # invoked by the ERR trap below
 on_internal_error() {
   trap - ERR
   deny "internal error in the handler (line $1); failing closed"
@@ -1615,7 +1614,9 @@ main() {
   LEVEL_ENV=()
   CHILD_ENV=()
   analyze_text "${cmd}" "${MODE}"
-  exit 0
+  # return, not exit: the script then ends with status 0 all the same, and
+  # ShellCheck can see that on_internal_error is reached through the ERR trap.
+  return 0
 }
 
 main

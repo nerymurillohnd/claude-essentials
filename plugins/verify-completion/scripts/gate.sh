@@ -60,14 +60,13 @@ emit_warning() {
 
 # Appended to every nudge so Claude can comply even when the skill isn't
 # loaded (Cowork, a denied Skill tool). Filled in, it is a valid record.
-# shellcheck disable=SC2016 # literal backticks in Markdown sent to Claude, not expansions
-TEMPLATE='End the reply with this record; keep the tokens, write the rest in any language, one line per gate with its evidence on that line:
+TEMPLATE="End the reply with this record; keep the tokens, write the rest in any language, one line per gate with its evidence on that line:
 
 ### Verification record
 
 Requirement: <what the user asked for, in their terms>
 
-1. Adversarial review: PASS — <what you re-read and re-ran, e.g. `git diff`>
+1. Adversarial review: PASS — <what you re-read and re-ran, e.g. \`git diff\`>
 2. Outcome: PASS — <each part of the request mapped to the evidence for it>
 3. Counterpart: N/A — <why nothing consumes it, or PASS and what it rejected>
 4. Distrust the green: PASS — <skipped tests, swallowed errors, mocks you checked>
@@ -76,7 +75,7 @@ Requirement: <what the user asked for, in their terms>
 
 Verdict: VERIFIED
 
-Use FAIL or BLOCKED with the exact reason for a gate that did not pass (then "Verdict: NOT VERIFIED"); N/A is allowed only for gates 3 and 5.'
+Use FAIL or BLOCKED with the exact reason for a gate that did not pass (then \"Verdict: NOT VERIFIED\"); N/A is allowed only for gates 3 and 5."
 
 # --------------------------------------------------------------- commands ---
 

@@ -5,15 +5,43 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0031 — `verify-completion`'s `/tmp` state fallback trusts a directory it did not create
+
+- **Status:** Pending
+- **Category:** security
+- **Evidence:**
+  - **Confirmed facts:** `plugins/verify-completion/scripts/gate.sh:28-33` accepts `${TMPDIR:-/tmp}/verify-completion-<uid>` when it exists and is writable (`-d`, `-w`), without checking its owner or that it is not a symlink, and `gate.sh:88` then writes empty marker files there with `: >`. Found by the 0.1.2 release review on 2026-09-22; the code predates that release. `shell-quality` and `ruff-quality` already check `-O` and `! -L` for the same fallback.
+  - **Inferences:** On a shared `/tmp`, a directory planted under that name could redirect the marker writes through a symlink and truncate a file the user owns. The path is reached only when `CLAUDE_PLUGIN_DATA` is unset, and macOS gives each user a private `TMPDIR`.
+  - **Open questions:** Whether any supported Claude Code build leaves `CLAUDE_PLUGIN_DATA` unset for a plugin hook.
+- **Impact / risk:** Low; fallback path on shared-`/tmp` systems only.
+- **Owner or responsible area:** `plugins/verify-completion/scripts/gate.sh`
+- **Next action:** Require `[[ -O ${dir} && ! -L ${dir} ]]` as the gate plugins do, and create marker files without following a symlink. Runtime change: bump and CHANGELOG.
+- **Review condition:** Close when a suite case with a foreign-owned or symlinked fallback directory shows the hook writing nothing there.
+- **Related records:** [plugin CHANGELOG](../../plugins/verify-completion/CHANGELOG.md)
+
+### DEBT-0032 — Agent and workflow descriptions in `verify-completion` open with a noun phrase
+
+- **Status:** Pending
+- **Category:** documentation
+- **Evidence:**
+  - **Confirmed facts:** `plugins/verify-completion/agents/completion-verifier.md:3` opens "Independent, read-only verifier…" and `plugins/verify-completion/workflows/deep-verify.js:4` opens "Cross-checked verification…". The plugin-authoring rule asks a skill description to open with the instruction it gives; the skill in this plugin does. Found by the 0.1.2 release review on 2026-09-22; both texts predate it.
+  - **Inferences:** A description that opens with what the component is, rather than when to use it, is weaker routing text for Claude's delegation choice.
+  - **Open questions:** Whether the rule should extend from skills to agents and workflows; today it names skills only.
+- **Impact / risk:** Low; routing quality, no behavior defect observed.
+- **Owner or responsible area:** `plugins/verify-completion/agents/`, `plugins/verify-completion/workflows/`, `.claude/rules/plugin-authoring.md`
+- **Next action:** Decide whether the rule covers agents and workflows; if it does, rewrite both descriptions from their files and extend `test_frontmatter.py`. Runtime change: bump and CHANGELOG.
+- **Review condition:** Close when the rule's scope is decided and both descriptions follow it.
+- **Related records:** [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
+
 ### DEBT-0019 — `agent-self-knowledge` ships a URL fetcher with no scheme or host validation
 
 - **Status:** Pending (risk accepted)
 - **Category:** security
 - **Evidence:**
-  - **Confirmed facts:** `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py` defines `cmd_raw`, which passes its argument straight to `fetch()` with no scheme or host check. The skill's `allowed-tools` grants `Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/ccdocs.py *)`, so any argument runs without a per-command approval prompt. Both vectors were reproduced on 2026-09-20: `raw file://<path>` printed a local canary file, and `raw https://example.com` fetched an unrelated host.
+  - **Confirmed facts:** `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py` defines `cmd_raw`, which passes its argument straight to `fetch()` with no scheme or host check. The skill's `allowed-tools` grants `Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/ccdocs.py *)`, so any argument runs without a per-command approval prompt. Both vectors were reproduced on 2026-09-20: `raw file://<path>` printed a local canary file, and `raw https://example.com` fetched an unrelated host. The cache widens the first vector: a `raw file://` fetch also stores the file's text in `${XDG_CACHE_HOME:-~/.cache}/ccdocs` (reproduced 2026-09-22 at 0644); since 0.2.0 new entries are created 0600, so the copy is no longer readable by other users, but it persists until the cache is cleared.
   - **Inferences:** Content the model reads (a documentation page, an issue, a web result) could induce a `raw` call that exfiltrates local data, since no prompt intervenes. The plugin is published publicly, so every installer inherits the capability.
   - **Open questions:** None. The vector is confirmed and the fix is known.
-- **Impact / risk:** Arbitrary local file read and arbitrary outbound request, without user approval, on any machine where the plugin is enabled. The maintainer, Nery Samuel Murillo Tejada, accepted this explicitly on 2026-09-20 after seeing the reproduction and the proposed fix, to avoid any change to a retrieval behavior that had just been validated. Evidence that the fix is behaviorally inert: the clean-session test that validated the skill used `find`, `grep`, `outline`, `page`, `changelog` and `version` — `raw` was never called.
+- **Impact / risk:** Arbitrary local file read and arbitrary outbound request, without user approval, on any machine where the plugin is enabled. The maintainer, Nery Samuel Murillo, accepted this explicitly on 2026-09-20 after seeing the reproduction and the proposed fix, to avoid any change to a retrieval behavior that had just been validated. Evidence that the fix is behaviorally inert: the clean-session test that validated the skill used `find`, `grep`, `outline`, `page`, `changelog` and `version` — `raw` was never called.
 - **Owner or responsible area:** `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py`
 - **Next action:** Add a host allowlist in `fetch()` restricted to `code.claude.com`, `raw.githubusercontent.com` and `registry.npmjs.org`, rejecting every other host and every non-`https` scheme; or remove `raw`. Either is a runtime change and needs a version bump and a CHANGELOG entry.
 - **Review condition:** Close when `raw file:///etc/hosts` and `raw https://example.com` both exit non-zero with an explicit rejection, covered by a case in the plugin's test suite.
@@ -42,7 +70,7 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
   - **Inferences:** Claude Code either extracts frontmatter line by line or parses it leniently, so a description that a conforming parser truncates or rejects still loads locally. Any consumer that reads the file with a standard YAML parser — an editor, a linter, a marketplace indexer, a future Claude Code release — would see a different description, or none.
   - **Open questions:** Which parser Claude Code uses, and whether the leniency is deliberate. Not established: what the runtime actually loads for such a description.
 - **Impact / risk:** The only validator this repository can run against a published plugin does not catch a malformed skill description, which is the field that decides whether the skill is ever invoked. Four plugins were one commit away from publishing it.
-- **Owner or responsible area:** `scripts/lib/skill-frontmatter.test.mjs`
+- **Owner or responsible area:** `scripts/plugin_validation/test_frontmatter.py`
 - **Next action:** Report the gap upstream with the reproduction above. Locally, keep the repository's own gate as the authority and extend it if other frontmatter fields turn out to be parsed the same way.
 - **Review condition:** Close when `claude plugin validate --strict` fails a plugin whose skill frontmatter is not valid YAML, verified with the same reproduction.
 - **Related records:** [DEBT-0021](#debt-0021--plugin-name-restrictions-are-undocumented-upstream), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
@@ -74,20 +102,6 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 - **Next action:** Run `/plugin-release-review` to completion on `block-no-verify`, `ruff-quality`, `shell-quality`, and `verify-completion` against the content on `main`, and fix whatever they surface in a follow-up change.
 - **Review condition:** Close when all four `.claude/state/checklists/plugin-release-review--<id>.json` records are complete and post-date the last commit touching their plugin.
 - **Related records:** [ADR-0002](../decisions/adr-0002-project-hooks.md), [DEBT-0011](resolved-debt.md#debt-0011--2026-09-19--non-runtime-changes-are-pushed-directly-to-main-the-checks-run-before-the-push), [plugin-authoring rule](../../.claude/rules/plugin-authoring.md)
-
-### DEBT-0016 — Python tests and repo scripts have no gates yet
-
-- **Status:** Pending
-- **Category:** tooling
-- **Evidence:**
-  - **Confirmed facts:** The maintainer's environment standard (global CLAUDE.md) runs Python through uv (`#!/usr/bin/env -S uv run --script` with inline dependencies) and gates every Python file with Ruff and Basedpyright. This repo's `npm run check` and CI run only `node:test` and bash suites; nothing installs uv or runs pytest or Basedpyright (2026-09-19). The basedpyright-quality design plans a Python gate core with pytest.
-  - **Inferences:** A Python test or script added today would pass CI unlinted and untested.
-  - **Open questions:** Whether CI installs uv with `astral-sh/setup-uv` (pinned by SHA) or reuses the pinned Ruff install.
-- **Impact / risk:** Python code in plugins or tests would escape the gates every other language has.
-- **Owner or responsible area:** `package.json` scripts, `.github/workflows/ci.yml`, `scripts/lint-*.mjs`
-- **Next action:** Add `lint:py` (Ruff format and check, Basedpyright) and pytest via `uv run --script` to `npm run check` and CI, with uv pinned.
-- **Review condition:** Close when CI fails on a Ruff, Basedpyright, or pytest error in a Python file under `plugins/` or `scripts/`.
-- **Related records:** [basedpyright-quality design](../superpowers/specs/2026-09-19-basedpyright-quality-design.md)
 
 ### DEBT-0012 — Plugin hook suites run only against the CI runner's jq
 

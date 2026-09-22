@@ -1,10 +1,14 @@
 # Dependabot version updates (security updates and alerts are enabled in repo
 # settings). Labels come from .github/labels.json (ADR-0004); the triage bot adds
-# area:/bump: labels on its own. The Claude Code CLI pinned by CLAUDE_CODE_VERSION
-# in the workflows is an env value Dependabot can't see — bump it by hand (DEBT-0004).
+# area:/bump: labels on its own. The Claude Code CLI version pinned by CLAUDE_CODE_VERSION
+# in the workflows is an env value Dependabot cannot see; bump it by hand.
 version: 2
 updates:
-  - package-ecosystem: npm
+  # pyproject.toml pins every tool exactly and uv.lock is committed, so one grouped
+  # pull request moves the manifest and the lock together. The cooldown is longer
+  # than `[tool.uv] exclude-newer` (4 days): a release younger than that window
+  # cannot be locked, and Dependabot would open a pull request uv refuses.
+  - package-ecosystem: uv
     directory: /
     schedule:
       interval: weekly
@@ -12,10 +16,11 @@ updates:
       - "type: maintenance"
       - "area: tooling"
     groups:
-      dev-dependencies:
-        dependency-type: development
+      uv:
+        patterns:
+          - "*"
     cooldown:
-      default-days: 3
+      default-days: 5
       semver-major-days: 7
 
   - package-ecosystem: github-actions

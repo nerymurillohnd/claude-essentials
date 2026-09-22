@@ -21,6 +21,8 @@
 | [0003](decisions/adr-0003-plugin-versioning-and-tagging.md) | Explicit semver; CI enforces bumps and tags `{name}--v{version}` | ✅ accepted |
 | [0004](decisions/adr-0004-issue-and-label-protocol.md) | Issue forms, triage flow, and labels kept as code | ✅ accepted |
 | [0005](decisions/adr-0005-apache-2-0-license.md) | The marketplace and every plugin are Apache-2.0 | ✅ accepted |
+| [0006](decisions/adr-0006-changelog-scope-skill-declaration-and-release-tooling.md) | Per-plugin changelogs, the default skill scan, and CI-enforced versioning | ✅ accepted |
+| [0007](decisions/adr-0007-gates-ship-as-plugin-hooks.md) | Quality gates ship as plugin hooks that run only installed tools; test suites live in the repository | ✅ accepted |
 
 New ADRs start from [`templates/adr-template.md`](../templates/adr-template.md).
 Accepted ADRs are amended by appending `### Amendment — YYYY-MM-DD`, never rewritten.

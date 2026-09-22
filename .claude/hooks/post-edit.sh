@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# PostToolUse hook (Edit|Write|Bash): formats and lints changed files — shfmt +
-# ShellCheck for shell scripts, `biome check --write --error-on-warnings` (the
-# gate's strictness) for everything else.
-# Edit/Write: lints tool_input.file_path. Bash: lints every modified or new
+# PostToolUse hook (Edit|Write|Bash): for plugin files whose runtime content
+# differs from the tagged version, reminds once per session that users only
+# receive changes after a version bump. It never formats, lints or type-checks:
+# that is `make lint-staged` in the commit guard and `make check` (maintainer's
+# decision, 2026-09-22).
+# Edit/Write: checks tool_input.file_path. Bash: checks every modified or new
 # (non-ignored) repo file not older than the stamp bash-stamp.sh wrote when the
-# command started, so edits made through shell commands get the same gate.
-# For plugin files whose runtime content differs from the tagged version, it
-# reminds once per session that users only receive changes after a version bump.
-# Idempotent: formatting converges; the reminder state is keyed by session.
+# command started, so edits made through shell commands get the same reminder.
+# Read-only apart from its own reminder state, which is keyed by session.
 # See docs/decisions/adr-0002-project-hooks.md.
 set -euo pipefail
 
@@ -27,58 +27,11 @@ session_id="$(jq -r '.session_id // empty' <<<"${input}")"
 state_dir="${root}/.claude/.cache/hooks"
 
 context=""
-block_reason=""
-# Set by lint_file for the file being processed.
-abs=""
+# Set by check_file for the file being processed.
 rel=""
-dir=""
 
 add_context() { context="${context:+${context}
 }$1"; }
-
-add_block() { block_reason="${block_reason:+${block_reason}
-
-}$1"; }
-
-# Prints "shell" for .sh files or files with an sh/bash shebang, else "biome".
-file_kind() {
-  local shebang=""
-  if [[ "${abs}" == *.sh ]]; then
-    echo shell
-    return 0
-  fi
-  IFS= read -r shebang <"${abs}" || true
-  if [[ "${shebang}" =~ ^#!.*[/[:space:]](ba)?sh([[:space:]]|$) ]]; then echo shell; else echo biome; fi
-}
-
-lint_shell() {
-  local out
-  if command -v shfmt >/dev/null 2>&1; then
-    shfmt -w "${abs}" >/dev/null 2>&1 || true
-  else
-    add_context "shfmt is not installed — ${rel} was not formatted (brew install shfmt)."
-  fi
-  if ! command -v shellcheck >/dev/null 2>&1; then
-    add_context "ShellCheck is not installed — ${rel} was not linted (brew install shellcheck)."
-    return 0
-  fi
-  if ! out="$(cd "${dir}" && shellcheck -x -f gcc "${abs}" 2>&1)"; then
-    add_block "ShellCheck reported issues in ${rel} (fix them in code; don't disable checks without a narrow, justified inline directive):
-${out:0:4000}"
-  fi
-}
-
-lint_biome() {
-  local out biome="${root}/node_modules/.bin/biome"
-  if [[ ! -x "${biome}" ]]; then
-    add_context "Biome is not installed locally (node_modules missing) — run \`npm install\`."
-    return 0
-  fi
-  if ! out="$(cd "${root}" && "${biome}" check --write --error-on-warnings --no-errors-on-unmatched --reporter=concise "${abs}" 2>&1)"; then
-    add_block "Biome reported issues it could not auto-fix in ${rel}:
-${out:0:4000}"
-  fi
-}
 
 plugin_reminder() {
   local name rest manifest version runtime state_file
@@ -105,10 +58,10 @@ plugin_reminder() {
   fi
 }
 
-# lint_file <path>: lints one file inside the project (skips anything outside it
-# or under node_modules) and adds the plugin version reminder when relevant.
-lint_file() {
-  local path="$1" kind reminder
+# check_file <path>: adds the plugin version reminder for one file inside the
+# project (anything outside it is skipped).
+check_file() {
+  local path="$1" dir abs reminder
   [[ -f "${path}" ]] || return 0
   dir="$(cd "$(dirname "${path}")" && pwd -P)"
   abs="${dir}/${path##*/}"
@@ -116,16 +69,6 @@ lint_file() {
   "${root}"/*) rel="${abs#"${root}"/}" ;;
   *) return 0 ;;
   esac
-  case "/${rel}/" in
-  */node_modules/*) return 0 ;;
-  *) ;;
-  esac
-  kind="$(file_kind)"
-  if [[ "${kind}" == shell ]]; then
-    lint_shell
-  else
-    lint_biome
-  fi
   reminder="$(plugin_reminder)"
   if [[ -n "${reminder}" ]]; then
     add_context "${reminder}"
@@ -153,20 +96,17 @@ if [[ "${tool_name}" == Bash ]]; then
     [[ -n "${path}" ]] || continue
     count=$((count + 1))
     if ((count > MAX_BASH_FILES)); then
-      add_context "More than ${MAX_BASH_FILES} files changed in this Bash command; only the first ${MAX_BASH_FILES} were linted — run \`npm run check\` and shellcheck/shfmt for the rest."
+      add_context "More than ${MAX_BASH_FILES} files changed in this Bash command; only the first ${MAX_BASH_FILES} were checked — run \`make versions\` for the rest."
       break
     fi
-    lint_file "${path}"
+    check_file "${path}"
   done <<<"${changed}"
 else
   file_path="$(jq -r '.tool_input.file_path // empty' <<<"${input}")"
   [[ -n "${file_path}" ]] || exit 0
-  lint_file "${file_path}"
+  check_file "${file_path}"
 fi
 
-[[ -n "${block_reason}" || -n "${context}" ]] || exit 0
+[[ -n "${context}" ]] || exit 0
 
-jq -n --arg reason "${block_reason}" --arg ctx "${context}" '
-  (if $reason != "" then {decision: "block", reason: $reason} else {} end)
-  + (if $ctx != "" then {hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $ctx}} else {} end)
-'
+jq -n --arg ctx "${context}" '{hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $ctx}}'

@@ -173,8 +173,8 @@ unpatched one, and never include secrets in any report.
 ## 🤝 Contributing
 
 ```bash
-npm install
-npm run check
+make setup
+make check
 ```
 
 Every change to what Claude loads bumps the plugin's `version` and adds a dated
@@ -218,4 +218,4 @@ version when the plugin's `version` changes.
 
 ---
 
-<div align="center"><sub>Maintained by <a href="https://github.com/nerymurillohnd">Nery Samuel Murillo Tejada</a> · Not an official Anthropic product · <a href="CODE_OF_CONDUCT.md">Code of Conduct</a></sub></div>
+<div align="center"><sub>Maintained by <a href="https://github.com/nerymurillohnd">Nery Samuel Murillo</a> · Not an official Anthropic product · <a href="CODE_OF_CONDUCT.md">Code of Conduct</a></sub></div>

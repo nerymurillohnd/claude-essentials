@@ -26,29 +26,65 @@ Commands
   whatsnew [--last N]     Weekly "What's new" digest entries.
   raw URL [--max N]       Fetch any URL as text (e.g. a GitHub raw file, schemastore).
   selfcheck               Validate every page slug and quoted section name in this skill's SKILL.md
-                          and references/topic-routing.md against the live index and map. Run it when
-                          the skill seems stale; it prints what moved.
+                          and references/topic-routing.md against the live index and map.
+                          Run it when the skill seems stale; it prints what moved.
 
 SLUG examples: hooks, hooks-guide, sub-agents, agent-sdk/hooks, whats-new/2026-w37
 Env: CCDOCS_LANG (default en), CCDOCS_CACHE_TTL seconds (default 900, 0 disables),
      CCDOCS_CORPUS_TTL seconds for the 9 MB full corpus used by `grep` (default 3600).
 """
 
+# Everything above the version check must parse and run on old Pythons, so that an old
+# `python3` prints the requirement instead of a SyntaxError or an ImportError.
+from __future__ import annotations
+
 import argparse
+import contextlib
+from dataclasses import dataclass, field
 import hashlib
+import http.client
 import json
 import os
+from pathlib import Path
 import re
 import shutil
 import signal
 import subprocess
 import sys
 import time
+from typing import TYPE_CHECKING
 import urllib.error
 import urllib.request
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+    from typing import IO, TypeIs
+
+MIN_PYTHON = (3, 14)
+
+
+def _require_python() -> None:
+    """Exit with status 2 and a one-line explanation when the interpreter is too old."""
+    if tuple(sys.version_info[:2]) >= MIN_PYTHON:
+        return
+    found = ".".join(str(part) for part in sys.version_info[:3])
+    _ = sys.stderr.write(
+        "".join(
+            (
+                "ccdocs.py needs Python 3.14 or later; ",
+                f"this is python3 {found} at {sys.executable}. ",
+                "Install Python 3.14 (python.org, brew install python@3.14, ",
+                "or uv python install 3.14 --default) so `python3` is 3.14.\n",
+            )
+        )
+    )
+    sys.exit(2)
+
+
+_require_python()
+
 if hasattr(signal, "SIGPIPE"):
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # quiet when piped to head
+    _ = signal.signal(signal.SIGPIPE, signal.SIG_DFL)  # quiet when piped to head
 
 BASE = "https://code.claude.com/docs"
 LANG = os.environ.get("CCDOCS_LANG", "en")
@@ -58,10 +94,54 @@ MAP = f"{BASE}/{LANG}/claude_code_docs_map.md"
 CHANGELOG_RAW = "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md"
 CHANGELOG_DOC = f"{BASE}/{LANG}/changelog"
 NPM = "https://registry.npmjs.org/@anthropic-ai/claude-code"
-TTL = int(os.environ.get("CCDOCS_CACHE_TTL", "900"))
-CORPUS_TTL = int(os.environ.get("CCDOCS_CORPUS_TTL", "3600"))
-CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")), "ccdocs")
+
+
+def _env_seconds(name: str, raw: str | None, default: int) -> int:
+    """Parse a non-negative number of seconds read from `name`, else the default."""
+    if raw is None:
+        return default
+    try:
+        value = int(raw)
+    except ValueError:
+        value = -1
+    if value < 0:
+        _ = sys.stderr.write(f"ccdocs.py: ignoring {name}={raw!r}; using {default} seconds\n")
+        return default
+    return value
+
+
+def _positive_int(text: str) -> int:
+    """Parse a 1-based index for argparse, refusing 0 and negatives with a clear message."""
+    try:
+        value = int(text)
+    except ValueError:
+        value = 0
+    if value < 1:
+        message = f"expected a whole number of 1 or more, got {text!r}"
+        raise argparse.ArgumentTypeError(message)
+    return value
+
+
+# Each variable is read by name here, so the README check (R6) sees every knob.
+TTL = _env_seconds("CCDOCS_CACHE_TTL", os.environ.get("CCDOCS_CACHE_TTL"), 900)
+CORPUS_TTL = _env_seconds("CCDOCS_CORPUS_TTL", os.environ.get("CCDOCS_CORPUS_TTL"), 3600)
+# An empty XDG_CACHE_HOME means unset (XDG Base Directory spec), never the working directory.
+CACHE = Path(os.environ.get("XDG_CACHE_HOME") or str(Path("~/.cache").expanduser())) / "ccdocs"
 UA = "ccdocs/1.1 (+claude-code-docs skill)"  # code.claude.com returns 403 without a User-Agent
+ACCEPT = "text/markdown, text/plain, */*"
+FETCH_TIMEOUT = 60
+VERSION_TIMEOUT = 20
+FRESH_SECONDS = 5  # a cache entry younger than this was written by the current run
+MAX_OTHER_MATCHES = 8  # alternative headings listed when a --section is ambiguous
+MAP_PAGE = r"^#{2,4} \[([^\]]+)\]\((https://[^)]+)\)"
+
+# json.loads is annotated `-> Any`; this alias is the one place that Any becomes object, so no
+# caller ever handles an Any-typed value.
+_loads: Callable[[str], object] = json.loads
+# OpenerDirector.open is annotated `-> Any` too; what it returns is a readable binary stream.
+_open_url: Callable[[urllib.request.OpenerDirector, str, None, float], IO[bytes]] = (
+    urllib.request.OpenerDirector.open
+)
 
 # Backticked words that live on routing lines but are not doc pages. Extend rather than
 # widening the slug regex: a too-loose regex makes selfcheck noisy and people stop reading it.
@@ -115,42 +195,81 @@ NON_SLUGS = {
 }
 
 
-def fetch(url: str, ttl: int = None) -> str:
-    ttl = TTL if ttl is None else ttl
-    key = os.path.join(CACHE, hashlib.sha1(url.encode()).hexdigest())
-    if ttl > 0 and os.path.exists(key) and time.time() - os.path.getmtime(key) < ttl:
-        with open(key, encoding="utf-8") as f:
-            return f.read()
-    req = urllib.request.Request(
-        url, headers={"User-Agent": UA, "Accept": "text/markdown, text/plain, */*"}
-    )
+def _cache_key(url: str) -> Path:
+    """Return the cache file for a URL (the hash only names a file; it protects nothing)."""
+    return CACHE / hashlib.sha1(url.encode(), usedforsecurity=False).hexdigest()
+
+
+def _read_cache(key: Path, ttl: int) -> str | None:
+    """Return a fresh cache entry, or None when it is absent, stale, disabled or unreadable."""
+    if ttl <= 0:
+        return None
     try:
-        with urllib.request.urlopen(req, timeout=60) as r:
-            text = r.read().decode("utf-8", "replace")
+        fresh = time.time() - key.stat().st_mtime < ttl
+        text = key.read_text(encoding="utf-8") if fresh else None
+    except (OSError, UnicodeDecodeError):
+        return None
+    return text
+
+
+def _write_cache(key: Path, text: str) -> None:
+    """Store a cache entry atomically; a cache that cannot be written only loses caching."""
+    tmp = key.with_name(f"{key.name}.{os.getpid()}.tmp")
+    try:
+        CACHE.mkdir(mode=0o700, parents=True, exist_ok=True)
+        tmp.touch(mode=0o600)  # a cached page is readable by its owner only
+        _ = tmp.write_text(text, encoding="utf-8")
+        _ = tmp.replace(key)  # atomic: a killed run never leaves a half-written cache entry
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink(missing_ok=True)
+
+
+def _download(url: str) -> str:
+    """Fetch a URL as text, exiting with a one-line error when it cannot be read."""
+    opener = urllib.request.build_opener()
+    opener.addheaders = [("User-Agent", UA), ("Accept", ACCEPT)]
+    try:
+        with _open_url(opener, url, None, FETCH_TIMEOUT) as response:
+            body = response.read()
     except urllib.error.HTTPError as e:
         sys.exit(
-            f"ERROR {e.code} fetching {url} - page may have moved; run `ccdocs.py find <topic>` to relocate it."
+            "".join(
+                (
+                    f"ERROR {e.code} fetching {url} - page may have moved; ",
+                    "run `ccdocs.py find <topic>` to relocate it.",
+                )
+            )
         )
-    except Exception as e:  # network / proxy / TLS
+    except (OSError, ValueError, http.client.HTTPException) as e:  # network / proxy / TLS
         sys.exit(f"ERROR fetching {url}: {e}")
+    return body.decode("utf-8", "replace")
+
+
+def fetch(url: str, ttl: int | None = None) -> str:
+    """Return the text at a URL, from the cache when an entry is younger than the TTL."""
+    ttl = TTL if ttl is None else ttl
+    key = _cache_key(url)
+    cached = _read_cache(key, ttl)
+    if cached is not None:
+        return cached
+    text = _download(url)
     if ttl > 0:
-        os.makedirs(CACHE, exist_ok=True)
-        tmp = key + f".{os.getpid()}.tmp"
-        with open(tmp, "w", encoding="utf-8") as f:
-            f.write(text)
-        os.replace(tmp, key)  # atomic: a killed run never leaves a half-written cache entry
+        _write_cache(key, text)
     return text
 
 
 def cache_age(url: str) -> str:
-    key = os.path.join(CACHE, hashlib.sha1(url.encode()).hexdigest())
-    if not os.path.exists(key):
+    """Describe how old the cached copy of a URL is."""
+    try:
+        age = int(time.time() - _cache_key(url).stat().st_mtime)
+    except OSError:
         return "just fetched"
-    age = int(time.time() - os.path.getmtime(key))
-    return "just fetched" if age < 5 else f"cached {age // 60}m{age % 60}s ago"
+    return "just fetched" if age < FRESH_SECONDS else f"cached {age // 60}m{age % 60}s ago"
 
 
 def page_url(slug: str) -> str:
+    """Turn a slug, a docs URL or a `.md` path into the page's markdown URL."""
     slug = slug.strip().strip("/")
     slug = re.sub(r"^https?://code\.claude\.com/docs/[a-z-]+/", "", slug)
     slug = re.sub(r"\.mdx?$", "", slug).split("#")[0]
@@ -158,23 +277,24 @@ def page_url(slug: str) -> str:
 
 
 def anchor(heading: str) -> str:
+    """Return the URL fragment the docs site gives a heading."""
     return "#" + re.sub(r"[^a-z0-9 /_-]", "", heading.lower()).strip().replace(" ", "-")
 
 
-def src(*urls):
+def src(*urls: str) -> None:
+    """Print the SOURCE line that closes every command's output."""
     print(
         "\nSOURCE: "
         + " | ".join(u[:-3] if u.endswith(".md") and "/docs/" in u else u for u in urls)
     )
 
 
-def cmd_find(a):
-    text = fetch(MAP)
-    terms = [t.lower() for t in a.term]
-    pats = [re.compile(r"(?<![a-z0-9])" + re.escape(t)) for t in terms]
-    page, hits = None, []
+def _find_hits(text: str, pats: list[re.Pattern[str]]) -> list[tuple[tuple[str, str], str]]:
+    """Return ((page name, page URL), heading) for every map entry matching all patterns."""
+    page: tuple[str, str] | None = None
+    hits: list[tuple[tuple[str, str], str]] = []
     for line in text.splitlines():
-        m = re.match(r"^#{2,4} \[([^\]]+)\]\((https://[^)]+)\)", line)
+        m = re.match(MAP_PAGE, line)
         if m:
             page = (m.group(1), m.group(2))
             continue
@@ -182,26 +302,37 @@ def cmd_find(a):
         if page and line.strip().startswith("*") and all(p.search(low) for p in pats):
             hits.append((page, line.strip("* ").strip()))
     # also match page names themselves
-    for m in re.finditer(r"^#{2,4} \[([^\]]+)\]\((https://[^)]+)\)", text, re.MULTILINE):
+    for m in re.finditer(MAP_PAGE, text, re.MULTILINE):
         if all(p.search(m.group(1).lower()) for p in pats):
             hits.insert(0, ((m.group(1), m.group(2)), "(page)"))
+    return hits
+
+
+def cmd_find(term: list[str], limit: int) -> None:
+    """Print the docs-map headings that contain every search term."""
+    text = fetch(MAP)
+    terms = [t.lower() for t in term]
+    pats = [re.compile(r"(?<![a-z0-9])" + re.escape(t)) for t in terms]
+    hits = _find_hits(text, pats)
     if not hits:
         print(
-            f"No heading matches for {terms}. The term may live in body text rather than a heading - "
-            f"try `ccdocs.py grep '{' '.join(terms)}'`, or `index --grep`."
+            f"No heading matches for {terms}. ",
+            "The term may live in body text rather than a heading - ",
+            f"try `ccdocs.py grep '{' '.join(terms)}'`, or `index --grep`.",
+            sep="",
         )
     last = None
-    for (name, url), h in hits[: a.max]:
+    for (name, url), h in hits[:limit]:
         if name != last:
             print(f"\n{name}  ->  {url[:-3]}")
             last = name
         print(f"   - {h}")
-    if len(hits) > a.max:
-        print(f"\n... {len(hits) - a.max} more; narrow the query.")
+    if len(hits) > limit:
+        print(f"\n... {len(hits) - limit} more; narrow the query.")
     src(MAP)
 
 
-def iter_corpus(text):
+def iter_corpus(text: str) -> Iterator[tuple[str, str, str, str]]:
     """Yield (title, url, heading, line) for every line of llms-full.txt.
 
     A page starts with `# Title` immediately followed by `Source: <url>`; requiring both keeps
@@ -223,55 +354,93 @@ def iter_corpus(text):
         i += 1
 
 
-def cmd_grep(a):
-    text = fetch(FULL, CORPUS_TTL)
-    try:
-        rx = re.compile(a.pattern, 0 if a.case else re.IGNORECASE)
-    except re.error as e:
-        sys.exit(f"ERROR bad regex {a.pattern!r}: {e}")
-    slug_rx = re.compile(a.slug, re.IGNORECASE) if a.slug else None
-    per_page, order, total = {}, [], 0
+@dataclass
+class _PageHits:
+    """The grep hits on one page: its title and each (heading, line) that matched."""
+
+    title: str
+    hits: list[tuple[str, str]] = field(default_factory=list)
+
+
+def _grep_corpus(
+    text: str, rx: re.Pattern[str], slug_rx: re.Pattern[str] | None
+) -> dict[str, _PageHits]:
+    """Group the corpus lines matching rx by page URL, in first-hit order."""
+    per_page: dict[str, _PageHits] = {}
     for title, url, heading, line in iter_corpus(text):
         if slug_rx and not slug_rx.search(url):
             continue
         if not rx.search(line):
             continue
-        total += 1
         if url not in per_page:
-            per_page[url] = (title, [])
-            order.append(url)
-        per_page[url][1].append((heading, line.strip()))
+            per_page[url] = _PageHits(title)
+        per_page[url].hits.append((heading, line.strip()))
+    return per_page
+
+
+@dataclass(frozen=True)
+class GrepQuery:
+    """The options of one `grep` run."""
+
+    pattern: str
+    slug: str | None
+    pages: bool
+    case: bool
+    per_page: int
+    limit: int
+
+
+def _print_grep_hits(per_page: dict[str, _PageHits], q: GrepQuery) -> None:
+    """Print the grep hits, pages with the most hits first."""
+    shown = 0
+    for url in sorted(per_page, key=lambda u: -len(per_page[u].hits)):
+        title, hits = per_page[url].title, per_page[url].hits
+        print(f"{url}  ({len(hits)} hit{'s' if len(hits) > 1 else ''})  - {title}")
+        if q.pages:
+            continue
+        for heading, line in hits[: q.per_page]:
+            print(f"   [{heading or 'intro'}] {line[:220]}")
+            shown += 1
+        if len(hits) > q.per_page:
+            print(f"   ... {len(hits) - q.per_page} more on this page")
+        print()
+        if shown >= q.limit:
+            print(f"... output capped at {q.limit} lines; narrow with --slug or a tighter pattern.")
+            break
+
+
+def cmd_grep(q: GrepQuery) -> None:
+    """Regex-search the full docs corpus and print each hit with its page and heading."""
+    text = fetch(FULL, CORPUS_TTL)
+    pattern = q.pattern
+    try:
+        rx = re.compile(pattern, 0 if q.case else re.IGNORECASE)
+    except re.error as e:
+        sys.exit(f"ERROR bad regex {pattern!r}: {e}")
+    slug_rx = re.compile(q.slug, re.IGNORECASE) if q.slug else None
+    per_page = _grep_corpus(text, rx, slug_rx)
+    total = sum(len(entry.hits) for entry in per_page.values())
     if total == 0:
         print(
-            f"No match for {a.pattern!r} in the full docs corpus ({cache_age(FULL)}).\n"
-            f"That is real evidence of absence in the docs, but not proof the feature is missing: "
-            f"check `ccdocs.py changelog --grep <term> --last 40` (the changelog can be ahead of the docs) "
-            f"before telling the user it does not exist."
+            f"No match for {pattern!r} in the full docs corpus ({cache_age(FULL)}).\n",
+            "That is real evidence of absence in the docs, ",
+            "but not proof the feature is missing: ",
+            "check `ccdocs.py changelog --grep <term> --last 40` ",
+            "(the changelog can be ahead of the docs) ",
+            "before telling the user it does not exist.",
+            sep="",
         )
         src(FULL)
         return
     print(f"{total} match(es) across {len(per_page)} page(s) - corpus {cache_age(FULL)}\n")
-    shown = 0
-    for url in sorted(order, key=lambda u: -len(per_page[u][1])):
-        title, hits = per_page[url]
-        print(f"{url}  ({len(hits)} hit{'s' if len(hits) > 1 else ''})  - {title}")
-        if a.pages:
-            continue
-        for heading, line in hits[: a.per_page]:
-            print(f"   [{heading or 'intro'}] {line[:220]}")
-            shown += 1
-        if len(hits) > a.per_page:
-            print(f"   ... {len(hits) - a.per_page} more on this page")
-        print()
-        if shown >= a.max:
-            print(f"... output capped at {a.max} lines; narrow with --slug or a tighter pattern.")
-            break
+    _print_grep_hits(per_page, q)
     src(FULL)
 
 
-def cmd_index(a):
+def cmd_index(grep: str | None) -> None:
+    """Print the llms.txt page index, optionally filtered by a regex."""
     text = fetch(LLMS)
-    rx = re.compile(a.grep, re.IGNORECASE) if a.grep else None
+    rx = re.compile(grep, re.IGNORECASE) if grep else None
     n = 0
     for line in text.splitlines():
         if line.startswith("#") and not rx:
@@ -285,15 +454,19 @@ def cmd_index(a):
             n += 1
     if rx and n == 0:
         print(
-            "No page title/summary matches; try `find` (every heading) or `grep` (full text) instead."
+            "No page title/summary matches; ",
+            "try `find` (every heading) or `grep` (full text) instead.",
+            sep="",
         )
     src(LLMS)
 
 
-def cmd_outline(a):
+def cmd_outline(slug: str) -> None:
+    """Print the heading tree of one page from the docs map."""
     text = fetch(MAP)
-    slug = re.sub(r"\.md$", "", a.slug.strip("/"))
-    out, on = [], False
+    slug = re.sub(r"\.md$", "", slug.strip("/"))
+    out: list[str] = []
+    on = False
     for line in text.splitlines():
         m = re.match(r"^#{2,4} \[[^\]]+\]\((https://[^)]+)\)", line)
         if m:
@@ -313,103 +486,121 @@ def cmd_outline(a):
     src(MAP)
 
 
-def headings_matching(md: str, needle: str):
-    """Return [(line_index, level, heading_text)] for every heading containing needle, skipping code blocks."""
-    n, in_code, out = needle.lower(), False, []
-    for i, l in enumerate(md.splitlines()):
-        if l.lstrip().startswith("```"):
+def headings_matching(md: str, needle: str) -> list[tuple[int, int, str]]:
+    """Return [(line_index, level, heading_text)] for every heading containing needle.
+
+    Headings inside fenced code blocks are skipped.
+    """
+    n, in_code = needle.lower(), False
+    out: list[tuple[int, int, str]] = []
+    for i, line in enumerate(md.splitlines()):
+        if line.lstrip().startswith("```"):
             in_code = not in_code
             continue
         if in_code:
             continue
-        m = re.match(r"^(#{1,6})\s+(.*)", l)
+        m = re.match(r"^(#{1,6})\s+(.*)", line)
         if m and n in m.group(2).lower():
             out.append((i, len(m.group(1)), m.group(2).strip()))
     return out
 
 
 def section_at(md: str, start: int, level: int) -> str:
+    """Return the section starting at a heading line, up to the next heading of its level."""
     lines, in_code = md.splitlines(), False
     for i in range(start + 1, len(lines)):
-        l = lines[i]
-        if l.lstrip().startswith("```"):
+        line = lines[i]
+        if line.lstrip().startswith("```"):
             in_code = not in_code
             continue
         if in_code:
             continue
-        m = re.match(r"^(#{1,6})\s+", l)
+        m = re.match(r"^(#{1,6})\s+", line)
         if m and len(m.group(1)) <= level:
             return "\n".join(lines[start:i])
     return "\n".join(lines[start:])
 
 
-def cmd_page(a):
-    url = page_url(a.slug)
+def _pick_section(md: str, url: str, section: str, nth: int) -> tuple[str, str]:
+    """Return (section markdown, heading) for the nth heading containing `section`."""
+    matches = headings_matching(md, section)
+    if not matches:
+        heads = [line for line in md.splitlines() if re.match(r"^#{2,4} ", line)]
+        sys.exit(
+            f"Section '{section}' not found in {url}. Headings:\n"
+            + "\n".join(heads)
+            + f"\nSOURCE: {url}"
+        )
+    if nth > len(matches):
+        sys.exit(
+            f"--nth {nth} but only {len(matches)} heading(s) match '{section}' in {url}:\n"
+            + "\n".join(f"  {i + 1}. {h}" for i, (_, _, h) in enumerate(matches))
+        )
+    i, level, head = matches[nth - 1]
+    if len(matches) > 1:
+        # Silently returning the first match is how you end up citing the generic section
+        # when the user asked about a specific event/tool. Make the ambiguity visible.
+        rest = [f"[{n + 1}] {h}" for n, (_, _, h) in enumerate(matches) if n != nth - 1]
+        extra = len(rest) - MAX_OTHER_MATCHES
+        others = ", ".join(rest[:MAX_OTHER_MATCHES]) + (f", +{extra} more" if extra > 0 else "")
+        print(
+            f"NOTE: {len(matches)} headings match '{section}'. ",
+            f'Showing [{nth}] "{head}". ',
+            f"Others: {others}. Re-run with --nth N or a longer --section string.\n",
+            sep="",
+        )
+    return section_at(md, i, level), head
+
+
+def cmd_page(slug: str, section: str | None, nth: int, limit: int) -> None:
+    """Print a page's markdown, or one section of it."""
+    url = page_url(slug)
     md = fetch(url)
     head = ""
-    if a.section:
-        matches = headings_matching(md, a.section)
-        if not matches:
-            heads = [l for l in md.splitlines() if re.match(r"^#{2,4} ", l)]
-            sys.exit(
-                f"Section '{a.section}' not found in {url}. Headings:\n"
-                + "\n".join(heads)
-                + f"\nSOURCE: {url}"
-            )
-        if a.nth > len(matches):
-            sys.exit(
-                f"--nth {a.nth} but only {len(matches)} heading(s) match '{a.section}' in {url}:\n"
-                + "\n".join(f"  {i + 1}. {h}" for i, (_, _, h) in enumerate(matches))
-            )
-        i, level, head = matches[a.nth - 1]
-        if len(matches) > 1:
-            # Silently returning the first match is how you end up citing the generic section
-            # when the user asked about a specific event/tool. Make the ambiguity visible.
-            rest = [f"[{n + 1}] {h}" for n, (_, _, h) in enumerate(matches) if n != a.nth - 1]
-            others = ", ".join(rest[:8]) + (f", +{len(rest) - 8} more" if len(rest) > 8 else "")
-            print(
-                f"NOTE: {len(matches)} headings match '{a.section}'. Showing [{a.nth}] \"{head}\". "
-                f"Others: {others}. Re-run with --nth N or a longer --section string.\n"
-            )
-        md = section_at(md, i, level)
+    if section:
+        md, head = _pick_section(md, url, section, nth)
     # collapse table padding: docs tables are space-padded to hundreds of columns
     md = "\n".join(
-        re.sub(r"-{4,}", "---", re.sub(r" {2,}", " ", l)) if l.lstrip().startswith("|") else l
-        for l in md.splitlines()
+        re.sub(r"-{4,}", "---", re.sub(r" {2,}", " ", line))
+        if line.lstrip().startswith("|")
+        else line
+        for line in md.splitlines()
     )
-    if a.max and len(md) > a.max:
-        md = md[: a.max] + f"\n\n[... truncated at {a.max} chars; use --section or --max 0]"
+    if limit and len(md) > limit:
+        md = md[:limit] + f"\n\n[... truncated at {limit} chars; use --section or --max 0]"
     print(md)
     src(url[:-3] + anchor(head) if head else url)
 
 
-def vkey(v):
-    parts = re.findall(r"\d+", v)[:3]
+def vkey(v: str) -> tuple[int, ...] | None:
+    """Return the first three numbers of a version string, or None when it has none."""
+    parts: list[str] = re.findall(r"\d+", v)[:3]
     return tuple(int(x) for x in parts) if parts else None
 
 
-def cmd_changelog(a):
+def cmd_changelog(last: int, since_text: str | None, grep: str | None) -> None:
+    """Print release notes from the upstream CHANGELOG.md."""
     text = fetch(CHANGELOG_RAW)
     blocks = re.split(r"(?m)^## ", text)[1:]
-    rx = re.compile(a.grep, re.IGNORECASE) if a.grep else None
-    since = vkey(a.since) if a.since else None
-    if a.since and not since:
-        sys.exit(f"ERROR --since {a.since!r} is not a version number (expected e.g. 2.1.270).")
+    rx = re.compile(grep, re.IGNORECASE) if grep else None
+    since = vkey(since_text) if since_text else None
+    if since_text and not since:
+        sys.exit(f"ERROR --since {since_text!r} is not a version number (expected e.g. 2.1.270).")
     shown = 0
     for b in blocks:
-        ver, _, body = b.partition("\n")
-        ver = ver.strip()
+        heading, _, body = b.partition("\n")
+        ver = heading.strip()
         key = vkey(ver)
         if since and (key is None or key <= since):
             continue  # skip, don't break: never assume the file is perfectly ordered
-        items = [l for l in body.splitlines() if l.strip()]
+        items = [line for line in body.splitlines() if line.strip()]
         if rx:
-            items = [l for l in items if rx.search(l)]
+            items = [line for line in items if rx.search(line)]
             if not items:
                 continue
         print(f"## {ver}\n" + "\n".join(items) + "\n")
         shown += 1
-        if not since and shown >= a.last:
+        if not since and shown >= last:
             break
     if shown == 0:
         print(
@@ -423,80 +614,138 @@ def cmd_changelog(a):
     src(CHANGELOG_RAW, CHANGELOG_DOC)
 
 
-def cmd_version(a):
-    d = json.loads(fetch(NPM))
-    tags = d.get("dist-tags", {})
+def _is_mapping(value: object) -> TypeIs[dict[object, object]]:
+    """Report whether a parsed JSON value is an object."""
+    return isinstance(value, dict)
+
+
+def _is_list(value: object) -> TypeIs[list[object]]:
+    """Report whether a parsed value is a list."""
+    return isinstance(value, list)
+
+
+def _str_keyed(value: object) -> dict[str, object]:
+    """Return the string-keyed entries of a parsed JSON object; empty for anything else."""
+    if not _is_mapping(value):
+        return {}
+    return {k: v for k, v in value.items() if isinstance(k, str)}
+
+
+def _local_version(local: str) -> str | None:
+    """Print and return `claude --version`, or print why it could not run and return None."""
+    try:
+        out = subprocess.run(
+            [local, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=VERSION_TIMEOUT,
+            check=False,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
+        print(f"local   (could not run claude --version: {e})")
+        return None
+    print(f"local   {out}")
+    return out
+
+
+def _print_gap(lkey: tuple[int, ...], latest: str) -> None:
+    """Print how far the local build is from npm latest."""
+    latest_key = vkey(latest)
+    if latest_key is None:
+        return
+    if lkey < latest_key:
+        headings: list[str] = re.findall(r"(?m)^## (.+)$", fetch(CHANGELOG_RAW))
+        versions = [v.strip() for v in headings]
+        behind = [v for v in versions if (vkey(v) or ()) > lkey]
+        local = ".".join(map(str, lkey))
+        print(
+            f"gap     local is {len(behind)} release(s) behind latest ({latest}); ",
+            f"features newer than {local} may not exist on this machine.\n",
+            f"        `ccdocs.py changelog --since {local}` lists exactly what is missing.",
+            sep="",
+        )
+    elif lkey > latest_key:
+        print(
+            f"gap     local is AHEAD of npm latest ({latest}) - ",
+            "a `next`/nightly build; docs may not describe it yet.",
+            sep="",
+        )
+
+
+def cmd_version() -> None:
+    """Print the npm dist-tags, the local `claude --version` and the gap between them."""
+    try:
+        registry = _loads(fetch(NPM))
+    except ValueError:
+        sys.exit(f"ERROR: {NPM} did not return JSON; try again later.")
+    d = _str_keyed(registry)
+    tags = _str_keyed(d.get("dist-tags", {}))
+    times = _str_keyed(d.get("time", {}))
     for t in ("latest", "stable", "next"):
         if t in tags:
-            print(f"npm {t:<7} {tags[t]:<12} published {d.get('time', {}).get(tags[t], '?')}")
+            tag = tags[t]
+            print(f"npm {t:<7} {tag:<12} published {times.get(str(tag), '?')}")
     local = shutil.which("claude")
     if not local:
         print(
-            "local   claude not on PATH (asking the user for `claude --version` is the only way to know their build)"
+            "local   claude not on PATH ",
+            "(asking the user for `claude --version` is the only way to know their build)",
+            sep="",
         )
         src(NPM, CHANGELOG_RAW)
         return
-    try:
-        out = subprocess.run(
-            [local, "--version"], capture_output=True, text=True, timeout=20
-        ).stdout.strip()
-    except Exception as e:
-        print(f"local   (could not run claude --version: {e})")
+    out = _local_version(local)
+    if out is None:
         src(NPM, CHANGELOG_RAW)
         return
-    print(f"local   {out}")
     lkey, latest = vkey(out), tags.get("latest", "")
-    if lkey and vkey(latest) and lkey < vkey(latest):
-        versions = [v.strip() for v in re.findall(r"(?m)^## (.+)$", fetch(CHANGELOG_RAW))]
-        behind = [v for v in versions if vkey(v) and vkey(v) > lkey]
-        print(
-            f"gap     local is {len(behind)} release(s) behind latest ({latest}); "
-            f"features newer than {'.'.join(map(str, lkey))} may not exist on this machine.\n"
-            f"        `ccdocs.py changelog --since {'.'.join(map(str, lkey))}` lists exactly what is missing."
-        )
-    elif lkey and vkey(latest) and lkey > vkey(latest):
-        print(
-            f"gap     local is AHEAD of npm latest ({latest}) - a `next`/nightly build; docs may not describe it yet."
-        )
+    if lkey:
+        _print_gap(lkey, str(latest))
     src(NPM, CHANGELOG_RAW)
 
 
-def cmd_whatsnew(a):
+def cmd_whatsnew(last: int) -> None:
+    """Print the newest entries of the weekly What's new digest."""
     url = f"{BASE}/{LANG}/whats-new/index.md"
     text = fetch(url)
-    entries = re.findall(
+    entries: list[tuple[str, str, str, str]] = re.findall(
         r"<Update label=\"([^\"]+)\" description=\"([^\"]+)\"([^>]*)>(.*?)</Update>",
         text,
         re.DOTALL,
     )
     if not entries:
         print(
-            "No <Update> entries parsed - the digest format may have changed; read the page directly:"
+            "No <Update> entries parsed - ",
+            "the digest format may have changed; read the page directly:",
+            sep="",
         )
         print(f"  ccdocs.py raw {url} --max 4000")
-    for label, desc, attrs, body in entries[: a.last]:
+    for label, desc, attrs, body in entries[:last]:
         tm = re.search(r"tags=\{\[([^\]]*)\]\}", attrs)
         tags = "[" + tm.group(1) + "]" if tm else ""
-        body = re.sub(r"\n\s+", "\n", body.strip())
+        text_body = re.sub(r"\n\s+", "\n", body.strip())
         tags = tags.replace('"', "")
-        print(f"### {label} ({desc}) {tags}\n{body}\n")
+        print(f"### {label} ({desc}) {tags}\n{text_body}\n")
     src(url)
 
 
-def cmd_raw(a):
-    t = fetch(a.url)
-    print(t if not a.max or len(t) <= a.max else t[: a.max] + f"\n[... truncated at {a.max} chars]")
-    src(a.url)
+def cmd_raw(url: str, limit: int) -> None:
+    """Print any URL as text."""
+    t = fetch(url)
+    print(t if not limit or len(t) <= limit else t[:limit] + f"\n[... truncated at {limit} chars]")
+    src(url)
 
 
-def bullets(text):
-    """Yield routing bullets and table rows as single joined strings (continuation lines folded in),
-    so a section list that wraps over three lines is still checked as one unit.
+def bullets(text: str) -> Iterator[str]:
+    """Yield routing bullets and table rows as single joined strings.
+
+    Continuation lines are folded in, so a section list that wraps over three lines is still
+    checked as one unit.
     """
-    buf = []
+    buf: list[str] = []
     for line in text.splitlines():
         s = line.strip()
-        starts = s.startswith(("- ", "* ", "|")) or re.match(r"^\d+\. ", s)
+        starts = s.startswith(("- ", "* ", "|")) or re.match(r"^\d+\. ", s) is not None
         if starts:
             if buf:
                 yield " ".join(buf)
@@ -513,126 +762,236 @@ def bullets(text):
         yield " ".join(buf)
 
 
-def cmd_selfcheck(a):
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    files = [os.path.join(root, "SKILL.md"), os.path.join(root, "references", "topic-routing.md")]
-    missing = [f for f in files if not os.path.exists(f)]
-    files = [f for f in files if os.path.exists(f)]
-    if not files:
-        sys.exit(
-            f"ERROR nothing to check under {root}. This script must sit at <skill>/scripts/ccdocs.py "
-            f"with SKILL.md and references/ beside it; a flattened copy breaks selfcheck and the\n"
-            f"`Bash(python3 ${{CLAUDE_SKILL_DIR}}/scripts/ccdocs.py *)` pre-approval rule."
-        )
-    for f in missing:
-        print(f"[layout] missing {os.path.relpath(f, root)} - expected at {f}")
-    llms, mp = fetch(LLMS), fetch(MAP)
-    slugs = set(re.findall(r"code\.claude\.com/docs/en/([^)\s]+?)\.md", llms))
-    heads, page = {}, None
+def _map_headings(mp: str) -> dict[str, list[str]]:
+    """Return every docs-map page slug with its lower-cased headings."""
+    heads: dict[str, list[str]] = {}
+    page = None
     for line in mp.splitlines():
         m = re.match(r"^#{2,4} \[[^\]]+\]\(https://code\.claude\.com/docs/en/([^)]+)\.md\)", line)
         if m:
             page = m.group(1)
-            heads.setdefault(page, [])
+            _ = heads.setdefault(page, [])
             continue
         if page and line.strip().startswith("*"):
             heads[page].append(line.strip("* ").strip().lower())
-    issues, slug_checked, sec_checked = {}, 0, 0
-    for f in files:
-        name = os.path.basename(f)
-        text = open(f, encoding="utf-8").read()
-        for unit in bullets(text):
-            current = None
-            # walk backticked slugs and quoted section names in document order, so each quote is
-            # checked against the page named closest before it
-            for m in re.finditer(r"`([a-z0-9][a-z0-9-]*(?:/[a-z0-9-]+)*)`|\"([^\"]{3,80})\"", unit):
-                if m.group(1):
-                    t = m.group(1)
-                    if t in NON_SLUGS:
-                        continue
-                    slug_checked += 1
-                    if t in slugs:
-                        current = t
-                    else:
-                        current = None
-                        issues[(name, "slug", t, "")] = issues.get((name, "slug", t, ""), 0) + 1
-                elif current and current in heads:
-                    sec = " ".join(m.group(2).split()).lower().replace("`", "")
-                    if sec.endswith(("…", "...")):
-                        continue
-                    sec_checked += 1
-                    if not any(sec in h.replace("`", "") for h in heads[current]):
-                        k = (name, "section", m.group(2), current)
-                        issues[k] = issues.get(k, 0) + 1
+    return heads
+
+
+@dataclass
+class _Selfcheck:
+    """What selfcheck knows about the live docs and what it has found so far."""
+
+    slugs: set[str]
+    heads: dict[str, list[str]]
+    issues: dict[tuple[str, str, str, str], int] = field(default_factory=dict)
+    slug_checked: int = 0
+    sec_checked: int = 0
+
+    def flag(self, key: tuple[str, str, str, str]) -> None:
+        """Count one more occurrence of an issue."""
+        self.issues[key] = self.issues.get(key, 0) + 1
+
+    def check_section(self, name: str, quoted: str, current: str) -> None:
+        """Check one quoted section name against the headings of the page named before it."""
+        sec = " ".join(quoted.split()).lower().replace("`", "")
+        if sec.endswith(("…", "...")):
+            return
+        self.sec_checked += 1
+        if not any(sec in h.replace("`", "") for h in self.heads[current]):
+            self.flag((name, "section", quoted, current))
+
+    def check_unit(self, name: str, unit: str) -> None:
+        """Check the slugs and quoted section names of one bullet, in document order."""
+        current = None
+        # walk backticked slugs and quoted section names in document order, so each quote is
+        # checked against the page named closest before it
+        for m in re.finditer(r"`([a-z0-9][a-z0-9-]*(?:/[a-z0-9-]+)*)`|\"([^\"]{3,80})\"", unit):
+            t = m.group(1)
+            if t:
+                if t in NON_SLUGS:
+                    continue
+                self.slug_checked += 1
+                if t in self.slugs:
+                    current = t
+                else:
+                    current = None
+                    self.flag((name, "slug", t, ""))
+            elif current and current in self.heads:
+                self.check_section(name, m.group(2), current)
+
+
+def _print_issues(issues: dict[tuple[str, str, str, str], int]) -> None:
+    """Print one line per selfcheck issue, sorted."""
     for (name, kind, what, pg), n in sorted(issues.items()):
         times = f" ({n}x)" if n > 1 else ""
         if kind == "slug":
             print(
-                f"[slug] {name}: `{what}` is not a page in llms.txt{times} - run `ccdocs.py find {what.split('/')[-1]}`"
+                f"[slug] {name}: `{what}` is not a page in llms.txt{times} - ",
+                f"run `ccdocs.py find {what.split('/')[-1]}`",
+                sep="",
             )
         else:
             print(
-                f'[section] {name}: "{what}" not found under `{pg}`{times} - run `ccdocs.py outline {pg}`'
+                f'[section] {name}: "{what}" not found under `{pg}`{times} - ',
+                f"run `ccdocs.py outline {pg}`",
+                sep="",
             )
-    stamp = (re.search(r"Last updated: ([^\n]+)", mp) or [None, "?"])[1]
-    print(
-        f"\nselfcheck: {len(slugs)} live pages | {slug_checked} slug refs and {sec_checked} section refs checked "
-        f"in {len(files)} file(s) | {len(issues)} issue(s). Map stamp: {stamp}"
+
+
+def cmd_selfcheck() -> None:
+    """Check the skill's page slugs and quoted section names against the live docs."""
+    root = Path(os.path.normpath(Path(__file__).absolute())).parent.parent
+    candidates = [root / "SKILL.md", root / "references" / "topic-routing.md"]
+    missing = [f for f in candidates if not f.exists()]
+    files = [f for f in candidates if f.exists()]
+    if not files:
+        sys.exit(
+            "".join(
+                (
+                    f"ERROR nothing to check under {root}. ",
+                    "This script must sit at <skill>/scripts/ccdocs.py ",
+                    "with SKILL.md and references/ beside it; ",
+                    "a flattened copy breaks selfcheck and the\n",
+                    "`Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/ccdocs.py *)` pre-approval rule.",
+                )
+            )
+        )
+    for f in missing:
+        print(f"[layout] missing {os.path.relpath(f, root)} - expected at {f}")
+    llms, mp = fetch(LLMS), fetch(MAP)
+    check = _Selfcheck(
+        slugs=set(re.findall(r"code\.claude\.com/docs/en/([^)\s]+?)\.md", llms)),
+        heads=_map_headings(mp),
     )
-    if issues:
+    for f in files:
+        for unit in bullets(f.read_text(encoding="utf-8")):
+            check.check_unit(f.name, unit)
+    _print_issues(check.issues)
+    stamp_match = re.search(r"Last updated: ([^\n]+)", mp)
+    stamp = stamp_match.group(1) if stamp_match else "?"
+    print(
+        f"\nselfcheck: {len(check.slugs)} live pages | {check.slug_checked} slug refs and ",
+        f"{check.sec_checked} section refs checked in {len(files)} file(s) | ",
+        f"{len(check.issues)} issue(s). Map stamp: {stamp}",
+        sep="",
+    )
+    if check.issues:
         print(
             "Fix the routing tables (or tell the user which lines to fix) before relying on them."
         )
     src(LLMS, MAP)
 
 
-def main():
+class Args:
+    """Typed access to the parsed command line; argparse itself types every value as Any."""
+
+    def __init__(self, namespace: argparse.Namespace) -> None:
+        """Keep the parsed values as `object`, to be narrowed on access."""
+        self._values: dict[str, object] = vars(namespace)
+
+    def text(self, name: str) -> str:
+        """Return a required string argument."""
+        value = self._values[name]
+        if not isinstance(value, str):
+            raise TypeError(name)
+        return value
+
+    def optional_text(self, name: str) -> str | None:
+        """Return an optional string argument."""
+        value = self._values[name]
+        if value is not None and not isinstance(value, str):
+            raise TypeError(name)
+        return value
+
+    def number(self, name: str) -> int:
+        """Return an integer argument."""
+        value = self._values[name]
+        if not isinstance(value, int):
+            raise TypeError(name)
+        return value
+
+    def flag(self, name: str) -> bool:
+        """Return a store_true argument."""
+        return self._values[name] is True
+
+    def texts(self, name: str) -> list[str]:
+        """Return a list-of-strings argument."""
+        value = self._values[name]
+        if not _is_list(value):
+            raise TypeError(name)
+        return [item for item in value if isinstance(item, str)]
+
+
+def _parser() -> argparse.ArgumentParser:
+    """Build the command-line parser."""
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     s = p.add_subparsers(dest="cmd", required=True)
     f = s.add_parser("find")
-    f.add_argument("term", nargs="+")
-    f.add_argument("--max", type=int, default=40)
-    f.set_defaults(fn=cmd_find)
+    _ = f.add_argument("term", nargs="+")
+    _ = f.add_argument("--max", type=int, default=40)
     gr = s.add_parser("grep")
-    gr.add_argument("pattern")
-    gr.add_argument("--slug", help="only pages whose URL matches this regex")
-    gr.add_argument("--pages", action="store_true", help="list matching pages and hit counts only")
-    gr.add_argument("--case", action="store_true", help="case-sensitive")
-    gr.add_argument("--per-page", type=int, default=6)
-    gr.add_argument("--max", type=int, default=60)
-    gr.set_defaults(fn=cmd_grep)
+    _ = gr.add_argument("pattern")
+    _ = gr.add_argument("--slug", help="only pages whose URL matches this regex")
+    _ = gr.add_argument(
+        "--pages", action="store_true", help="list matching pages and hit counts only"
+    )
+    _ = gr.add_argument("--case", action="store_true", help="case-sensitive")
+    _ = gr.add_argument("--per-page", type=int, default=6)
+    _ = gr.add_argument("--max", type=int, default=60)
     i = s.add_parser("index")
-    i.add_argument("--grep")
-    i.set_defaults(fn=cmd_index)
+    _ = i.add_argument("--grep")
     o = s.add_parser("outline")
-    o.add_argument("slug")
-    o.set_defaults(fn=cmd_outline)
+    _ = o.add_argument("slug")
     g = s.add_parser("page")
-    g.add_argument("slug")
-    g.add_argument("--section")
-    g.add_argument("--nth", type=int, default=1)
-    g.add_argument("--max", type=int, default=60000)
-    g.set_defaults(fn=cmd_page)
+    _ = g.add_argument("slug")
+    _ = g.add_argument("--section")
+    _ = g.add_argument("--nth", type=_positive_int, default=1)
+    _ = g.add_argument("--max", type=int, default=60000)
     c = s.add_parser("changelog")
-    c.add_argument("--last", type=int, default=5)
-    c.add_argument("--since")
-    c.add_argument("--grep")
-    c.set_defaults(fn=cmd_changelog)
-    v = s.add_parser("version")
-    v.set_defaults(fn=cmd_version)
+    _ = c.add_argument("--last", type=int, default=5)
+    _ = c.add_argument("--since")
+    _ = c.add_argument("--grep")
+    _ = s.add_parser("version")
     w = s.add_parser("whatsnew")
-    w.add_argument("--last", type=int, default=4)
-    w.set_defaults(fn=cmd_whatsnew)
-    sc = s.add_parser("selfcheck")
-    sc.set_defaults(fn=cmd_selfcheck)
+    _ = w.add_argument("--last", type=int, default=4)
+    _ = s.add_parser("selfcheck")
     r = s.add_parser("raw")
-    r.add_argument("url")
-    r.add_argument("--max", type=int, default=60000)
-    r.set_defaults(fn=cmd_raw)
-    a = p.parse_args()
-    a.fn(a)
+    _ = r.add_argument("url")
+    _ = r.add_argument("--max", type=int, default=60000)
+    return p
+
+
+def main() -> None:
+    """Parse the command line and run the chosen command."""
+    a = Args(_parser().parse_args())
+    commands: dict[str, Callable[[], None]] = {
+        "find": lambda: cmd_find(a.texts("term"), a.number("max")),
+        "grep": lambda: cmd_grep(
+            GrepQuery(
+                pattern=a.text("pattern"),
+                slug=a.optional_text("slug"),
+                pages=a.flag("pages"),
+                case=a.flag("case"),
+                per_page=a.number("per_page"),
+                limit=a.number("max"),
+            )
+        ),
+        "index": lambda: cmd_index(a.optional_text("grep")),
+        "outline": lambda: cmd_outline(a.text("slug")),
+        "page": lambda: cmd_page(
+            a.text("slug"), a.optional_text("section"), a.number("nth"), a.number("max")
+        ),
+        "changelog": lambda: cmd_changelog(
+            a.number("last"), a.optional_text("since"), a.optional_text("grep")
+        ),
+        "version": cmd_version,
+        "whatsnew": lambda: cmd_whatsnew(a.number("last")),
+        "selfcheck": cmd_selfcheck,
+        "raw": lambda: cmd_raw(a.text("url"), a.number("max")),
+    }
+    commands[a.text("cmd")]()
 
 
 if __name__ == "__main__":

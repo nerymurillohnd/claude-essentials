@@ -5,6 +5,73 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 
 ## Resolved Items
 
+### DEBT-0034 — 2026-09-22 — An eval scaffold counted as a plugin requirement, and a local green never saw it
+
+- **Original pending record:** none; CI on `c5027fb` failed `test_the_binaries_each_plugin_invokes_are_the_ones_its_readme_lists` with `{'bash', 'git', 'jq'} != {'bash', 'jq'}` after `make check` had exited 0 locally.
+- **Resolved debt:** Two defects:
+  1. `invoked_binaries` (R5) and `env_var_sources` (R6) read every script under the plugin, `evals/` included, so verify-completion's case 02 scaffold (`git init`) made `git` a requirement users would have to install. Only `claude plugin eval` runs a scaffold, on the maintainer's machine.
+  2. Every invariant reads the files git tracks, so the scaffold, still untracked when `make check` ran, was invisible locally; CI saw the committed file.
+- **Resolution:** `runtime_scripts` in `scripts/plugin_validation/runtime_boundary.py` drops the paths `EXEMPT_FILE` exempts, the same rule that decides a version bump, and feeds R5 and R6; B1 still checks every shipped script. New invariant P6 (`check_untracked` in `validate_plugins.py`) fails on any untracked, non-ignored file under a plugin. Declaring `git` in the README was rejected: it would be false for users.
+- **Positive verification:** `make validate` passes; `test_an_eval_scaffold_is_no_requirement_of_the_plugin` and `test_an_untracked_file_fires_p6_until_it_is_added` pass.
+- **Negative verification:** the CI failure itself for (1); an untracked `plugins/verify-completion/evals/zz-untracked.md` makes `make validate` print P6 and fail, and removing it passes.
+- **Owner or responsible area:** `scripts/plugin_validation/`
+
+### DEBT-0033 — 2026-09-22 — Release-review findings on all five plugins, each class closed with a guard
+
+- **Original pending record:** none; found by the release reviews of agent-self-knowledge 0.2.0, block-no-verify 0.1.3, ruff-quality 0.2.0, shell-quality 0.2.0 and verify-completion 0.1.2 on this branch.
+- **Resolved debt:** Six classes of defect:
+  1. A plugin script's old-Python version check could not run on 3.7: a walrus made the whole file a SyntaxError first.
+  2. `test-*.sh` and `tests/**` were exempt from version bumps at any depth, yet block-no-verify's `manage.sh` runs its shipped `test-handler.sh`: a change to it would reach users without a bump.
+  3. The README templates still prescribed an eval score table that R9 forbids in plugins; a test recorded it as pending instead of failing.
+  4. CHANGELOG link style (C1) was checked against an allowance of four plugins that were already repaired, so a regression in those four could pass.
+  5. shell-quality reported any shfmt failure, a file it could not write included, as a syntax error Claude must fix, and Stop kept Claude working on it.
+  6. An eval grader demanded the opposite of the user's explicit request (verify-completion 02), another hard-coded the CI's Claude Code version (agent-self-knowledge 04), and three maintainer eval commands disagreed with their suites' own.
+- **Resolution:** `scripts/plugin_validation/test_python_version_guard.py` (every shipped `.py` parses at the 3.7 grammar); `EXEMPT_FILE` and `.claude/hooks/lib/plugin-paths.sh` drop the test-file exemption (ADR-0003 amendment 2026-09-22) with parity and route tests; the four templates carry the eval sentence and `test_templates.py` requires zero findings; `test_changelog_immutable.py` fails on any C1 offender; `is_parse_error` in `shell-gate.sh` with a suite case for an unwritable directory; the grader rule in `.claude/skills/marketplace-governance/references/plugin-eval-protocol.md` already covers the eval class, and the plugin READMEs now copy each suite's own command. The `plugin-coherence-auditor` subagent (`/coherence-auditor`) reads a plugin end to end for this kind of drift before the next review.
+- **Positive verification:** `make check` exits 0 (2026-09-22): 910 fast tests, every plugin invariant, `claude plugin validate --strict` on all nine targets, and the suites under both bashes (ruff-quality 81, shell-quality 67 with 1 skip, verify-completion 125, block-no-verify PASS).
+- **Negative verification:** the version-guard test fails when the walrus is restored; the shell-quality suite reports 2 failures when `is_parse_error` is bypassed; the route test expects `pr` for a shipped test file.
+- **Owner or responsible area:** `scripts/plugin_validation/`, `scripts/versioning/`, `.claude/hooks/lib/`, `templates/`, `plugins/*/`
+
+### DEBT-0030 — 2026-09-22 — Gate-plugin defects the suites could not see, found by live runs, reviews and audits
+
+- **Original pending record:** none; found and fixed in the same branch during the release review of ruff-quality 0.2.0 and shell-quality 0.2.0, and recorded here so each class keeps its guard.
+- **Resolved debt:** Five classes of defect that every unit suite missed because the suites call the handler directly:
+  1. A hook `if` of `Edit(P)` never matches the Write tool (live `claude -p --plugin-dir` run): a new file skipped the gate.
+  2. Suppression checks netted counts across a batched Edit, ignored widened markers and repeated copies, and failed open when jq could not read the file (code review, plugin audits, cross-checked verification).
+  3. The project tool search climbed above the project root and the TMPDIR state fallback trusted directories it did not own (security review).
+  4. Stop looped on configuration errors and on findings only the user could settle, and restarted on every later turn (audits).
+  5. Eval graders demanded fixes the pinned Ruff no longer reports by default (E711, E741) and used `file_exists` on scaffolded files (eval pilot).
+- **Resolution:** invariant H7 in `scripts/plugin_validation/hook_contract.py`; regression cases in `scripts/plugin_validation/suites/{ruff,shell}-quality/test-gate.sh` (79 and 63), each failing before its fix; the grader rules in `.claude/skills/marketplace-governance/references/plugin-eval-protocol.md`; the `if`-twin rule in `.claude/rules/plugin-authoring.md`.
+- **Positive verification:** `make check` exits 0 with both suites passing under `bash` and `/bin/bash` (2026-09-22).
+- **Negative verification:** H7 reports 9 findings on the pre-fix `hooks.json`; each new suite case failed against the pre-fix handler (recorded per commit: a08b366, efbf5b1, fcb958e).
+- **Owner or responsible area:** `plugins/ruff-quality/hooks/`, `plugins/shell-quality/hooks/`, `scripts/plugin_validation/`
+- **Residual risk / follow-up:** The Bash guard stays textual (a write through `cp`, `mv` or a script is not caught); both READMEs state it under Limitations.
+- **Related records:** [ADR-0007](../decisions/adr-0007-gates-ship-as-plugin-hooks.md), [DEBT-0029](#debt-0029--2026-09-22--shipped-plugin-python-is-validated-only-advisorily)
+- **Superseded by:** none
+
+### DEBT-0029 — 2026-09-22 — Shipped plugin Python is validated only advisorily
+
+- **Original pending record:** DEBT-0029 in `pending-debt.md` (2026-09-21): `ccdocs.py`, the only Python any plugin ships, was outside `make lint` and `make types`; its smoke run printed `DEBT-0029 advisory:` lines and never failed; the README declared a 3.7 floor nothing exercised.
+- **Resolved debt:** Every `.py` under `plugins/` is held by the same gates as `scripts/`: Ruff (`PY_FILES` in the `Makefile`, L5 in `make lint-staged`) and basedpyright (`include = ["scripts", "plugins"]`, L6). The maintainer set the plugin requirement to Python 3.14 (2026-09-22): the README says so in an IMPORTANT block, `ccdocs.py` checks the version when it starts and exits 2 with a message on an older `python3`, and `run_plugin_suites` fails a plugin whose README declares another floor and fails when the script does not start. `ccdocs.py` went from 110 Ruff findings and 271 basedpyright errors to none, with no suppression, and its commands print the same output. Its Ruff target stays `py39` so an older `python3` can still parse it and reach the version message.
+- **Resolution:** `Makefile` (`PY_FILES`), `pyproject.toml` (`[tool.basedpyright] include`, `per-file-target-version`), `scripts/lint/lint_files.py` (`PYTHON_ROOTS`), `scripts/plugin_validation/run_plugin_suites.py` (`floor_problem`, `smoke_run`), `scripts/hygiene/test_suppressions.py` (Q3 sweeps `plugins/*.py`), agent-self-knowledge 0.2.0.
+- **Positive verification:** `make lint` exits 0; the basedpyright language server reports 0 diagnostics across 125 workspace files including `ccdocs.py`; `test_a_python_floor_must_be_the_repository_interpreter` and `test_the_python_smoke_run_never_installs_an_interpreter` pass; `/usr/bin/python3` 3.9.6 running `ccdocs.py version` prints `ccdocs.py needs Python 3.14 or later; this is python3 3.9.6 …` and exits 2 (2026-09-22).
+- **Negative verification:** a probe `plugins/agent-self-knowledge/skills/claude-code-docs/scripts/_neg_probe.py` with `import os` and `X: int = "not an int"` made `make lint` exit 2 (F401, INP001) and the language server report `reportUnusedImport` and `reportAssignmentType`; removing it returned `make lint` to exit 0. `floor_problem("3.9", "3.14")`, `floor_problem("3.99", "3.14")` and `floor_problem(None, "3.14")` each return a problem.
+- **Owner or responsible area:** `Makefile`, `pyproject.toml`, `scripts/lint/lint_files.py`, `scripts/plugin_validation/run_plugin_suites.py`
+- **Residual risk / follow-up:** Users whose `python3` is older than 3.14 (the Xcode Command Line Tools' 3.9.6, Ubuntu 24.04's 3.12, Debian 13's 3.13) cannot use `claude-code-docs` until they install 3.14; accepted by the maintainer, 2026-09-22, and stated in the plugin README.
+- **Related records:** [DEBT-0016](#debt-0016--2026-09-22--python-tests-and-repo-scripts-have-no-gates-yet), [DEBT-0019](pending-debt.md), [consolidated refactor migration log](../superpowers/specs/2026-09-21-refactor-migration-log.md)
+- **Superseded by:** none
+
+### DEBT-0016 — 2026-09-22 — Python tests and repo scripts have no gates yet
+
+- **Original pending record:** DEBT-0016 in `pending-debt.md` (2026-09-19): the repository's gate ran only `node:test` and bash suites, and nothing linted, type-checked or tested Python.
+- **Resolved debt:** The Node tooling is gone (package.json, Biome, Knip, tsconfig and every `.mjs` removed) and the repository is a uv-managed Python project for development. Every `.py` under `scripts/` is held by Ruff format and check, basedpyright in `all` mode with `failOnWarnings`, and pytest, locally through `make check` and in CI through the same `make` targets after `make setup`.
+- **Resolution:** `Makefile` targets `lint`, `types`, `test-fast` and `test-slow`, all inside `make check`; `.github/workflows/ci.yml` runs `make setup` then `make check`. uv and every tool are pinned by `uv.lock`.
+- **Positive verification:** `make lint` exits 0 on the tree (2026-09-22).
+- **Negative verification:** adding `scripts/common/_neg_probe.py` containing only `import os` makes `make lint` exit 2 with ``F401 `os` imported but unused --> scripts/common/_neg_probe.py:1:8``; removing it returns exit 0.
+- **Owner or responsible area:** `Makefile`, `pyproject.toml`, `.github/workflows/ci.yml`
+- **Residual risk / follow-up:** The review condition also named Python under `plugins/`; that part was closed by [DEBT-0029](#debt-0029--2026-09-22--shipped-plugin-python-is-validated-only-advisorily).
+- **Related records:** [DEBT-0029](#debt-0029--2026-09-22--shipped-plugin-python-is-validated-only-advisorily), [consolidated refactor migration log](../superpowers/specs/2026-09-21-refactor-migration-log.md)
+- **Superseded by:** none
+
 ### DEBT-0025 — 2026-09-20 — A plugin README must document every environment variable its Python scripts read
 
 - **Original pending record:** none. Found during `/plugin-release-review agent-self-knowledge` on 2026-09-20.
@@ -27,7 +94,6 @@ initial scaffold. Template: [`templates/resolved-debt-template.md`](../../templa
 - **Owner or responsible area:** `scripts/lib/readme-contract.mjs`
 - **Residual risk / follow-up:** The gate checks that a posture is declared and that `none` is truthful; it does not verify that `required` is truthful, which review covers.
 - **Related records:** [plugin README template](../../templates/plugin-README-reusable-template.md)
-||||||| Stash base
 ### DEBT-0020 — 2026-09-20 — Skill descriptions are written from the skill's own files, and the repository states the contract
 
 - **Original pending record:** none. Opened and closed inside the same change on 2026-09-20, so it never reached `pending-debt.md`; the measurement that opened it is preserved below.

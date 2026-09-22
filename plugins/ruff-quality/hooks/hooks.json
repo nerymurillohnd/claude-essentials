@@ -1,0 +1,154 @@
+{
+  "description": "Fix, format and lint every Python file Claude edits with the installed Ruff; ask before a suppression or a Ruff configuration change; keep Claude working until the files it touched pass.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(//**/*.py)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.py)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/*.pyw)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.pyw)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/*.pyi)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.pyi)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/ruff.toml)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/ruff.toml)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/.ruff.toml)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/.ruff.toml)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/pyproject.toml)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/pyproject.toml)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" guard",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(//**/*.py)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "ruff-quality: fixing, formatting and checking the edited Python file"
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.py)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "ruff-quality: fixing, formatting and checking the edited Python file"
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/*.pyw)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "ruff-quality: fixing, formatting and checking the edited Python file"
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.pyw)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "ruff-quality: fixing, formatting and checking the edited Python file"
+          },
+          {
+            "type": "command",
+            "if": "Edit(//**/*.pyi)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "ruff-quality: fixing, formatting and checking the edited Python file"
+          },
+          {
+            "type": "command",
+            "if": "Write(//**/*.pyi)",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" post",
+            "timeout": 60,
+            "statusMessage": "ruff-quality: fixing, formatting and checking the edited Python file"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/ruff-gate.sh\" stop",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

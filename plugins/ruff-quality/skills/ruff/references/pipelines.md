@@ -1,76 +1,157 @@
-# Ruff in pre-commit, CI, and editors
+# Ruff in editors, pre-commit, and CI
 
-Verified on 2026-09-19 (Ruff 0.16.8). Look up the current release before
-writing a pin: `gh release view --repo astral-sh/ruff-pre-commit --json tagName`
-or <https://github.com/astral-sh/ruff-pre-commit/releases>. Never write a
-version from memory.
+Verified on 2026-09-22 against Ruff 0.16.8 and
+[editors](https://docs.astral.sh/ruff/editors/),
+[editors/setup](https://docs.astral.sh/ruff/editors/setup/),
+[editors/settings](https://docs.astral.sh/ruff/editors/settings/),
+[editors/migration](https://docs.astral.sh/ruff/editors/migration/),
+[integrations](https://docs.astral.sh/ruff/integrations/),
+[ruff-pre-commit](https://github.com/astral-sh/ruff-pre-commit), and
+[ruff-action](https://github.com/astral-sh/ruff-action). Look up the current
+release of each before writing a pin; never write a version or a tag from
+memory.
 
-## One version everywhere
+## Contents
 
-Ruff's findings change between releases, so the version must match in
-`uv.lock` / dev dependencies, pre-commit, CI, and `required-version`. Bump them
-in one commit.
+- [The language server](#the-language-server)
+- [Editors](#editors)
+- [Migrating off ruff-lsp](#migrating-off-ruff-lsp)
+- [pre-commit](#pre-commit)
+- [GitHub Actions](#github-actions)
+- [Other CI](#other-ci)
+
+## The language server
+
+- `ruff server` is Ruff's built-in language server (beta in 0.4.5, stable in
+  0.5.3). It provides diagnostics, fix code actions (`source.fixAll`,
+  `source.organizeImports`), and formatting. Since 0.16.1 it also lints TOML
+  configuration, and since 0.16.4 it supports pull diagnostics for notebook
+  cells ([changelog](https://github.com/astral-sh/ruff/blob/main/CHANGELOG.md)).
+- It does not do navigation or completion: run it alongside another Python
+  language server (Pyright, basedpyright, ty, …) and disable Ruff's hover
+  where both offer it.
+- `configurationPreference`: `editorFirst` (default) lets editor settings win
+  over the project file, `filesystemFirst` lets the file win, `editorOnly`
+  ignores files. `filesystemFirst` keeps the editor in line with the CLI,
+  hooks, and CI. `configuration` can point to a file or hold inline settings.
+- Other settings: `lint.enable`, `organizeImports`, `fixAll`,
+  `showSyntaxErrors` (all default `true`), `lineLength`, `lint.select`,
+  `lint.extendSelect`, `format.preview`, and more.
+- In VS Code they use the `ruff.` prefix (`ruff.lineLength`); in other editors
+  they go in `initialization_options.settings` (camelCase, no prefix).
+
+## Editors
+
+| Editor | Setup |
+| --- | --- |
+| VS Code | The official Ruff extension (`charliermarsh.ruff`, 2024.32.0 or later recommended). It uses `ruff server` automatically for Ruff 0.5.3+ (`ruff.nativeServer = "auto"`). Binary: `ruff.path`, else the active environment, else `PATH`, else the bundled copy |
+| Neovim 0.11+ | `vim.lsp.config('ruff', { init_options = { settings = { … } } })` then `vim.lsp.enable('ruff')`; 0.10 uses `nvim-lspconfig`. Disable hover in an `LspAttach` autocmd with `client.server_capabilities.hoverProvider = false` when Ruff runs next to Pyright |
+| Vim | `vim-lsp` with `lsp#register_server()` running `ruff server` |
+| Helix | `[language-server.ruff]` with `command = "ruff"`, `args = ["server"]` in `languages.toml`, then `language-servers = ["ruff"]` for Python |
+| Kate | LSP Client plugin, user server settings with `["ruff", "server"]` |
+| Sublime Text | The `LSP` and `LSP-ruff` packages |
+| PyCharm | Native Ruff support from 2025.3 (Python, Tools, Ruff); otherwise an External Tool or the third-party plugin |
+| Emacs | Eglot (`eglot-server-programs`), or `flymake-ruff` / `emacs-ruff-format` |
+| Zed | Built in; settings under `lsp.ruff.initialization_options.settings` |
+| TextMate | `textmate2-ruff-linter` bundle |
+
+VS Code on-save settings from the extension's README:
+
+```json
+{
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  }
+}
+```
+
+## Migrating off ruff-lsp
+
+`ruff-lsp` is superseded by `ruff server`. When migrating:
+
+- Remove `lint.run` (the server lints on every keystroke),
+  `ignoreStandardLibrary`, and `showNotifications`.
+- Replace `lint.args` and `format.args` with granular settings, for example
+  `"ruff.lint.args": "--select=E,F"` → `"ruff.lint.select": ["E", "F"]`, and
+  `"ruff.format.args": "--line-length 80"` → `"ruff.lineLength": 80`; use
+  `configuration` for the rest.
+- `path` and `interpreter` remain extension settings in VS Code; the server
+  does not accept them.
+- Uninstall the `ruff-lsp` package and point Neovim/Vim configs at `ruff`
+  (`ruff server`), not `ruff_lsp`.
 
 ## pre-commit
 
 ```yaml
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.8 # keep equal to the project's Ruff version
+    rev: v0.16.8 # the project's Ruff version; check the latest tag first
     hooks:
       - id: ruff-check
         args: [--fix]
       - id: ruff-format
 ```
 
-- Hook ids are `ruff-check` and `ruff-format`; `ruff` is a legacy alias.
-- `ruff-check` with `--fix` runs **before** `ruff-format` and before any other
-  formatter.
-- The hooks already pass `--force-exclude`, so the project's `exclude` applies.
-- `ruff-format` includes Markdown files in `types_or`. To lint `pyproject.toml`
-  add `types_or: [python, pyi, jupyter, pyproject]` (needs `identify >= 2.6.18`).
-- [prek](https://prek.j178.dev/) reads the same configuration.
-- A failing pre-commit hook is fixed, never skipped with `--no-verify`.
+- Hook ids are `ruff-check` and `ruff-format`; `ruff` is a legacy alias of
+  `ruff-check`.
+- With `--fix`, `ruff-check` goes before `ruff-format` and before Black, isort,
+  or any other formatter. Without `--fix` order does not matter.
+- Both hooks run with `--force-exclude`, so the project's `exclude` applies.
+- Default `types_or`: `python`, `pyi`, `jupyter`, and for `ruff-format` also
+  `markdown`. Drop notebooks with `types_or: [python, pyi]`; lint
+  `pyproject.toml` with `types_or: [python, pyi, jupyter, pyproject]`
+  (needs `identify >= 2.6.18`).
+- [prek](https://prek.j178.dev/) reads the same `.pre-commit-config.yaml`.
+- A failing hook is fixed, never skipped with `--no-verify` or `SKIP=`.
 
 ## GitHub Actions
 
-Check the repository's conventions for pinning (many require a full commit
-SHA) before adding a step.
+Follow the repository's pinning policy (many require a full commit SHA with a
+version comment) before adding a step. CI checks; it never fixes.
+
+With `astral-sh/ruff-action` (v4.1.0 on the verification date):
 
 ```yaml
-- uses: astral-sh/ruff-action@<pinned SHA> # v4.x
+- uses: astral-sh/ruff-action@<SHA or tag> # v4.x
+  with:
+    version: "0.16.8" # or version-file: uv.lock
+    args: check --output-format github
+- uses: astral-sh/ruff-action@<SHA or tag>
   with:
     version: "0.16.8"
-    args: check --output-format github
-- run: ruff format --check --output-format github .
+    args: format --check --output-format github
 ```
 
-Or with uv:
+- Inputs: `version` (else `version-file`, else the nearest `pyproject.toml`
+  above `src`, else `latest`), `version-file` (`pyproject.toml`,
+  `requirements.txt`, `uv.lock`), `args` (default `check`), `src`,
+  `checksum`, `github-token`. Never leave the version at `latest`.
+
+With the project's own locked environment:
 
 ```yaml
-- run: uv run --frozen ruff check --output-format github .
-- run: uv run --frozen ruff format --check --output-format github .
+- run: uv run --locked --no-python-downloads ruff check --output-format github .
+- run: uv run --locked --no-python-downloads ruff format --check --output-format github .
 ```
 
-- CI checks, it never fixes: no `--fix`, no `ruff format` without `--check`.
+(Install Python with `actions/setup-python` or `uv python install` in an
+explicit step first, so no download happens implicitly.)
+
 - `--output-format github` produces inline annotations; `format --check`
-  supports output formats since 0.16. Other formats: `concise`, `full`,
-  `json`, `json-lines`, `junit`, `grouped`, `gitlab`, `pylint`, `rdjson`,
-  `azure`, `sarif`. `RUFF_OUTPUT_FORMAT` sets the default.
+  supports output formats since 0.16.0. Others: `concise`, `full`, `json`,
+  `json-lines`, `junit`, `grouped`, `gitlab`, `pylint`, `rdjson`, `azure`,
+  `sarif`. `RUFF_OUTPUT_FORMAT` sets the default.
 
-## Editors: the Ruff language server
+## Other CI
 
-- `ruff server` is the built-in language server; the old `ruff-lsp` package
-  is retired. VS Code's Ruff extension and Zed use it directly; Neovim uses
-  `vim.lsp.config('ruff', …)`.
-- Since 0.16 it also lints TOML configuration and supports notebooks.
-- `configurationPreference` (default `editorFirst`) decides whether editor
-  settings or the project file win; `filesystemFirst` makes the editor follow
-  the project exactly, which keeps editor, hook, and CI in agreement.
-
-## Claude Code
-
-- The ruff-quality plugin's `ruff-hooks` skill installs an after-edit gate
-  (fix, format, and lint every Python file Claude edits, plus a Stop gate).
-- Keep a short Ruff section in the project's `CLAUDE.md` naming the command
-  route (`uv run ruff`), so every session uses the same one.
+- GitLab: the `ghcr.io/astral-sh/ruff:<version>-alpine` image, with
+  `--output-format gitlab` for code-quality reports.
+- Docker tags: `latest`, `<major>.<minor>.<patch>`, and `-alpine` / Debian
+  variants.
+- Any CI: run the same commands through the project's environment, no
+  `--fix`, no `ruff format` without `--check`.

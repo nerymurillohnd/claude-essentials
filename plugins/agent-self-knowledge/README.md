@@ -5,7 +5,7 @@
 [![Kind](https://img.shields.io/badge/kind-skill--only-8A2BE2)](../../docs/decisions/adr-0001-marketplace-distribution-model.md)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-partial-D97757?logo=claude&logoColor=white)](#-compatibility)
 [![Claude Cowork](https://img.shields.io/badge/Claude_Cowork-not_tested-D97757?logo=claude&logoColor=white)](#-compatibility)
-![Python](https://img.shields.io/badge/Python-%E2%89%A53.7-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-%E2%89%A53.14-3776AB?logo=python&logoColor=white)
 ![Network](https://img.shields.io/badge/network-required-lightgrey)
 
 [← claude-essentials](../../README.md) · [Install](#-installation) · [Skill](#-skills) ·
@@ -28,6 +28,14 @@ find — and it does **not** cover any product other than Claude Code.
 > scheme or host validation — including `file://`. Review
 > `skills/claude-code-docs/scripts/ccdocs.py` before enabling this in a
 > sensitive environment.
+
+> [!IMPORTANT]
+> **Requires Python 3.14 or later as `python3` on your `PATH`.** The skill runs
+> `python3 …/ccdocs.py`, and the script stops with a message naming the version it
+> found when `python3` is older. The Python that ships with the Xcode Command Line
+> Tools on macOS (3.9) and the default `python3` of Ubuntu 24.04 (3.12) or Debian 13
+> (3.13) are too old: install 3.14 from python.org, with `brew install python@3.14`,
+> or with `uv python install 3.14 --default`.
 
 ## 🎯 What it does
 
@@ -120,16 +128,16 @@ your **user** scope, outside this plugin.
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
 | Claude Code | 2.1.222 | `claude --version` | `plugin.json` carries `metadata`, a recognized manifest field only from that version; earlier builds treat it as unrecognized, which `claude plugin validate --strict` turns into an error. |
-| Python | 3.7 | `python3 -V` | `ccdocs.py` is stdlib-only and needs no packages, no virtualenv, and no `uv`. |
+| Python | 3.14 | `python3 -V` | `ccdocs.py` is stdlib-only and needs no packages and no virtualenv; it checks the version at start and stops with a message on anything older. |
 | `python3` on `PATH` | — | `command -v python3` | The `allowed-tools` grant invokes it by name. |
+| `curl` | 8.7 | `curl --version` | The `allowed-tools` grant fetches the documentation hosts with `curl -sS`. 8.7.1, the curl macOS ships, is the version tested; nothing the grant uses is newer than much older releases, so an older curl likely works but is untested. |
 | Network access | — | — | Retrieval reads `code.claude.com`, `raw.githubusercontent.com` and `registry.npmjs.org`. |
 | Writable cache directory | — | — | `${XDG_CACHE_HOME:-~/.cache}/ccdocs`. If it cannot be written, retrieval still works and only caching is lost. |
 
-None of these minimums is enforced by the script: it is stdlib-only and fails
-visibly if `python3` is missing or the network is unreachable, rather than
-checking a version first.
+The script enforces the Python minimum itself; the others are not checked up front,
+and a missing `python3` or an unreachable network fails visibly.
 
-Two environment variables change how the script runs, both optional:
+Three environment variables change how the script runs, all optional:
 
 | Variable | Default | Effect |
 | --- | --- | --- |
@@ -149,19 +157,8 @@ Expected result: the answer quotes the sentence defining `worktree.baseRef`
 verbatim, links the settings reference, and states the date and version it
 verified against.
 
-**Behavioral evals** — [`evals/`](evals/) runs with `claude plugin eval`, which compares a
-run with the plugin against a baseline without it:
-
-| Case | Checks | With | Without | Δ | Last run |
-| --- | --- | ---: | ---: | ---: | --- |
-| `triggers-on-settings-question` | Skill fires on natural phrasing, names `worktree.baseRef`, quotes the documentation sentence verbatim and cites it | 1.00 | 0.00 | +1.00 | 2026-09-20, Claude Code 2.1.278, `claude-sonnet-5` agent and judge, 3 runs per arm |
-| `ignores-unrelated-request` | Skill does **not** fire on unrelated work | 1.00 | 1.00 | 0.00 | 2026-09-20, Claude Code 2.1.278, `claude-sonnet-5` agent and judge, 3 runs per arm |
-
-The skill invoked itself unprompted in all three `triggers-on-settings-question`
-runs. There is **no eval for the bounded-negative protocol**: the case written
-for it rested on a premise that turned out to be false (see Limitations), and no
-replacement question has been verified absent from both the published
-documentation and the settings schema Claude Code ships. DEBT-0023 tracks it.
+**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are
+reported in the pull request or a dated file under `docs/audits/`, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -169,11 +166,11 @@ documentation and the settings schema Claude Code ships. DEBT-0023 tracks it.
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/agent-self-knowledge --strict
-claude plugin eval plugins/agent-self-knowledge --trust-plugin \
-  --allow-tools "Bash(python3 *)" "Bash(curl -sS https://*)" "Bash(claude --version)" WebFetch \
-  --model claude-sonnet-5 --judge-model claude-sonnet-5 --no-publish --max-cost-usd 8
+claude plugin eval plugins/agent-self-knowledge --ablation with-without \
+  --allow-tools Bash WebFetch \
+  --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
 ```
 
 The skill also validates its own citations:
@@ -188,7 +185,7 @@ python3 plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py s
 
 | Surface | Status | Last verified | Notes |
 | --- | --- | --- | --- |
-| Claude Code | ⚠️ Partial | 2026-09-20, Claude Code 2.1.278 | Retrieval exercised in a real session on macOS; Linux and WSL follow from stdlib Python but are unverified. Windows without Git Bash is unsupported: the grant is a `Bash` rule. The evals in this branch ran against the shipped frontmatter; the consumer smoke test from a remote-marketplace install has not been run. |
+| Claude Code | ⚠️ Partial | 2026-09-20, Claude Code 2.1.278 | Retrieval exercised in a real session on macOS; Linux and WSL follow from stdlib Python but are unverified. Windows without Git Bash is unsupported: the grant is a `Bash` rule. The consumer smoke test from a remote-marketplace install has not been run. |
 | Claude Cowork | 🧪 Not tested | — | Retrieval needs `python3` and outbound network; neither is verified there. |
 | Claude Chat (web, desktop) | ❌ Not supported | — | Plugins aren't used in Chat. |
 
@@ -219,7 +216,7 @@ such key is documented as of the date it checked, and points at the
 | Access | What it may do |
 | --- | --- |
 | Read | Public documentation pages on `code.claude.com`, the upstream `CHANGELOG.md`, and npm registry metadata. When you ask why a configuration isn't working, also your own `.claude/settings.json`, `.mcp.json`, hooks, `CLAUDE.md`, `.claude/rules/`, agents and plugin manifests. |
-| Write | Only the response cache under `${XDG_CACHE_HOME:-~/.cache}/ccdocs`. Nothing in your repository. |
+| Write | Only the response cache under `${XDG_CACHE_HOME:-~/.cache}/ccdocs` (an empty `XDG_CACHE_HOME` counts as unset), created readable by you only. A `raw` fetch of a `file://` URL stores a copy of that file there too. Nothing in your repository. |
 | Process | `python3` running the plugin's own bundled script, `curl` against the two granted hosts, and `claude --version` to read your installed build. |
 | Network | `code.claude.com`, `raw.githubusercontent.com`, `registry.npmjs.org` — and, through the script's `raw` command, any URL it is given, including `file://`. |
 | Credentials | None. The plugin has no `userConfig` and sends no authentication. |
@@ -239,7 +236,8 @@ such key is documented as of the date it checked, and points at the
 | The skill may not load on its own. | An answer about Claude Code with no quote and no source line. | Invoke it directly with `/agent-self-knowledge:claude-code-docs`. |
 | **Claude Code ships settings keys that the published documentation does not carry, and the skill reads only what is published.** Verified 2026-09-20: `worktree.location` is defined in the settings schema inside Claude Code 2.1.278 and returns 0 hits across the 99,415 lines of `llms-full.txt`. | A bounded report that a settings key was not found, when the key exists but is undocumented. | Treat a not-found result for a settings key as *not documented*, not as *does not exist*. DEBT-0023. |
 | No network, or a proxy blocks the docs host. | The script exits with the URL and the underlying error; it never returns a partial corpus. | Retry with access, or ask Claude to quote the page you paste in. |
-| `python3` is absent. | The Bash call fails and retrieval can't run. | Install Python 3.7 or newer, or Xcode Command Line Tools on macOS. |
+| `python3` is absent or older than 3.14. | The Bash call fails, or `ccdocs.py` stops with `ccdocs.py needs Python 3.14 or later`; retrieval can't run. | Install Python 3.14 (python.org, `brew install python@3.14`, or `uv python install 3.14 --default`) so `python3` is 3.14. The Xcode Command Line Tools' Python (3.9) is not enough. |
+| `curl` is absent. | The granted `curl -sS https://…` calls fail and only the bundled references answer. | Install `curl` (it ships with macOS, Windows 10 or later, and most Linux distributions). |
 | A documentation page is renamed upstream. | An error naming the URL that moved. | Re-run with `find <topic>` to relocate the page. |
 | `raw` accepts any URL. | Nothing visible; it is a capability, not an error. | Read the script; the closing condition is a host allowlist. |
 
@@ -270,7 +268,7 @@ Every published version is in [CHANGELOG.md](CHANGELOG.md), and each version is 
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Nery Samuel Murillo Tejada.
+[Apache-2.0](LICENSE) © Nery Samuel Murillo.
 
 ---
 

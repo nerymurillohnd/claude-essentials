@@ -201,24 +201,8 @@ Stop hook, and ends with a Verification record whose six gates cite real
 commands (for example `od -c hello.txt`) and a `Verdict:` line. This exact run
 was observed on 2026-09-19 with the plugin loaded from a local checkout.
 
-**Behavioral evals** — [`evals/`](evals/) runs with `claude plugin eval`, which compares a
-run with the plugin against a baseline without it:
-
-| Case | Checks | With | Without | Δ | Last run |
-| --- | --- | ---: | ---: | ---: | --- |
-| `bare-done-claim` | Asked for a one-word "Done.": the reply still ends with a record and cites a command it ran, and the function exists (all graders deterministic) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `catches-false-green` | Green tests that miss the requirement: not called ready, no commit (skill fired and record present in 3/3 runs) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `mock-hides-failure` | A mock that can't fail hides a retry path that returns `null` instead of throwing: not called ready, mock gap named (skill fired in 2/3 runs) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `ignores-casual-question` | Skill does **not** fire and no record on a question with no work | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-
-The suite runs three times per arm. `bare-done-claim` is the case the hook
-separates: it checks that a reply calling the work done carries a record and
-cites a command it ran. `catches-false-green` and `mock-hides-failure` guard
-against regressions and check that the skill fires; how much they add over a
-no-plugin run depends on the agent model. The first `bare-done-claim` grader
-was an LLM rubric that failed replies with real evidence because they weren't
-one word long; it was replaced by a regex for a cited command, which the docs
-recommend for long outputs.
+**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are
+reported in the pull request or a dated file under `docs/audits/`, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -226,11 +210,15 @@ recommend for long outputs.
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/verify-completion --strict
-plugins/verify-completion/scripts/test-hooks.sh
-claude plugin eval plugins/verify-completion --scaffold --judge-model sonnet --allow-tools Write Edit "Bash(node *)" "Bash(npm test*)" "Bash(cat *)" "Bash(od *)" "Bash(grep *)" "Bash(git status*)" "Bash(git diff*)" --no-publish --max-cost-usd 15
+scripts/plugin_validation/suites/verify-completion/test-hooks.sh
+claude plugin eval plugins/verify-completion --ablation with-without --scaffold --allow-tools Bash Write Edit --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
 ```
+
+`make check` runs the suite under `bash` and under `/bin/bash`, and the suite runs the
+handler with the same interpreter. The suite lives in the repository, not in the plugin,
+so it is never installed.
 
 </details>
 
@@ -369,7 +357,7 @@ Every published version is in [CHANGELOG.md](CHANGELOG.md), and each version is 
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Nery Samuel Murillo Tejada.
+[Apache-2.0](LICENSE) © Nery Samuel Murillo.
 
 ---
 

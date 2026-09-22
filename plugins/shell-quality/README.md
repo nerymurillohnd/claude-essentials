@@ -9,82 +9,76 @@
 ![shfmt](https://img.shields.io/badge/shfmt-%E2%89%A53.12-00ADD8)
 ![Bash](https://img.shields.io/badge/Bash-%E2%89%A53.2-4EAA25?logo=gnubash&logoColor=white)
 ![jq](https://img.shields.io/badge/jq-%E2%89%A51.6-555555)
-![Git](https://img.shields.io/badge/Git-%E2%89%A52.18-F05032?logo=git&logoColor=white)
-![Hooks](https://img.shields.io/badge/hooks-4_events_(on_request)-orange)
+![Hooks](https://img.shields.io/badge/hooks-3_events-orange)
 ![Network](https://img.shields.io/badge/network-none-lightgrey)
 
 [← claude-essentials](../../README.md) · [Install](#-installation) · [Skills](#-skills) ·
 [Security](#-security) · [Limitations](#-limitations) · [Changelog](CHANGELOG.md)
 
-> **Claude writes shell scripts that pass ShellCheck and shfmt, and, when you ask for it, cannot finish until every script it touched is formatted and clean, without silencing a single check.**
+> **Every shell script Claude edits is formatted with your shfmt and checked with your ShellCheck, and Claude keeps working until what is left is fixed in the script, never disabled.**
 
 **Kind:** `bundle` — a full workflow: multiple components working together.
 
-Shell Quality helps anyone who lets Claude write Bash or POSIX shell keep it
-correct and consistent. Its `shell-lint` skill teaches Claude the current
-ShellCheck and shfmt workflow, correct fixes for common SC codes,
-macOS Bash 3.2 pitfalls, configuration, migration, and pipelines whenever it
-works on a shell script. Its `shell-hooks` skill installs, only after you
-choose a scope and a configuration, a gate that formats and checks every script
-Claude edits, denies `# shellcheck disable` directives and configuration
-changes, and blocks the end of the turn until everything passes. Installing
-the plugin does **not** wire any hook.
+Shell Quality helps developers who use Claude Code keep their shell scripts clean
+without babysitting them. Its hook runs the shfmt and ShellCheck you already have,
+in your project or globally, with your own `.shellcheckrc` and `.editorconfig`,
+after every edit Claude makes to a `.sh` or `.bash` file. Its `shell-lint` skill
+teaches Claude to install, configure, run, integrate, and fix findings with both
+tools from the official documentation. It does **not** change your configuration or
+silence a finding on its own: a directive or a configuration edit waits for your answer.
 
 > [!CAUTION]
-> After you choose a scope and a mode, `shell-hooks` writes five hook groups (four
-> events) to a Claude Code settings file (`.claude/settings.json`,
-> `.claude/settings.local.json`, or `~/.claude/settings.json`), copies one
-> handler script next to it, and, for the recommended mode, writes a
-> `.shellcheckrc` where none exists and appends a marked `[[shell]]` block to
-> `.editorconfig`. From then on the hooks reformat the scripts Claude edits. It
-> backs up the files it changes and prints the exact rollback.
+> Installing the plugin turns its hooks on in the scope you install it in. From
+> then on, every `.sh` and `.bash` file Claude writes or edits there is rewritten
+> by shfmt. A script that was never formatted is reformatted whole the first time
+> Claude edits it.
 
 ## 🎯 What it does
 
 | Scenario | How this plugin helps | Expected result |
 | --- | --- | --- |
-| Claude writes or edits a shell script | The `shell-lint` skill loads: shfmt, then ShellCheck; correct fixes for SC2086, SC2155, SC2164, SC2181, SC1091…; no directives to silence | Scripts that pass the project's ShellCheck and EditorConfig |
-| A script must run on a stock Mac | The skill lists what `/bin/bash` 3.2 lacks, which ShellCheck never flags | No `declare -A`, `mapfile`, or `${x,,}` surprises at run time |
-| Your CI runs `shfmt -i 2 -s` next to an `.editorconfig` | The skill explains that any style flag disables EditorConfig, and gives the flag-free CI and pre-commit setup | One source of formatting truth |
-| You want ShellCheck enforced on every edit | `shell-hooks` shows the exact configuration of each mode with today's counts, then installs the gate in the scope you pick | Every edited script is formatted and checked; findings go straight back to Claude |
-| Claude tries `# shellcheck disable=…`, `source=/dev/null`, or relaxing `.shellcheckrc` | The gate denies the edit before it happens, and re-checks directive counts and configuration after edits and at Stop | The script gets fixed; configuration stays your decision |
-| Claude tries to finish with findings left | The Stop gate re-checks every script edited this session and blocks, up to a limit you choose | The turn ends clean, or with a visible list of what is unresolved |
+| Claude writes or edits a shell script | The hook formats it with shfmt (your EditorConfig) and checks it with ShellCheck (your rc) | The script passes, or Claude gets the exact findings left |
+| ShellCheck reports findings | Claude receives each finding with its `SC` code and fixes it in the script | Clean scripts, not disabled checks |
+| Claude is about to add `# shellcheck disable=` or `source=/dev/null`, or change `.shellcheckrc` or the shfmt keys of `.editorconfig` | The hook asks you before the edit happens | You decide; nothing is silenced behind your back |
+| Claude tries to finish with findings left | At the end of the turn the hook re-checks every script it touched and keeps Claude working, up to 7 attempts | The turn ends clean, or you get the list of what still fails |
+| You ask Claude about ShellCheck or shfmt | The `shell-lint` skill: install routes, rc and EditorConfig discovery, fixes for the common `SC` codes, portability, editors, pre-commit and CI | Answers grounded in the official documentation |
 
 ## 🚫 What it does not do
 
-- **Does not** install any hook when you install the plugin, or write any file until you choose a scope and a mode.
-- **Does not** lint or format the whole repository: the gate only touches scripts Claude edits in the session.
-- **Does not** install ShellCheck or shfmt, use the network, or check zsh scripts (ShellCheck does not support zsh).
-- **Does not** overwrite an existing rc file or EditorConfig shell style: the recommended profile is added only where none exists.
-- **Does not** check Bash version compatibility: ShellCheck cannot; the skill teaches the pitfalls instead.
-- **Not a fit when** you need enforcement for everyone, including humans and other tools: use pre-commit and CI for that (the `shell-lint` skill shows how). The gate is a guardrail for Claude, not a security boundary.
+- **Does not** install ShellCheck or shfmt, download anything, or use the network.
+- **Does not** write or change `.shellcheckrc`, `.editorconfig` or any other configuration.
+- **Does not** apply ShellCheck's suggested fixes: they can change behaviour, so Claude fixes each finding.
+- **Does not** check files Claude did not touch, extensionless scripts, or zsh scripts (ShellCheck does not support zsh).
+- **Not a fit when** you need enforcement for everyone, including humans and other tools: use pre-commit and CI for that (the `shell-lint` skill shows how). The hook is a guardrail for Claude, not a security boundary.
 
 ## ⚡ Installation
 
-**Claude Code** — add the marketplace once, then install:
+**Claude Code** — add the marketplace once, then install in the scope you want the hook in:
 
 ```text
 /plugin marketplace add nerymurillohnd/claude-essentials
 /plugin install shell-quality@claude-essentials
 ```
 
-Then work on shell scripts as usual, or ask for the gate, for example: `Run shfmt and ShellCheck on every script you edit, and don't finish with findings left.`
+From a terminal, `claude plugin install shell-quality@claude-essentials -s user`
+(every project), `-s project` (this repository, shared through
+`.claude/settings.json`) or `-s local` (this repository, only you).
 
 **Claude Cowork** — **Customize → Plugins → Add marketplace**, enter
 `nerymurillohnd/claude-essentials`, then install **Shell Quality** from the list.
-The `shell-lint` skill works there; Cowork does not run settings-based hooks, so
-`shell-hooks` only reports and never installs the gate. See [Compatibility](#-compatibility).
+See [Compatibility](#-compatibility) for what runs there.
 
 > [!TIP]
-> Installation is complete when `/plugin list` shows `shell-quality` as enabled
-> and `/shell-quality:shell-lint` and `/shell-quality:shell-hooks` appear in the `/` menu.
+> Installation is complete when `/plugin list` shows `shell-quality` as enabled,
+> `/hooks` lists its `PreToolUse`, `PostToolUse` and `Stop` hooks, and
+> `/shell-quality:shell-lint` appears in the `/` menu.
 
 ### What installing changes
 
 | | Effect |
 | --- | --- |
-| **Does** | Registers two skills (`shell-lint`, `shell-hooks`) in Claude Code's plugin state. |
-| **Does not** | Create or modify settings, hooks, `.claude/`, `~/.claude/`, `.shellcheckrc`, `.editorconfig`, or your repository. |
+| **Does** | Registers the `shell-lint` skill and three hook events in Claude Code's plugin state, in the scope you chose; `-s project` also records the plugin in `.claude/settings.json`. |
+| **Does not** | Write a `.shellcheckrc` or `.editorconfig`, copy scripts into your repository, or touch `~/.claude/hooks/`. |
 
 ### Update, disable, or remove
 
@@ -94,57 +88,40 @@ The `shell-lint` skill works there; Cowork does not run settings-based hooks, so
 /plugin uninstall shell-quality@claude-essentials
 ```
 
-In Cowork, use **Update** on the marketplace, and **Uninstall** on the plugin
-under **Customize → Plugins**.
-
-Uninstalling the plugin does **not** remove a gate the skill installed: the
-installed handler is a standalone copy. Remove the gate first with
-`! bash "<plugin dir>/skills/shell-hooks/scripts/manage.sh" uninstall --scope <scope>`
-(ask Claude for the exact command), or follow
-[rollback](skills/shell-hooks/references/rollback.md).
+Updating the plugin updates the hooks; run `/reload-plugins` to switch a running
+session to the new version. To keep the skill but stop the hook, set the plugin's
+`enabled` option to off in `/config`. In Cowork, use **Update** on the marketplace,
+and **Uninstall** on the plugin under **Customize → Plugins**.
 
 ## 🧠 Skills
 
 | Skill | Invoke | Claude uses it when | Invocation |
 | --- | --- | --- | --- |
-| [`shell-lint`](skills/shell-lint/SKILL.md) | `/shell-quality:shell-lint` | It writes, edits, reviews, or fixes a shell script; or you ask about SC codes, `.shellcheckrc`, shfmt and EditorConfig, portability, migration, pre-commit, or CI | Claude + user |
-| [`shell-hooks`](skills/shell-hooks/SKILL.md) | `/shell-quality:shell-hooks` | You ask for a ShellCheck/shfmt after-edit hook or gate, or to check, update, or remove it | Claude + user |
-
-The `shell-hooks` workflow, with a stop at each gate:
-
-1. **Assess**: ShellCheck and shfmt versions, the scripts found (by extension and shebang), the rc file and EditorConfig that apply today, findings and unformatted scripts under each mode, existing hooks.
-2. **Show the configuration**: the exact recommended `.shellcheckrc` and `[[shell]]` block, your own configuration, or the tools' defaults, explained with those counts; you choose the mode.
-3. **Choose a scope**: project, local, or user.
-4. **Preflight**: bash, jq, git, ShellCheck, and shfmt versions, valid settings, no second scope, no `disableAllHooks`.
-5. **Install**: backups, profile (recommended mode, only where none exists), handler copy, five hook groups, then the test suite against the installed copy; failure restores everything.
-6. **Hand off**: you confirm in `/hooks`; you get the exact rollback.
+| [`shell-lint`](skills/shell-lint/SKILL.md) | `/shell-quality:shell-lint` | It writes, edits, reviews, or fixes a shell script; or you ask about an `SC` code, `.shellcheckrc`, the shfmt keys of EditorConfig, portability, pre-commit or CI | Claude + user |
 
 ## 🤖 Agents
 
-None — this plugin ships two skills and no agents.
+None — this plugin ships one skill and no agents.
 
 ## 🪝 Hooks and side effects
 
-The plugin registers **no** hooks. On your approval, `shell-hooks` installs these
-in the scope you chose:
-
 | Event | Matcher | What the handler does | Blocks? |
 | --- | --- | --- | --- |
-| `UserPromptSubmit` | — | Records the ShellCheck/EditorConfig configuration and directive counts as accepted | No |
-| `PreToolUse` | `Write\|Edit\|Bash` | Denies adding `# shellcheck disable=…`/`source=/dev/null` and changing `.shellcheckrc`/`shellcheckrc`, the user-level rc, the shfmt keys of `.editorconfig`, the handler, or its settings | Yes: the edit |
-| `PostToolUse` | `Write\|Edit`, `Bash` | `shfmt -w`, then `shellcheck -f gcc` on each edited `.sh`/`.bash`/`.bats` or sh/bash/dash/ksh shebang script; reformats those files | No (the tool already ran); findings go to Claude with exit 2 |
-| `Stop` | — | Re-checks every script edited this session (`shellcheck`, `shfmt -d`), directives, and configuration | Yes: the end of the turn, up to `--max-blocks` (1–7, default 5) |
+| `PreToolUse` | `Write\|Edit` on `.sh`, `.bash`, `.shellcheckrc`, `shellcheckrc`, `.editorconfig`; `Bash` | Asks you before an edit adds a suppression directive, changes `.shellcheckrc`, or changes the sections or shfmt keys of `.editorconfig`, and before a command writes one | No — it asks, never denies |
+| `PostToolUse` | `Write\|Edit` on `.sh`, `.bash` | `shfmt -w` (no style flags, so your EditorConfig decides), then `shellcheck -x` on the edited script; rewrites it | No (the edit already happened); findings left go to Claude |
+| `Stop` | — | Re-formats and re-checks every script this session touched | Yes: keeps Claude working while the findings change, at most 7 times; then a message lists what still fails and those scripts are left alone until edited again |
 
-| Scope | Settings file | Handler | Shared |
-| --- | --- | --- | --- |
-| project | `.claude/settings.json` | `.claude/hooks/shell-quality-gate.sh` | Yes — commit both (and new `.shellcheckrc`/`.editorconfig` changes) |
-| local | `.claude/settings.local.json` | `.claude/hooks/shell-quality-gate.sh` | No — kept out of git via `.git/info/exclude` |
-| user | `~/.claude/settings.json` | `~/.claude/hooks/shell-quality-gate.sh` | No — applies to every project on this machine |
-
-Every result tells you in one line (`shell-quality ✓ …` or `✗ …`). Failures exit 2,
-never 1, so Claude always sees them; missing tools and broken configuration fail
-closed. Per-session state lives in `$TMPDIR/shell-quality-gate-<uid>/`. Details:
-[hook contract](skills/shell-hooks/references/hook-contract.md).
+The handler is [`scripts/shell-gate.sh`](scripts/shell-gate.sh). It runs the first
+shfmt and ShellCheck it finds: the project's own (`.venv/bin/` or `venv/bin/` between
+the edited script and the project root, owned by you, for example from `shellcheck-py` and `shfmt-py`), then `PATH`,
+then `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Each tool then finds
+your configuration as it always does: ShellCheck the nearest `.shellcheckrc`, then
+`~/.shellcheckrc`, then `$XDG_CONFIG_HOME/shellcheckrc`, plus `SHELLCHECK_OPTS`,
+which every ShellCheck report names when it is set; shfmt the `.editorconfig` files above the
+script. Every result reaches you as one `shell-quality` line (see [Examples](#-examples)), and
+Claude is told when shfmt rewrote a script so it re-reads it. Per-session
+state (the scripts touched and the Stop count) lives in `${CLAUDE_PLUGIN_DATA}` (or, when
+Claude Code does not set it, a private `$TMPDIR/shell-quality-<uid>`) and is pruned after 7 days.
 
 ## 🔌 MCP, permissions, and network
 
@@ -154,16 +131,15 @@ None — no MCP servers, no network access, no credentials.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.222; 2.1.269 for Bash-edit coverage | `claude --version` | Loads the skills and runs the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222 — earlier versions treat it as unrecognized, which `claude plugin validate --strict` turns into an error; `${CLAUDE_SKILL_DIR}` needs 2.1.69; `bashEditDiff` needs 2.1.269 |
-| ShellCheck | 0.10 (0.11 for the recommended profile) | `shellcheck --version` | Checks every edited script; the profile uses 0.11 optional checks |
-| shfmt | 3.12 | `shfmt --version` | Formats every edited script; `simplify` in EditorConfig needs 3.12 |
-| Bash | 3.2 | `bash --version` | Runs the handler and installer (macOS's stock `/bin/bash` 3.2 works) |
-| jq | 1.6 | `jq --version` | Parses hook payloads and merges settings |
-| Git | 2.18 | `git --version` | Project and local scope, backups, and suppression baselines |
+| Claude Code | 2.1.222 | `claude --version` | Loads the skill and the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222. The `enabled` row in `/config` needs 2.1.269 |
+| ShellCheck | 0.10 | `shellcheck --version` | Checks every edited script. 0.10 is the first release that reads the `extended-analysis` key and `--rcfile` the skill's configuration guidance uses; tested with 0.11.0 |
+| shfmt | 3.12 | `shfmt --version` | Formats every edited script. 3.12 is the first release that reads the `simplify` and `minify` EditorConfig keys; the `[[shell]]` sections the skill describes need 3.13; tested with 3.14.1 |
+| Bash | 3.2 | `bash --version` | Runs the handler (macOS's stock `/bin/bash` 3.2 works) |
+| jq | 1.6 | `jq --version` | Reads hook payloads and writes hook answers |
 | Windows only | Git for Windows (Git Bash) | `bash --version` in Git Bash | Without Git Bash, hooks run in PowerShell and a Bash handler cannot run |
 
-Only the gate needs these; the `shell-lint` skill works without them. With project
-scope, everyone who runs Claude Code in the repository needs them too.
+The skill works without any of them. With project scope, everyone who runs Claude
+Code in the repository needs them too.
 
 ```bash
 shellcheck --version
@@ -172,34 +148,25 @@ bash --version
 jq --version
 ```
 
-Install them with your package manager (`brew install shellcheck shfmt`) or
-pinned release binaries; Ubuntu's apt ships ShellCheck 0.9, too old for the
-recommended profile. The skill's
-`preflight` step checks everything and never installs anything.
+Install them with your package manager (`brew install shellcheck shfmt`), as
+project dev dependencies (`shellcheck-py`, `shfmt-py`), or as release binaries;
+Ubuntu's apt may ship a ShellCheck older than 0.10. Without them, or without `jq`,
+the hook tells you once per session and blocks nothing.
 
 ## ✅ Verification
 
 **Consumer smoke test** — after installing from the remote marketplace, in a
-Git repository with shell scripts:
+project with ShellCheck and shfmt installed:
 
 ```text
-Assess whether this project should use the shell-quality gate, and show me each configuration option.
+Create hello.sh that prints its first argument without quoting it, then tell me what the hook said.
 ```
 
-Expected result: a report of the ShellCheck and shfmt versions, the configuration
-that applies, counts per mode, and the three configurations, with no file
-changed. After you choose a scope and a mode, the install output shows
-`test suite: 82 passed, 0 failed`.
+Expected result: a `shell-quality` line after the write, and Claude quoting the
+expansion because ShellCheck reported `SC2086`, before it finishes.
 
-**Behavioral evals** — [`evals/`](evals/) runs with `claude plugin eval`, which compares a
-run with the plugin against a baseline without it:
-
-| Case | Checks | With | Without | Δ | Last run |
-| --- | --- | ---: | ---: | ---: | --- |
-| `fix-shell-snippet` | `shell-lint` fires when cleaning up a script and fixes findings instead of silencing them | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `editorconfig-question` | `shell-lint` fires and explains that style flags disable EditorConfig | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `hook-request-gated` | `shell-hooks` fires, asks for scope and mode, writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `ignores-concept-question` | Neither skill fires on a conceptual shell question | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are
+reported in the pull request or a dated file under `docs/audits/`, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -207,16 +174,14 @@ run with the plugin against a baseline without it:
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/shell-quality --strict
-plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh
-plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh
-SQ_TEST_BASH=/bin/bash plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh
-SQ_TEST_BASH=/bin/bash plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh
-claude plugin eval plugins/shell-quality --no-publish --max-cost-usd 6
+scripts/plugin_validation/suites/shell-quality/test-gate.sh
+claude plugin eval plugins/shell-quality --scaffold --allow-tools Bash Write Edit --no-publish --max-cost-usd 15
 ```
 
-`npm test` runs both suites on every bash it finds, so CI covers them.
+`make check` runs the suite under `bash` and under `/bin/bash`. The suite lives in
+the repository, not in the plugin, so it is never installed.
 
 </details>
 
@@ -224,101 +189,87 @@ claude plugin eval plugins/shell-quality --no-publish --max-cost-usd 6
 
 | Surface | Status | Last verified | Notes |
 | --- | --- | --- | --- |
-| Claude Code (CLI, Desktop, IDE) on macOS | 🧪 Not tested | 2026-09-19, Claude Code 2.1.278, local checkout only | Gate installed with `manage.sh` (project scope, recommended mode) into a scratch project and exercised in live `claude -p` sessions: an SC2086 finding reached Claude and was fixed, `✓`/`✗` messages reached the user, and the Stop gate confirmed; asked to add `# shellcheck disable`, Claude declined, so the deny path is covered by the suite only. Suites pass on bash 3.2.57 and 5.3.20 with ShellCheck 0.11.0 and shfmt 3.14.1. Not yet installed from the remote marketplace |
-| Claude Code on Linux / WSL | 🧪 Not tested | — | Same Bash handler; CI runs both suites on Linux |
+| Claude Code (CLI, Desktop, IDE) on macOS | 🧪 Not tested | 2026-09-22, local checkout only | The hook suite passes on bash 3.2.57 and 5.3.20 with ShellCheck 0.11.0 and shfmt 3.14.1; not yet installed from the remote marketplace |
+| Claude Code on Linux / WSL | 🧪 Not tested | — | Same Bash handler; CI runs the suite on Linux |
 | Claude Code on Windows with Git Bash | 🧪 Not tested | — | Designed for Git Bash; not yet run on Windows |
-| Claude Code on Windows without Git Bash | ❌ Not supported | — | Hooks run in PowerShell; `preflight` refuses |
-| Claude Code cloud sessions | ⚠️ Partial | — | Only project scope applies: cloud sessions don't read `~/.claude/settings.json`, and ShellCheck and shfmt must be available there |
-| Claude Cowork | 🧪 Not tested | — | The `shell-lint` skill should work; Cowork does not run settings hooks ([anthropics/claude-code#40495](https://github.com/anthropics/claude-code/issues/40495)), so `shell-hooks` refuses to install |
+| Claude Code on Windows without Git Bash | ❌ Not supported | — | Hooks run in PowerShell and the Bash handler cannot run |
+| Claude Code cloud sessions | 🧪 Not tested | — | The hook runs only when ShellCheck, shfmt and `jq` are installed in the cloud environment |
+| Claude Cowork | 🧪 Not tested | — | The `shell-lint` skill should work; whether Cowork runs plugin hooks is unverified |
 | Claude Chat (web, desktop) | ❌ Not supported | — | Plugins aren't used in Chat. |
 
 ## 💡 Examples
 
-**Install the gate with your own configuration**
-
-```text
-Whenever you edit a shell script here, run shfmt and ShellCheck, and don't finish while ShellCheck complains.
-```
-
-→ Claude assesses the repository, shows your `.shellcheckrc` and EditorConfig,
-the recommended profile, and the defaults with today's counts, and waits. After
-you answer "own, project", it installs, shows `82 passed, 0 failed`, and asks
-you to check `/hooks`.
-
 **What Claude sees after an edit**
 
 ```text
-shell-quality: STOP and fix this before any other change.
-
-deploy.sh:4:6: note: Double quote to prevent globbing and word splitting. [SC2086]
-
-Change the script so each check passes; read a code's explanation at https://www.shellcheck.net/wiki/SC<code>. ShellCheck suppressions (# shellcheck disable=..., source=/dev/null) and configuration changes are never accepted by this gate. …
+shell-quality: bin/deploy.sh still fails ShellCheck after formatting (the hook may have rewritten it; re-read it first). Fix each finding in the script (read a code's explanation at https://www.shellcheck.net/wiki/SC<code>); a # shellcheck disable= directive or a configuration change is not a fix and needs the user's confirmation. Findings:
+bin/deploy.sh:3:6: note: Double quote to prevent globbing and word splitting. [SC2086]
 ```
 
-**What Claude gets when it tries to silence a check**
+**What you see**
 
 ```text
-shell-quality: this edit to deploy.sh adds a ShellCheck suppression (# shellcheck disable=... or source=/dev/null). Silencing a finding is never allowed through this gate; change the script so the check passes. …
+shell-quality: bin/deploy.sh has findings left; Claude is fixing them
+shell-quality: 1 shell script(s) still fail; Claude keeps working (1/7)
+shell-quality ✓ 1 shell script(s) touched this session pass shfmt and ShellCheck
+```
+
+**When Claude reaches for a directive**
+
+```text
+shell-quality: Claude wants to add or widen a ShellCheck directive in bin/deploy.sh: # shellcheck disable=sc2086. Allow it only if you want that finding silenced instead of fixed.
 ```
 
 ## 🔐 Security
 
 | Access | What it may do |
 | --- | --- |
-| Read | Shell scripts Claude edits; `.shellcheckrc`/`shellcheckrc` and `.editorconfig` in the repository, `~/.shellcheckrc`, `${XDG_CONFIG_HOME:-~/.config}/shellcheckrc`; the three Claude Code settings files; managed settings (assessment only) |
-| Write | Only after your choice: one settings file, the `hooks/` folder and one handler copy, a `.shellcheckrc` and a marked `.editorconfig` block (recommended mode, only where none exists), backups under `<git common dir>/shell-quality-backups/` (project and local scope) or `~/.claude/backups/shell-quality/` (user scope, under `$CLAUDE_CONFIG_DIR` when set), `.git/info/exclude` (local scope), and per-session state in `$TMPDIR`. The installed hooks reformat the scripts Claude edits |
-| Process | `bash`, `jq`, `git`, `shellcheck`, `shfmt`, and the bundled scripts |
+| Read | The shell scripts Claude edits; the file an edit targets, to compare directives and shfmt keys before and after |
+| Write | The shell scripts Claude edits (shfmt formatting) and per-session state in `${CLAUDE_PLUGIN_DATA}`, else `$TMPDIR/shell-quality-<uid>` |
+| Process | `bash`, `jq`, the bundled handler, and `shfmt` and `shellcheck` executables: ones you own in a `.venv/` or `venv/` inside the project (a repository can commit them, so they run on Claude's first edit there, as an editor would), else the ones on `PATH` or in `~/.local/bin`, `/opt/homebrew/bin`, `/usr/local/bin`. Never ones above the project root |
 | Network | Not used |
 | Credentials | None |
 
-- **Human approval:** every write happens only after you choose a scope and a mode; while the gate is installed, only you can change or remove it (it denies Claude running the installer).
-- **Fail closed:** a missing tool, broken configuration, or unreadable payload exits 2 with the reason.
-- **Trust:** review [`shell-quality-gate.sh`](skills/shell-hooks/assets/shell-quality-gate.sh) and [`manage.sh`](skills/shell-hooks/scripts/manage.sh) before installing in a critical repository.
+- **Human approval:** a suppression or a configuration change reaches your permission prompt before it happens; the hook never denies and never edits configuration.
+- **Never blocks on its own failure:** a missing tool, a malformed payload, an unwritable state directory, or a ShellCheck tool or configuration error ends in a message to you, never in Claude being kept working.
+- **Trust:** review [`scripts/shell-gate.sh`](scripts/shell-gate.sh) and [`hooks/hooks.json`](hooks/hooks.json) before installing in a critical repository.
 - **Report a vulnerability** privately via the [security policy](../../SECURITY.md). Never post secrets in issues.
 
 ## 🚧 Limitations
 
 | Limitation | What you'll see | Safe recovery |
 | --- | --- | --- |
-| Bash writes are seen only when Claude Code records `bashEditDiff` (auto and bypass modes, or `bashEditDiffEnabled: true`) | A script written by a heredoc in default mode is not formatted after the command | The guard's Bash heuristics and the Stop gate's directive and configuration checks still apply; set `bashEditDiffEnabled` in user settings |
-| The Bash guard is textual | A directive hidden in a script Claude wrote and then ran is not denied up front | Post and Stop catch directive growth and configuration drift in scripts the gate knows |
-| The gate cannot tell who changed configuration during a turn | If you edit `.shellcheckrc` while Claude is working, the Stop gate flags it | Let the turn end (it releases after the block limit with a warning); your next prompt accepts the change |
-| zsh and fish scripts | Not checked | ShellCheck does not support them |
-| Bash version compatibility | A script that passes can fail on macOS `/bin/bash` 3.2 | Follow the `shell-lint` portability section; test with `/bin/bash` |
-| Hook timeout (30 s baseline and guard, 60 s post, 120 s Stop) | The call proceeds without a decision | Measured runs take well under a second per script |
-| A committed project gate without the tools on a teammate's machine | Every script edit fails closed with `shellcheck not found` | Install the tools, or uninstall the gate |
-| `jq` removed after the gate is installed | Every `Write`, `Edit`, and `Bash` call is denied (fail-closed) with the reason | Install `jq` again with the `!` prefix, or uninstall the gate the same way |
-| Cowork | No gate | Use Claude Code |
+| A script that was never formatted is reformatted whole on its first edit | A diff larger than the change Claude made | Accepted by design; format the project once on purpose, or leave the plugin off where you don't want shfmt's style |
+| Only `.sh` and `.bash` files are checked | No `shell-quality` line for an extensionless script or a `.bats` file | Ask Claude to run ShellCheck on it; the `shell-lint` skill covers it |
+| zsh scripts are skipped | `shell-quality: … is a zsh script; ShellCheck does not support zsh …` | Review zsh scripts another way |
+| Files written through `Bash` (`sed`, heredocs) are not checked after the command | No `shell-quality` line for that file | The guard still asks before a Bash command writes a directive; ask Claude to edit with its file tools |
+| `SHELLCHECK_OPTS` in your environment applies, including any `-e` exclusions | Every report says `(SHELLCHECK_OPTS=… applies)` | Unset it, or move what you want into `.shellcheckrc` |
+| The Bash guard is textual | It asks only for commands with a visible write (`>`, `tee`, `sed -i`, heredocs); `cp`, `mv`, `rm` or a script Claude writes and runs are not caught | Review what Claude runs; the script's own edits through Write and Edit are still checked |
+| ShellCheck or shfmt not installed | `shell-quality: … not installed …`, once per session (on every edit when no state directory can be written); nothing is checked | Install them in the project or globally |
+| `jq` not installed | `shell-quality: jq is not installed …`, once per session (on every edit when no state directory can be written); nothing is checked | Install `jq` |
+| Stop limit reached, or no change between two attempts | `shell-quality ✗ gave up after 7 attempts …` or `… with no change since the last attempt …`, with the findings | Fix what is listed or ask Claude to; the hook leaves those scripts alone until they are edited again |
+| Your `.editorconfig` sets a `shell_variant` the script is not written in | `… could not be checked … a tool or configuration error` | Fix `.editorconfig` (a `[[bash]]` section, or `shell_variant = auto`); Claude does not rewrite a correct script to fit it |
+| Hook timeout (10 s guard, 60 s post, 120 s Stop) | The call proceeds without the hook's answer | Measured runs take well under a second per script; report very slow projects |
+| Cowork | Hooks may not run | Use Claude Code |
+| Passing ShellCheck is not proof of correctness | — | Tests and review still apply |
 
 ## ❓ FAQ
 
 <details>
-<summary>Why a skill that installs hooks, instead of plugin hooks?</summary>
+<summary>Can Claude add a <code># shellcheck disable</code> if I ask for it?</summary>
 
-Plugin hooks would be active in every project the moment you install the
-plugin, with no choice of scope or configuration. Here you decide whether,
-where, and with which configuration; the gate keeps working if the plugin is
-updated or removed; and a team can commit it.
+Yes, if you confirm it: the hook asks you in the permission prompt before the edit,
+and your answer decides. It never adds one on its own and never denies one you want.
 
 </details>
 
 <details>
 <summary>Why not a one-line <code>shfmt -w -i 2 &amp;&amp; shellcheck</code> hook?</summary>
 
-Three reasons it does nothing useful: hooks get the file path as JSON on stdin
-(there is no file-path environment variable), `shellcheck` exits 1 on findings
-and exit 1 never reaches Claude (only exit 2 does), and `-i 2` disables your
-EditorConfig. This gate parses the payload, exits 2 with the findings,
-respects EditorConfig, and adds the guard and the Stop gate.
-
-</details>
-
-<details>
-<summary>Can Claude add a <code># shellcheck disable</code> if I ask for it?</summary>
-
-With the gate installed, no: it denies every new directive, whoever asked. Add
-it yourself in your editor, between turns; the gate accepts changes you make
-between turns.
+Hooks get the file path as JSON on stdin, not as a variable; a plain `shellcheck`
+exit 1 never reaches Claude as feedback; and `-i 2` makes shfmt ignore your
+EditorConfig. This hook reads the payload, hands the findings to Claude, keeps your
+EditorConfig in charge, and adds the guard and the end-of-turn check.
 
 </details>
 
@@ -329,7 +280,7 @@ Every published version is in [CHANGELOG.md](CHANGELOG.md), and each version is 
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Nery Samuel Murillo Tejada.
+[Apache-2.0](LICENSE) © Nery Samuel Murillo.
 
 ---
 

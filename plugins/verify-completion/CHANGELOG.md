@@ -15,6 +15,21 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.1.2] - 2026-09-22
+
+### Changed
+
+- `gate.sh` and its test suite no longer carry any `# shellcheck disable=`
+  directive. The record template is double-quoted with its backticks and quotes
+  escaped, so the text Claude receives is identical. The test suite builds each
+  record and Stop payload before using it and fails a case whose payload jq
+  could not build, instead of passing it an empty input.
+
+### Removed
+
+- The hook test suite (`scripts/test-hooks.sh`) is no longer installed with the
+  plugin; it moved to the marketplace repository, where `make check` runs it.
+
 ## [0.1.1] - 2026-09-20
 
 ### Changed
@@ -91,6 +106,7 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 - 125-case hook test suite, run on bash 3.2 and 5.x with jq 1.6, 1.7.1, and 1.8.2; a typical reply is checked
   in about 100 ms, and 250 KB replies built to be slow in under 2 seconds.
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.1...HEAD
-[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/tree/verify-completion--v0.1.1
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.2...HEAD
+[0.1.2]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.1...verify-completion--v0.1.2
+[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/verify-completion--v0.1.0...verify-completion--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/verify-completion--v0.1.0

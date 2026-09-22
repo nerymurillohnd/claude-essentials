@@ -4,7 +4,7 @@ How a change goes from idea to a tagged version on `main` without the rework
 loops seen while shipping `block-no-verify` 0.1.0–0.1.1 (three review rounds,
 stale eval numbers, a recreated merged branch, a stuck tag). The procedure
 lives in three repo skills whose checklists a Stop hook enforces; the
-mechanical parts are enforced by `npm run check`, the version-check job, and
+mechanical parts are enforced by `make check`, the version-check job, and
 the hooks in `.claude/settings.json` (the push guard denies pushes to a merged
 branch). This file keeps only the policy every session needs.
 

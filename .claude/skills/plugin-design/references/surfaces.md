@@ -42,7 +42,7 @@ Verify every field against the live docs listed in CLAUDE.md before relying on i
 ## Hooks
 
 - Events: SessionStart, Setup, UserPromptSubmit, UserPromptExpansion, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, TeammateIdle, Notification, MessageDisplay, InstructionsLoaded, ConfigChange, CwdChanged, DirectoryAdded, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, PreModelSwitch, PostModelSwitch, Elicitation, ElicitationResult, StopFailure, SessionEnd
-- Where: plugin `hooks/hooks.json` (always on) vs skill frontmatter (session) vs settings installed on request (scoped)
+- Where: plugin `hooks/hooks.json` with the handler in the plugin's root `scripts/` (always on in the install scope; the model for quality gates, ADR-0007) vs skill frontmatter (session). A script that writes the user's settings is the exception, not the default
 - Matchers (exact, list, regex), `if` (one permission rule, tool events only)
 - Handler types: command, http, mcp_tool, prompt, agent; exec form (`args`) vs shell form (Windows)
 - Fields: timeout (defaults per event), statusMessage, async, asyncRewake, shell, once
@@ -79,13 +79,13 @@ Verify every field against the live docs listed in CLAUDE.md before relying on i
 
 ## Languages
 
-- Runtime per shipped component: Bash + jq (default), Python stdlib, Node; the user-side requirement each adds
-- Test language per component: bash suites (thin hooks), `node:test` with `child_process` (complex handlers, repo `.mjs`); pytest via `uv run --script` once DEBT-0016 is closed
-- Lint gates per language: ShellCheck + shfmt, Ruff + Basedpyright, Biome + tsc
+- Runtime per shipped component: Bash + jq (default), Python stdlib; the user-side requirement each adds
+- Test language per component: bash suites under `scripts/plugin_validation/suites/<id>/` (hooks, run under both bashes), pytest under `scripts/` (repo tooling); never tests inside the plugin
+- Lint gates per language: ShellCheck + shfmt, Ruff + Basedpyright
 
 ## Verification
 
 - Tests under bash and `/bin/bash`, realistic payloads on stdin
 - `claude plugin eval`: cases, graders, baseline arm, models
 - Live checks with `claude -p --plugin-dir` and `--debug-file`
-- `claude plugin validate --strict`, `npm run check`
+- `claude plugin validate --strict`, `make check`

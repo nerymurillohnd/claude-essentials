@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
 # Sourced by session-start.sh and post-edit.sh (ADR-0003): classifies plugin paths
 # as runtime (needs a version bump) or exempt (Claude never loads it). Mirrors
-# EXEMPT_FILE and METADATA_KEYS in scripts/lib/version-plan.mjs — change both together.
+# EXEMPT_FILE and METADATA_KEYS in scripts/versioning/version_plan.py — change
+# both together; scripts/harness/test_plugin_paths.py runs these functions and
+# the Python constant over one table.
 
 # plugin_path_is_exempt <rel>
 # Returns 0 when a path relative to plugins/<name>/ is never loaded by Claude
 # (EXEMPT_FILE): README.md, CHANGELOG.md, LICENSE or LICENSE.<ext> at the plugin
-# root, or anything under docs/. In a `case` pattern `*` also matches `/`, so
-# LICENSE.* needs the explicit no-slash check to match the JS regex.
-# scripts/lib/plugin-paths.test.mjs asserts parity with version-plan.mjs.
+# root, and anything under docs/ or evals/ at the plugin root. A test file is
+# runtime (ADR-0003 amendment 2026-09-22). In a `case` pattern `*` also matches
+# `/`, so the LICENSE.* arm checks that the path has no directory.
 plugin_path_is_exempt() {
   local rel="$1"
   case "${rel}" in
-  README.md | CHANGELOG.md | LICENSE | docs/?*) return 0 ;;
-  LICENSE.?*) [[ "${rel}" != */* ]] ;;
-  *) return 1 ;;
+  README.md | CHANGELOG.md | LICENSE | docs/?* | evals/?*) return 0 ;;
+  LICENSE.?*) [[ "${rel}" != */* ]] && return 0 ;;
+  *) ;;
   esac
+  return 1
 }
 
 # Reads a plugin.json on stdin; prints it without metadata keys, keys sorted.

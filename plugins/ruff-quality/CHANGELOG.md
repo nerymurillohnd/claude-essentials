@@ -15,6 +15,45 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.2.0] - 2026-09-22
+
+### Added
+
+- The plugin now ships its hooks: installing it turns them on, in the scope you install it
+  in, and updating the plugin updates them. After each edit Claude makes to a `.py`, `.pyw`
+  or `.pyi` file, the hook applies Ruff's safe fixes (never `--unsafe-fixes`, and never
+  removing a just-added import), formats the file, re-checks it, hands any finding that is
+  left to Claude, and tells Claude to re-read a file it rewrote. A file your Ruff
+  configuration excludes is reported as not checked. At the end of the turn it re-checks
+  every Python file the session touched and keeps Claude working while the findings change,
+  up to 7 attempts; then it tells you which files still fail and leaves them alone until
+  they are edited again. You see a one-line result after each edit and at the end.
+- Before Claude adds or widens a suppression (`noqa`, `flake8: noqa`,
+  `ruff: noqa`/`ignore`/`disable`/`file-ignore`, `fmt: off`/`skip`, `yapf: disable`,
+  `isort: skip`, or `ruff check --add-noqa`/`--add-ignore`) or changes Ruff configuration
+  (`ruff.toml`, `.ruff.toml`, the Ruff settings of `pyproject.toml`), the hook asks you,
+  naming the marker. It never denies.
+- An `enabled` option (`/config`) turns the hooks off without removing the skill; `false`,
+  `0`, `no` and `off`, in any case, all count as off.
+
+### Changed
+
+- The hook runs the Ruff already installed in your project or globally, with Ruff's own
+  configuration discovery (your nearest `ruff.toml`, `.ruff.toml` or `pyproject.toml`, then
+  your user-level file, then Ruff's defaults). A project Ruff is used only from a `.venv/` or
+  `venv/` inside the project and owned by you, never from a directory above it. It never runs
+  `uv` or `uvx` and never downloads anything. A Ruff tool or configuration error is reported
+  to you and never keeps Claude working. Without Ruff, or without `jq`, it tells you once per session how to
+  install it and blocks nothing.
+- The `ruff` skill was rewritten from the official Ruff and uv documentation: installing,
+  command routes (with `--locked` and `--no-python-downloads` for uv), configuration
+  discovery, rule selection, migration, editors, pre-commit and CI, and diagnosis.
+
+### Removed
+
+- The `ruff-hooks` skill, its `manage.sh` installer, its three configuration modes and the
+  bundled `ruff.toml` profile: the plugin no longer writes any Ruff configuration.
+
 ## [0.1.1] - 2026-09-20
 
 ### Changed
@@ -95,6 +134,7 @@ heading: [Unreleased] compares the latest tag to HEAD; each version compares the
 previous tag to its own; the first version links to its tag.
 -->
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/ruff-quality--v0.1.1...HEAD
-[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/tree/ruff-quality--v0.1.1
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/ruff-quality--v0.2.0...HEAD
+[0.2.0]: https://github.com/nerymurillohnd/claude-essentials/compare/ruff-quality--v0.1.1...ruff-quality--v0.2.0
+[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/ruff-quality--v0.1.0...ruff-quality--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/ruff-quality--v0.1.0

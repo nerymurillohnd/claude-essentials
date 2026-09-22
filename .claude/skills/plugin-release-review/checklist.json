@@ -7,8 +7,8 @@
     },
     {
       "id": "floor",
-      "text": "npm run check and npm run check:versions pass (evidence: the summary lines)",
-      "verify": "npm run validate --silent"
+      "text": "make check and make versions pass (evidence: the summary lines)",
+      "verify": "make -s validate"
     },
     {
       "id": "fact-sheet",
@@ -41,7 +41,7 @@
     {
       "id": "fixes",
       "text": "Every finding fixed, or explicitly deferred by the user (mark needs-user until they decide); runtime fixes bumped the version with a CHANGELOG entry",
-      "verify": "npm run check:versions --silent"
+      "verify": "make -s versions"
     },
     {
       "id": "prevention",
@@ -49,8 +49,8 @@
     },
     {
       "id": "final-gate",
-      "text": "npm run check passes after all fixes",
-      "verify": "npm run validate --silent && npm test --silent"
+      "text": "make check passes after all fixes",
+      "verify": "make -s validate && make -s test-slow"
     }
   ]
 }

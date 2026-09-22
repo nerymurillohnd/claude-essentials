@@ -173,13 +173,8 @@ Expected result: a report of hook tooling, signing, existing hooks, and a
 scope recommendation, with no file changed. After you approve a scope, the
 install output reports `0 failed` for the test suite and `DENY  git commit --no-verify -m wip`.
 
-**Behavioral evals** — [`evals/`](evals/) runs with `claude plugin eval`, which compares a
-run with the plugin against a baseline without it:
-
-| Case | Checks | With | Without | Δ | Last run |
-| --- | --- | ---: | ---: | ---: | --- |
-| `protect-hooks-request` | Skill fires on a natural protection request, asks for a scope, and writes no settings (the case grants no shell, so it tests the gate's wording, not an install) | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
-| `ignores-git-read` | Skill does **not** fire on a read-only Git question | — | — | — | Pending re-measurement — the skill descriptions changed in this version |
+**Behavioral evals** — [`evals/`](evals/) run per the maintainer's eval protocol; results are
+reported in the pull request or a dated file under `docs/audits/`, never here.
 
 <details>
 <summary>Maintainer checks</summary>
@@ -187,14 +182,16 @@ run with the plugin against a baseline without it:
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/block-no-verify --strict
 bash plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh
 BNV_TEST_BASH=/bin/bash bash plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh
-claude plugin eval plugins/block-no-verify --no-publish --max-cost-usd 5
+claude plugin eval plugins/block-no-verify --ablation with-without --allow-tools Bash Write Edit --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
 ```
 
-`npm test` runs the handler suite on every bash it finds, so CI covers it.
+`make check` runs the handler suite under `bash` and `/bin/bash`, so CI covers it. The suite
+ships inside the plugin, the one exception to suites living in the repository, because
+`manage.sh install` and `verify` run it against the installed copy.
 
 </details>
 
@@ -261,6 +258,7 @@ block-no-verify: git commit --no-verify skips hooks (--no-verify). Do not retry 
 | Pathological command size (tens of KB of tokens) | Text-only check: denied if it mentions `git` and a bypass marker | Split the command |
 | A committed project group whose handler wasn't committed | Hook errors on every shell call; nothing is blocked | Commit `.claude/hooks/block-no-verify.sh` with the settings; `status` warns |
 | Hook timeout or a deleted handler | The call proceeds (Claude Code treats it as a non-blocking error) | `status` detects a missing handler; reinstall |
+| `jq` is absent | The handler fails closed for Git: every shell call that mentions `git` is denied with that reason, and other calls pass | Install `jq` 1.6 or later, or remove the hook group by hand per [rollback](skills/block-no-verify/references/rollback.md); `manage.sh` itself refuses to run without `jq` |
 | Cowork | No protection | Use Claude Code |
 | Cowork detection relies on `CLAUDE_CODE_IS_COWORK`, an undocumented variable | If Cowork stops setting it, `preflight` may not refuse there; the policy still would not run | Check `/hooks` availability; report an issue |
 | Commands outside Claude's shell tools | Not inspected | Branch protection and CI |
@@ -300,7 +298,7 @@ Every published version is in [CHANGELOG.md](CHANGELOG.md), and each version is 
 
 ## 📄 License
 
-[Apache-2.0](LICENSE) © Nery Samuel Murillo Tejada.
+[Apache-2.0](LICENSE) © Nery Samuel Murillo.
 
 ---
 
