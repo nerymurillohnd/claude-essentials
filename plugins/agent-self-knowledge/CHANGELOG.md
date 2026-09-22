@@ -15,6 +15,15 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.1.1] - 2026-09-21
+
+### Fixed
+
+- `ccdocs.py` is now tracked as executable (`100755`), so its
+  `#!/usr/bin/env python3` shebang works when the script is run by path. The
+  skill still calls it as `python3 …/ccdocs.py`, so retrieval behaves exactly
+  as before.
+
 ## [0.1.0] - 2026-09-20
 
 ### Added
@@ -62,5 +71,6 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
   accepted on 2026-09-20; the vector, the evidence, and the closing condition
   are recorded in `docs/maintenance/pending-debt.md` and in the design spec.
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.1.0...HEAD
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.1.1...HEAD
+[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.1.0...agent-self-knowledge--v0.1.1
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/agent-self-knowledge--v0.1.0
