@@ -3,13 +3,17 @@
     "name": "type: bug",
     "color": "d73a4a",
     "description": "A plugin or the marketplace does not behave as documented",
-    "aliases": ["bug"]
+    "aliases": [
+      "bug"
+    ]
   },
   {
     "name": "type: feature",
     "color": "a2eeef",
     "description": "New capability or improvement for an existing plugin or the marketplace",
-    "aliases": ["enhancement"]
+    "aliases": [
+      "enhancement"
+    ]
   },
   {
     "name": "type: plugin-proposal",
@@ -20,7 +24,9 @@
     "name": "type: docs",
     "color": "0075ca",
     "description": "Documentation is missing, wrong, or unclear",
-    "aliases": ["documentation"]
+    "aliases": [
+      "documentation"
+    ]
   },
   {
     "name": "type: maintenance",

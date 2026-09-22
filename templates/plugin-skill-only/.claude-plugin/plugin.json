@@ -7,11 +7,19 @@
     "name": "Your Name"
   },
   "license": "Apache-2.0",
-  "keywords": ["replace", "with", "keywords"],
+  "keywords": [
+    "replace",
+    "with",
+    "keywords"
+  ],
   "metadata": {
     "marketplace": {
       "category": "REPLACE-WITH-CATEGORY",
-      "tags": ["replace", "with", "tags"]
+      "tags": [
+        "replace",
+        "with",
+        "tags"
+      ]
     }
   }
 }

@@ -26,7 +26,11 @@
       "title": "Completion-claim enforcement",
       "description": "enforce: when a reply claims work is finished without a valid Verification record, Claude is asked once to verify, then you are warned. warn: only warn you. off: the hooks do nothing; the skill and agent stay available.",
       "default": "enforce",
-      "options": ["enforce", "warn", "off"]
+      "options": [
+        "enforce",
+        "warn",
+        "off"
+      ]
     }
   },
   "metadata": {

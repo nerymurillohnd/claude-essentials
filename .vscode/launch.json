@@ -6,7 +6,9 @@
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
-      "args": ["${file}"],
+      "args": [
+        "${file}"
+      ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "python": "${workspaceFolder}/.venv/bin/python",

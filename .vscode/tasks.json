@@ -19,7 +19,9 @@
       "label": "setup",
       "type": "shell",
       "command": "make",
-      "args": ["setup"],
+      "args": [
+        "setup"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -27,7 +29,9 @@
       "label": "check",
       "type": "shell",
       "command": "make",
-      "args": ["check"],
+      "args": [
+        "check"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -38,7 +42,9 @@
       "label": "generate",
       "type": "shell",
       "command": "make",
-      "args": ["generate"],
+      "args": [
+        "generate"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -46,7 +52,9 @@
       "label": "lint",
       "type": "shell",
       "command": "make",
-      "args": ["lint"],
+      "args": [
+        "lint"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -54,7 +62,9 @@
       "label": "lint-staged",
       "type": "shell",
       "command": "make",
-      "args": ["lint-staged"],
+      "args": [
+        "lint-staged"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -62,7 +72,9 @@
       "label": "types",
       "type": "shell",
       "command": "make",
-      "args": ["types"],
+      "args": [
+        "types"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -70,7 +82,9 @@
       "label": "test-fast",
       "type": "shell",
       "command": "make",
-      "args": ["test-fast"],
+      "args": [
+        "test-fast"
+      ],
       "group": "test",
       "problemMatcher": []
     },
@@ -78,7 +92,9 @@
       "label": "validate",
       "type": "shell",
       "command": "make",
-      "args": ["validate"],
+      "args": [
+        "validate"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -86,7 +102,9 @@
       "label": "validate-cli",
       "type": "shell",
       "command": "make",
-      "args": ["validate-cli"],
+      "args": [
+        "validate-cli"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -94,7 +112,9 @@
       "label": "test-slow",
       "type": "shell",
       "command": "make",
-      "args": ["test-slow"],
+      "args": [
+        "test-slow"
+      ],
       "group": "test",
       "problemMatcher": []
     },
@@ -102,7 +122,9 @@
       "label": "versions",
       "type": "shell",
       "command": "make",
-      "args": ["versions"],
+      "args": [
+        "versions"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -110,7 +132,10 @@
       "label": "versions (json)",
       "type": "shell",
       "command": "make",
-      "args": ["versions", "VERSIONS_ARGS=--json"],
+      "args": [
+        "versions",
+        "VERSIONS_ARGS=--json"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -118,7 +143,9 @@
       "label": "fix",
       "type": "shell",
       "command": "make",
-      "args": ["fix"],
+      "args": [
+        "fix"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -126,7 +153,10 @@
       "label": "fix-file",
       "type": "shell",
       "command": "make",
-      "args": ["fix-file", "FILE=${relativeFile}"],
+      "args": [
+        "fix-file",
+        "FILE=${relativeFile}"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -134,7 +164,9 @@
       "label": "clean",
       "type": "shell",
       "command": "make",
-      "args": ["clean"],
+      "args": [
+        "clean"
+      ],
       "group": "build",
       "problemMatcher": []
     },
@@ -142,7 +174,9 @@
       "label": "help",
       "type": "shell",
       "command": "make",
-      "args": ["help"],
+      "args": [
+        "help"
+      ],
       "group": "build",
       "problemMatcher": []
     },

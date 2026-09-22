@@ -97,6 +97,8 @@
   "todoFeatureEnabled": true,
   "worktree": {
     "baseRef": "head",
-    "symlinkDirectories": ["node_modules"]
+    "symlinkDirectories": [
+      "node_modules"
+    ]
   }
 }
