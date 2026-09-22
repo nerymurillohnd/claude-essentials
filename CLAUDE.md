@@ -100,6 +100,12 @@ PR, run the repo skill `/plugin-release-review <id>`
 and README quality. Its checklist is enforced by a Stop hook (ADR-0002
 amendment).
 
+**Coherence audit:** the read-only `plugin-coherence-auditor` subagent
+(`.claude/agents/plugin-coherence-auditor.md`) reads one plugin's files and every document
+about it end to end, and reports each gap, inconsistency, broken reference or ambiguity
+that would change how Claude acts, with `file:line`. Run it on a plugin before
+`/plugin-release-review`, one agent per plugin.
+
 **Final audit:** before any PR, the read-only `repo-auditor` subagent
 (`.claude/agents/repo-auditor.md`) audits the branch point by point;
 `/pr-delivery` requires its `VERDICT: PASS` recorded for the exact head SHA.
