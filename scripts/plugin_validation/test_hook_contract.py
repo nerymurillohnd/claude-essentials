@@ -1,11 +1,11 @@
-"""Hook wiring: H1 to H7, including the path H5 deliberately does not resolve."""
+"""Hook wiring: H1 to H8, including the path H5 deliberately does not resolve."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from scripts.common.plugins import repo_root
-from scripts.plugin_validation.conftest import PLUGIN_ID, SKILL_ID
+from scripts.plugin_validation.conftest import PLUGIN_ID, SKILL_ID, track
 from scripts.plugin_validation.hook_contract import (
     DEFAULT_TIMEOUT_AGENT,
     DEFAULT_TIMEOUT_COMMAND,
@@ -29,6 +29,9 @@ from scripts.plugin_validation.hook_contract import (
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+MISPLACED = 2
+"""The two files the H8 probe puts inside `hooks/`."""
 
 FRAGMENT_REL = f"plugins/{PLUGIN_ID}/skills/{SKILL_ID}/assets/settings-fragment.json"
 
@@ -183,3 +186,21 @@ def test_the_shipped_fragment_uses_that_shape() -> None:
         repo_root() / "plugins/block-no-verify/skills/block-no-verify/assets/settings-fragment.json"
     ).read_text(encoding="utf-8")
     assert "$CLAUDE_PROJECT_DIR" in text
+
+
+def test_a_script_inside_hooks_is_refused(scratch: Path) -> None:
+    """`hooks/` holds hook configuration only; handlers live in the plugin's root `scripts/`.
+
+    Args:
+        scratch: The scratch repository root.
+    """
+    assert check_hooks_file(scratch, PLUGIN_ID) == []
+    hooks = scratch / "plugins" / PLUGIN_ID / "hooks"
+    track(scratch, hooks / "gate.sh", "#!/usr/bin/env bash\nexit 0\n", executable=True)
+    track(
+        scratch, hooks / "scripts" / "nested.sh", "#!/usr/bin/env bash\nexit 0\n", executable=True
+    )
+    found = [
+        finding for finding in check_hooks_file(scratch, PLUGIN_ID) if finding.invariant_id == "H8"
+    ]
+    assert len(found) == MISPLACED

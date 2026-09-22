@@ -42,7 +42,7 @@ Verify every field against the live docs listed in CLAUDE.md before relying on i
 ## Hooks
 
 - Events: SessionStart, Setup, UserPromptSubmit, UserPromptExpansion, PreToolUse, PermissionRequest, PermissionDenied, PostToolUse, PostToolUseFailure, PostToolBatch, Stop, SubagentStart, SubagentStop, TaskCreated, TaskCompleted, TeammateIdle, Notification, MessageDisplay, InstructionsLoaded, ConfigChange, CwdChanged, DirectoryAdded, FileChanged, WorktreeCreate, WorktreeRemove, PreCompact, PostCompact, PreModelSwitch, PostModelSwitch, Elicitation, ElicitationResult, StopFailure, SessionEnd
-- Where: plugin `hooks/hooks.json` with the handler beside it (always on in the install scope; the model for quality gates, ADR-0007) vs skill frontmatter (session). A script that writes the user's settings is the exception, not the default
+- Where: plugin `hooks/hooks.json` with the handler in the plugin's root `scripts/` (always on in the install scope; the model for quality gates, ADR-0007) vs skill frontmatter (session). A script that writes the user's settings is the exception, not the default
 - Matchers (exact, list, regex), `if` (one permission rule, tool events only)
 - Handler types: command, http, mcp_tool, prompt, agent; exec form (`args`) vs shell form (Windows)
 - Fields: timeout (defaults per event), statusMessage, async, asyncRewake, shell, once

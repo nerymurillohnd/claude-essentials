@@ -2,7 +2,7 @@
 
 status: accepted
 date: 2026-09-22
-decision-makers: Nery Samuel Murillo Tejada
+decision-makers: Nery Samuel Murillo
 consulted: Claude Code (Opus 5) — live Claude Code, Ruff, ShellCheck, shfmt and uv documentation, and a GitHub survey of comparable hooks and plugins
 informed: Contributors to this repository
 
@@ -60,8 +60,9 @@ configuration discovery", because it removes the freeze (Claude Code runs the ne
 hooks after an update), removes every write to the user's settings and configuration, and
 matches the surveyed references, none of which runs `uvx` in a hook.
 
-1. A gate plugin is one knowledge skill plus `hooks/hooks.json` and its handler beside it
-   (`hooks/<name>.sh`). The user chooses where it applies with the plugin's install scope, and
+1. A gate plugin is one knowledge skill plus `hooks/hooks.json` and its handler in the
+   plugin's root `scripts/` (`scripts/<name>.sh`), the layout the plugins reference shows;
+   component directories sit flat at the plugin root, never nested. The user chooses where it applies with the plugin's install scope, and
    turns it off with the plugin's `enabled` option.
 2. The handler runs the tool from the project's own environment or the global `PATH`, never
    `uv`/`uvx`, never a download. Runtime boundary B1 keeps `uv` and `uvx` forbidden in shipped

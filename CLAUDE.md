@@ -125,8 +125,9 @@ technical-debt ledgers — entries need a stable ID and evidence, not vibes),
 `audits/` (dated point-in-time review reports), `superpowers/` (design
 plans/specs from skill-driven work, kept after landing).
 
-**Quality gates:** a gate plugin ships its hooks as a plugin component (`hooks/hooks.json`
-plus its handler beside it), runs only tools the user already installed (never `uv`/`uvx`),
+**Quality gates:** a gate plugin ships its hooks as a plugin component (`hooks/hooks.json`,
+with its handler in the plugin's `scripts/`; component directories sit flat at the plugin
+root, never nested), runs only tools the user already installed (never `uv`/`uvx`),
 uses each tool's own configuration discovery, and asks rather than denies
 ([ADR-0007](docs/decisions/adr-0007-gates-ship-as-plugin-hooks.md)).
 

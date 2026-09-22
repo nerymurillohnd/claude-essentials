@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Behavioral tests for shell-quality's plugin hook (hooks/shell-gate.sh):
+# Behavioral tests for shell-quality's plugin hook (scripts/shell-gate.sh):
 # the guard's questions, the post-edit format/check, the Stop loop and its
 # limit, and every degraded mode. Runs the handler under $BNV_TEST_BASH (set by
 # the repo's `make test-slow` to each bash it finds, /bin/bash 3.2 included),
@@ -11,7 +11,7 @@ set -uo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo=$(cd "${here}/../../../.." && pwd)
 plugin="${repo}/plugins/shell-quality"
-gate="${plugin}/hooks/shell-gate.sh"
+gate="${plugin}/scripts/shell-gate.sh"
 hooks_json="${plugin}/hooks/hooks.json"
 run_bash=${BNV_TEST_BASH:-bash}
 venv_bin="${repo}/.venv/bin"

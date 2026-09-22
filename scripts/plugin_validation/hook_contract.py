@@ -1,4 +1,4 @@
-"""Hook wiring: the seven invariants H1 to H7, over `hooks.json` and settings fragments.
+"""Hook wiring: the eight invariants H1 to H8, over `hooks.json` and settings fragments.
 
 Both surfaces are checked, because both end up in a user's settings: `hooks/hooks.json`
 is registered by installing the plugin, and `**/assets/settings-fragment.json` is the
@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Final
 from scripts.common.errors import Finding, GitCommandFailedError
 from scripts.common.javascript import regex_matches
 from scripts.common.jsontext import is_json_array, is_json_object
-from scripts.common.plugins import PLUGINS_DIRNAME, git_output, load_json
+from scripts.common.plugins import PLUGINS_DIRNAME, git_output, load_json, tracked_files
 from scripts.plugin_validation.cli_coverage import KNOWN_TOOLS, is_known_tool
 
 if TYPE_CHECKING:
@@ -592,8 +592,34 @@ def fragment_groups(document: object) -> list[MatcherGroup]:
     return [_group("settings fragment", document)]
 
 
+def check_hooks_layout(root: Path, plugin_id: str) -> list[Finding]:
+    """Check that a plugin's `hooks/` holds hook configuration only (H8).
+
+    Component directories sit flat at the plugin root, as the plugins reference lays them
+    out: `hooks/` for `hooks.json`, `scripts/` for the handlers it runs. A handler inside
+    `hooks/`, or a nested `hooks/scripts/`, is refused.
+
+    Args:
+        root: The repository root.
+        plugin_id: The plugin directory name.
+
+    Returns:
+        One error per tracked file under `hooks/` that is not JSON.
+    """
+    prefix = f"{PLUGINS_DIRNAME}/{plugin_id}/hooks/"
+    return [
+        Finding(
+            "H8",
+            rel,
+            "hooks/ holds only hook configuration; move this file to the plugin's scripts/",
+        )
+        for rel in tracked_files(root, f"{prefix}*")
+        if rel.startswith(prefix) and not rel.endswith(".json")
+    ]
+
+
 def check_hooks_file(root: Path, plugin_id: str) -> list[Finding]:
-    """Run H1 to H7 over a plugin's `hooks/hooks.json`.
+    """Run H1 to H8 over a plugin's `hooks/hooks.json`.
 
     Args:
         root: The repository root.
@@ -615,6 +641,7 @@ def check_hooks_file(root: Path, plugin_id: str) -> list[Finding]:
         *check_timeouts(rel, groups),
         *check_file_tool_conditions(rel, groups),
         *check_commands(root, rel, plugin_id, groups),
+        *check_hooks_layout(root, plugin_id),
     ]
 
 

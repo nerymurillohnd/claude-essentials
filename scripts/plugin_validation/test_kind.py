@@ -103,7 +103,7 @@ def test_a_dollar_braced_expression_is_not_a_placeholder(scratch: Path) -> None:
     Args:
         scratch: The scratch repository root.
     """
-    path = scratch / "plugins" / PLUGIN_ID / "hooks" / "handler.sh"
+    path = scratch / "plugins" / PLUGIN_ID / "scripts" / "handler.sh"
     _ = path.write_text(path.read_text(encoding="utf-8") + 'echo "${{ matrix.os }}"\n')
     assert check_placeholders(scratch, PLUGIN_ID) == []
 

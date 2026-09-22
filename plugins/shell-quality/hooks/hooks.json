@@ -8,61 +8,61 @@
           {
             "type": "command",
             "if": "Edit(//**/*.sh)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Write(//**/*.sh)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Edit(//**/*.bash)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Write(//**/*.bash)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Edit(//**/.shellcheckrc)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Write(//**/.shellcheckrc)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Edit(//**/shellcheckrc)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Write(//**/shellcheckrc)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Edit(//**/.editorconfig)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           },
           {
             "type": "command",
             "if": "Write(//**/.editorconfig)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           }
         ]
@@ -72,7 +72,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" guard",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" guard",
             "timeout": 10
           }
         ]
@@ -85,28 +85,28 @@
           {
             "type": "command",
             "if": "Edit(//**/*.sh)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" post",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" post",
             "timeout": 60,
             "statusMessage": "shell-quality: formatting and checking the edited shell script"
           },
           {
             "type": "command",
             "if": "Write(//**/*.sh)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" post",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" post",
             "timeout": 60,
             "statusMessage": "shell-quality: formatting and checking the edited shell script"
           },
           {
             "type": "command",
             "if": "Edit(//**/*.bash)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" post",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" post",
             "timeout": 60,
             "statusMessage": "shell-quality: formatting and checking the edited shell script"
           },
           {
             "type": "command",
             "if": "Write(//**/*.bash)",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" post",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" post",
             "timeout": 60,
             "statusMessage": "shell-quality: formatting and checking the edited shell script"
           }
@@ -118,7 +118,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shell-gate.sh\" stop",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/shell-gate.sh\" stop",
             "timeout": 120
           }
         ]

@@ -40,7 +40,7 @@ MANIFEST: Final[dict[str, object]] = {
     "displayName": "Scratch Plugin",
     "description": "A plugin that exists only so a probe can be seeded and then removed.",
     "version": VERSION,
-    "author": {"name": "Nery Samuel Murillo Tejada"},
+    "author": {"name": "Nery Samuel Murillo"},
     "license": "Apache-2.0",
     "homepage": f"https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/{PLUGIN_ID}",
     "metadata": {"marketplace": {"category": "quality", "tags": ["scratch"]}},
@@ -69,7 +69,7 @@ HOOKS: Final[dict[str, object]] = {
                 "hooks": [
                     {
                         "type": "command",
-                        "command": 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/handler.sh"',
+                        "command": 'bash "${CLAUDE_PLUGIN_ROOT}/scripts/handler.sh"',
                         "timeout": 5,
                     }
                 ],
@@ -87,7 +87,7 @@ FRAGMENT: Final[dict[str, object]] = {
     "hooks": [
         {
             "type": "command",
-            "command": 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/handler.sh"',
+            "command": 'bash "${CLAUDE_PLUGIN_ROOT}/scripts/handler.sh"',
             "timeout": 5,
         }
     ],
@@ -332,7 +332,7 @@ def scratch(tmp_path: Path) -> Path:
     _write(plugin / "CHANGELOG.md", CHANGELOG)
     _write(plugin / "skills" / SKILL_ID / "SKILL.md", SKILL)
     _write(plugin / "hooks" / "hooks.json", json.dumps(HOOKS, indent=2) + "\n")
-    _write(plugin / "hooks" / "handler.sh", HANDLER, executable=True)
+    _write(plugin / "scripts" / "handler.sh", HANDLER, executable=True)
     _write(
         plugin / "skills" / SKILL_ID / "assets" / "settings-fragment.json",
         json.dumps(FRAGMENT, indent=2) + "\n",

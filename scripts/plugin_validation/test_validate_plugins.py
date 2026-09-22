@@ -92,7 +92,7 @@ def seed_empty_command(root: Path) -> None:
         root: The scratch repository root.
     """
     path = plugin_path(root, "hooks", "hooks.json")
-    _edit(path, 'bash \\"${CLAUDE_PLUGIN_ROOT}/hooks/handler.sh\\"', "")
+    _edit(path, 'bash \\"${CLAUDE_PLUGIN_ROOT}/scripts/handler.sh\\"', "")
 
 
 def seed_missing_fragment_target(root: Path) -> None:
@@ -102,7 +102,7 @@ def seed_missing_fragment_target(root: Path) -> None:
         root: The scratch repository root.
     """
     path = plugin_path(root, "skills", SKILL_ID, "assets", "settings-fragment.json")
-    _edit(path, "hooks/handler.sh", "hooks/absent.sh")
+    _edit(path, "scripts/handler.sh", "scripts/absent.sh")
 
 
 def seed_unparseable_description(root: Path) -> None:
@@ -131,7 +131,7 @@ def seed_uv_shebang(root: Path) -> None:
     Args:
         root: The scratch repository root.
     """
-    path = plugin_path(root, "hooks", "handler.sh")
+    path = plugin_path(root, "scripts", "handler.sh")
     _edit(path, "#!/usr/bin/env bash", "#!/usr/bin/env -S uv run --script")
 
 

@@ -92,8 +92,8 @@ component paths in `plugin.json` makes a plugin a bundle.
 - Agents: `agents/<agent-name>.md` — see [sub-agents.md](https://code.claude.com/docs/en/sub-agents.md)
   for frontmatter fields (`name`, `description`, `tools`, `model`, `color`, ...).
 - Commands, hooks, MCP servers: see [plugins.md](https://code.claude.com/docs/en/plugins.md).
-- A quality gate ships as plugin hooks: `hooks/hooks.json` with its handler beside it
-  (`hooks/<name>.sh`), running only tools the user already installed and never `uv`/`uvx`
+- A quality gate ships as plugin hooks: `hooks/hooks.json`, with its handler in the plugin's
+  root `scripts/` (`scripts/<name>.sh`, never a nested `hooks/scripts/`), running only tools the user already installed and never `uv`/`uvx`
   ([ADR-0007](../decisions/adr-0007-gates-ship-as-plugin-hooks.md)). Its test suite goes in
   `scripts/plugin_validation/suites/<id>/`, never inside the plugin.
 

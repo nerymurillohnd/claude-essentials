@@ -32,7 +32,7 @@ plugin component. There is no migration: nothing of 0.1.x was ever installed by 
 | Surface | Decision | Why |
 | --- | --- | --- |
 | Skill `ruff` | Used | Knowledge Claude needs on any host: command routes, working order, discovery, migration, CI, diagnosing, suppressions never to add |
-| Hooks (`hooks/hooks.json` + `hooks/ruff-gate.sh`) | Used | The only surface that runs after every edit without Claude choosing to; updates with the plugin |
+| Hooks (`hooks/hooks.json` + `scripts/ruff-gate.sh`) | Used | The only surface that runs after every edit without Claude choosing to; updates with the plugin |
 | Command hooks vs prompt/agent hooks | Command | Every decision is deterministic (run Ruff, match a marker); the one judgment call, a suppression, goes to the user through `ask`. A model per edit adds cost, latency and variance for nothing |
 | `userConfig.enabled` | Used | Turns the hooks off without uninstalling the skill |
 | Agents, commands, MCP, LSP, output styles, workflows | Rejected | Nothing to delegate or expose; the Ruff language server belongs to the editor |

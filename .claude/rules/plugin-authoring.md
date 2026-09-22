@@ -36,3 +36,6 @@ between their phases.
 - In a hook `if`, `Edit(P)` matches the Edit tool only and `Write(P)` the Write
   tool only (measured on 2.1.278, unlike permission rules): give every file
   condition its twin with the same command. H7 in `make validate` enforces it.
+- Component directories sit flat at the plugin root (`hooks/`, `scripts/`, `skills/`,
+  `agents/`, `.claude-plugin/`): `hooks/` holds only `hooks.json`, and its handlers go in
+  `scripts/`, never a nested `hooks/scripts/`. H8 enforces it.

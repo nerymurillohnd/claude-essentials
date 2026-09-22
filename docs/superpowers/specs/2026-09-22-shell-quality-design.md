@@ -19,7 +19,7 @@ find, without the plugin installing, downloading or configuring anything.
 
 Same model change as ruff-quality (ADR-0007): the `shell-hooks` skill, its `manage.sh`
 installer, its bundled `shellcheckrc` and `editorconfig-shell` profiles and evals 03, 05 and
-06 are removed; the gate ships as `hooks/hooks.json` + `hooks/shell-gate.sh`. A bundled rc
+06 are removed; the gate ships as `hooks/hooks.json` + `scripts/shell-gate.sh`. A bundled rc
 was measured to be silently replaced by any nearer `.shellcheckrc` or by `~/.shellcheckrc`
 (ShellCheck reads the first rc found and merges nothing; reproduced on 0.11.0).
 

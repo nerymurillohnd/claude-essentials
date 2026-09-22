@@ -68,7 +68,7 @@ def test_a_uv_run_shebang_is_refused(scratch: Path) -> None:
     Args:
         scratch: The scratch repository root.
     """
-    path = scratch / "plugins" / PLUGIN_ID / "hooks" / "handler.sh"
+    path = scratch / "plugins" / PLUGIN_ID / "scripts" / "handler.sh"
     _ = path.write_text("#!/usr/bin/env -S uv run --script\nexit 0\n", encoding="utf-8")
     assert [finding.invariant_id for finding in check_shebangs(scratch, PLUGIN_ID)] == ["B1"]
 
@@ -79,7 +79,7 @@ def test_a_forbidden_binary_in_a_script_is_refused(scratch: Path) -> None:
     Args:
         scratch: The scratch repository root.
     """
-    path = scratch / "plugins" / PLUGIN_ID / "hooks" / "handler.sh"
+    path = scratch / "plugins" / PLUGIN_ID / "scripts" / "handler.sh"
     _ = path.write_text("#!/usr/bin/env bash\nnpx something\n", encoding="utf-8")
     assert [finding.invariant_id for finding in check_forbidden(scratch, PLUGIN_ID)] == ["B1"]
 

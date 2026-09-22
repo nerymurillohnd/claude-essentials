@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Behavioral tests for ruff-quality's plugin hook (hooks/ruff-gate.sh):
+# Behavioral tests for ruff-quality's plugin hook (scripts/ruff-gate.sh):
 # the guard's questions, the post-edit fix/format/check, the Stop loop and its
 # limit, and every degraded mode. Runs the handler under $BNV_TEST_BASH (set by
 # the repo's `make test-slow` to each bash it finds, /bin/bash 3.2 included),
@@ -11,7 +11,7 @@ set -uo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo=$(cd "${here}/../../../.." && pwd)
 plugin="${repo}/plugins/ruff-quality"
-gate="${plugin}/hooks/ruff-gate.sh"
+gate="${plugin}/scripts/ruff-gate.sh"
 hooks_json="${plugin}/hooks/hooks.json"
 run_bash=${BNV_TEST_BASH:-bash}
 venv_bin="${repo}/.venv/bin"

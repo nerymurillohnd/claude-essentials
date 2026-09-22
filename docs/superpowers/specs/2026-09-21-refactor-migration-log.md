@@ -1425,6 +1425,7 @@ H4  a `command` is present and non-empty — the CLI catches absent, not empty
 H5  a `${CLAUDE_PLUGIN_ROOT}` path exists, is executable, has a shebang — a dead handler
 H6  `timeout` is numeric and within the event's documented default — a silent cancel
 H7  an `Edit(P)` handler `if` has a `Write(P)` twin with the same command, and back — a new file that skips the gate (added 2026-09-22)
+H8  a plugin's `hooks/` holds only JSON; handlers live in the root `scripts/` — a nested or misplaced component (added 2026-09-22)
 R1  the template's sections, in order, optional ones only when earned — a README that hides a limit
 R2  badge order, kind slug and surface statuses match the files — a badge that outranks the table
 R3  a ✅ row carries a dated `Last verified` — an unproven claim
