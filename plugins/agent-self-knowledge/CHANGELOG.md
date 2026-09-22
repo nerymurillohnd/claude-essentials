@@ -15,10 +15,25 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
-## [0.1.1] - 2026-09-21
+## [0.2.0] - 2026-09-22
+
+### Changed
+
+- **Requires Python 3.14 or later** as `python3`. `ccdocs.py` checks the version when it
+  starts and stops with a message naming the version it found, instead of failing midway
+  on an older interpreter. The Xcode Command Line Tools' Python (3.9) no longer suffices.
+- `ccdocs.py` now passes the marketplace's Ruff and basedpyright gates, which cover every
+  Python file a plugin ships. Its commands print the same output as before.
 
 ### Fixed
 
+- A cache directory that cannot be written no longer stops retrieval: the page is still
+  returned and only caching is skipped, as the README already promised.
+- `page --nth` refuses 0 and negative numbers with a usage error; they used to pick a heading
+  counted from the end.
+- An invalid `CCDOCS_CACHE_TTL` or `CCDOCS_CORPUS_TTL` is named and replaced by its default
+  instead of stopping every command with a traceback.
+- `version` reports a registry answer that is not JSON as an error instead of a traceback.
 - `ccdocs.py` is now tracked as executable (`100755`), so its
   `#!/usr/bin/env python3` shebang works when the script is run by path. The
   skill still calls it as `python3 …/ccdocs.py`, so retrieval behaves exactly
@@ -71,6 +86,6 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
   accepted on 2026-09-20; the vector, the evidence, and the closing condition
   are recorded in `docs/maintenance/pending-debt.md` and in the design spec.
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.1.1...HEAD
-[0.1.1]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.1.0...agent-self-knowledge--v0.1.1
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.2.0...HEAD
+[0.2.0]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.1.0...agent-self-knowledge--v0.2.0
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/agent-self-knowledge--v0.1.0

@@ -42,7 +42,7 @@ kinds ([ADR-0001](docs/decisions/adr-0001-marketplace-distribution-model.md)):
 
 | Plugin | Description | Kind | Claude Code | Claude Cowork | Additional requirements |
 | --- | --- | --- | :---: | :---: | --- |
-| [Agent Self-Knowledge](plugins/agent-self-knowledge/README.md) | Claude answers questions about Claude Code from the live official docs, quoting the exact sentence with its URL and version, instead of from memory. | `skill-only` | ⚠️ | 🧪 | Python ≥ 3.7 |
+| [Agent Self-Knowledge](plugins/agent-self-knowledge/README.md) | Claude answers questions about Claude Code from the live official docs, quoting the exact sentence with its URL and version, instead of from memory. | `skill-only` | ⚠️ | 🧪 | Python ≥ 3.14 |
 | [Block No Verify](plugins/block-no-verify/README.md) | Stop Claude from skipping your Git hooks or commit signing, in the scope you choose, only when you ask for it. | `skill-only` | ⚠️ | ❌ | Bash ≥ 3.2, `jq` ≥ 1.6, Git ≥ 2.18 |
 | [Ruff Quality](plugins/ruff-quality/README.md) | Every Python file Claude edits is fixed, formatted, and checked with your own Ruff, and Claude keeps working until what is left is fixed in the code, never silenced. | `bundle` | 🧪 | 🧪 | Ruff ≥ 0.16, Bash ≥ 3.2, `jq` ≥ 1.6 |
 | [Shell Quality](plugins/shell-quality/README.md) | Every shell script Claude edits is formatted with your shfmt and checked with your ShellCheck, and Claude keeps working until what is left is fixed in the script, never disabled. | `bundle` | 🧪 | 🧪 | ShellCheck ≥ 0.10, shfmt ≥ 3.12, Bash ≥ 3.2, `jq` ≥ 1.6 |
