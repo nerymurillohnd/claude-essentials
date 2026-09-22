@@ -101,6 +101,13 @@ TEST_BASH_SUFFIX: Final = "_TEST_BASH"
 SHARED_TEST_BASH: Final = "BNV_TEST_BASH"
 """The fallback every suite in this marketplace honours, exported by `run_plugin_suites`."""
 
+SHARED_TEST_PYTHON: Final = "BNV_TEST_PYTHON"
+"""The Python a suite runs shipped Python with, exported by `run_plugin_suites`.
+
+It is the repository's own interpreter, the only one the gates lint, type-check and run
+shipped Python with, so a CI runner's older `python3` never stands in for the declared floor.
+"""
+
 
 def _without_comments(text: str) -> str:
     """Remove the comments from a shell script.

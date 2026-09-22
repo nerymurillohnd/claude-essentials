@@ -36,6 +36,10 @@ between their phases.
 - In a hook `if`, `Edit(P)` matches the Edit tool only and `Write(P)` the Write
   tool only (measured on 2.1.278, unlike permission rules): give every file
   condition its twin with the same command. H7 in `make validate` enforces it.
+- `${CLAUDE_SKILL_DIR}` is filled in only in a skill's own `SKILL.md` and its
+  `allowed-tools` rules. A reference or asset file names a script by file name and
+  lets `SKILL.md` say where it lives; `scripts/plugin_validation/test_skill_supporting_files.py`
+  is the gate.
 - Component directories sit flat at the plugin root (`hooks/`, `scripts/`, `skills/`,
   `agents/`, `.claude-plugin/`): `hooks/` holds only `hooks.json`, and its handlers go in
   `scripts/`, never a nested `hooks/scripts/`. H8 enforces it.

@@ -120,6 +120,7 @@ loads any of it. The user-facing surface is `plugins/`.
 | `test_runtime_boundary.py` | B1: what a plugin may assume a user's machine already has (§2.1). |
 | `script_env.py` | Which environment variables a shipped script reads, and the `*_TEST_BASH` convention. |
 | `test_script_env.py` | Environment-variable extraction: what a script reads, not what it mentions. |
+| `test_skill_supporting_files.py` | A skill's supporting files never carry `${CLAUDE_SKILL_DIR}`, which only SKILL.md gets filled in. |
 | `test_templates.py` | T1: the shape templates under the same README and frontmatter rules, with `{{…}}` allowed. |
 | `validate_claude.py` | `make validate-cli`: the official CLI's verdict on the marketplace and every plugin. |
 | `test_validate_claude.py` | `make validate-cli`: the entrypoint's exit codes and its one-line error. |

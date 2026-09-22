@@ -93,6 +93,11 @@ def test_is_binary_needs_a_null_byte_and_an_undecodable_stream() -> None:
     assert not is_binary(b"a\tb\n")
 
 
+def test_is_binary_recognizes_a_pdf_with_no_null_byte() -> None:
+    """A PDF can run for kilobytes with no null byte at all, found with a real fixture PDF."""
+    assert is_binary(b"%PDF-1.4\n" + b"1 0 obj <</Title (caf\xe9)>>" * 50)
+
+
 def test_fix_repairs_what_it_may_and_leaves_the_rest(tree: Path) -> None:
     """A writer that deleted control bytes would destroy content rather than format it."""
     path = tree / "a.sh"

@@ -28,7 +28,7 @@ from scripts.common.errors import ExitCode, MaintainerError
 from scripts.common.plugins import plugin_ids, repo_root, tracked_files
 from scripts.plugin_validation.readme_contract import requirement_rows
 from scripts.plugin_validation.runtime_boundary import PYTHON_SUFFIX, shipped_scripts
-from scripts.plugin_validation.script_env import SHARED_TEST_BASH
+from scripts.plugin_validation.script_env import SHARED_TEST_BASH, SHARED_TEST_PYTHON
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -119,6 +119,7 @@ def run_suite(root: Path, suite: str, interpreter: str) -> SuiteResult:
     """
     environment = dict(os.environ)
     environment[SHARED_TEST_BASH] = interpreter
+    environment[SHARED_TEST_PYTHON] = sys.executable
     try:
         completed = subprocess.run(
             [str(root / suite)],

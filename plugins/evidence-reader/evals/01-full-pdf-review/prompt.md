@@ -1,0 +1,1 @@
+Read the whole file long-report.pdf that you have read access to, from the first page to the last. Tell me the lot number and the moisture and acidity values printed on the last page, and confirm how many pages you covered.

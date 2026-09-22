@@ -5,6 +5,20 @@ remediation, and follow-up tasks. Template: [`templates/pending-debt-template.md
 
 ## Open Items
 
+### DEBT-0039 — H2 checks a `SubagentStop` matcher against tool names, but `SubagentStop` matches agent types
+
+- **Status:** Pending
+- **Category:** tooling
+- **Evidence:**
+  - **Confirmed facts:** `plugins/evidence-reader/hooks/hooks.json`'s `SubagentStop` matcher `^evidence-reader:(document-reader|tabular-auditor|image-inspector)$` triggers `H2 ...: matcher '...' matches no known tool` (warning) from `scripts/plugin_validation/hook_contract.py:254-299` (`check_matchers`/`_regex_findings`), which tests every event's regex matcher against `KNOWN_TOOLS` regardless of event. The official docs settle what `SubagentStop`'s matcher actually filters on: "Matches on agent type, same values as SubagentStart... The `agent_type` field is the value used for matcher filtering" (`https://code.claude.com/docs/en/hooks#subagentstop`, verified 2026-09-22 against Claude Code 2.1.278). `agent_type` for a custom subagent is the plugin-qualified name (`evidence-reader:document-reader`), never a tool name, so evidence-reader's matcher is correct and H2's check is testing it against the wrong list for this event. `evidence-reader` is the first plugin in this repo to use `SubagentStop` with an agent-type matcher (no other plugin exercises this path, so the gap was previously unobserved).
+  - **Inferences:** Every future plugin that scopes a `SubagentStop` (or `SubagentStart`) hook to specific agent types will get the same spurious warning, training maintainers to ignore H2 output for those two events.
+  - **Open questions:** Whether `SubagentHandback` (a `PreToolUse`/`PostToolUse` matcher, which genuinely does match a tool name) needs any change, or only `SubagentStop`/`SubagentStart`. Whether "known agent types" should be validated at all for these two events, given a plugin's own `agents/*.md` files are a real, checkable source for its own agent names (but a matcher can legitimately reference a *different* plugin's or a built-in agent's type too).
+- **Impact / risk:** Low; a misleading non-blocking warning, not a functional defect — `make validate`'s exit code isn't driven by this warning alone.
+- **Owner or responsible area:** `scripts/plugin_validation/hook_contract.py`
+- **Next action:** Either exempt `SubagentStop`/`SubagentStart` matchers from the tool-name check entirely, or add a second check that validates them against the plugin's own `agents/*.md` names (accepting a matcher naming a different plugin or a built-in agent without a warning).
+- **Review condition:** Close when a `SubagentStop` matcher naming a real custom agent type no longer produces an H2 warning, verified with evidence-reader's `hooks.json` as the reproduction, covered by a validator test case.
+- **Related records:** `plugins/evidence-reader/hooks/hooks.json`
+
 ### DEBT-0035 — Rewritten eval cases of three plugins were never measured, and their "Last verified" dates predate their releases
 
 - **Status:** Pending

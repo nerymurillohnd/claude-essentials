@@ -1,0 +1,15 @@
+# Binary fixtures and eval resources. Git sniffs for a null byte to decide what is text,
+# and a PDF can run for kilobytes without one, so without these lines a clone with
+# core.autocrlf=true rewrites line endings inside the file and breaks its byte offsets.
+*.pdf binary
+*.docx binary
+*.pptx binary
+*.xlsx binary
+*.xlsm binary
+*.heic binary
+*.tiff binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary

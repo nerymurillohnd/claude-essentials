@@ -77,8 +77,16 @@ findings. An ignore that suppresses nothing only waits for the defect it hides.
 ALLOWED_PER_FILE_IGNORES: Final[dict[str, list[str]]] = {
     "scripts/**/test_*.py": ["S101"],
     "scripts/**/conftest.py": ["S101"],
+    "plugins/evidence-reader/skills/document-reading/scripts/extract_docx.py": ["S314"],
+    "plugins/evidence-reader/skills/document-reading/scripts/extract_pptx.py": ["S314"],
+    "plugins/evidence-reader/skills/tabular-data/scripts/extract_xlsx.py": ["S314"],
 }
-"""The only per-file exemption: `assert` is pytest's API, and flagged everywhere else."""
+"""The only per-file exemptions, each justified where `pyproject.toml` declares it.
+
+`assert` is pytest's API, and flagged everywhere else. S314 covers evidence-reader's three
+OOXML extractors: each refuses any part that declares a DTD or entity before parsing, and
+defusedxml would be the plugin's only non-stdlib dependency.
+"""
 
 MAX_COMPLEXITY: Final = 8
 """The mccabe ceiling; a higher one would let a branchier function through."""

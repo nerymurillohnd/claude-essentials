@@ -1,0 +1,1 @@
+profile_csv.py needs Python 3.14 or later; this is python3 3.9.6 at /Applications/Xcode.app/Contents/Developer/usr/bin/python3. Install Python 3.14 (python.org, brew install python@3.14, or uv python install 3.14 --default) so `python3` is 3.14.

@@ -36,6 +36,16 @@ CONTROL_CEILING: Final = 0x20
 ALLOWED_CONTROL: Final = frozenset({0x09, 0x0A})
 """Tab and newline: the only control characters a text file in this repository may hold."""
 
+BINARY_SIGNATURES: Final = (b"%PDF-",)
+"""File formats whose start proves binary without a null byte in `SNIFF`.
+
+A PDF that stores its early objects uncompressed and its strings in a single-byte
+encoding (PDFDocEncoding, not UTF-8) can run for many kilobytes with no null byte at
+all, so the null-byte heuristic alone misses it and `_decode` reports it as bad UTF-8
+text (reproduced with a real fixture PDF, 2026-09-22). Every zip-based Office or image
+format this repository ships already carries a null byte within `SNIFF`, so only the
+one signature this repo has actually needed is listed here."""
+
 
 def _sections(root: Path) -> list[tuple[str, dict[str, str]]]:
     """Read `.editorconfig` into its glob sections, in file order.
@@ -117,8 +127,11 @@ def is_binary(data: bytes) -> bool:
         data: The file's contents.
 
     Returns:
-        True when the file holds a null byte near the start and is not UTF-8.
+        True when the file holds a null byte near the start and is not UTF-8, or starts
+        with one of `BINARY_SIGNATURES`.
     """
+    if data.startswith(BINARY_SIGNATURES):
+        return True
     if b"\0" not in data[:SNIFF]:
         return False
     try:

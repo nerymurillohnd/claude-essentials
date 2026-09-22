@@ -17,6 +17,7 @@ body:
         - Marketplace catalog / installation
         - agent-self-knowledge
         - block-no-verify
+        - evidence-reader
         - ruff-quality
         - shell-quality
         - verify-completion

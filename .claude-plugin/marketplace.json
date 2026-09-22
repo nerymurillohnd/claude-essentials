@@ -50,6 +50,27 @@
       "license": "Apache-2.0"
     },
     {
+      "name": "evidence-reader",
+      "source": "./plugins/evidence-reader",
+      "description": "Makes Claude read documents, spreadsheets, data files and images completely and report back with a receipt for every claim: three read-only agents (documents, tabular data, images) with a shared evidence contract, bundled stdlib extractors for Office, PDF, CSV, JSON and XML, image conversion and cropping for fine print, and a report gate that sends an agent back when its report lacks a completeness checklist. It never creates or edits the files it reads.",
+      "category": "productivity",
+      "tags": [
+        "document-reading",
+        "pdf",
+        "spreadsheets",
+        "csv",
+        "image-analysis",
+        "citations",
+        "audit",
+        "subagents"
+      ],
+      "author": {
+        "name": "Nery Samuel Murillo",
+        "url": "https://github.com/nerymurillohnd"
+      },
+      "license": "Apache-2.0"
+    },
+    {
       "name": "ruff-quality",
       "source": "./plugins/ruff-quality",
       "description": "Makes every Python file Claude edits pass Ruff. A plugin hook applies Ruff's safe fixes, formats and re-checks each .py, .pyw and .pyi file with the Ruff already installed in your project or globally, using your own Ruff configuration; asks you before Claude adds a suppression comment or changes Ruff configuration; and keeps Claude working, up to 7 attempts, until the files it touched are clean. Its skill teaches Claude to install, configure, run, integrate and diagnose Ruff from the official documentation.",
