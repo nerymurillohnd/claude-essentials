@@ -1,7 +1,7 @@
 # Migration log — Python toolchain and governance refactor
 
-Evidence for every phase gate of `~/.claude/plans/consolidated-governance-refactor.md`
-Part B. One heading per gate; each box is checked only with output from the current
+Evidence for every phase gate of the consolidated governance plan (the maintainer's
+working plan, not in this repository), Part B. One heading per gate; each box is checked only with output from the current
 tree. This file is committed with step 7 and re-read by `repo-auditor` at step 12.
 
 ## Gate 0 — pre-flight (2026-09-21)
@@ -1533,27 +1533,27 @@ ID fires with the defect present and is gone once it is removed):
 ```text
 .venv/bin/python -m scripts.plugin_validation.validate_claude
 pass  claude plugin validate . --strict
-      Validating marketplace manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/.claude-plugin/marketplace.json
+      Validating marketplace manifest: <repo>/.claude-plugin/marketplace.json
       
       ✔ Validation passed
 pass  claude plugin validate plugins/agent-self-knowledge --strict
-      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/agent-self-knowledge/.claude-plugin/plugin.json
+      Validating plugin manifest: <repo>/plugins/agent-self-knowledge/.claude-plugin/plugin.json
       
       ✔ Validation passed
 pass  claude plugin validate plugins/block-no-verify --strict
-      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/block-no-verify/.claude-plugin/plugin.json
+      Validating plugin manifest: <repo>/plugins/block-no-verify/.claude-plugin/plugin.json
       
       ✔ Validation passed
 pass  claude plugin validate plugins/ruff-quality --strict
-      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/ruff-quality/.claude-plugin/plugin.json
+      Validating plugin manifest: <repo>/plugins/ruff-quality/.claude-plugin/plugin.json
       
       ✔ Validation passed
 pass  claude plugin validate plugins/shell-quality --strict
-      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/shell-quality/.claude-plugin/plugin.json
+      Validating plugin manifest: <repo>/plugins/shell-quality/.claude-plugin/plugin.json
       
       ✔ Validation passed
 pass  claude plugin validate plugins/verify-completion --strict
-      Validating plugin manifest: /Users/nerymurillohnd/projects/marketplace/claude-essentials/plugins/verify-completion/.claude-plugin/plugin.json
+      Validating plugin manifest: <repo>/plugins/verify-completion/.claude-plugin/plugin.json
       
       ✔ Validation passed
 ```
@@ -1585,7 +1585,7 @@ interpreters, so the `/bin/bash` id appears in its verbose output.
 ```text
 DEBT-0029 advisory: uv python install 3.7 -> exit 2: error: No download found for request: cpython-3.7-macos-aarch64-none
 DEBT-0029 advisory: agent-self-knowledge: 3.7 is not downloadable; falling back to the lowest uv offers, 3.8
-DEBT-0029 advisory: agent-self-knowledge: interpreter /Users/nerymurillohnd/.local/share/uv/python/cpython-3.8-macos-aarch64-none/bin/python3.8 (Python 3.8)
+DEBT-0029 advisory: agent-self-knowledge: interpreter ~/.local/share/uv/python/cpython-3.8-macos-aarch64-none/bin/python3.8 (Python 3.8)
 DEBT-0029 advisory: plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py --help -> exit 0
 ```
 
@@ -2324,7 +2324,7 @@ from the pull request head is checked out or executed with the write token.
   pass  plugins/verify-completion/scripts/test-hooks.sh  [/bin/bash]  125 passed, 0 failed
   DEBT-0029 advisory: uv python install 3.7 -> exit 2: error: No download found for request: cpython-3.7-macos-aarch64-none
   DEBT-0029 advisory: agent-self-knowledge: 3.7 is not downloadable; falling back to the lowest uv offers, 3.8
-  DEBT-0029 advisory: agent-self-knowledge: interpreter /Users/nerymurillohnd/.local/share/uv/python/cpython-3.8-macos-aarch64-none/bin/python3.8 (Python 3.8)
+  DEBT-0029 advisory: agent-self-knowledge: interpreter ~/.local/share/uv/python/cpython-3.8-macos-aarch64-none/bin/python3.8 (Python 3.8)
   DEBT-0029 advisory: plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py --help -> exit 0
   make check  117.11s user 107.50s system 96% cpu 3:53.04 total
   exit=0
