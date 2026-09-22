@@ -1,8 +1,8 @@
 {
   "name": "ruff-quality",
   "displayName": "Ruff Quality",
-  "version": "0.1.1",
-  "description": "Teaches Claude the current Ruff workflow for Python (safe fixes, format, check; configuration discovery; rule selection as defaults change; migration from Black, isort, and Flake8; pre-commit and CI), and, only when you ask and choose a scope and a configuration, installs Claude Code hooks that fix, format, and lint every Python file Claude edits, deny suppression comments and configuration changes, and keep Claude from finishing until the files are clean.",
+  "version": "0.2.0",
+  "description": "Makes every Python file Claude edits pass Ruff. A plugin hook applies Ruff's safe fixes, formats and re-checks each .py, .pyw and .pyi file with the Ruff already installed in your project or globally, using your own Ruff configuration; asks you before Claude adds a suppression comment or changes Ruff configuration; and keeps Claude working, up to 7 attempts, until the files it touched are clean. Its skill teaches Claude to install, configure, run, integrate and diagnose Ruff from the official documentation.",
   "author": {
     "name": "Nery Samuel Murillo Tejada",
     "url": "https://github.com/nerymurillohnd"
@@ -20,6 +20,14 @@
     "quality-gate",
     "guardrails"
   ],
+  "userConfig": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Ruff hook",
+      "default": true,
+      "description": "On: after each edit Claude makes to a .py, .pyw or .pyi file, the hook fixes, formats and checks it, and keeps Claude working until it passes. Off: the hooks do nothing; the skill stays available."
+    }
+  },
   "metadata": {
     "marketplace": {
       "category": "development",

@@ -8,77 +8,74 @@
 ![Ruff](https://img.shields.io/badge/Ruff-%E2%89%A50.16-D7FF64?logo=ruff&logoColor=black)
 ![Bash](https://img.shields.io/badge/Bash-%E2%89%A53.2-4EAA25?logo=gnubash&logoColor=white)
 ![jq](https://img.shields.io/badge/jq-%E2%89%A51.6-555555)
-![Git](https://img.shields.io/badge/Git-%E2%89%A52.18-F05032?logo=git&logoColor=white)
-![Hooks](https://img.shields.io/badge/hooks-4_events_(on_request)-orange)
+![Hooks](https://img.shields.io/badge/hooks-3_events-orange)
 ![Network](https://img.shields.io/badge/network-none-lightgrey)
 
 [← claude-essentials](../../README.md) · [Install](#-installation) · [Skills](#-skills) ·
 [Security](#-security) · [Limitations](#-limitations) · [Changelog](CHANGELOG.md)
 
-> **Claude writes Python that passes Ruff, and, when you ask for it, cannot finish until every file it touched is fixed, formatted, and clean, without silencing a single rule.**
+> **Every Python file Claude edits is fixed, formatted, and checked with your own Ruff, and Claude keeps working until what is left is fixed in the code, never silenced.**
 
 **Kind:** `bundle` — a full workflow: multiple components working together.
 
-Ruff Quality helps Python developers who use Claude Code keep Ruff green. Its
-`ruff` skill teaches Claude the current Ruff workflow, configuration,
-migration, and pipelines whenever it works on Python. Its `ruff-hooks` skill
-installs, only after you choose a scope and a configuration, a gate that fixes,
-formats, and lints every Python file Claude edits, denies suppression comments
-and configuration changes, and blocks the end of the turn until everything
-passes. Installing the plugin does **not** wire any hook.
+Ruff Quality helps Python developers who use Claude Code keep Ruff green without
+babysitting it. Its hook runs the Ruff you already have, in your project or
+globally, with your own Ruff configuration, after every edit Claude makes to a
+`.py`, `.pyw` or `.pyi` file. Its `ruff` skill teaches Claude to install,
+configure, run, integrate, and diagnose Ruff from the official documentation.
 
 > [!CAUTION]
-> After you choose a scope and a mode, `ruff-hooks` writes five hook groups (four
-> events) to a Claude Code settings file (`.claude/settings.json`, `.claude/settings.local.json`,
-> or `~/.claude/settings.json`), copies one handler script next to it, and, for
-> the recommended mode, writes a `ruff.toml` where none exists. From then on the
-> hooks rewrite the Python files Claude edits (safe fixes and formatting). It
-> backs up the settings file first and prints the exact rollback.
+> Installing the plugin turns its hooks on in the scope you install it in. From
+> then on, every Python file Claude writes or edits there is rewritten by Ruff's
+> safe fixes and formatter. A file that was never formatted is reformatted whole
+> the first time Claude edits it.
 
 ## 🎯 What it does
 
 | Scenario | How this plugin helps | Expected result |
 | --- | --- | --- |
-| Claude writes or edits Python | The `ruff` skill loads: safe fixes, then format, then check; no suppressions; scope limited to changed files | Code that passes the project's Ruff configuration |
-| You migrate from Black, isort, and Flake8, or bring an older configuration up to current defaults | Tool-by-tool mapping, the `select` vs `extend-select` trap, current pre-commit hook ids and order | One reviewed change, no two formatters fighting |
-| You want Ruff enforced on every edit | `ruff-hooks` shows the exact configuration of each mode with today's finding counts, then installs the gate in the scope you pick | Every edited file is fixed, formatted, and linted; findings go straight back to Claude |
-| Claude tries `# noqa`, `# ruff: ignore`, or relaxing `[tool.ruff]` to get green | The gate denies the edit before it happens, and re-checks suppression counts and configuration after edits and at Stop | The rule gets fixed in code; configuration stays your decision |
-| Claude tries to finish with findings left | The Stop gate re-checks every Python file edited this session and blocks, up to a limit you choose | The turn ends clean, or with a visible list of what is unresolved |
+| Claude writes or edits a Python file | The hook applies Ruff's safe fixes, formats the file, and re-checks it with your configuration | The file passes Ruff, or Claude gets the exact findings left |
+| Findings remain that Ruff cannot fix | Claude receives each finding with its rule code and fixes it in the code | Clean code, not suppressed code |
+| Claude is about to add `# noqa`, `ruff: noqa`, `fmt: off`/`skip`, `yapf: disable` or `isort: skip` (or run `ruff check --add-noqa`/`--add-ignore`), or change `ruff.toml`, `.ruff.toml` or `[tool.ruff]` | The hook asks you before the edit happens | You decide; nothing is silenced behind your back |
+| Claude tries to finish with findings left | At the end of the turn the hook re-checks every Python file it touched and keeps Claude working, up to 7 attempts | The turn ends clean, or you get the list of what still fails |
+| You ask Claude about Ruff | The `ruff` skill: install routes, configuration discovery, rule selection, migration from Black/isort/Flake8, editors, pre-commit and CI | Answers grounded in the official documentation |
 
 ## 🚫 What it does not do
 
-- **Does not** install any hook when you install the plugin, or write any file until you choose a scope and a mode.
-- **Does not** lint or format the whole repository: the gate only touches files Claude edits in the session.
-- **Does not** install Ruff, use the network, or apply unsafe fixes.
-- **Does not** overwrite an existing Ruff configuration: the recommended profile is written only where none exists.
-- **Not a fit when** you need enforcement for everyone, including humans and other tools: use pre-commit and CI for that (the `ruff` skill shows how). The gate is a guardrail for Claude, not a security boundary.
+- **Does not** install Ruff, run `uv`/`uvx`, download anything, or use the network.
+- **Does not** write or change any Ruff configuration: Ruff finds your own, or uses its defaults.
+- **Does not** apply unsafe fixes, or remove an import Claude just added (`F401` is reported, not auto-fixed).
+- **Does not** check files Claude did not touch, or `.ipynb` notebooks.
+- **Not a fit when** you need enforcement for everyone, including humans and other tools: use pre-commit and CI for that (the `ruff` skill shows how). The hook is a guardrail for Claude, not a security boundary.
 
 ## ⚡ Installation
 
-**Claude Code** — add the marketplace once, then install:
+**Claude Code** — add the marketplace once, then install in the scope you want the hook in:
 
 ```text
 /plugin marketplace add nerymurillohnd/claude-essentials
 /plugin install ruff-quality@claude-essentials
 ```
 
-Then work on Python as usual, or ask for the gate, for example: `Lint and format every Python file you edit with Ruff, and don't finish with errors left.`
+From a terminal, `claude plugin install ruff-quality@claude-essentials -s user`
+(every project), `-s project` (this repository, shared through
+`.claude/settings.json`) or `-s local` (this repository, only you).
 
 **Claude Cowork** — **Customize → Plugins → Add marketplace**, enter
 `nerymurillohnd/claude-essentials`, then install **Ruff Quality** from the list.
-The `ruff` skill works there; Cowork does not run settings-based hooks, so
-`ruff-hooks` only reports and never installs the gate. See [Compatibility](#-compatibility).
+See [Compatibility](#-compatibility) for what runs there.
 
 > [!TIP]
-> Installation is complete when `/plugin list` shows `ruff-quality` as enabled
-> and `/ruff-quality:ruff` and `/ruff-quality:ruff-hooks` appear in the `/` menu.
+> Installation is complete when `/plugin list` shows `ruff-quality` as enabled,
+> `/hooks` lists its `PreToolUse`, `PostToolUse` and `Stop` hooks, and
+> `/ruff-quality:ruff` appears in the `/` menu.
 
 ### What installing changes
 
 | | Effect |
 | --- | --- |
-| **Does** | Registers two skills (`ruff`, `ruff-hooks`) in Claude Code's plugin state. |
-| **Does not** | Create or modify settings, hooks, `.claude/`, `~/.claude/`, a Ruff configuration, or your repository. |
+| **Does** | Registers the `ruff` skill and three hook events in Claude Code's plugin state, in the scope you chose; `-s project` also records the plugin in `.claude/settings.json`. |
+| **Does not** | Write a Ruff configuration, copy scripts into your repository, or touch `~/.claude/hooks/`. |
 
 ### Update, disable, or remove
 
@@ -88,57 +85,37 @@ The `ruff` skill works there; Cowork does not run settings-based hooks, so
 /plugin uninstall ruff-quality@claude-essentials
 ```
 
-In Cowork, use **Update** on the marketplace, and **Uninstall** on the plugin
-under **Customize → Plugins**.
-
-Uninstalling the plugin does **not** remove a gate the skill installed: the
-installed handler is a standalone copy. Remove the gate first with
-`! bash "<plugin dir>/skills/ruff-hooks/scripts/manage.sh" uninstall --scope <scope>`
-(ask Claude for the exact command), or follow
-[rollback](skills/ruff-hooks/references/rollback.md).
+Updating the plugin updates the hooks; run `/reload-plugins` to switch a running
+session to the new version. To keep the skill but stop the hook, set the plugin's
+`enabled` option to off in `/config`. In Cowork, use **Update** on the marketplace,
+and **Uninstall** on the plugin under **Customize → Plugins**.
 
 ## 🧠 Skills
 
 | Skill | Invoke | Claude uses it when | Invocation |
 | --- | --- | --- | --- |
-| [`ruff`](skills/ruff/SKILL.md) | `/ruff-quality:ruff` | It writes, edits, reviews, or fixes Python; or you ask about Ruff rules, configuration, migration from Black/isort/Flake8, pre-commit, CI, or the language server | Claude + user |
-| [`ruff-hooks`](skills/ruff-hooks/SKILL.md) | `/ruff-quality:ruff-hooks` | You ask for a Ruff after-edit hook or gate, or to check, update, or remove it | Claude + user |
-
-The `ruff-hooks` workflow, with a stop at each gate:
-
-1. **Assess**: Ruff version and location, Python files, the configuration that applies today, finding counts under each mode, existing hooks.
-2. **Show the configuration**: the exact recommended `ruff.toml`, your own configuration, or Ruff's defaults, explained with those counts; you choose the mode.
-3. **Choose a scope**: project, local, or user.
-4. **Preflight**: bash, jq, git, ruff ≥ 0.16, valid settings, no second scope, no `disableAllHooks`.
-5. **Install**: backups, profile (recommended mode, only where none exists), handler copy, five hook groups, then the test suite against the installed copy; failure restores everything.
-6. **Hand off**: you confirm in `/hooks`; you get the exact rollback.
+| [`ruff`](skills/ruff/SKILL.md) | `/ruff-quality:ruff` | It writes, edits, reviews, or fixes Python; or you ask about installing Ruff, its rules, configuration, migration from Black/isort/Flake8, pre-commit, CI, or the language server | Claude + user |
 
 ## 🤖 Agents
 
-None — this plugin ships two skills and no agents.
+None — this plugin ships one skill and no agents.
 
 ## 🪝 Hooks and side effects
 
-The plugin registers **no** hooks. On your approval, `ruff-hooks` installs these
-in the scope you chose:
-
 | Event | Matcher | What the handler does | Blocks? |
 | --- | --- | --- | --- |
-| `UserPromptSubmit` | — | Records the Ruff configuration and suppression counts as accepted | No |
-| `PreToolUse` | `Write\|Edit\|NotebookEdit\|Bash` | Denies adding `noqa`/`ruff:`/`fmt:`/`isort:` suppressions and changing `ruff.toml`, `.ruff.toml`, `[tool.ruff]`, the user-level Ruff configuration, the handler, or its settings | Yes: the edit |
-| `PostToolUse` | `Write\|Edit\|NotebookEdit`, `Bash` | `ruff check --fix` (safe only), `ruff format`, `ruff check` on each edited `.py`/`.pyi`/`.ipynb`; rewrites those files | No (the tool already ran); findings go to Claude with exit 2 |
-| `Stop` | — | Re-checks every Python file edited this session, suppressions, and configuration | Yes: the end of the turn, up to `--max-blocks` (1–7, default 5) |
+| `PreToolUse` | `Write\|Edit` on `.py`, `.pyw`, `.pyi`, `ruff.toml`, `.ruff.toml`, `pyproject.toml`; `Bash` | Asks you before an edit adds a suppression comment or changes Ruff configuration, and before a command writes one | No — it asks, never denies |
+| `PostToolUse` | `Write\|Edit` on `.py`, `.pyw`, `.pyi` | `ruff check --fix --no-unsafe-fixes --unfixable F401`, `ruff format`, `ruff check` on the edited file; rewrites it | No (the edit already happened); findings left go to Claude |
+| `Stop` | — | Re-checks every Python file this session touched | Yes: keeps Claude working, at most 7 times; the 8th stop ends with a message listing what still fails |
 
-| Scope | Settings file | Handler | Shared |
-| --- | --- | --- | --- |
-| project | `.claude/settings.json` | `.claude/hooks/ruff-quality-gate.sh` | Yes — commit both (and a new `ruff.toml`) |
-| local | `.claude/settings.local.json` | `.claude/hooks/ruff-quality-gate.sh` | No — kept out of git via `.git/info/exclude` |
-| user | `~/.claude/settings.json` | `~/.claude/hooks/ruff-quality-gate.sh` | No — applies to every project on this machine |
-
-Every result tells you in one line (`ruff-quality ✓ …` or `✗ …`). Failures exit 2,
-never 1, so Claude always sees them; missing tools and broken configuration fail
-closed. Per-session state lives in `$TMPDIR/ruff-quality-gate-<uid>/`. Details:
-[hook contract](skills/ruff-hooks/references/hook-contract.md).
+The handler is [`hooks/ruff-gate.sh`](hooks/ruff-gate.sh). It runs the first Ruff
+it finds: the project's own (`.venv/bin/ruff` or `venv/bin/ruff` above the edited
+file), then `ruff` on `PATH`, then `~/.local/bin`, `/opt/homebrew/bin` and
+`/usr/local/bin`. Ruff then finds your configuration as it always does: the nearest
+`ruff.toml`, `.ruff.toml` or `pyproject.toml` with `[tool.ruff]`, else your
+user-level file, else its defaults. Every result is one line for you
+(`ruff-quality ✓ …` or `✗ …`). Per-session state (the files touched and the Stop
+count) lives in `${CLAUDE_PLUGIN_DATA}` and is pruned after 7 days.
 
 ## 🔌 MCP, permissions, and network
 
@@ -148,15 +125,14 @@ None — no MCP servers, no network access, no credentials.
 
 | Requirement | Minimum | Check | Why |
 | --- | --- | --- | --- |
-| Claude Code | 2.1.222; 2.1.269 for Bash-edit coverage | `claude --version` | Loads the skills and runs the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222 — earlier versions treat it as unrecognized, which `claude plugin validate --strict` turns into an error; `ruff-hooks` locates its scripts through `${CLAUDE_SKILL_DIR}` (2.1.69); `bashEditDiff` needs 2.1.269 |
-| Ruff | 0.16 | `ruff --version` | Every gate step; the recommended profile uses 0.16 defaults |
-| Bash | 3.2 | `bash --version` | Runs the handler and installer (macOS's stock `/bin/bash` 3.2 works) |
-| jq | 1.6 | `jq --version` | Parses hook payloads and merges settings |
-| Git | 2.18 | `git --version` | Project and local scope, backups, and suppression baselines |
+| Claude Code | 2.1.222 | `claude --version` | Loads the skill and the hooks; `plugin.json` carries `metadata`, a recognized manifest field from 2.1.222. The `enabled` row in `/config` needs 2.1.269 |
+| Ruff | 0.16 | `ruff --version` | Every hook step; install it in the project or globally |
+| Bash | 3.2 | `bash --version` | Runs the handler (macOS's stock `/bin/bash` 3.2 works) |
+| jq | 1.6 | `jq --version` | Reads hook payloads and writes hook answers |
 | Windows only | Git for Windows (Git Bash) | `bash --version` in Git Bash | Without Git Bash, hooks run in PowerShell and a Bash handler cannot run |
 
-Only the gate needs these; the `ruff` skill works without them. With project
-scope, everyone who runs Claude Code in the repository needs them too.
+The skill works without any of them. With project scope, everyone who runs Claude
+Code in the repository needs them too.
 
 ```bash
 ruff --version
@@ -164,25 +140,22 @@ bash --version
 jq --version
 ```
 
-Install Ruff with `uv tool install ruff`, or add it to the project's dev
-dependencies. The gate uses `RUFF_BIN` when you set it, then the nearest
-`.venv/bin/ruff` or `venv/bin/ruff`, then `PATH`, then `~/.local/bin`,
-`/opt/homebrew/bin`, and `/usr/local/bin`. The skill's `preflight` step
-checks everything and never installs anything.
+Install Ruff as a project dev dependency (`uv add --dev ruff`) or globally
+(`uv tool install ruff`, `pipx install ruff`, `brew install ruff`). Without Ruff or
+`jq`, the hook tells you once per session and blocks nothing.
 
 ## ✅ Verification
 
 **Consumer smoke test** — after installing from the remote marketplace, in a
-Git repository with Python files:
+project with Ruff installed:
 
 ```text
-Assess whether this project should use the ruff-quality gate, and show me each configuration option.
+Create demo.py with a function that returns f"hello" and an unused variable, then tell me what the hook said.
 ```
 
-Expected result: a report of the Ruff version, the configuration that applies,
-finding counts per mode, and the three configurations, with no file changed.
-After you choose a scope and a mode, the install output shows
-`test suite: 99 passed, 0 failed`.
+Expected result: a `ruff-quality` line after the write, `demo.py` rewritten by the
+safe fixes and the formatter, and Claude fixing the finding Ruff could not fix
+(`F841`) before it finishes.
 
 **Behavioural evals** — Behavioural evals live in [`evals/`](evals/) and run per the
 maintainer's eval protocol; results are reported in the pull request, never here.
@@ -193,18 +166,14 @@ maintainer's eval protocol; results are reported in the pull request, never here
 From the marketplace root:
 
 ```bash
-npm run check
+make check
 claude plugin validate plugins/ruff-quality --strict
-plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh
-plugins/ruff-quality/skills/ruff-hooks/scripts/test-manage.sh
-RQ_TEST_BASH=/bin/bash plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh
-RQ_TEST_BASH=/bin/bash plugins/ruff-quality/skills/ruff-hooks/scripts/test-manage.sh
-claude plugin eval plugins/ruff-quality --no-publish --max-cost-usd 6
+scripts/plugin_validation/suites/ruff-quality/test-gate.sh
+claude plugin eval plugins/ruff-quality --scaffold --allow-tools Bash Write Edit --no-publish --max-cost-usd 15
 ```
 
-`make check` runs both suites under `bash` and under `/bin/bash`. The repository's
-runner exports `BNV_TEST_BASH` with the interpreter in use, and each suite honours it
-as the fallback for its own `RQ_TEST_BASH` variable.
+`make check` runs the suite under `bash` and under `/bin/bash`. The suite lives in
+the repository, not in the plugin, so it is never installed.
 
 </details>
 
@@ -212,103 +181,84 @@ as the fallback for its own `RQ_TEST_BASH` variable.
 
 | Surface | Status | Last verified | Notes |
 | --- | --- | --- | --- |
-| Claude Code (CLI, Desktop, IDE) on macOS | 🧪 Not tested | 2026-09-19, Claude Code 2.1.278, local checkout only | Gate installed with `manage.sh` into a scratch project and exercised in live `claude -p` sessions: findings reached Claude and were fixed, `✓`/`✗` messages reached the user, the Stop gate confirmed, and a file written through Bash was formatted from `bashEditDiff`. Suites pass on bash 3.2.57 and 5.3.20 with Ruff 0.16.8. Not yet installed from the remote marketplace |
-| Claude Code on Linux / WSL | 🧪 Not tested | — | Same Bash handler; CI runs both suites on Linux |
+| Claude Code (CLI, Desktop, IDE) on macOS | 🧪 Not tested | 2026-09-22, local checkout only | The hook suite passes on bash 3.2.57 and 5.3.20 with Ruff 0.16.8, and a live `--plugin-dir` session on Claude Code 2.1.278 fired every hook (fix, block, clean, Stop, ask); not yet installed from the remote marketplace |
+| Claude Code on Linux / WSL | 🧪 Not tested | — | Same Bash handler; CI runs the suite on Linux |
 | Claude Code on Windows with Git Bash | 🧪 Not tested | — | Designed for Git Bash; not yet run on Windows |
-| Claude Code on Windows without Git Bash | ❌ Not supported | — | Hooks run in PowerShell; `preflight` refuses |
-| Claude Code cloud sessions | ⚠️ Partial | — | Only project scope applies: cloud sessions don't read `~/.claude/settings.json`, and Ruff must be available there |
-| Claude Cowork | 🧪 Not tested | — | The `ruff` skill should work; Cowork does not run settings hooks ([anthropics/claude-code#40495](https://github.com/anthropics/claude-code/issues/40495)), so `ruff-hooks` refuses to install |
+| Claude Code on Windows without Git Bash | ❌ Not supported | — | Hooks run in PowerShell and the Bash handler cannot run |
+| Claude Code cloud sessions | 🧪 Not tested | — | The hook runs only when Ruff and `jq` are installed in the cloud environment |
+| Claude Cowork | 🧪 Not tested | — | The `ruff` skill should work; whether Cowork runs plugin hooks is unverified |
 | Claude Chat (web, desktop) | ❌ Not supported | — | Plugins aren't used in Chat. |
 
 ## 💡 Examples
 
-**Install the gate with the recommended profile**
-
-```text
-Set up Ruff so every Python file you touch is linted and formatted, and you can't stop with errors.
-```
-
-→ Claude assesses the project, shows the recommended `ruff.toml`, your current
-configuration, and Ruff's defaults with today's finding counts, and waits. After
-you answer "recommended, project", it installs, shows `99 passed, 0 failed`,
-and asks you to check `/hooks`.
-
 **What Claude sees after an edit**
 
 ```text
-ruff-quality: STOP and fix this before any other change.
-
-calc.py:2:5: F841 Local variable `tmp` is assigned to but never used
-
-Change the code so each rule passes. Suppression comments (noqa, ruff: noqa/ignore/disable/file-ignore, fmt: off/skip, isort: skip/off) and Ruff configuration changes are never accepted by this gate. …
+ruff-quality: calc.py still fails Ruff after the safe fixes and formatting. Fix each finding in the code; a suppression comment or a configuration change is not a fix and needs the user's confirmation. Findings:
+calc.py:5:5: E741 Ambiguous variable name: `l`
 ```
 
 **What you see**
 
 ```text
-PostToolUse:Write says: ruff-quality ✗ 1 Ruff finding(s); Claude has been told to fix them now.
-PostToolUse:Write says: ruff-quality ✓ calc.py: lint-clean and formatted
-Stop says: ruff-quality ✓ Stop gate: 1 edited Python file(s) are lint-clean, formatted, and unsuppressed.
+ruff-quality: calc.py has Ruff findings left; Claude is fixing them
+ruff-quality ✓ calc.py: clean
+ruff-quality ✓ 1 Python file(s) touched this session pass Ruff
+```
+
+**When Claude reaches for a suppression**
+
+```text
+ruff-quality: Claude wants to add a suppression comment (noqa, ruff: noqa, fmt: off/skip, yapf: disable or isort: skip) to calc.py. Allow it only if you want that finding silenced instead of fixed.
 ```
 
 ## 🔐 Security
 
 | Access | What it may do |
 | --- | --- |
-| Read | Python files Claude edits; Ruff configuration files in the repository and `~/.config/ruff/`; the three Claude Code settings files; managed settings (assessment only) |
-| Write | Only after your choice: one settings file, the `hooks/` folder and one handler copy, a `ruff.toml` (recommended mode, only where none exists), backups under `<git common dir>/ruff-quality-backups/` (project and local scope) or `~/.claude/backups/ruff-quality/` (user scope, under `$CLAUDE_CONFIG_DIR` when set), `.git/info/exclude` (local scope), and per-session state in `$TMPDIR`. The installed hooks rewrite the Python files Claude edits (safe fixes and formatting). `uninstall` removes the gate's hook groups, the handler, its `hooks/` folder when empty, a project or local settings file left empty, and the local-scope exclude lines; it keeps the backups and any `ruff.toml` |
-| Process | `bash`, `jq`, `git`, `ruff`, and the bundled scripts |
+| Read | The Python files Claude edits; the file an edit targets, to compare suppressions and `[tool.ruff]` tables before and after |
+| Write | The Python files Claude edits (Ruff's safe fixes and formatting) and per-session state in `${CLAUDE_PLUGIN_DATA}` |
+| Process | `bash`, `jq`, `ruff`, and the bundled handler |
 | Network | Not used |
 | Credentials | None |
 
-- **Human approval:** every write happens only after you choose a scope and a mode; while the gate is installed, only you can change or remove it (it denies Claude running the installer).
-- **Fail closed:** a missing tool, broken configuration, or unreadable payload exits 2 with the reason.
-- **Trust:** review [`ruff-quality-gate.sh`](skills/ruff-hooks/assets/ruff-quality-gate.sh) and [`manage.sh`](skills/ruff-hooks/scripts/manage.sh) before installing in a critical repository.
+- **Human approval:** a suppression or a Ruff configuration change reaches your permission prompt before it happens; the hook never denies and never edits configuration.
+- **Never blocks on its own failure:** a missing tool, a malformed payload or an unwritable state directory ends in a message, not a blocked session.
+- **Trust:** review [`hooks/ruff-gate.sh`](hooks/ruff-gate.sh) and [`hooks/hooks.json`](hooks/hooks.json) before installing in a critical repository.
 - **Report a vulnerability** privately via the [security policy](../../SECURITY.md). Never post secrets in issues.
 
 ## 🚧 Limitations
 
 | Limitation | What you'll see | Safe recovery |
 | --- | --- | --- |
-| Bash writes are seen only when Claude Code records `bashEditDiff` (auto and bypass modes, or `bashEditDiffEnabled: true`), only inside a Git repository and never for Git-ignored files | A file written by `sed` or a heredoc in default mode, or a Git-ignored file, is not fixed after the command | The guard's Bash heuristics and the Stop gate's suppression and configuration checks still apply; set `bashEditDiffEnabled` in user settings |
-| The Bash guard is textual | A suppression hidden in a script Claude wrote and then ran is not denied up front | Post and Stop catch suppression growth and configuration drift in files the gate knows |
-| The gate cannot tell who changed configuration during a turn | If you edit `ruff.toml` while Claude is working, the Stop gate flags it | Let the turn end (it releases after the block limit with a warning); your next prompt accepts the change |
-| Unused imports are not reported mid-change | `F401` appears only at Stop | Intended: an import added one edit before its use would otherwise be deleted |
-| Hook timeout (30 s guard and baseline, 60 s post, 120 s Stop) | The call proceeds without a decision; a timed-out guard does not deny | Measured runs take well under a second per file; report very slow projects |
-| A committed project gate without the tools on a teammate's machine | Every Python edit fails closed with `ruff not found` | Install Ruff or set `RUFF_BIN`, or uninstall the gate |
-| `jq` removed after the gate is installed | Every `Write`, `Edit`, and `Bash` call is denied (fail-closed) with the reason | Install `jq` again with the `!` prefix, or uninstall the gate the same way |
-| Cowork | No gate | Use Claude Code |
+| A file that was never formatted is reformatted whole on its first edit | A diff larger than the change Claude made | Accepted by design; format the project once on purpose, or leave the plugin off where you don't want Ruff's style |
+| Files written through `Bash` (`sed`, heredocs) are not fixed after the command | No `ruff-quality` line for that file | The guard still asks before a Bash command writes a suppression; ask Claude to edit with its file tools |
+| `.ipynb` notebooks are not checked | No `ruff-quality` line for a notebook | Run `ruff check` on notebooks yourself |
+| The Bash guard is textual | A suppression hidden inside a script Claude writes and then runs is not caught up front | Review what Claude runs; the Python file's own edits are still checked |
+| Ruff not installed | `ruff-quality: Ruff is not installed …`, once per session; nothing is checked | Install Ruff in the project or globally |
+| `jq` not installed | `ruff-quality: jq is not installed …`, once per session; nothing is checked | Install `jq` |
+| Stop limit reached | `ruff-quality ✗ gave up after 7 attempts …` with the files and findings | Fix what is listed, or ask Claude to continue |
+| Hook timeout (10 s guard, 60 s post, 120 s Stop) | The call proceeds without the hook's answer | Measured runs take well under a second per file; report very slow projects |
+| Cowork | Hooks may not run | Use Claude Code |
 | Ruff passing is not proof of correctness | — | Tests and review still apply |
 
 ## ❓ FAQ
 
 <details>
-<summary>Why a skill that installs hooks, instead of plugin hooks?</summary>
-
-Plugin hooks would be active in every project the moment you install the
-plugin, with no choice of scope or configuration. Here you decide whether,
-where, and with which configuration; the gate keeps working if the plugin is
-updated or removed; and a team can commit it.
-
-</details>
-
-<details>
 <summary>Can Claude add a <code># noqa</code> if I ask for it?</summary>
 
-With the gate installed, no: it denies every new suppression, whoever asked.
-Add it yourself in your editor, between turns; the gate accepts changes you
-make between turns.
+Yes, if you confirm it: the hook asks you in the permission prompt before the edit,
+and your answer decides. It never adds one on its own and never denies one you want.
 
 </details>
 
 <details>
 <summary>How is this different from Astral's official Ruff skill?</summary>
 
-As of 2026-09-19, the official skill (in `astral-sh/claude-code-plugins`)
-predates Ruff 0.16 and installs no hooks. This plugin covers the current
-defaults (413 rules, `ruff: ignore`, Markdown formatting), migration and pipelines,
-and adds an optional, tested gate that also forbids silencing rules. It is not
-affiliated with Astral.
+Astral's `astral:ruff` skill (in `astral-sh/claude-code-plugins`) teaches Ruff and
+installs no hooks. This plugin adds a hook that fixes, formats, and checks every
+Python file Claude edits with your own Ruff and configuration, asks you before any
+suppression, and never runs `uvx` in a hook. It is not affiliated with Astral.
 
 </details>
 

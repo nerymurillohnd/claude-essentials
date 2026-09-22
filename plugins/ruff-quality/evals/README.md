@@ -1,22 +1,22 @@
 # Evals — `ruff-quality`
 
-Two skills, one flow each: **`ruff` fixes findings instead of silencing them and stays in scope;
-`ruff-hooks` installs nothing before the user picks a scope and a mode.**
+One skill and one hook, measured together: **`ruff` fixes findings instead of silencing them and
+stays in scope, and whatever Ruff still reports after the hook's safe fixes is fixed in the code.**
 
-| Case | Skill | What it can fail at | Tools it needs to be able to fail |
-| --- | --- | --- | --- |
-| `01-fixes-instead-of-silencing` | `ruff` | Fixing the findings rather than adding `noqa` | `Write`/`Bash`, and the file is graded on disk |
-| `02-asks-before-mass-reformat` | `ruff` | Not reformatting a whole codebase unasked | `Bash` |
-| `03-gate-asks-scope-and-mode` | `ruff-hooks` | Stopping for both scope *and* mode, and describing the gate first | `Write`/`Edit` |
-| `04-ignores-unrelated-request` | — | Not firing on a question with no Python in it | — |
+| Case | What it can fail at | Tools it needs to be able to fail |
+| --- | --- | --- |
+| `01-fixes-instead-of-silencing` | Fixing the findings rather than adding `noqa` | `Write`/`Bash`, and the file is graded on disk |
+| `02-asks-before-mass-reformat` | Not reformatting a whole codebase unasked | `Bash` |
+| `03-fixes-what-the-hook-reports` | Fixing the E741 and F821 the hook reports after an unrelated edit, without a suppression or a `[tool.ruff]` change | `Write`/`Edit`/`Bash`; a scaffold seeds the project and a project-level Ruff |
+| `04-ignores-unrelated-request` | Not firing on a question with no Python in it | — |
 
 ## Running it
 
 ```bash
 # from the marketplace root
-claude plugin eval plugins/ruff-quality --ablation with-without \
+claude plugin eval plugins/ruff-quality --ablation with-without --scaffold \
   --allow-tools Bash Write Edit \
-  --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 12
+  --model claude-sonnet-5 --judge-model claude-opus-5 --no-publish --max-cost-usd 15
 ```
 
 The judge is a different model from the agent on purpose: a model grading its own output prefers it.
@@ -40,12 +40,16 @@ suppression added) is only meaningful if the run could have done it: those cases
 
 Each run executes in a throwaway sandbox with a synthetic `HOME`. `PATH` is inherited verbatim, but
 entries under your real home directory do not resolve — so `ruff`, installed at `~/.local/bin/ruff`,
-is **absent inside a run** even though it is on your machine (measured 2026-09-20). `03` therefore usually exercises the fail-closed path (the gate refuses to
-install without `ruff`), which its rubric accepts as correct — that is the contract, not a failure.
+is **absent inside a run** even though it is on your machine (measured 2026-09-20). The plugin's
+hook then says Ruff is not installed and does nothing, which is its contract, not a failure.
+`03` needs the hook to run, so its `scaffold.sh` (written for this suite) copies the marketplace's
+own `.venv/bin/ruff` into the case project's `.venv/bin/`, where the hook finds a project-level
+install. Run the suite with `--scaffold`; without it `03` starts in an empty workspace and
+measures nothing.
 
-Ruff's own configuration discovery also differs: outside a project, Ruff picks up
-`~/.config/ruff/ruff.toml`, so "passes `ruff check` clean" is not a stable bar across machines.
-`01` is graded against the two findings in the snippet itself, never against a clean exit code.
+Ruff's own configuration discovery also differs: outside a project, Ruff picks up the user-level
+`ruff.toml`, which the synthetic `HOME` hides. `01` and `03` are graded against the specific
+findings in their snippets, never against a clean exit code.
 
 ## CI policy
 
