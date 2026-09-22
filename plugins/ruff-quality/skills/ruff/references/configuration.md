@@ -119,8 +119,11 @@ ones.
 ## Target version
 
 - Resolution: `target-version` if set; otherwise `requires-python` from the
-  `pyproject.toml` in the same directory as the discovered configuration;
-  otherwise `py310` (since 0.14.0). Verified: `requires-python = ">=3.12"`
+  `pyproject.toml` in the same directory as the discovered configuration, or,
+  when no configuration file is found at all, from the nearest
+  `pyproject.toml`; otherwise `py310` (since 0.14.0). Verified on 0.16.8: a
+  directory holding only a `pyproject.toml` with `requires-python = ">=3.12"`
+  resolved to 3.12 with no `Settings path`. Verified: `requires-python = ">=3.12"`
   next to `[tool.ruff]` resolved to 3.12; the same field in a
   `pyproject.toml` without `[tool.ruff]`, below a `ruff.toml`, was not used.
 - With `--config <file>` no inference happens.
@@ -142,6 +145,9 @@ Keep these rules off when using the formatter
 `W191`, `E111`, `E114`, `E117`, `D203`, `D206`, `D300`, `Q000`, `Q001`,
 `Q002`, `Q003`, `Q004`, `COM812`, `COM819`, and `ISC002` when used without
 `ISC001` and with `flake8-implicit-str-concat.allow-multiline = false`.
+In 0.16.8 `E111`, `E114` and `E117` are preview-only: selecting them without
+preview does nothing, and `ruff format` warns "has no effect because preview is
+not enabled".
 Incompatible isort options: `force-single-line`, `force-wrap-aliases`,
 `lines-after-imports`, `lines-between-types`, `split-on-trailing-comma`.
 Verified: selecting `COM812` makes `ruff format` warn and name the rule.

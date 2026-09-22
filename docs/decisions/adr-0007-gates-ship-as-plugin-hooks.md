@@ -68,8 +68,9 @@ matches the surveyed references, none of which runs `uvx` in a hook.
    scripts.
 3. Configuration is the tool's own discovery. No plugin ships or writes a configuration file.
 4. The gate fixes and formats what the tool can fix safely, reports the rest to Claude, and at
-   Stop keeps Claude working for at most 7 attempts before telling the user what failed
-   (Claude Code itself ends a turn after 8 consecutive Stop continuations).
+   Stop keeps Claude working while the findings change, for at most 7 attempts, before
+   telling the user what failed (Claude Code itself ends a turn after 8 consecutive Stop
+   continuations). A tool or configuration error is reported, never looped on.
 5. Before an edit adds a suppression or changes tool configuration, the gate asks the user
    (`permissionDecision: "ask"`); it never denies.
 6. Plugin test suites live in `scripts/plugin_validation/suites/<id>/`, not in the plugin.
@@ -100,7 +101,7 @@ matches the surveyed references, none of which runs `uvx` in a hook.
 
 | Criterion or claim | Verification method | Evidence or result | Responsible party | Review condition |
 | --- | --- | --- | --- | --- |
-| Hooks behave as described | `scripts/plugin_validation/suites/{ruff,shell}-quality/test-gate.sh` under `bash` and `/bin/bash` (`make test-slow`) | 51 and 40 cases passing (40 plus 1 skip on a machine with the tools at a fixed fallback path), 2026-09-22 | Maintainer | Every change to a handler |
+| Hooks behave as described | `scripts/plugin_validation/suites/{ruff,shell}-quality/test-gate.sh` under `bash` and `/bin/bash` (`make test-slow`) | 75 and 61 cases passing (61 plus 1 skip on a machine with the tools at a fixed fallback path), 2026-09-22 | Maintainer | Every change to a handler |
 | No shipped script runs `uv`/`uvx` | B1 (`scripts/plugin_validation/runtime_boundary.py`) in `make validate` | Passing | Maintainer | Every change under `plugins/` |
 | No gate installs an interpreter | `test_the_python_smoke_run_never_installs_an_interpreter` | Passing | Maintainer | Every change to `run_plugin_suites.py` |
 | Hooks load and fire in a real session | `claude -p --plugin-dir` in a scratch project: Write and Edit of a failing file, a `# noqa` edit, Stop | Both plugins, 2026-09-22 on 2.1.278: block, fix, `✓ clean`, Stop `✓`; the guard returned `ask`. The run found that `Edit(...)` in a hook `if` skips the Write tool; fixed with `Write(...)` twins and gated by H7 | Maintainer | Before the PR is marked ready |

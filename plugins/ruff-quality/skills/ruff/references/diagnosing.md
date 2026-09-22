@@ -86,7 +86,7 @@ them when asked; adding one to make a check pass is never Claude's decision.
 | `# noqa: CODE` (bare `# noqa` suppresses everything on the line) | One line |
 | `# ruff: ignore[CODE]` | End of the line, or the line before a diagnostic (0.16) |
 | `# ruff: disable[CODE]` … `# ruff: enable[CODE]` | A range (0.15) |
-| `# ruff: noqa: CODE`, `# ruff: file-ignore[CODE]` | Whole file (both verified on 0.16.8) |
+| `# ruff: noqa: CODE`, `# ruff: file-ignore[CODE]`, `# flake8: noqa` | Whole file (all three verified on 0.16.8; `# flake8: noqa` silences every rule) |
 | `# fmt: off` / `# fmt: on`, `# fmt: skip`, `# yapf: disable` / `# yapf: enable` | Formatter, at statement level |
 | `<!-- fmt:off -->` / `<!-- fmt:on -->` | Formatter, in Markdown |
 | `# isort: skip`, `# isort: skip_file` | Import sorting |

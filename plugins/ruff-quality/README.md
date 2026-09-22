@@ -36,8 +36,8 @@ configure, run, integrate, and diagnose Ruff from the official documentation.
 | --- | --- | --- |
 | Claude writes or edits a Python file | The hook applies Ruff's safe fixes, formats the file, and re-checks it with your configuration | The file passes Ruff, or Claude gets the exact findings left |
 | Findings remain that Ruff cannot fix | Claude receives each finding with its rule code and fixes it in the code | Clean code, not suppressed code |
-| Claude is about to add `# noqa`, `ruff: noqa`, `fmt: off`/`skip`, `yapf: disable` or `isort: skip` (or run `ruff check --add-noqa`/`--add-ignore`), or change `ruff.toml`, `.ruff.toml` or `[tool.ruff]` | The hook asks you before the edit happens | You decide; nothing is silenced behind your back |
-| Claude tries to finish with findings left | At the end of the turn the hook re-checks every Python file it touched and keeps Claude working, up to 7 attempts | The turn ends clean, or you get the list of what still fails |
+| Claude is about to add or widen `# noqa`, `flake8: noqa`, `ruff: noqa`/`ignore`/`disable`/`file-ignore`, `fmt: off`/`skip`, `yapf: disable` or `isort: skip` (or run `ruff check --add-noqa`/`--add-ignore`), or change `ruff.toml`, `.ruff.toml` or the Ruff settings of `pyproject.toml` | The hook asks you before the edit happens, naming the exact marker | You decide; an edit through Claude's file tools is never silenced behind your back |
+| Claude tries to finish with findings left | At the end of the turn the hook re-checks every Python file it touched and keeps Claude working while the findings change, up to 7 attempts | The turn ends clean, or you get the list of what still fails |
 | You ask Claude about Ruff | The `ruff` skill: install routes, configuration discovery, rule selection, migration from Black/isort/Flake8, editors, pre-commit and CI | Answers grounded in the official documentation |
 
 ## 🚫 What it does not do
@@ -45,7 +45,7 @@ configure, run, integrate, and diagnose Ruff from the official documentation.
 - **Does not** install Ruff, run `uv`/`uvx`, download anything, or use the network.
 - **Does not** write or change any Ruff configuration: Ruff finds your own, or uses its defaults.
 - **Does not** apply unsafe fixes, or remove an import Claude just added (`F401` is reported, not auto-fixed).
-- **Does not** check files Claude did not touch, or `.ipynb` notebooks.
+- **Does not** check files Claude did not touch, files your Ruff configuration excludes, or `.ipynb` notebooks.
 - **Not a fit when** you need enforcement for everyone, including humans and other tools: use pre-commit and CI for that (the `ruff` skill shows how). The hook is a guardrail for Claude, not a security boundary.
 
 ## ⚡ Installation
@@ -106,15 +106,16 @@ None — this plugin ships one skill and no agents.
 | --- | --- | --- | --- |
 | `PreToolUse` | `Write\|Edit` on `.py`, `.pyw`, `.pyi`, `ruff.toml`, `.ruff.toml`, `pyproject.toml`; `Bash` | Asks you before an edit adds a suppression comment or changes Ruff configuration, and before a command writes one | No — it asks, never denies |
 | `PostToolUse` | `Write\|Edit` on `.py`, `.pyw`, `.pyi` | `ruff check --fix --no-unsafe-fixes --unfixable F401`, `ruff format`, `ruff check` on the edited file; rewrites it | No (the edit already happened); findings left go to Claude |
-| `Stop` | — | Re-checks every Python file this session touched | Yes: keeps Claude working, at most 7 times; the 8th stop ends with a message listing what still fails |
+| `Stop` | — | Re-fixes, re-formats and re-checks every Python file this session touched | Yes: keeps Claude working while the findings change, at most 7 times; then a message lists what still fails and those files are left alone until edited again |
 
 The handler is [`hooks/ruff-gate.sh`](hooks/ruff-gate.sh). It runs the first Ruff
 it finds: the project's own (`.venv/bin/ruff` or `venv/bin/ruff` between the edited
 file and the project root, owned by you), then `ruff` on `PATH`, then `~/.local/bin`, `/opt/homebrew/bin` and
 `/usr/local/bin`. Ruff then finds your configuration as it always does: the nearest
 `ruff.toml`, `.ruff.toml` or `pyproject.toml` with `[tool.ruff]`, else your
-user-level file, else its defaults. Every result is one line for you
-(`ruff-quality ✓ …` or `✗ …`). Per-session state (the files touched and the Stop
+user-level file, else its defaults; a file it excludes is reported as not checked.
+Every result reaches you as one `ruff-quality` line (see [Examples](#-examples)), and
+Claude is told when the hook rewrote a file so it re-reads it. Per-session state (the files touched and the Stop
 count) lives in `${CLAUDE_PLUGIN_DATA}` and is pruned after 7 days.
 
 ## 🔌 MCP, permissions, and network
@@ -194,22 +195,22 @@ the repository, not in the plugin, so it is never installed.
 **What Claude sees after an edit**
 
 ```text
-ruff-quality: calc.py still fails Ruff after the safe fixes and formatting. Fix each finding in the code; a suppression comment or a configuration change is not a fix and needs the user's confirmation. Findings:
-calc.py:5:5: E741 Ambiguous variable name: `l`
+ruff-quality: calc.py still fails Ruff after the safe fixes and formatting (the hook may have rewritten it; re-read it first). Fix each finding in the code; a suppression comment or a configuration change is not a fix and needs the user's confirmation. Findings:
+calc.py:2:21: F821 Undefined name `totl`
 ```
 
 **What you see**
 
 ```text
 ruff-quality: calc.py has Ruff findings left; Claude is fixing them
-ruff-quality ✓ calc.py: clean
+ruff-quality: 1 Python file(s) still fail Ruff; Claude keeps working (1/7)
 ruff-quality ✓ 1 Python file(s) touched this session pass Ruff
 ```
 
 **When Claude reaches for a suppression**
 
 ```text
-ruff-quality: Claude wants to add a suppression comment (noqa, ruff: noqa, fmt: off/skip, yapf: disable or isort: skip) to calc.py. Allow it only if you want that finding silenced instead of fixed.
+ruff-quality: Claude wants to add or widen a suppression in calc.py: # noqa: f821. Allow it only if you want that finding silenced instead of fixed.
 ```
 
 ## 🔐 Security
@@ -234,10 +235,11 @@ ruff-quality: Claude wants to add a suppression comment (noqa, ruff: noqa, fmt: 
 | A file that was never formatted is reformatted whole on its first edit | A diff larger than the change Claude made | Accepted by design; format the project once on purpose, or leave the plugin off where you don't want Ruff's style |
 | Files written through `Bash` (`sed`, heredocs) are not fixed after the command | No `ruff-quality` line for that file | The guard still asks before a Bash command writes a suppression; ask Claude to edit with its file tools |
 | `.ipynb` notebooks are not checked | No `ruff-quality` line for a notebook | Run `ruff check` on notebooks yourself |
-| The Bash guard is textual | A suppression hidden inside a script Claude writes and then runs is not caught up front | Review what Claude runs; the Python file's own edits are still checked |
+| The Bash guard is textual | It asks only for commands with a visible write (`>`, `tee`, `sed -i`, heredocs); `cp`, `mv` or a script Claude writes and runs are not caught | Review what Claude runs; the Python file's own edits through Write and Edit are still checked |
 | Ruff not installed | `ruff-quality: Ruff is not installed …`, once per session; nothing is checked | Install Ruff in the project or globally |
 | `jq` not installed | `ruff-quality: jq is not installed …`, once per session; nothing is checked | Install `jq` |
-| Stop limit reached | `ruff-quality ✗ gave up after 7 attempts …` with the files and findings | Fix what is listed, or ask Claude to continue |
+| Stop limit reached, or no change between two attempts | `ruff-quality ✗ gave up after 7 attempts …` or `… with no change since the last attempt …`, with the findings | Fix what is listed or ask Claude to; the hook leaves those files alone until they are edited again |
+| A file your Ruff configuration excludes | `ruff-quality: … is excluded by the project's Ruff configuration, so it was not checked` | Intended; change `exclude` if you want it checked |
 | Hook timeout (10 s guard, 60 s post, 120 s Stop) | The call proceeds without the hook's answer | Measured runs take well under a second per file; report very slow projects |
 | Cowork | Hooks may not run | Use Claude Code |
 | Ruff passing is not proof of correctness | — | Tests and review still apply |

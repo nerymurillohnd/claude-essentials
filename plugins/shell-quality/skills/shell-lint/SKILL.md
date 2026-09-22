@@ -2,7 +2,7 @@
 name: shell-lint
 description: Lint and format shell scripts with shfmt and ShellCheck, fixing every finding in the script instead of silencing it. Covers installing both tools without breaking a project pin, the order that works (format, then check), exit codes and output formats, how each tool discovers its configuration and which file wins, SHELLCHECK_OPTS, the shfmt keys of EditorConfig, the correct code change for the SC codes met most often, POSIX and macOS bash 3.2 portability, editor, pre-commit and CI wiring, the suppressions that must never be added, and how to answer the shell-quality hook when it reports findings or asks the user to confirm a directive. Confirm the installed versions and read both changelogs before relying on version-specific behavior.
 when_to_use: On every shell script Claude writes, edits, reviews or fixes (.sh, .bash, .bats, or an extensionless file with a sh, bash, dash or ksh shebang), before calling that work done, not only when the user asks. Also when the shell-quality hook reports shfmt or ShellCheck findings, to fix an SC code such as SC2086, SC2155 or SC2016, to install ShellCheck or shfmt, to set up .shellcheckrc or the shfmt keys of .editorconfig, to make a script POSIX or able to run on macOS bash 3.2, or to wire either tool into pre-commit, CI or an editor.
-compatibility: Claude Code, Claude Cowork, and any Agent Skills host. The commands need shellcheck 0.10 or later and shfmt 3.13 or later; the guidance works without them. The after-edit hook runs only where plugin hooks run.
+compatibility: Claude Code, Claude Cowork, and any Agent Skills host. The commands need shellcheck 0.10 or later and shfmt 3.12 or later (3.13 for the [[shell]] EditorConfig sections); the guidance works without them. The after-edit hook runs only where plugin hooks run.
 license: Apache-2.0
 ---
 
@@ -42,11 +42,14 @@ which v3.14.1 does not have.
 ## The workflow for every change
 
 ```bash
-shfmt -w -- script.sh              # 1. format: it moves lines
-shellcheck -x -f gcc -- script.sh  # 2. check the settled file, one finding per line
+shfmt -w -- path/to/script.sh                                   # 1. format: it moves lines
+(cd path/to && shellcheck -x -f gcc -- script.sh)               # 2. check the settled file
 ```
 
 - Format first; checking first leaves stale line numbers.
+- Run ShellCheck from the script's directory, as the hook does: a relative
+  `source` resolves against the working directory, so another directory can
+  report a phantom SC1091/SC2154 or miss a real one.
 - Read the wiki page before fixing an unfamiliar code:
   `https://www.shellcheck.net/wiki/SC2086`.
 - Re-run both tools until ShellCheck exits `0`, then report: scripts touched,
@@ -100,7 +103,7 @@ Depth, verified experiments, and every key:
 | SC2016 | Want expansion: double quotes. Want a literal `$`: `jq --arg n "${n}" '…$n…'`, or `"\$HOME"` |
 | SC2034 | Delete the variable or use it; `_` placeholders (`read -r _ b`) are exempt |
 | SC2154 | Assign it, or require it: `: "${VAR:?VAR must be set}"` |
-| SC1090/SC1091 | `source-path=SCRIPTDIR` plus `-x` (or `external-sources=true`), or `# shellcheck source=lib/x.sh` naming the real file |
+| SC1090/SC1091 | In the script: `# shellcheck source=lib/x.sh` naming the real file, or `# shellcheck source-path=SCRIPTDIR` after the shebang, with `-x`. These are not suppressions and ask nobody. A `source-path=` line in `.shellcheckrc` is a configuration change: propose it to the user |
 | SC2329 | Call the function, delete it, or for a `trap` handler inline the command: `trap 'rm -f -- "${tmp}"' EXIT` |
 | SC2312 | Capture first, `now=$(date)`, then use `"${now}"` |
 
@@ -138,24 +141,33 @@ the whole file, with each tool's native configuration discovery and
 `SHELLCHECK_OPTS`, using the project install or the `PATH` (never a download).
 zsh scripts are skipped.
 
-- **Findings reported after an edit:** fix them in the script, re-read the
-  file (shfmt may have rewritten it), and continue. A long report is cut
-  short; run ShellCheck yourself to see the rest. Do not argue with the hook
-  or reach for a directive.
-- **Stop is blocked:** a touched script still has findings. Fix them; the hook
-  keeps Claude working up to 7 times, and the 8th attempt ends with a failure
-  message to the user. If a finding truly cannot be fixed, say so plainly with
-  the code, the line, and the reason.
-- **A confirmation prompt:** adding a `# shellcheck disable=` or
-  `source=/dev/null` directive, changing `.shellcheckrc` or `shellcheckrc`, or
-  changing the sections or shfmt keys of `.editorconfig` (by an edit or a Bash
-  command) asks the user first. Expect the prompt; never reshape an edit or a
-  command to avoid it.
+- **After every edit:** if shfmt rewrote the script you are told to re-read
+  it; do that before the next edit. Findings come back to you: fix them in the
+  script. A report cut at 60 lines says so; run ShellCheck from the script's
+  directory to see the rest. Do not argue with the hook or reach for a
+  directive.
+- **shfmt could not parse the script:** your edit broke the syntax; fix it.
+- **A tool or configuration error** (for example an `.editorconfig`
+  `shell_variant` the script is not written in): reported, not a finding.
+  Tell the user what it says; do not rewrite a correct script to satisfy it.
+- **Stop is blocked:** a touched script still has findings. The hook keeps you
+  working while the findings change, up to 7 times; then it tells the user
+  what still fails and leaves those scripts alone until they are edited again.
+  If a finding needs the user's decision, or truly cannot be fixed, say so once
+  with the code, the line and the reason, and end your turn: when nothing
+  changes between two attempts, the hook stops asking.
+- **A confirmation prompt:** an Edit or Write that adds or widens a
+  `# shellcheck disable=` or `source=/dev/null` directive, changes
+  `.shellcheckrc` or `shellcheckrc`, or changes the sections or shfmt keys of
+  `.editorconfig`, and a shell command with a visible write (`>`, `tee`,
+  `sed -i`, heredocs) carrying one of those, asks the user first. Other routes
+  (`cp`, `mv`, `rm`, a script) are not detected: never use them to change
+  configuration. Expect the prompt; never reshape an edit or a command to
+  avoid it.
 - **A tool is missing** (shfmt, ShellCheck, or `jq`, which the hook needs):
-  the hook tells the user once per session how to
-  install it and does not block. Offer the install from
-  [references/pipelines.md](references/pipelines.md#installing); do not run it
-  unasked.
+  you and the user are told once per session, and nothing blocks. Offer the
+  install from [references/pipelines.md](references/pipelines.md#installing);
+  do not run it unasked.
 - **`SHELLCHECK_OPTS` is named in a report:** it changed what ShellCheck saw.
   Tell the user; do not unset it for them.
 

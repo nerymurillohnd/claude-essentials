@@ -22,12 +22,15 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 - The plugin now ships its hooks: installing it turns them on, in the scope you install it
   in, and updating the plugin updates them. After each edit Claude makes to a `.sh` or
   `.bash` file, the hook formats it with shfmt, checks it with ShellCheck, and hands any
-  finding that is left to Claude. At the end of the turn it re-checks every script the
-  session touched and keeps Claude working, up to 7 attempts, then tells you which scripts
-  still fail. You see a one-line result after each edit and at the end.
-- Before Claude adds a `# shellcheck disable=` or `source=/dev/null` directive, or changes
-  `.shellcheckrc` or the shfmt keys of `.editorconfig`, the hook asks you to confirm. It
-  never denies.
+  finding that is left to Claude, and tells Claude to re-read a script shfmt rewrote. An
+  `.editorconfig` dialect the script is not written in is reported as a configuration
+  error, not as a defect Claude must code around. At the end of the turn it re-checks every
+  script the session touched and keeps Claude working while the findings change, up to 7
+  attempts; then it tells you which scripts still fail and leaves them alone until they
+  are edited again. You see a one-line result after each edit and at the end.
+- Before Claude adds or widens a `# shellcheck disable=` or `source=/dev/null` directive, or
+  changes `.shellcheckrc` or the sections or shfmt keys of `.editorconfig`, the hook asks
+  you, naming the directive. It never denies.
 - An `enabled` option (`/config`) turns the hooks off without removing the skill.
 
 ### Changed

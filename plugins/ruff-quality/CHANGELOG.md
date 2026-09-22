@@ -22,13 +22,17 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 - The plugin now ships its hooks: installing it turns them on, in the scope you install it
   in, and updating the plugin updates them. After each edit Claude makes to a `.py`, `.pyw`
   or `.pyi` file, the hook applies Ruff's safe fixes (never `--unsafe-fixes`, and never
-  removing a just-added import), formats the file, re-checks it, and hands any finding that
-  is left to Claude. At the end of the turn it re-checks every Python file the session
-  touched and keeps Claude working, up to 7 attempts, then tells you which files still fail.
-  You see a one-line result after each edit and at the end.
-- Before Claude adds a suppression comment (`noqa`, `ruff: noqa`, `fmt: off`/`skip`,
-  `yapf: disable`, `isort: skip`, or `ruff check --add-noqa`/`--add-ignore`) or changes Ruff
-  configuration (`ruff.toml`, `.ruff.toml`, `[tool.ruff]`), the hook asks you to confirm. It never denies.
+  removing a just-added import), formats the file, re-checks it, hands any finding that is
+  left to Claude, and tells Claude to re-read a file it rewrote. A file your Ruff
+  configuration excludes is reported as not checked. At the end of the turn it re-checks
+  every Python file the session touched and keeps Claude working while the findings change,
+  up to 7 attempts; then it tells you which files still fail and leaves them alone until
+  they are edited again. You see a one-line result after each edit and at the end.
+- Before Claude adds or widens a suppression (`noqa`, `flake8: noqa`,
+  `ruff: noqa`/`ignore`/`disable`/`file-ignore`, `fmt: off`/`skip`, `yapf: disable`,
+  `isort: skip`, or `ruff check --add-noqa`/`--add-ignore`) or changes Ruff configuration
+  (`ruff.toml`, `.ruff.toml`, the Ruff settings of `pyproject.toml`), the hook asks you,
+  naming the marker. It never denies.
 - An `enabled` option (`/config`) turns the hooks off without removing the skill.
 
 ### Changed

@@ -121,6 +121,26 @@ expect_silent "a plain edit is not questioned"
 INPUT=$(jq -cn --arg f "${proj}/bin/a.sh" '{file_path: $f, edits: [{old_string: "# shellcheck disable=SC2034\nold=1", new_string: "old=1"}, {old_string: "echo $1", new_string: "# shellcheck disable=SC2086\necho $1"}]}') || INPUT=""
 fire guard Edit s1 false
 expect_ask "a batch that removes one directive and adds another still asks"
+mk_edit "${proj}/bin/a.sh" '# shellcheck disable=SC2034' '# shellcheck disable=SC2034,SC2086'
+fire guard Edit s1 false
+expect_ask "widening a directive with another code asks"
+expect_in "the question names the widened directive" "${REASON}" "disable=sc2034,sc2086"
+mk_edit "${proj}/bin/a.sh" '# shellcheck disable=SC2034
+old=1' '# shellcheck disable=SC2034
+old=2'
+fire guard Edit s1 false
+expect_silent "editing code under an unchanged directive is not questioned"
+printf '#!/usr/bin/env bash\n# shellcheck disable=SC2034\nold=1\n' >"${proj}/bin/w.sh"
+mk_write "${proj}/bin/w.sh" "$(printf '#!/usr/bin/env bash\n# shellcheck disable=SC2034\nold=2')"
+fire guard Write s1 false
+expect_silent "rewriting a script that keeps its existing directive is not questioned"
+mk_edit "${proj}/bin/w.sh" '# shellcheck disable=SC2034
+old=1' '# shellcheck disable=SC2034
+old=1
+# shellcheck disable=SC2034
+new=1'
+fire guard Edit s1 false
+expect_ask "adding a second copy of an existing directive asks"
 mk_write "${proj}/bin/b.sh" "$(printf '#!/bin/sh\n# shellcheck source=/dev/null\n. ./env\n')"
 fire guard Write s1 false
 expect_ask "writing source=/dev/null asks"
@@ -143,6 +163,15 @@ expect_ask "a Bash write to .shellcheckrc asks"
 mk_bash 'shellcheck bin/a.sh'
 fire guard Bash s1 false
 expect_silent "running ShellCheck is not questioned"
+mk_bash 'cat .shellcheckrc .editorconfig 2>/dev/null'
+fire guard Bash s1 false
+expect_silent "reading the configuration is not a write"
+mk_bash "grep -rn '# shellcheck disable=' . 2>/dev/null"
+fire guard Bash s1 false
+expect_silent "searching for directives is not a write"
+mk_bash 'shellcheck --rcfile .shellcheckrc bin/a.sh 2>&1'
+fire guard Bash s1 false
+expect_silent "running ShellCheck with an rc file is not a write"
 
 # ----------------------------------------------------------------- post ---
 
@@ -152,6 +181,7 @@ mk_edit "${proj}/bin/fmt.sh" '' ''
 fire post Edit s2 false
 parse
 expect_in "a misformatted script is formatted and reported clean" "${MESSAGE}" "formatted, ShellCheck clean"
+expect_in "Claude is told to re-read a script the hook rewrote" "${CONTEXT}" "re-read"
 got=$(cat "${proj}/bin/fmt.sh")
 expect_in "shfmt rewrote the indentation" "${got}" "$(printf '\techo "x"')"
 
@@ -182,6 +212,32 @@ mk_edit "${proj}/bin/broken.sh" '' ''
 fire post Edit s2 false
 parse
 expect_in "a parse error is reported for Claude" "${BLOCK}" "could not parse"
+if [[ ${BLOCK} == *"after formatting"* || ${BLOCK} == *"shellcheck.net"* ]]; then
+  bad "a parse error is not described as a ShellCheck finding" "${BLOCK}"
+else ok; fi
+
+printf 'root = true\n[*.sh]\nshell_variant = posix\n' >"${proj}/.editorconfig"
+printf "#!/usr/bin/env bash\narr=(a b)\necho \"\${arr[0]}\"\n" >"${proj}/bin/arr.sh"
+mk_edit "${proj}/bin/arr.sh" '' ''
+fire post Edit s2e false
+parse
+expect_in "an EditorConfig dialect that rejects the script is a configuration error" "${BLOCK}" "configuration error"
+INPUT='{}'
+fire stop '' s2e false
+parse
+if [[ -z ${CONTEXT} ]]; then ok; else bad "an EditorConfig dialect error does not keep Claude working" "${OUT}"; fi
+rm -f "${proj}/.editorconfig"
+
+printf '#!/usr/bin/env bash\n' >"${proj}/bin/many.sh"
+i=0
+while ((i < 90)); do
+  printf "echo \$v%d\n" "${i}" >>"${proj}/bin/many.sh"
+  i=$((i + 1))
+done
+mk_edit "${proj}/bin/many.sh" '' ''
+fire post Edit s2y false
+parse
+expect_in "a long report says it was cut" "${BLOCK}" "first 60 of"
 
 printf "#!/usr/bin/env zsh\necho \$1\n" >"${proj}/bin/z.sh"
 mk_edit "${proj}/bin/z.sh" '' ''
@@ -208,26 +264,55 @@ expect_in "Stop names the finding" "${CONTEXT}" "SC2086"
 expect_in "the user sees the attempt count" "${MESSAGE}" "(1/7)"
 attempt=2
 while ((attempt <= 7)); do
+  printf "#!/usr/bin/env bash\necho \$v%d\n" "${attempt}" >"${proj}/bin/unquoted.sh" # Claude changed something
   fire stop '' s3 true
   attempt=$((attempt + 1))
 done
 parse
 expect_in "the seventh attempt still continues" "${CONTEXT}" "attempt 7 of 7"
+printf "#!/usr/bin/env bash\necho \$v8\n" >"${proj}/bin/unquoted.sh"
 fire stop '' s3 true
 parse
 if [[ -z ${CONTEXT} ]]; then ok; else bad "the eighth stop does not continue" "${OUT}"; fi
 expect_in "the eighth stop tells the user it gave up" "${MESSAGE}" "gave up after 7 attempts"
 expect_in "the failure names the script" "${MESSAGE}" "bin/unquoted.sh"
+fire stop '' s3 false
+expect_silent "after giving up, the next turn does not start again on the same scripts"
 
+mk_edit "${proj}/bin/unquoted.sh" '' ''
+fire post Edit s3 false
 fire stop '' s3 false
 parse
-expect_in "a new turn starts counting again" "${CONTEXT}" "attempt 1 of 7"
+expect_in "a new edit re-arms the gate" "${CONTEXT}" "attempt 1 of 7"
+fire stop '' s3 true
+parse
+if [[ -z ${CONTEXT} ]]; then ok; else bad "a retry with no change does not continue" "${OUT}"; fi
+expect_in "no progress ends with a message to the user" "${MESSAGE}" "no change"
+
+mk_edit "${proj}/bin/unquoted.sh" '' ''
+fire post Edit s3 false
 printf "#!/usr/bin/env bash\necho \"\$1\"\n" >"${proj}/bin/unquoted.sh"
 fire stop '' s3 true
 parse
 expect_in "clean scripts end with a success message" "${MESSAGE}" "pass shfmt and ShellCheck"
 fire stop '' s3 false
 expect_silent "after success nothing is left to report"
+
+for n in 1 2 3 4 5; do
+  printf '#!/usr/bin/env bash\n' >"${proj}/bin/big${n}.sh"
+  i=0
+  while ((i < 60)); do
+    printf "echo \$a_rather_long_variable_name_%d_%d\n" "${n}" "${i}" >>"${proj}/bin/big${n}.sh"
+    i=$((i + 1))
+  done
+  mk_edit "${proj}/bin/big${n}.sh" '' ''
+  fire post Edit s3b false
+done
+INPUT='{}'
+fire stop '' s3b false
+parse
+if ((${#CONTEXT} <= 9500)); then ok; else bad "the Stop report stays under Claude Code's 10,000-character cap" "${#CONTEXT} characters"; fi
+expect_in "a capped report says it was cut" "${CONTEXT}" "report cut at"
 
 # ------------------------------------------------------ trust boundaries ---
 
@@ -288,6 +373,7 @@ else
   fire post Edit s4 false PATH="${work}/minimal"
   parse
   expect_in "without the tools the user is told how to install them" "${MESSAGE}" "not installed"
+  expect_in "without the tools Claude is told too" "${CONTEXT}" "not installed"
   if [[ ${RC} -eq 0 && -z ${BLOCK} ]]; then ok; else bad "without the tools nothing is blocked" "${OUT}"; fi
   fire post Edit s4 false PATH="${work}/minimal"
   expect_silent "the missing-tool notice is shown once per session"

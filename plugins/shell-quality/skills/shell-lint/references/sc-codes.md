@@ -89,7 +89,7 @@ false positive and let them decide.
 | Code | Problem | Fix |
 | --- | --- | --- |
 | SC1090 | `. "$1"`: a non-constant source | `# shellcheck source=lib/x.sh` naming the real file |
-| SC1091 | The sourced file was not opened | `-x` (or `external-sources=true` in the rc) plus `source-path=SCRIPTDIR` |
+| SC1091 | The sourced file was not opened | `-x` plus `# shellcheck source-path=SCRIPTDIR` after the shebang (not a suppression); the same key in `.shellcheckrc` is a configuration change to propose |
 
 Measured in 0.11.0: `. "$(dirname "$0")/lib/util.sh"` resolves to
 `./lib/util.sh` relative to the **working directory**, so it passes only when

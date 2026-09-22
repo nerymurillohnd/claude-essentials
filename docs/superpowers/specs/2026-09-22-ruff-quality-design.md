@@ -45,16 +45,25 @@ plugin component. There is no migration: nothing of 0.1.x was ever installed by 
   edit adds `noqa`, `ruff: noqa|ignore|disable|file-ignore`, `fmt: off|skip`,
   `yapf: disable` or `isort: skip`, before `ruff check --add-noqa`/`--add-ignore`, and before
   a change to `ruff.toml`, `.ruff.toml` or the `[tool.ruff*]` tables of `pyproject.toml`.
-  Each replacement is compared with its own `old_string`, so a marker that already existed
-  does not ask again and removing one marker never offsets adding another in the same call.
+  Each replacement is compared with its own `old_string` by marker text (marker to end of line),
+  so a marker that already existed does not ask again, a widened one (another code, a bare
+  `# noqa`, line-level made file-level) does, and removing one never offsets adding another.
+  `# flake8: noqa` counts. Harmless redirects (`2>&1`, `>/dev/null`) are not writes.
 - **PostToolUse** (`Write|Edit` on `.py`, `.pyw`, `.pyi`): `ruff check --fix
   --no-unsafe-fixes --unfixable F401`, `ruff format`, `ruff check --no-fix`, all with
   `--force-exclude --no-cache`, on the whole file. `F401` is unfixable so an import added in
   one edit and used in the next survives. Findings left → top-level `decision: "block"` with
   the findings as `reason` (reaches Claude) and a one-line `systemMessage` (reaches the user).
-- **Stop**: re-checks every file the session touched; findings → `additionalContext`
-  "attempt N of 7"; the 8th stop emits `✗ gave up after 7 attempts` and lets the turn end.
-  Claude Code itself ends a turn after 8 consecutive Stop continuations.
+- **Stop**: re-fixes, re-formats and re-checks every file the session touched; findings →
+  `additionalContext` "attempt N of 7". It gives up, with a message to the user, after 7
+  attempts or as soon as the findings are unchanged since the previous attempt (Claude asked
+  the user, or cannot fix what is left), and then forgets those files until they are edited
+  again, so the next turn is not pushed into the same loop. The report is capped at 8,000
+  characters (Claude Code keeps 10,000 of `additionalContext`). Claude Code itself ends a turn
+  after 8 consecutive Stop continuations.
+- **Claude sees what it must act on**: a missing Ruff and a file the hook rewrote reach
+  Claude through `additionalContext` as well as the user's `systemMessage`, which Claude
+  never sees. A file the project excludes is reported as not checked, never as clean.
 - **`if` twins** `[observed]`: in a hook `if`, `Edit(P)` fires for the Edit tool only and
   `Write(P)` for the Write tool only (probe plugin, Claude Code 2.1.278, 2026-09-22; unlike
   permission rules, where `Edit` covers every file-editing tool). Every file condition
@@ -85,7 +94,7 @@ Linux, WSL, Windows with Git Bash. Not Cowork (hooks may not run there).
 | --- | --- | --- |
 | Ruff missing | One `systemMessage` per session with install routes; nothing checked | Open |
 | jq missing | Same, naming jq | Open |
-| Ruff exits 2 (bad config, `required-version`, unparsable file) | Reported as a tool break, not as findings; Claude is told to fix the cause | Open for the edit, reported |
+| Ruff exits 2 (bad config, `required-version`, unparsable file) | Reported as a tool break, not as findings; Claude is told to tell the user, and Stop never continues on it | Open for the edit, reported |
 | Findings after an edit | `block` + findings to Claude | Closed on the file (Claude must act) |
 | Findings at Stop | Up to 7 continuations, then a failure message | Closed, bounded |
 | Suppression or config change | `ask`; in `-p` mode nobody answers, so it is refused | Closed pending the user |
@@ -95,7 +104,7 @@ Linux, WSL, Windows with Git Bash. Not Cowork (hooks may not run there).
 ## Verification
 
 - Suite `scripts/plugin_validation/suites/ruff-quality/test-gate.sh`, run by `make test-slow`
-  under `bash` and `/bin/bash`: 51 cases, both directions (suppression asks vs plain edit
+  under `bash` and `/bin/bash`: 75 cases, both directions (suppression asks vs plain edit
   silent; config asks vs other `pyproject` table silent; fix, findings, tool break, Stop 7+1,
   missing tool, switch off).
 - Static gates: H1–H7 and B1 in `make validate`; `claude plugin validate --strict` in

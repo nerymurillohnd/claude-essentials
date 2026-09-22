@@ -48,8 +48,12 @@ was measured to be silently replaced by any nearer `.shellcheckrc` or by `~/.she
   support zsh.
 - `SHELLCHECK_OPTS` is respected as the user's configuration and named in every report, since
   it survives `--norc` and can exclude codes.
-- Stop, `if` twins (H7), tool resolution, state and the `enabled` switch are identical to
-  ruff-quality.
+- An `.editorconfig` `shell_variant` the script is not written in makes shfmt fail "via
+  EditorConfig": that is a configuration error (reported, never looped on), unlike a real
+  parse error, which is Claude's to fix.
+- Stop (progress-based, forgets after giving up, capped report), marker-text comparison of
+  directives, `if` twins (H7), tool resolution, state and the `enabled` switch are identical
+  to ruff-quality.
 
 ## Requirements
 
@@ -83,7 +87,7 @@ Git Bash. Not Cowork.
 ## Verification
 
 - Suite `scripts/plugin_validation/suites/shell-quality/test-gate.sh` under `bash` and
-  `/bin/bash`: 40 cases plus 1 skip on machines where the tools sit at a fixed fallback path
+  `/bin/bash`: 61 cases plus 1 skip on machines where the tools sit at a fixed fallback path
   (the missing-tool case cannot hide them there).
 - Static gates: H1–H7, B1, `claude plugin validate --strict`.
 - Live `[observed]`, 2026-09-22, Claude Code 2.1.278, `claude -p --plugin-dir`: Write of

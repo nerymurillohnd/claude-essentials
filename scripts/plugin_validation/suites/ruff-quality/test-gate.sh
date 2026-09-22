@@ -127,7 +127,35 @@ fire guard Edit s1 false
 expect_silent "a plain edit is not questioned"
 mk_edit "${proj}/pkg/a.py" 'import os  # noqa: F401' 'import os  # noqa: F401, E501'
 fire guard Edit s1 false
-expect_silent "editing an existing noqa line without adding one is not questioned"
+expect_ask "widening a noqa with another code asks"
+expect_in "the question names the widened marker" "${REASON}" "# noqa: f401, e501"
+mk_edit "${proj}/pkg/a.py" 'import os  # noqa: F401' 'import sys  # noqa: F401'
+fire guard Edit s1 false
+expect_silent "editing a line that keeps the same noqa is not questioned"
+mk_edit "${proj}/pkg/a.py" 'import os  # noqa: F401' 'import os  # noqa'
+fire guard Edit s1 false
+expect_ask "turning a coded noqa into a bare noqa asks"
+mk_edit "${proj}/pkg/a.py" 'import os' '# flake8: noqa
+import os'
+fire guard Edit s1 false
+expect_ask "a file-level flake8: noqa asks"
+mk_edit "${proj}/pkg/a.py" 'import os' 'import os  # ruff: ignore[F401]'
+fire guard Edit s1 false
+parse
+expect_in "the question names the marker actually added" "${REASON}" "# ruff: ignore[f401]"
+printf 'import os  # noqa: F401\nx = 1\n' >"${proj}/pkg/w.py"
+mk_write "${proj}/pkg/w.py" "$(printf 'import os  # noqa: F401\nx = 2')"
+fire guard Write s1 false
+expect_silent "rewriting a file that keeps its existing noqa is not questioned"
+mk_edit "${proj}/pkg/w.py" 'import os  # noqa: F401' 'import os  # noqa: F401
+import sys  # noqa: F401'
+fire guard Edit s1 false
+expect_ask "adding a second copy of an existing noqa asks"
+chmod 000 "${proj}/pkg/w.py"
+mk_write "${proj}/pkg/w.py" "$(printf 'import os  # noqa: F401\nx = 3')"
+fire guard Write s1 false
+expect_ask "a file the hook cannot read is compared with nothing, so a marker asks"
+chmod 644 "${proj}/pkg/w.py"
 INPUT=$(jq -cn --arg f "${proj}/pkg/a.py" '{file_path: $f, edits: [{old_string: "import a  # noqa: F401", new_string: "import a"}, {old_string: "y = 2", new_string: "y = 2  # noqa: F841"}]}') || INPUT=""
 fire guard Edit s1 false
 expect_ask "a batch that removes one noqa and adds another still asks"
@@ -150,6 +178,15 @@ expect_ask "changing [tool.ruff] in pyproject.toml asks"
 mk_edit "${proj}/pyproject.toml" 'name = "p"' 'name = "q"'
 fire guard Edit s1 false
 expect_silent "changing another pyproject table is not questioned"
+printf '[project]\nname = "p"\n\n[tool]\nruff.line-length = 88\n' >"${proj}/pyproject.toml"
+mk_edit "${proj}/pyproject.toml" 'ruff.line-length = 88' 'ruff.lint.ignore = ["F401"]'
+fire guard Edit s1 false
+expect_ask "a dotted ruff key under [tool] asks"
+mk_edit "${proj}/pyproject.toml" '[tool]' '[tool]
+ruff.lint.select = ["F"]'
+fire guard Edit s1 false
+expect_ask "adding a dotted ruff key under [tool] asks"
+rm -f "${proj}/pyproject.toml"
 mk_bash 'sed -i "" "s/x/x  # noqa/" pkg/a.py'
 fire guard Bash s1 false
 expect_ask "a Bash write of noqa asks"
@@ -165,6 +202,12 @@ expect_ask "a Bash write to ruff.toml asks"
 mk_bash 'ls -la'
 fire guard Bash s1 false
 expect_silent "an ordinary command is not questioned"
+mk_bash 'grep -rn "# noqa" src 2>/dev/null'
+fire guard Bash s1 false
+expect_silent "a stderr redirect is not a write"
+mk_bash 'ruff check --statistics . 2>&1 | head; cat pyproject.toml'
+fire guard Bash s1 false
+expect_silent "reading pyproject.toml after 2>&1 is not a configuration write"
 mk_bash 'grep -rn noqa .'
 fire guard Bash s1 false
 expect_silent "reading noqa without writing is not questioned"
@@ -177,6 +220,7 @@ mk_edit "${proj}/pkg/fixable.py" '' ''
 fire post Edit s2 false
 parse
 expect_in "a fixable file reports success" "${MESSAGE}" "fixed and formatted"
+expect_in "Claude is told to re-read a file the hook rewrote" "${CONTEXT}" "re-read"
 file_is "F541 fixed and spacing formatted" "${proj}/pkg/fixable.py" 'x = "abc"'
 
 printf 'import os\n' >"${proj}/pkg/fresh.py"
@@ -220,6 +264,30 @@ mk_edit "${proj}/pkg/gui.pyw" '' ''
 fire post Edit s2 false
 file_is ".pyw is formatted too" "${proj}/pkg/gui.pyw" "x = 1"
 
+mkdir -p "${proj}/gen"
+printf 'extend-exclude = ["gen"]\n' >"${proj}/ruff.toml"
+printf 'import os\nprint(undefined_name)\n' >"${proj}/gen/g.py"
+mk_edit "${proj}/gen/g.py" '' ''
+fire post Edit s2x false
+parse
+expect_in "an excluded file is reported as not checked" "${MESSAGE}" "excluded"
+if [[ ${MESSAGE} == *clean* ]]; then bad "an excluded file is never called clean" "${MESSAGE}"; else ok; fi
+INPUT='{}'
+fire stop '' s2x false
+expect_silent "an excluded file is not re-checked at Stop"
+rm -rf "${proj}/ruff.toml" "${proj}/gen"
+
+: >"${proj}/pkg/many.py"
+i=0
+while ((i < 90)); do
+  printf 'print(undefined_%d)\n' "${i}" >>"${proj}/pkg/many.py"
+  i=$((i + 1))
+done
+mk_edit "${proj}/pkg/many.py" '' ''
+fire post Edit s2y false
+parse
+expect_in "a long report says it was cut" "${BLOCK}" "first 60 of 90"
+
 # ----------------------------------------------------------------- stop ---
 
 new_project
@@ -234,20 +302,33 @@ expect_in "Stop names the finding" "${CONTEXT}" "F821"
 expect_in "the user sees the attempt count" "${MESSAGE}" "(1/7)"
 attempt=2
 while ((attempt <= 7)); do
+  printf 'print(undefined_%d)\n' "${attempt}" >"${proj}/pkg/broken.py" # Claude changed something
   fire stop '' s3 true
   attempt=$((attempt + 1))
 done
 parse
 expect_in "the seventh attempt still continues" "${CONTEXT}" "attempt 7 of 7"
+printf 'print(undefined_8)\n' >"${proj}/pkg/broken.py"
 fire stop '' s3 true
 parse
 if [[ -z ${CONTEXT} ]]; then ok; else bad "the eighth stop does not continue" "${OUT}"; fi
 expect_in "the eighth stop tells the user it gave up" "${MESSAGE}" "gave up after 7 attempts"
 expect_in "the failure names the file" "${MESSAGE}" "pkg/broken.py"
+fire stop '' s3 false
+expect_silent "after giving up, the next turn does not start again on the same files"
 
+mk_edit "${proj}/pkg/broken.py" '' ''
+fire post Edit s3 false
 fire stop '' s3 false
 parse
-expect_in "a new turn starts counting again" "${CONTEXT}" "attempt 1 of 7"
+expect_in "a new edit re-arms the gate" "${CONTEXT}" "attempt 1 of 7"
+fire stop '' s3 true
+parse
+if [[ -z ${CONTEXT} ]]; then ok; else bad "a retry with no change does not continue" "${OUT}"; fi
+expect_in "no progress ends with a message to the user" "${MESSAGE}" "no change"
+
+mk_edit "${proj}/pkg/broken.py" '' ''
+fire post Edit s3 false
 printf 'print("fixed")\n' >"${proj}/pkg/broken.py"
 fire stop '' s3 true
 parse
@@ -256,6 +337,22 @@ fire stop '' s3 false
 expect_silent "after success nothing is left to report"
 fire stop '' s-none false
 expect_silent "a session that touched no Python stays silent"
+
+for n in 1 2 3 4 5; do
+  : >"${proj}/pkg/big${n}.py"
+  i=0
+  while ((i < 60)); do
+    printf 'print(an_undefined_name_that_is_rather_long_%d_%d)\n' "${n}" "${i}" >>"${proj}/pkg/big${n}.py"
+    i=$((i + 1))
+  done
+  mk_edit "${proj}/pkg/big${n}.py" '' ''
+  fire post Edit s3b false
+done
+INPUT='{}'
+fire stop '' s3b false
+parse
+if ((${#CONTEXT} <= 9500)); then ok; else bad "the Stop report stays under Claude Code's 10,000-character cap" "${#CONTEXT} characters"; fi
+expect_in "a capped report says how to see the rest" "${CONTEXT}" "ruff check"
 
 # ------------------------------------------------------ trust boundaries ---
 
@@ -312,6 +409,7 @@ mk_edit "${proj}/pkg/a.py" '' ''
 fire post Edit s4 false PATH="${work}/minimal"
 parse
 expect_in "without Ruff the user is told how to install it" "${MESSAGE}" "Ruff is not installed"
+expect_in "without Ruff Claude is told too" "${CONTEXT}" "Ruff is not installed"
 if [[ ${RC} -eq 0 && -z ${BLOCK} ]]; then ok; else bad "without Ruff nothing is blocked" "${OUT}"; fi
 fire post Edit s4 false PATH="${work}/minimal"
 expect_silent "the missing-Ruff notice is shown once per session"

@@ -108,7 +108,7 @@ None — this plugin ships one skill and no agents.
 | --- | --- | --- | --- |
 | `PreToolUse` | `Write\|Edit` on `.sh`, `.bash`, `.shellcheckrc`, `shellcheckrc`, `.editorconfig`; `Bash` | Asks you before an edit adds a suppression directive, changes `.shellcheckrc`, or changes the sections or shfmt keys of `.editorconfig`, and before a command writes one | No — it asks, never denies |
 | `PostToolUse` | `Write\|Edit` on `.sh`, `.bash` | `shfmt -w` (no style flags, so your EditorConfig decides), then `shellcheck -x` on the edited script; rewrites it | No (the edit already happened); findings left go to Claude |
-| `Stop` | — | Re-checks every script this session touched | Yes: keeps Claude working, at most 7 times; the 8th stop ends with a message listing what still fails |
+| `Stop` | — | Re-formats and re-checks every script this session touched | Yes: keeps Claude working while the findings change, at most 7 times; then a message lists what still fails and those scripts are left alone until edited again |
 
 The handler is [`hooks/shell-gate.sh`](hooks/shell-gate.sh). It runs the first
 shfmt and ShellCheck it finds: the project's own (`.venv/bin/` or `venv/bin/` between
@@ -117,7 +117,8 @@ then `~/.local/bin`, `/opt/homebrew/bin` and `/usr/local/bin`. Each tool then fi
 your configuration as it always does: ShellCheck the nearest `.shellcheckrc`, then
 `~/.shellcheckrc`, then `$XDG_CONFIG_HOME/shellcheckrc`, plus `SHELLCHECK_OPTS`,
 which every report names when it is set; shfmt the `.editorconfig` files above the
-script. Every result is one line for you (`shell-quality ✓ …` or `✗ …`). Per-session
+script. Every result reaches you as one `shell-quality` line (see [Examples](#-examples)), and
+Claude is told when shfmt rewrote a script so it re-reads it. Per-session
 state (the scripts touched and the Stop count) lives in `${CLAUDE_PLUGIN_DATA}` and
 is pruned after 7 days.
 
@@ -200,22 +201,22 @@ the repository, not in the plugin, so it is never installed.
 **What Claude sees after an edit**
 
 ```text
-shell-quality: deploy.sh still fails after formatting. Fix each finding in the script (read a code's explanation at https://www.shellcheck.net/wiki/SC<code>); a # shellcheck disable= directive or a configuration change is not a fix and needs the user's confirmation. Findings:
-deploy.sh:5:4: note: Double quote to prevent globbing and word splitting. [SC2086]
+shell-quality: bin/deploy.sh still fails ShellCheck after formatting (the hook may have rewritten it; re-read it first). Fix each finding in the script (read a code's explanation at https://www.shellcheck.net/wiki/SC<code>); a # shellcheck disable= directive or a configuration change is not a fix and needs the user's confirmation. Findings:
+bin/deploy.sh:3:6: note: Double quote to prevent globbing and word splitting. [SC2086]
 ```
 
 **What you see**
 
 ```text
-shell-quality: deploy.sh has findings left; Claude is fixing them
-shell-quality ✓ deploy.sh: clean
+shell-quality: bin/deploy.sh has findings left; Claude is fixing them
+shell-quality: 1 shell script(s) still fail; Claude keeps working (1/7)
 shell-quality ✓ 1 shell script(s) touched this session pass shfmt and ShellCheck
 ```
 
 **When Claude reaches for a directive**
 
 ```text
-shell-quality: Claude wants to add a ShellCheck suppression (# shellcheck disable=... or source=/dev/null) to deploy.sh. Allow it only if you want that finding silenced instead of fixed.
+shell-quality: Claude wants to add or widen a ShellCheck directive in bin/deploy.sh: # shellcheck disable=sc2086. Allow it only if you want that finding silenced instead of fixed.
 ```
 
 ## 🔐 Security
@@ -241,11 +242,12 @@ shell-quality: Claude wants to add a ShellCheck suppression (# shellcheck disabl
 | Only `.sh` and `.bash` files are checked | No `shell-quality` line for an extensionless script or a `.bats` file | Ask Claude to run ShellCheck on it; the `shell-lint` skill covers it |
 | zsh scripts are skipped | `shell-quality: … is a zsh script; ShellCheck does not support zsh …` | Review zsh scripts another way |
 | Files written through `Bash` (`sed`, heredocs) are not checked after the command | No `shell-quality` line for that file | The guard still asks before a Bash command writes a directive; ask Claude to edit with its file tools |
-| `SHELLCHECK_OPTS` in your environment applies, including any `-e` exclusions | Every report ends with `(SHELLCHECK_OPTS=… applies)` | Unset it, or move what you want into `.shellcheckrc` |
-| The Bash guard is textual | A directive hidden inside a script Claude writes and then runs is not caught up front | Review what Claude runs; the script's own edits are still checked |
+| `SHELLCHECK_OPTS` in your environment applies, including any `-e` exclusions | Every report says `(SHELLCHECK_OPTS=… applies)` | Unset it, or move what you want into `.shellcheckrc` |
+| The Bash guard is textual | It asks only for commands with a visible write (`>`, `tee`, `sed -i`, heredocs); `cp`, `mv`, `rm` or a script Claude writes and runs are not caught | Review what Claude runs; the script's own edits through Write and Edit are still checked |
 | ShellCheck or shfmt not installed | `shell-quality: … not installed …`, once per session; nothing is checked | Install them in the project or globally |
 | `jq` not installed | `shell-quality: jq is not installed …`, once per session; nothing is checked | Install `jq` |
-| Stop limit reached | `shell-quality ✗ gave up after 7 attempts …` with the scripts and findings | Fix what is listed, or ask Claude to continue |
+| Stop limit reached, or no change between two attempts | `shell-quality ✗ gave up after 7 attempts …` or `… with no change since the last attempt …`, with the findings | Fix what is listed or ask Claude to; the hook leaves those scripts alone until they are edited again |
+| Your `.editorconfig` sets a `shell_variant` the script is not written in | `… could not be checked … a tool or configuration error` | Fix `.editorconfig` (a `[[bash]]` section, or `shell_variant = auto`); Claude does not rewrite a correct script to fit it |
 | Hook timeout (10 s guard, 60 s post, 120 s Stop) | The call proceeds without the hook's answer | Measured runs take well under a second per script; report very slow projects |
 | Cowork | Hooks may not run | Use Claude Code |
 | Passing ShellCheck is not proof of correctness | — | Tests and review still apply |

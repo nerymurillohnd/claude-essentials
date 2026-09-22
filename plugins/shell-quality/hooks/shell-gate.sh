@@ -8,9 +8,10 @@
 #   shell-gate.sh post   PostToolUse: on the edited .sh/.bash file, formats with
 #                        shfmt, checks with ShellCheck, and hands what is left to
 #                        Claude.
-#   shell-gate.sh stop   Stop: re-checks every script this session touched and
-#                        keeps Claude working up to MAX_BLOCKS times; the next
-#                        stop ends with a failure message to the user.
+#   shell-gate.sh stop   Stop: re-formats and re-checks every script this session
+#                        touched and keeps Claude working while the findings change,
+#                        up to MAX_BLOCKS times; then it tells the user what still
+#                        fails and forgets those scripts until they are edited again.
 #
 # Both tools find their own configuration: ShellCheck the nearest .shellcheckrc,
 # then ~/.shellcheckrc, then $XDG_CONFIG_HOME/shellcheckrc, plus SHELLCHECK_OPTS;
@@ -22,6 +23,7 @@ set -u
 readonly TAG="shell-quality"
 readonly MAX_BLOCKS=7
 readonly MAX_LINES=60
+readonly MAX_REPORT=8000 # Claude Code keeps at most 10,000 characters of additionalContext
 readonly SUPP_RE='#[[:space:]]*shellcheck[[:space:]]+([a-z-]+=[^[:space:]]+[[:space:]]+)*(disable=|source=/dev/null)'
 readonly EC_KEYS_RE='^[[:space:]]*(\[|root|indent_style|indent_size|shell_variant|language_dialect|binary_next_line|switch_case_indent|case_indent|space_redirects|keep_padding|function_next_line|block_next_line|simplify|minify|ignore)'
 readonly WRITE_RE='(>|[[:space:]]tee[[:space:]]|sed[[:space:]]+-[a-zA-Z]*i|perl[[:space:]]+-[a-zA-Z]*i|<<)'
@@ -78,6 +80,10 @@ say_user() { # systemMessage: shown to the user
   fi
 }
 
+tell_both() { # tell_both EVENT TEXT: the user sees it, and Claude gets it as context
+  jq -cn --arg e "$1" --arg m "$2" '{systemMessage: $m, hookSpecificOutput: {hookEventName: $e, additionalContext: $m}}'
+}
+
 ask() {
   jq -cn --arg r "${TAG}: $1" \
     '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "ask", permissionDecisionReason: $r}}'
@@ -100,44 +106,51 @@ file=$(field '.tool_input.file_path')
 [[ -n ${file} && ${file} != /* ]] && file="${cwd%/}/${file}"
 
 is_shell() { case $1 in *.sh | *.bash) return 0 ;; *) return 1 ;; esac }
-count_supp() { # how many suppression directives a text carries
-  local found n
-  found=$(grep -oE "${SUPP_RE}" <<<"$1") || found=""
-  n=0
-  [[ -n ${found} ]] && n=$(wc -l <<<"${found}")
-  printf '%d' "${n}"
-}
+# A command with its harmless redirects (2>&1, >/dev/null) removed, so they are not taken for
+# writes.
+write_view() { sed -E 's/[0-9]*>&[0-9]+//g; s/[0-9]*>+[[:space:]]*\/dev\/null//g' <<<"$1"; }
 ec_view() { grep -E "${EC_KEYS_RE}" <<<"$1" || true; } # the lines that decide shfmt style
 rel() { case $1 in "${cwd%/}"/*) printf '%s' "${1#"${cwd%/}"/}" ;; *) printf '%s' "$1" ;; esac }
 
-# Whether the edit adds a suppression. Write compares the new content with the file on
-# disk. Edit compares each replacement with its own old_string, so removing a marker in
-# one replacement never offsets adding one in another.
-adds_suppression() { # adds_suppression NEW OLD (Write: content, current file)
-  local grows added removed
-  if [[ ${tool} == Write ]]; then
-    added=$(count_supp "$1")
-    removed=$(count_supp "$2")
-    ((added > removed))
-    return
+# The directives an edit adds, one per line, each from `# shellcheck` to the end of its line,
+# lower-cased. Write compares the new content with the file on disk; Edit compares each
+# replacement with its own old_string. A directive whose text changes (another code,
+# `disable=all`) counts as added, and removing one in a replacement never offsets adding one
+# in another.
+added_markers() {
+  local disk=/dev/null out
+  # A file the hook cannot read is compared with nothing, so any marker in the edit asks.
+  [[ ${tool} == Write && -f ${file} && -r ${file} ]] && disk=${file}
+  if out=$(jq -r --arg re "${SUPP_RE}" --arg tool "${tool}" --rawfile disk "${disk}" '
+    def markers: split("\n") | map(select(test($re)) | (match($re).offset) as $o
+      | .[$o:] | ascii_downcase | gsub("[[:space:]]+"; " ") | sub(" $"; ""));
+    def counts: reduce .[] as $m ({}; .[$m] += 1);
+    .tool_input
+    | if $tool == "Write" then [{n: (.content // ""), o: $disk}]
+      else [(.edits // [.])[] | {n: (.new_string // ""), o: (.old_string // "")}] end
+    | map((.o | markers | counts) as $old | .n | markers | counts
+      | to_entries | map(select(.value > ($old[.key] // 0)) | .key))
+    | add // [] | unique | .[]' <<<"${payload}" 2>/dev/null); then
+    printf '%s' "${out}"
+    return 0
   fi
-  grows=$(jq -r --arg re "${SUPP_RE}" \
-    '[.tool_input | (.edits // [.])[] | [(.new_string // ""), (.old_string // "")] | map([scan($re)] | length) | .[0] > .[1]] | any' \
-    <<<"${payload}" 2>/dev/null) || grows=false
-  [[ ${grows} == true ]]
+  # jq could not compare: fail toward asking whenever the payload carries a marker at all.
+  grep -qE "${SUPP_RE}" <<<"${payload}" && printf '%s' "a suppression marker (the hook could not compare it with the file)"
+  return 0
 }
 
 # ------------------------------------------------------------------ guard ---
 
 do_guard() {
   if [[ ${tool} == Bash ]]; then
-    local cmd
+    local cmd writes
     cmd=$(field '.tool_input.command')
-    if [[ ${cmd} =~ ${WRITE_RE} ]]; then
-      grep -qE "${SUPP_RE}" <<<"${cmd}" &&
-        ask "Claude wants to run a command that writes a ShellCheck suppression. Allow it only if you want that finding silenced instead of fixed."
-      [[ ${cmd} =~ (shellcheckrc|\.editorconfig) ]] &&
-        ask "Claude wants to run a command that writes to .shellcheckrc or .editorconfig. Allow it only if you want this configuration change."
+    writes=$(write_view "${cmd}")
+    if [[ ${writes} =~ ${WRITE_RE} ]]; then
+      grep -qE "${SUPP_RE}" <<<"${writes}" &&
+        ask "Claude wants to run a command that may write a ShellCheck suppression. Allow it only if you want that finding silenced instead of fixed."
+      [[ ${writes} =~ (shellcheckrc|\.editorconfig) ]] &&
+        ask "Claude wants to run a command that may write to .shellcheckrc or .editorconfig. Allow it only if you want this configuration change."
     fi
     exit 0
   fi
@@ -158,12 +171,15 @@ do_guard() {
     before=$(ec_view "${old}")
     after=$(ec_view "${new}")
     [[ ${before} == "${after}" ]] ||
-      ask "Claude wants to change sections or shfmt keys (indent, language_dialect, binary_next_line, case_indent, space_redirects, function_next_line, simplify and others) in ${where}. Allow it only if you want this formatting change."
+      ask "Claude wants to change the sections or shfmt keys of ${where} (indentation, shell_variant, binary_next_line, switch_case_indent, space_redirects and the others shfmt reads, including names newer shfmt releases use). Allow it only if you want this formatting change."
     ;;
   *)
     is_shell "${file}" || exit 0
-    adds_suppression "${new}" "${old}" &&
-      ask "Claude wants to add a ShellCheck suppression (# shellcheck disable=... or source=/dev/null) to ${where}. Allow it only if you want that finding silenced instead of fixed."
+    local added
+    added=$(added_markers) || added=""
+    added=$(awk 'NR > 1 { printf "; " } { printf "%s", $0 }' <<<"${added}")
+    [[ -n ${added} ]] &&
+      ask "Claude wants to add or widen a ShellCheck directive in ${where}: ${added}. Allow it only if you want that finding silenced instead of fixed."
     ;;
   esac
   exit 0
@@ -209,7 +225,7 @@ missing_tools() {
   [[ -n ${SHFMT} ]] || which="shfmt"
   [[ -n ${SHELLCHECK} ]] || which="${which:+${which} and }ShellCheck"
   first_time notools &&
-    say_user "${TAG}: ${which} not installed in this project or on PATH, so shell scripts are not being checked. Install them (brew install shellcheck shfmt, apt install shellcheck shfmt, or add shellcheck-py and shfmt-py to the project's dev dependencies)."
+    tell_both PostToolUse "${TAG}: ${which} not installed in this project or on PATH, so shell scripts are not being checked. Install them (brew install shellcheck shfmt, apt install shellcheck shfmt, or add shellcheck-py and shfmt-py to the project's dev dependencies); Claude does not install them unasked."
   exit 0
 }
 
@@ -218,17 +234,19 @@ opts_note() { [[ -n ${SHELLCHECK_OPTS:-} ]] && printf ' (SHELLCHECK_OPTS=%s appl
 FINDINGS=""
 CHANGED=0
 # First MAX_LINES non-empty lines of a tool's report, with the script's absolute path at
-# the start of a line shortened to the project-relative one. ShellCheck runs from the
-# script's directory so `source` resolves as it does at run time, and both tools print
-# the path they were given. awk keeps this linear on long reports.
+# the start of a line shortened to the project-relative one, saying so when there were more.
+# ShellCheck runs from the script's directory so `source` resolves as it does at run time,
+# and both tools print the path they were given. awk keeps this linear on long reports.
 trim_findings() { # trim_findings FILE TEXT
   local short
   short=$(rel "$1")
-  awk -v max="${MAX_LINES}" -v abs="$1:" -v short="${short}:" \
-    'NF { if (index($0, abs) == 1) $0 = short substr($0, length(abs) + 1); print; if (++n >= max) exit }' <<<"$2"
+  awk -v max="${MAX_LINES}" -v abs="$1:" -v short="${short}:" -v file="${short}" '
+    NF { if (index($0, abs) == 1) $0 = short substr($0, length(abs) + 1); total++; if (total <= max) print }
+    END { if (total > max) printf "... first %d of %d lines shown; run `shellcheck -x -f gcc` on %s from its directory for the rest\n", max, total, file }' <<<"$2"
 }
 
-# Format and check one script. Returns 0 clean, 1 findings, 2 cannot be checked, 3 zsh.
+# Format and check one script. Returns 0 clean, 1 findings, 2 cannot be checked (a tool or
+# configuration error), 3 zsh, 4 shfmt could not parse it (Claude's edit broke the syntax).
 correct() {
   local f=$1 before after out rc first
   first=$(head -n 1 "${f}" 2>/dev/null) || first=""
@@ -239,9 +257,15 @@ correct() {
   after=$(cksum <"${f}" 2>/dev/null)
   [[ ${before} == "${after}" ]] || CHANGED=1
   if ((rc != 0)); then
-    FINDINGS=$(trim_findings "${f}" "shfmt could not parse the script:
+    if [[ ${out} == *"via EditorConfig"* ]]; then
+      # The project's EditorConfig names a dialect the script is not written in: that is
+      # configuration for the user to settle, not a defect in the script.
+      FINDINGS=$(trim_findings "${f}" "shfmt rejected the script under the dialect the project's .editorconfig sets:
 ${out}")
-    return 1
+      return 2
+    fi
+    FINDINGS=$(trim_findings "${f}" "${out}")
+    return 4
   fi
   out=$(cd "${f%/*}" && "${SHELLCHECK}" -x -f gcc -- "${f}" 2>&1)
   rc=$?
@@ -264,10 +288,21 @@ do_post() {
   rc=$?
   case ${rc} in
   0)
-    if ((CHANGED)); then say_user "${TAG} ✓ ${r}: formatted, ShellCheck clean${note}"; else say_user "${TAG} ✓ ${r}: clean${note}"; fi
+    if ((CHANGED)); then
+      jq -cn --arg m "${TAG} ✓ ${r}: formatted, ShellCheck clean${note}" \
+        --arg c "${TAG}: shfmt rewrote ${r} after your edit; re-read it before editing it again." \
+        '{systemMessage: $m, hookSpecificOutput: {hookEventName: "PostToolUse", additionalContext: $c}}'
+    else
+      say_user "${TAG} ✓ ${r}: clean${note}"
+    fi
+    ;;
+  4)
+    jq -cn --arg r "${TAG}: shfmt could not parse ${r} after your edit; fix the syntax. Its message:
+${FINDINGS}" --arg m "${TAG}: ${r} does not parse; Claude is fixing it" \
+      '{decision: "block", reason: $r, systemMessage: $m}'
     ;;
   1)
-    jq -cn --arg r "${TAG}: ${r} still fails after formatting${note}. Fix each finding in the script (read a code's explanation at https://www.shellcheck.net/wiki/SC<code>); a # shellcheck disable= directive or a configuration change is not a fix and needs the user's confirmation. Findings:
+    jq -cn --arg r "${TAG}: ${r} still fails ShellCheck after formatting${note} (the hook may have rewritten it; re-read it first). Fix each finding in the script (read a code's explanation at https://www.shellcheck.net/wiki/SC<code>); a # shellcheck disable= directive or a configuration change is not a fix and needs the user's confirmation. Findings:
 ${FINDINGS}" --arg m "${TAG}: ${r} has findings left; Claude is fixing them" \
       '{decision: "block", reason: $r, systemMessage: $m}'
     ;;
@@ -275,8 +310,8 @@ ${FINDINGS}" --arg m "${TAG}: ${r} has findings left; Claude is fixing them" \
     say_user "${TAG}: ${r} is a zsh script; ShellCheck does not support zsh, so it was not checked"
     ;;
   *)
-    jq -cn --arg r "${TAG}: ShellCheck could not check ${r} (exit ${rc}). This is a tool or configuration error, not a finding; tell the user what it says:
-${FINDINGS}" --arg m "${TAG}: ShellCheck failed on ${r} (exit ${rc})" \
+    jq -cn --arg r "${TAG}: ${r} could not be checked (exit ${rc}). This is a tool or configuration error, not a finding in the script; tell the user what it says and do not change the script to work around it:
+${FINDINGS}" --arg m "${TAG}: ${r} could not be checked (exit ${rc}); a tool or configuration error" \
       '{decision: "block", reason: $r, systemMessage: $m}'
     ;;
   esac
@@ -288,10 +323,14 @@ ${FINDINGS}" --arg m "${TAG}: ShellCheck failed on ${r} (exit ${rc})" \
 do_stop() {
   [[ -n ${STATE_DIR} ]] || exit 0
   local list="${STATE_DIR}/${SESSION}.files" blocks_file="${STATE_DIR}/${SESSION}.blocks"
+  local last_file="${STATE_DIR}/${SESSION}.last"
   [[ -s ${list} ]] || exit 0
-  local active blocks=0 f r rc report="" bad=0 checked=0 files note broken="" bnote=""
+  local active blocks=0 f r rc report="" bad=0 checked=0 files note broken="" bnote="" last="" now
   active=$(field '.stop_hook_active')
-  [[ ${active} == true && -f ${blocks_file} ]] && blocks=$(cat "${blocks_file}" 2>/dev/null)
+  if [[ ${active} == true && -f ${blocks_file} ]]; then
+    blocks=$(cat "${blocks_file}" 2>/dev/null)
+    [[ -f ${last_file} ]] && last=$(cat "${last_file}" 2>/dev/null)
+  fi
   [[ ${blocks} =~ ^[0-9]+$ ]] || blocks=0
   note=$(opts_note)
   files=$(sort -u "${list}")
@@ -303,10 +342,9 @@ do_stop() {
     ((rc == 3)) && continue
     checked=$((checked + 1))
     r=$(rel "${f}")
-    if ((rc == 1)); then
+    if ((rc == 1 || rc == 4)); then
       bad=$((bad + 1))
-      report="${report}${r}:
-${FINDINGS}
+      report="${report}${FINDINGS}
 "
     elif ((rc != 0)); then
       # A tool or configuration error is the user's to fix: reported, never a reason to
@@ -319,8 +357,13 @@ ${FINDINGS}
   [[ -n ${broken} ]] && bnote="
 ${TAG}: ShellCheck could not check these scripts (a tool or configuration error, not a finding)${note}:
 ${broken}"
+  if ((${#report} > MAX_REPORT)); then
+    report="${report:0:MAX_REPORT}
+... report cut at ${MAX_REPORT} characters; run \`shellcheck -x -f gcc\` on the scripts above for the rest
+"
+  fi
   if ((bad == 0)); then
-    rm -f "${blocks_file}"
+    rm -f "${blocks_file}" "${last_file}"
     if [[ -n ${broken} ]]; then
       say_user "${TAG} ✗${bnote#*"${TAG}:"}"
     else
@@ -329,15 +372,22 @@ ${broken}"
     fi
     exit 0
   fi
-  if ((blocks >= MAX_BLOCKS)); then
-    rm -f "${blocks_file}"
-    say_user "${TAG} ✗ gave up after ${MAX_BLOCKS} attempts: ${bad} shell script(s) still fail shfmt or ShellCheck${note}.
+  # Stop asking when Claude made no change since the last attempt (it asked the user, or it
+  # cannot fix what is left) or after MAX_BLOCKS attempts; then forget these scripts until
+  # they are edited again, so the next turn is not pushed back into the same loop.
+  now=$(printf '%s' "${report}" | cksum)
+  if ((blocks >= MAX_BLOCKS)) || { ((blocks > 0)) && [[ ${now} == "${last}" ]]; }; then
+    local why="after ${MAX_BLOCKS} attempts"
+    ((blocks < MAX_BLOCKS)) && why="with no change since the last attempt"
+    rm -f "${blocks_file}" "${last_file}" "${list}"
+    say_user "${TAG} ✗ gave up ${why}: ${bad} shell script(s) still fail shfmt or ShellCheck${note}.
 ${report}${bnote}"
     exit 0
   fi
   blocks=$((blocks + 1))
   printf '%s\n' "${blocks}" >"${blocks_file}"
-  jq -cn --arg c "${TAG}: you cannot finish yet (attempt ${blocks} of ${MAX_BLOCKS}). These scripts you changed still fail after formatting${note}. Fix each finding in the script; a # shellcheck disable= directive or a configuration change is not a fix and needs the user's confirmation.
+  printf '%s\n' "${now}" >"${last_file}"
+  jq -cn --arg c "${TAG}: you cannot finish yet (attempt ${blocks} of ${MAX_BLOCKS}). These scripts you changed still fail after formatting${note}. Fix each finding in the script; a # shellcheck disable= directive or a configuration change is not a fix and needs the user's confirmation. If a finding needs the user's decision, ask them and end your turn: when nothing changes between two attempts, the hook stops asking.
 ${report}" --arg m "${TAG}: ${bad} shell script(s) still fail; Claude keeps working (${blocks}/${MAX_BLOCKS})${bnote}" \
     '{systemMessage: $m, hookSpecificOutput: {hookEventName: "Stop", additionalContext: $c}}'
   exit 0
