@@ -62,6 +62,10 @@ REQUIRED: Final[Mapping[str, object]] = {
     "ruff.codeAction.fixViolation": {"enable": True},
     "ruff.codeAction.disableRuleComment": {"enable": False},
     # Shell: ShellCheck reads .shellcheckrc, shfmt reads .editorconfig.
+    # Bash IDE stays out of linting and formatting: ShellCheck and shfmt run from .venv through
+    # the two extensions below, and Bash IDE cannot point at .venv (no ${workspaceFolder}).
+    "bashIde.shellcheckPath": "",
+    "bashIde.shfmt.path": "",
     "shellcheck.enable": True,
     "shellcheck.run": "onSave",
     "shellcheck.useWorkspaceRootAsCwd": True,
@@ -142,8 +146,9 @@ UNWANTED_EXTENSIONS: Final[tuple[str, ...]] = (
     "ms-python.vscode-pylance",
     "biomejs.biome",
     "esbenp.prettier-vscode",
+    "mkhl.shfmt",
 )
-"""A second type checker and the two formatters this repository replaced."""
+"""A second type checker, the two formatters this repository replaced, and a second shfmt."""
 
 PYTHON_TAB_SIZE: Final = 4
 """What `.editorconfig` gives a `.py` file, so the editor and the formatter agree."""

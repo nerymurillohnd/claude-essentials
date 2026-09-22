@@ -20,6 +20,24 @@
     "ms-python.isort",
     "ms-python.flake8",
     "ms-python.pylint",
-    "ms-python.mypy-type-checker"
+    "ms-python.mypy-type-checker",
+    "mkhl.shfmt",
+    "astro-build.astro-vscode",
+    "svelte.svelte-vscode",
+    "bradlc.vscode-tailwindcss",
+    "ecmel.vscode-html-css",
+    "zignd.html-css-class-completion",
+    "christian-kohler.npm-intellisense",
+    "firsttris.vscode-jest-runner",
+    "vitest.explorer",
+    "ms-playwright.playwright",
+    "batisteo.vscode-django",
+    "wholroyd.jinja",
+    "haskell.haskell",
+    "haskell.language-haskell",
+    "redhat.java",
+    "rust-lang.rust-analyzer",
+    "mikestead.dotenv",
+    "openai.chatgpt"
   ]
 }

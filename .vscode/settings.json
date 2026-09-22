@@ -32,6 +32,8 @@
   "ruff.codeAction.disableRuleComment": {
     "enable": false
   },
+  "bashIde.shellcheckPath": "",
+  "bashIde.shfmt.path": "",
   "shellcheck.enable": true,
   "shellcheck.run": "onSave",
   "shellcheck.useWorkspaceRootAsCwd": true,
@@ -108,10 +110,10 @@
     "**/evals/results/**": true
   },
   "yaml.schemas": {
-    "schemas/github/issue-forms.schema.json": [
+    ".github/schemas/issue-forms.schema.json": [
       ".github/ISSUE_TEMPLATE/*.yml"
     ],
-    "schemas/github/issue-config.schema.json": [
+    ".github/schemas/issue-config.schema.json": [
       ".github/ISSUE_TEMPLATE/config.yml"
     ]
   },
@@ -135,7 +137,7 @@
     ".venv/**": true,
     ".claude-plugin/marketplace.json": true,
     "**/evals/results/**": true,
-    "schemas/github/**": true
+    ".github/schemas/**": true
   },
   "search.useIgnoreFiles": true,
   "editor.unicodeHighlight.invisibleCharacters": true,
