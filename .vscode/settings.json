@@ -108,10 +108,10 @@
     "**/evals/results/**": true
   },
   "yaml.schemas": {
-    ".github/schemas/issue-forms.schema.json": [
+    "schemas/github/issue-forms.schema.json": [
       ".github/ISSUE_TEMPLATE/*.yml"
     ],
-    ".github/schemas/issue-config.schema.json": [
+    "schemas/github/issue-config.schema.json": [
       ".github/ISSUE_TEMPLATE/config.yml"
     ]
   },
@@ -135,7 +135,7 @@
     ".venv/**": true,
     ".claude-plugin/marketplace.json": true,
     "**/evals/results/**": true,
-    ".github/schemas/**": true
+    "schemas/github/**": true
   },
   "search.useIgnoreFiles": true,
   "editor.unicodeHighlight.invisibleCharacters": true,

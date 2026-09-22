@@ -27,6 +27,7 @@ from scripts.common.plugins import (
     plugin_ids,
     repo_root,
     tracked_files,
+    working_files,
 )
 
 if TYPE_CHECKING:
@@ -137,6 +138,37 @@ def test_tracked_files_ignores_an_untracked_file(git_repo: Path) -> None:
     """The index is the source of truth, not the working tree."""
     _write(git_repo / "scratch.txt", "not added\n")
     assert "scratch.txt" not in tracked_files(git_repo)
+
+
+@pytest.mark.slow
+def test_working_files_adds_an_untracked_file(git_repo: Path) -> None:
+    """A linter has to see a file that is new but would be part of the next commit."""
+    _write(git_repo / "scratch.txt", "not added\n")
+    assert "scratch.txt" in working_files(git_repo)
+
+
+@pytest.mark.slow
+def test_working_files_skips_an_ignored_file(git_repo: Path) -> None:
+    """`--exclude-standard` keeps build output and caches out of the gate."""
+    _write(git_repo / ".gitignore", "ignored.txt\n")
+    _write(git_repo / "ignored.txt", "noise\n")
+    assert "ignored.txt" not in working_files(git_repo)
+
+
+@pytest.mark.slow
+def test_working_files_drops_a_deleted_tracked_file(git_repo: Path) -> None:
+    """Linting a path the index still lists but the tree no longer has would only crash."""
+    (git_repo / "README.md").unlink()
+    assert "README.md" not in working_files(git_repo)
+
+
+@pytest.mark.slow
+def test_working_files_filters_by_pathspec(git_repo: Path) -> None:
+    """The pathspec is the same `fnmatch` contract `tracked_files` uses."""
+    assert working_files(git_repo, "plugins/*/plugin.json") == [
+        "plugins/alpha/.claude-plugin/plugin.json",
+        "plugins/beta/.claude-plugin/plugin.json",
+    ]
 
 
 def test_plugin_ids_needs_the_manifest(tmp_path: Path) -> None:

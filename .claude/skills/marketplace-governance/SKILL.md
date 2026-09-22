@@ -18,6 +18,11 @@ loads any of it. The user-facing surface is `plugins/`.
 - A new file that fits no area means the taxonomy is wrong. Add the area, then the file.
 - Every area folder carries an `__init__.py`, as does `scripts/` itself, so imports are absolute and unambiguous.
 
+> [!NOTE]
+> The area headings and the tree below are the current layout. The per-file tables inside
+> each area are from the pre-migration layout and are rewritten at step 10 of the
+> python-toolchain-and-governance migration.
+
 ## 1. GitHub — API, Actions, and `.github/`
 
 `scripts/github/` — what each file executes: [`references/github.md`](references/github.md)
@@ -76,47 +81,20 @@ loads any of it. The user-facing surface is `plugins/`.
 | `readme_contract.py` | Defines the plugin `README` contract and the catalog row in the root `README`. |
 | `test_readme_contract.py` | Covers missing sections, template drift, and badges. |
 
-## 5. Shell quality
+## 5. Lint — file bytes, shell, JSON, workflows
 
-`scripts/shell_quality/` — what each file executes: [`references/shell-quality.md`](references/shell-quality.md)
+`scripts/lint/` — the byte-level gate: ShellCheck and shfmt, the canonical JSON form,
+UTF-8/LF/final-newline, actionlint and zizmor. Its entrypoint is `lint_files.py`, which
+`make lint`, `make lint-staged`, `make fix` and `make fix-file` all call.
 
-| File | Function |
-| --- | --- |
-| `lint_shell.py` | Runs ShellCheck with `.shellcheckrc` and formats all `.sh` files with `shfmt`. |
-| `shell_files.py` | Discovers shell scripts using the same rule as the `PostToolUse` hook. |
-| `test_shell_files.py` | Covers discovery by file extension and by shebang. |
-| `test_plugin_shell_tests.py` | Runs every `plugins/**/test-*.sh` under both `bash` and `/bin/bash`. |
+## 6. Harness — hooks, instruction files, editor wiring
 
-## 6. Plugin documentation contracts
+`scripts/harness/` — tests for everything Claude loads rather than runs: `.claude/hooks/`,
+`.claude/settings.json`, the skills' checklists, the `CLAUDE.md` index tables, `.vscode/`
+and the `Makefile`. Its one module, `inventory.py`, reads that wiring and prunes stale
+hook state for `make clean`.
 
-`scripts/plugin_docs/` — what each file executes: [`references/plugin-docs.md`](references/plugin-docs.md)
-
-| File | Function |
-| --- | --- |
-| `test_plugin_script_env.py` | Every environment variable read by a script must be named in that plugin's `README`. |
-| `test_readme_test_vars.py` | Every documented `<PREFIX>_TEST_BASH` variable must be read by a plugin test suite. |
-
-## 7. Plugin workflows
-
-`scripts/plugin_workflows/` — what each file executes: [`references/plugin-workflows.md`](references/plugin-workflows.md)
-
-| File | Function |
-| --- | --- |
-| `test_plugin_workflows.py` | Ensures `meta` is pure literal data, phases are declared, and the body compiles against a runtime stub. |
-
-## 8. Repository hooks
-
-`scripts/repo_hooks/` — what each file executes: [`references/repo-hooks.md`](references/repo-hooks.md)
-
-| File | Function |
-| --- | --- |
-| `test_plugin_paths.py` | Verifies parity between `version_plan.py` and `.claude/hooks/lib/plugin-paths.sh`. |
-| `test_checklist_gate.py` | Covers `checklist.sh` and the `Stop` hook that prevents completion when the checklist is incomplete. |
-| `test_push_guard.py` | Tests `guard-push.sh` against a bare test origin; rejects pushes to a merged branch. |
-| `test_record_audit.py` | Ensures `record-audit.sh` records the `repo-auditor` verdict for each audited head. |
-| `test_repo_root.py` | Ensures `repo-root.sh` selects the correct tree inside a Git worktree. |
-
-## 9. Shared infrastructure
+## 7. Shared infrastructure
 
 `scripts/common/` — what each file executes: [`references/common.md`](references/common.md)
 
@@ -127,7 +105,7 @@ loads any of it. The user-facing surface is `plugins/`.
 | `errors.py` | Normalizes exceptions so no code assumes attributes inside an `except` block. |
 | `test_errors.py` | Covers error normalization. |
 
-## 10. File hygiene and tooling alignment
+## 8. File hygiene and tooling alignment
 
 `scripts/hygiene/` — what each file executes: [`references/hygiene.md`](references/hygiene.md)
 
@@ -136,7 +114,7 @@ loads any of it. The user-facing surface is `plugins/`.
 | `test_text_files.py` | Ensures no text file contains raw control characters. |
 | `test_tooling_alignment.py` | Ensures the MCP server analyzes with the same version used by the local gate and CI. |
 
-## 11. Behavioural validation
+## 9. Behavioural validation
 
 Evals are the only layer that measures behaviour instead of files. They cost
 money, return different numbers for the same input, and therefore never gate a
@@ -151,15 +129,13 @@ merge. The protocol is [`references/plugin-eval-protocol.md`](references/plugin-
 ```
 scripts/
 ├── __init__.py
-├── common/              shared readers and error handling
+├── common/              shared readers, error handling, environment detection
 ├── github/              REST client, triage, labels, issue forms
-├── hygiene/             file bytes and tooling version alignment
+├── harness/             suites for .claude/, .vscode/ and the Makefile
+├── hygiene/             repository-wide invariants: Q1-Q3, X1-X5, P4, G2
+├── lint/                file bytes, shell, JSON, workflows
 ├── marketplace/         catalog generation and validation
-├── plugin_docs/         README and environment-variable contracts
-├── plugin_validation/   the official CLI, schemas, frontmatter, README contract
-├── plugin_workflows/    workflow dialect checks
-├── repo_hooks/          suites for .claude/hooks/
-├── shell_quality/       ShellCheck, shfmt, plugin shell suites
+├── plugin_validation/   the official CLI, frontmatter, hooks, README contract, evals
 └── versioning/          bumps, CHANGELOG, tags
 ```
 

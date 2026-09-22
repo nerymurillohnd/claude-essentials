@@ -1730,3 +1730,335 @@ $ git diff --stat
 - Pytest emits two third-party `DeprecationWarning`s from `py_mini_racer` (ctypes `_pack_` layout, slated for Python 3.19); not silenced, tracked for the next mini-racer upgrade.
 - Carried to step 11: one README sentence reads "**Behavioural evals** — Behavioural evals live in…" (duplicated opener) in the five READMEs; reword during README normalization.
 - The agent's session was interrupted once by a network failure (ENOTFOUND) and resumed from its transcript; every file was re-read before completion.
+
+---
+
+## Gate 6 — `scripts/lint/`, `scripts/harness/`, `scripts/hygiene/` → full gate (2026-09-21)
+
+Ported: `scripts/lint/` (`tools`, `shell_files`, `json_files`, `text_files`, `workflows_files`
+and the `lint_files` entrypoint), `scripts/harness/` (`inventory` plus sixteen suites over
+`.claude/`, `.vscode/` and the `Makefile`) and `scripts/hygiene/` (ten repository-wide
+invariant suites), each with a sibling `test_*.py`. The `Makefile` lines marked
+`# ported at step 6` are uncommented and every non-`setup` target now waits on a `.venv`
+prerequisite that fails closed. Step 6 also delivers the commit guard step 8 had planned
+(see the deviation below), because the Biome guard it replaces cannot coexist with canonical
+JSON.
+
+### Deviations from the plan, and why
+
+| # | Deviation | Reason |
+| --- | --- | --- |
+| 1 | Both Biome halves of step 8 are delivered here: `.claude/hooks/guard-commit.sh` (with `guard-commit-biome.sh` as a three-line `exec` shim) and the text branch of `post-edit.sh` | The old guard runs Biome over every staged, modified and untracked JSON file and rejects `json.dumps(indent=2)` output, so **no canonical JSON could be committed while it was live**; the `PostToolUse` branch rewrote canonical JSON back to Biome's form after any call that touched it, so the churn could not survive its own verification either. `.claude/settings.json`'s hooks block is untouched; it still names the shim's path until the session restarts at step 8. See the addendum below |
+| 2 | New module `scripts/common/environment.py` (`in_github_actions`), not in the §A5 file list | Measured on this machine: `~/.zshenv` line 127 exports `GITHUB_ACTIONS=true`, so reading that variable alone would have skipped **Q2 on the one machine Q2 exists for** and sent zizmor to the network locally. The helper requires the flag *and* a run identifier (`GITHUB_RUN_ID`, `GITHUB_WORKFLOW`, `GITHUB_EVENT_NAME`) |
+| 3 | New helper `scripts.common.plugins.working_files` | `tracked_files` answers from the index, which is what a validator wants; a linter needs everything a commit could include, minus tracked paths deleted from the tree |
+| 4 | Lint IDs are `L1`–`L6`, not `L1`–`L4` | The plan gives `--staged` the Ruff and basedpyright checks but no IDs for them. `L5` (Ruff) and `L6` (basedpyright) carry the tool's own output, so a denied commit names the finding |
+| 5 | `validate_plugins --list` prints the lint registry too, and the `(hygiene test, step 6)` note becomes the test's path | One registry for every ID a maintainer can read out of gate output (P1). `LINT_INVARIANTS` lives in `lint_files.py`; `validate_plugins` renders it |
+| 6 | `test_governance_map` lives inside `scripts/harness/test_scaffold_map.py` | §A5's file list has no `test_governance_map.py`; the two checks are added as functions so the list stays as written |
+| 7 | `check` and `help` gained `##` comments | `make help` is built from those comments and must list every target; §A7's block leaves both undocumented |
+| 8 | `test_checklists` requires `id` and `text`, not `id` and `title` | The committed checklists use `text`; the gate reads what the files carry |
+| 9 | `Q3`'s shell sweep excludes `plugins/*/test-*.sh` and `plugins/*/tests/*.sh` | Their content is sample text for the guard under test (`shell-quality`'s suite writes `# shellcheck disable=all` to assert its hook denies it), and ADR-0003 already classes them as files Claude never loads. **Recorded defect**: three of them open with a file-wide `# shellcheck disable=SC2016`, which is real and belongs to the plugin follow-up, not to a tooling migration forbidden to touch plugin files |
+| 10 | `P4`'s repository-wide sweep ignores placeholders inside backtick code spans, and covers `.claude/`, `.github/`, the root Markdown and the instruction files rather than everything | The contributing guide and the auditor have to be able to *name* `{{…}}`; `docs/` records historical plans and `scripts/` uses `{{` in f-strings |
+| 11 | `X1` pins six signatures and records two the plan names but the tree does not carry yet | The push-route matrix and the registration contract are written at steps 11 and 10. `PENDING` names both so the list cannot look finished |
+| 12 | `X4`'s sweep exempts `scripts/*/test_*.py` | Measured: five occurrences, each the check itself (two assertions that a deny text does **not** name `.mjs`/`npm run`, a fixture seeding `npx` for B1, one parametrised example of the `npm run validate` a checklist still carries, one docstring about the Biome branch) |
+| 13 | `X5` records that `SECURITY.md`'s template pins **0** paragraphs | That template is placeholders throughout, so there is no shared wording; the count is recorded rather than hidden, and R12 covers its structure |
+
+### Checklist
+
+- [x] `time make check` exit 0, wall time recorded
+
+  ```text
+  $ time make check
+  ...
+  250 passed, 875 deselected, 2 warnings in 83.70s (0:01:23)
+  .venv/bin/python -m scripts.plugin_validation.run_plugin_suites
+  pass  plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/block-no-verify/skills/block-no-verify/scripts/test-handler.sh  [/bin/bash]  PASS
+  pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-gate.sh  [/bin/bash]  PASS
+  pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-manage.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/ruff-quality/skills/ruff-hooks/scripts/test-manage.sh  [/bin/bash]  PASS
+  pass  plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/shell-quality/skills/shell-hooks/scripts/test-gate.sh  [/bin/bash]  PASS
+  pass  plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh  [/opt/homebrew/bin/bash]  PASS
+  pass  plugins/shell-quality/skills/shell-hooks/scripts/test-manage.sh  [/bin/bash]  PASS
+  pass  plugins/verify-completion/scripts/test-hooks.sh  [/opt/homebrew/bin/bash]  125 passed, 0 failed
+  pass  plugins/verify-completion/scripts/test-hooks.sh  [/bin/bash]  125 passed, 0 failed
+  DEBT-0029 advisory: uv python install 3.7 -> exit 2: error: No download found for request: cpython-3.7-macos-aarch64-none
+  DEBT-0029 advisory: agent-self-knowledge: 3.7 is not downloadable; falling back to the lowest uv offers, 3.8
+  DEBT-0029 advisory: agent-self-knowledge: interpreter .../cpython-3.8-macos-aarch64-none/bin/python3.8 (Python 3.8)
+  DEBT-0029 advisory: plugins/agent-self-knowledge/skills/claude-code-docs/scripts/ccdocs.py --help -> exit 0
+  exit=0
+  make check  192.59s user 175.62s system 98% cpu 6:12.24 total
+  ```
+
+- [x] `make help` lists every target (GNU Make 3.81, the macOS system make)
+
+  ```text
+  $ make --version | head -1
+  GNU Make 3.81
+  $ make help
+  setup — create/refresh .venv from uv.lock (the only target that calls uv)
+  check — the whole gate, in order
+  generate — 10 regenerate catalog + issue forms, then fail on diff
+  lint — 20 ruff format --check + ruff check (explicit .py list), shell, json, text bytes, actionlint, zizmor
+  lint-staged — same checks, only on staged + modified + untracked files (guard-commit)
+  types — 30 basedpyright, typeCheckingMode=all + failOnWarnings, venv interpreter, GitHub annotations in CI
+  test-fast — 40 in-process tests
+  validate — 50 catalog + plugin invariants (M P C S H R B W E G T Q X)
+  validate-cli — 60 claude plugin validate --strict on marketplace + every plugin
+  test-slow — 70 process-spawning tests + plugin suites under bash and /bin/bash + plugin Python under its floor
+  versions — version-bump rules and route vs the latest tags / origin/main
+  fix — writer: ruff format, ruff check --fix (safe), shfmt -w, canonical JSON
+  fix-file — writer for one file (post-edit hook): make fix-file FILE=path
+  clean — prune .claude/.cache/hooks stamps and stale state
+  help — list every target with what it does
+  ```
+
+- [x] `make fix && make lint` idempotent; `git status --porcelain` identical before and after
+
+  ```text
+  $ git status --porcelain > /tmp/before.txt && make fix && git status --porcelain > /tmp/after.txt && diff /tmp/before.txt /tmp/after.txt
+  .venv/bin/python -m scripts.lint.lint_files --fix
+  lint --fix: 0 file(s)
+  IDENTICAL: git status --porcelain unchanged by a second make fix
+  $ make -s lint
+  G2 .github/workflows: G2 advisory (step 7): zizmor --persona=auditor reports 24 findings (3 unsafe fixes): 6 informational, 9 low, 3 medium, 6 high
+  lint: every file passes (1 warning(s))
+  ```
+
+- [x] collection count recorded; exactly one test skips inside the gate
+
+  ```text
+  $ .venv/bin/python -m pytest --collect-only -q | awk -F': ' '{s+=$2} END {print "total collected:", s, "in", NR, "files"}'
+  total collected: 1125 in 70 files
+  $ .venv/bin/python -m pytest -q -rs
+  SKIPPED [1] scripts/harness/test_harness_index.py:25: enabled at step 10 when the index tables exist
+  SKIPPED [1] scripts/plugin_validation/test_cli_coverage.py:65: CLAUDE_CODE_DOCS_DIR is not set
+  ```
+
+  The second skip carries `@pytest.mark.coverage_matrix`, so it is deselected by both halves
+  of the gate (`make test-fast` runs `-m "not slow and not coverage_matrix"`, `make test-slow`
+  runs `-m slow`) and the nightly job is what runs it. Inside `make check` the only skip is
+  `test_harness_index`. **Q2 is not skipped on this machine**: `scripts/hygiene/test_rigor_floor.py`
+  reports `11 passed`, which is what deviation 2 exists for.
+
+- [x] Q1, Q2, Q3, X1–X5 and P4 each fail on their seeded defect and pass clean
+
+  ```text
+  probe                                                      | test                                            | seeded | clean
+  Q1 a re-created ruff.toml                                  | test_quality_floor::test_no_competing_configuration_file_exists | FAILED | PASSED
+  Q1 reportAny = false in [tool.basedpyright]                | test_quality_floor::test_only_the_pre_declared_rule_is_downgraded | FAILED | PASSED
+  Q1 a disable= in .shellcheckrc                             | test_quality_floor::test_the_shellcheck_policy_disables_nothing | FAILED | PASSED
+  Q2 an extra ignore this repository alone carries           | test_rigor_floor::test_this_repository_ignores_nothing_extra | FAILED | PASSED
+  Q3 a # noqa in a maintainer module                         | test_suppressions.py                            | FAILED | PASSED
+  Q3 a .basedpyright baseline directory                      | test_quality_floor::test_no_basedpyright_baseline_directory_exists | FAILED | PASSED
+  X1 a second copy of the label taxonomy                     | test_single_home.py                             | FAILED | PASSED
+  X2 an edited vendored schema                               | test_vendored_files.py                          | FAILED | PASSED
+  X3 a line removed from an accepted ADR                     | test_adr_append_only.py                         | FAILED | PASSED
+  X4 an npm instruction in the Makefile                      | test_tooling_alignment.py                       | FAILED | PASSED
+  X5 a reformatted plugin LICENSE                            | test_legal_text::test_every_plugin_license_is_the_template_verbatim | FAILED | PASSED
+  X5 a reworded paragraph in CODE_OF_CONDUCT.md              | test_legal_text::test_every_unparameterised_paragraph_survives_the_copy | FAILED | PASSED
+  P4 a template placeholder in a live instruction file       | test_placeholders.py                            | FAILED | PASSED
+  ```
+
+  Two probes had to be rewritten before they fired, and both rewrites are about the probe,
+  not the check: appending `reportAny = false` to the end of `pyproject.toml` lands in
+  `[tool.pytest.ini_options]`, not `[tool.basedpyright]`; and the two pledge paragraphs of the
+  Code of Conduct carry placeholders, so X5 compares the other eighteen.
+
+- [x] `actionlint` clean; the zizmor advisory line; `test_workflow_pins` and `test_governance_map`
+
+  ```text
+  $ .venv/bin/actionlint -no-color .github/workflows/*.yml
+  actionlint exit=0
+  $ zizmor --persona=auditor --format plain (through scripts.lint.workflows_files)
+  24 findings (3 unsafe fixes): 6 informational, 9 low, 3 medium, 6 high
+  $ .venv/bin/python -m pytest scripts/hygiene/test_workflow_pins.py scripts/harness/test_scaffold_map.py -v
+  scripts/hygiene/test_workflow_pins.py::test_this_repository_has_workflows_to_check PASSED
+  scripts/hygiene/test_workflow_pins.py::test_every_action_reference_is_a_pinned_commit PASSED
+  scripts/hygiene/test_workflow_pins.py::test_the_pin_check_reads_every_workflow PASSED
+  scripts/harness/test_scaffold_map.py::test_the_map_names_every_area_on_disk PASSED
+  scripts/harness/test_scaffold_map.py::test_the_map_names_no_area_that_is_gone PASSED
+  scripts/harness/test_scaffold_map.py::test_the_tree_block_matches_the_areas PASSED
+  scripts/harness/test_scaffold_map.py::test_governance_map_every_module_has_a_sibling_test PASSED
+  scripts/harness/test_scaffold_map.py::test_governance_map_every_test_carries_at_most_one_marker PASSED
+  scripts/harness/test_scaffold_map.py::test_every_marker_used_is_declared PASSED
+  9 passed in 0.19s
+  ```
+
+  Zero zizmor ignore comments exist today, so the ignore policy passes trivially;
+  `ZIZMOR_BLOCKING = False` is pinned by `test_zizmor_stays_advisory_until_the_workflows_are_rewritten`.
+
+- [x] the three Gate 8 guard-commit payload smoke tests, run by hand
+
+  ```text
+  $ printf '{"tool_name":"Bash","tool_input":{"command":"git commit -m x"},"cwd":"%s","session_id":"t"}' "$PWD" | .claude/hooks/guard-commit.sh; echo rc=$?
+  rc=0
+  $ ... | GUARD_COMMIT_LINT_CMD='echo bad; exit 1' .claude/hooks/guard-commit.sh
+  {
+    "hookSpecificOutput": {
+      "hookEventName": "PreToolUse",
+      "permissionDecision": "deny",
+      "permissionDecisionReason": "Commit refused: the files this commit could include (staged, modified or untracked) fail `make lint-staged`. Fix them — `make fix` applies every safe rewrite — then commit again:\nbad"
+    }
+  }
+  rc=0
+  $ (in a working-tree copy with no .venv) ... | .../guard-commit.sh
+  {
+    "hookSpecificOutput": {
+      "hookEventName": "PreToolUse",
+      "permissionDecision": "deny",
+      "permissionDecisionReason": "Commit refused: the project environment is missing (.../novenv/.venv/bin/python). The gate cannot run, so the commit is not checked. Run `make setup`, then commit again."
+    }
+  }
+  rc=0
+  $ time make -s lint-staged
+  make -s lint-staged  2.98s user 0.23s system 180% cpu 1.779 total
+  ```
+
+  Both entry points behave identically: `scripts/harness/test_guard_commit.py` runs every case
+  through `guard-commit.sh` and through the shim, under `bash` and `/bin/bash` (21 tests).
+
+- [x] `.venv` prerequisite probe, in a working-tree copy with no environment
+
+  ```text
+  $ make versions
+  error: .venv is missing; run `make setup`
+  make: *** [.venv/bin/python] Error 2
+  rc=2
+  $ make types
+  error: .venv is missing; run `make setup`
+  make: *** [.venv/bin/python] Error 2
+  rc=2
+  ```
+
+  The probe uses a copy of the working tree rather than `git clone`: the step-6 `Makefile` and
+  `guard-commit.sh` are not committed yet, so a clone would test the step-5 file.
+
+- [x] canonical-JSON churn measured, then applied; `make -s versions` still `bump: none`
+
+  ```text
+  $ .venv/bin/python -m scripts.lint.lint_files --fix --dry-run
+  would rewrite .claude/settings.json
+  would rewrite .github/labels.json
+  would rewrite .vscode/launch.json
+  would rewrite .vscode/settings.json
+  would rewrite .vscode/tasks.json
+  would rewrite plugins/verify-completion/.claude-plugin/plugin.json
+  would rewrite templates/plugin-agent-only/.claude-plugin/plugin.json
+  would rewrite templates/plugin-bundle/.claude-plugin/plugin.json
+  would rewrite templates/plugin-skill-only/.claude-plugin/plugin.json
+  lint --fix: 9 file(s)
+  $ make -s versions
+  agent-self-knowledge 0.1.0 exempt
+  block-no-verify 0.1.2 exempt
+  ruff-quality 0.1.1 exempt
+  shell-quality 0.1.1 exempt
+  verify-completion 0.1.1 exempt
+  Computed label: bump: none
+  ```
+
+  Nine files, not the seven gate 2 predicted. `.vscode/launch.json` and `.vscode/tasks.json`
+  were written after that measurement and were never canonical; `.vscode/settings.json` is
+  canonical again after the step-6 edit, because the **legacy `post-edit.sh` Biome branch
+  collapsed its short arrays** the moment a Bash call touched it. That is the same conflict
+  deviation 1 is about: while Biome is still the `PostToolUse` writer, it re-collapses
+  canonical JSON after every command that rewrites it, so `make fix` is followed by pruning
+  the session's `bash-stamp-*` (which `make clean` prunes anyway, and which makes
+  `post-edit.sh` exit early). `make lint` is what then proves the form held. The Node-era
+  files (`package.json`, `package-lock.json`, `biome.json`, `knip.jsonc`, `tsconfig.json`,
+  `.mcp.json`, `schemas/claude-code/**`, `schemas/*.schema.json`) and the vendored
+  `schemas/github/**` are excluded by `JSON_EXCLUDED` and were not touched.
+
+- [x] final state
+
+  ```text
+  $ git diff --stat
+   .claude/hooks/guard-commit-biome.sh                | 72 +---------------------
+   .claude/hooks/guard-marketplace-catalog.sh         |  2 +-
+   .claude/settings.json                              |  4 +-
+   .claude/skills/marketplace-governance/SKILL.md     | 68 +++++++-------------
+   .github/labels.json                                | 12 +++-
+   .vscode/launch.json                                |  4 +-
+   .vscode/settings.json                              |  6 +-
+   .vscode/tasks.json                                 | 66 +++++++++++++++-----
+   Makefile                                           | 43 +++++++------
+   .../verify-completion/.claude-plugin/plugin.json   |  6 +-
+   scripts/common/plugins.py                          | 41 ++++++++++++
+   scripts/common/test_plugins.py                     | 32 ++++++++++
+   scripts/plugin_validation/validate_plugins.py      | 35 ++++++++---
+   .../plugin-agent-only/.claude-plugin/plugin.json   | 12 +++-
+   templates/plugin-bundle/.claude-plugin/plugin.json | 12 +++-
+   .../plugin-skill-only/.claude-plugin/plugin.json   | 12 +++-
+   16 files changed, 251 insertions(+), 176 deletions(-)
+  ```
+
+  Plus 46 new files: `.claude/hooks/guard-commit.sh`, `scripts/common/environment.py` and its
+  test, and the `scripts/lint/`, `scripts/harness/` and `scripts/hygiene/` modules and suites.
+  The churn is left in the working tree for the orchestrator to commit as a formatting-only
+  commit before the step commit.
+
+### Addendum — the `post-edit.sh` text branch (2026-09-21)
+
+`lint_biome` and the `biome` file kind are gone. Everything that is not shell now goes through
+`make -s fix-file FILE=<rel>`, which is the pipeline's own single-file writer, so the editor,
+this hook and `make lint` cannot disagree about one file. The shell branch, the version-bump
+reminder and the `MAX_BASH_FILES` logic are unchanged, and every `node_modules`, `Biome` and
+`npm` reference is out of the hook (`test_the_hook_names_no_retired_tooling` pins that).
+
+`make fix-file` gained the Python half it needed: `scripts/lint/lint_files.py` now has
+`fix_python`, and `--fix --file` writes *and* reports, exiting non-zero on what it could not
+repair, because the hook blocks on that output. `--fix` over the whole tree stays a writer,
+since `make lint` follows it everywhere. **`ruff check --fix` runs before `ruff format`**,
+which is Ruff's documented order and the only one that converges in a single pass: formatting
+first leaves the blank lines an unused-import removal opens, so the hook would report a defect
+it had just created. Measured before the fix, on a probe with an unused import and bad
+spacing: the hook blocked with `L5 ... 1 file would be reformatted`; after it, the file
+becomes `"""Probe."""\n\nx = 1\n` and nothing blocks.
+
+A missing `.venv/bin/python` adds context naming `make setup` and never blocks: the edit
+itself is fine, and refusing it would say nothing useful.
+
+- [x] the four branch probes, run by hand and then pinned as tests
+
+  ```text
+  $ ...Edit payload for scripts/common/plugins.py            -> rc=0, no output
+  $ ...Edit payload for a .json in Biome form                -> rc=0, rewritten to the canonical form
+  $ ...Edit payload for a .md holding U+0007                 -> decision: block
+  {
+    "decision": "block",
+    "reason": "`make fix-file FILE=.claude/.cache/hooks/_probe.md` reports what it could not rewrite (fix it in code; never silence it):\nlint --fix: 0 file(s)\nL3 .claude/.cache/hooks/_probe.md: line 1 holds U+0007\nmake: *** [fix-file] Error 1"
+  }
+  $ ...Edit payload for a .py under scripts/ with two defects -> rc=0, file repaired in one pass
+  $ .venv/bin/shellcheck -x -f gcc .claude/hooks/post-edit.sh   ; echo $?   -> 0
+  $ .venv/bin/shfmt -d .claude/hooks/post-edit.sh               ; echo $?   -> 0
+  ```
+
+- [x] the gate is still green with the new branch and its nine new tests
+
+  ```text
+  $ PATH=.venv/bin:$PATH .venv/bin/basedpyright --threads
+  0 errors, 0 warnings, 0 notes
+  $ time make check
+  874 passed, 1 skipped, 265 deselected, 2 warnings in 17.45s      # make test-fast
+  264 passed, 876 deselected, 2 warnings in 93.40s (0:01:33)       # make test-slow
+  exit=0
+  make check  199.21s user 190.91s system 99% cpu 6:32.69 total
+  $ time make -s lint-staged
+  make -s lint-staged  2.00s user 0.23s system 151% cpu 1.471 total
+  $ make -s versions
+  Computed label: bump: none
+  ```
+
+  1140 tests collected, 15 more than before this addendum. The one skip inside the gate is
+  still `test_harness_index`. `git status --porcelain` lists 63 paths: the 62 of the gate-6
+  checklist plus this log.
+
+### Orchestrator verification of gate 6 (2026-09-22)
+
+- `time make check` → exit 0 in 4:03 (log: all targets, `874 passed, 1 skipped` fast, 264 slow, `✔ Validation passed` on the marketplace and five plugins, plugin suites under `/opt/homebrew/bin/bash` and `/bin/bash`, DEBT-0029 advisory floor run under 3.8).
+- `pytest -rs` → exactly one skip: `test_harness_index.py:25: enabled at step 10 when the index tables exist`.
+- Commit guard smoke: allow → no output, rc 0; `GUARD_COMMIT_LINT_CMD='echo bad; exit 1'` → `deny` with the lint output. First live pass: commit `6b35fd1` (canonical JSON) went through the shim → `guard-commit.sh` → `make lint-staged`.
+- `post-edit.sh`: a Biome-form JSON written through a Write payload came back canonical; the hook has no `biome`/`node_modules` reference left.
+- JSON churn committed separately as `6b35fd1`; each file parses to the same content as before (`jq -S` comparison), `make -s versions` → `Computed label: bump: none`.
+- Environment finding for the maintainer: `~/.zshenv:127` exports `GITHUB_ACTIONS=true` globally; `scripts/common/environment.py` requires the flag plus a run id before treating a process as CI.

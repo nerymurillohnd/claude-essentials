@@ -4,10 +4,11 @@ The registry below is the specification. `--list` prints it, every message start
 ID, and each row names the defect it catches (P14), so gate output can be looked up without
 reading any of this code.
 
-Three families are listed but not run here, each for a stated reason: `T1` is a test over
-`templates/` (`test_templates.py`), and `Q1`-`Q3` and `X1`-`X5` are repository-hygiene tests
-that arrive with `scripts/hygiene/` at step 6. Listing them keeps one registry rather than
-three, which is what a maintainer reading an ID needs.
+Three families are listed but not run here, each for a stated reason and each naming the
+command or the file that does run it: `L1`-`L6` belong to `make lint`, `T1` is a test over
+`templates/`, and `Q1`-`Q3` and `X1`-`X5` are the repository-hygiene tests under
+`scripts/hygiene/`. Listing them keeps one registry rather than four, which is what a
+maintainer reading an ID out of gate output needs.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from scripts.common.errors import (
 )
 from scripts.common.plugins import plugin_ids, repo_root, tracked_files
 from scripts.github.repo_metadata import collect as repo_metadata_collect
+from scripts.lint.lint_files import LINT_INVARIANTS
 from scripts.marketplace.validate_marketplace import (
     MARKETPLACE_INVARIANTS,
     collect as marketplace_collect,
@@ -174,11 +176,23 @@ GITHUB_INVARIANTS: Final[tuple[tuple[str, str, str], ...]] = (
 )
 """The repository-metadata invariants, run through `scripts.github.repo_metadata`."""
 
-TEST_NOTE: Final = "(templates test)"
-"""How `--list` marks T1."""
+TEST_NOTE: Final = "(scripts/plugin_validation/test_templates.py)"
+"""How `--list` marks T1: the test that runs it."""
 
-HYGIENE_NOTE: Final = "(hygiene test, step 6)"
-"""How `--list` marks Q1 to Q3 and X1 to X5."""
+HYGIENE_TESTS: Final[dict[str, str]] = {
+    "Q1": "scripts/hygiene/test_quality_floor.py",
+    "Q2": "scripts/hygiene/test_rigor_floor.py",
+    "Q3": "scripts/hygiene/test_suppressions.py",
+    "X1": "scripts/hygiene/test_single_home.py",
+    "X2": "scripts/hygiene/test_vendored_files.py",
+    "X3": "scripts/hygiene/test_adr_append_only.py",
+    "X4": "scripts/hygiene/test_tooling_alignment.py",
+    "X5": "scripts/hygiene/test_legal_text.py",
+}
+"""Which test runs each hygiene invariant, so `--list` names the file rather than a step."""
+
+LINT_NOTE: Final = "(make lint)"
+"""How `--list` marks the byte-level IDs, which `scripts.lint.lint_files` owns."""
 
 OUTPUT_FORMATS: Final[tuple[str, ...]] = ("text", "github")
 """`text` for a terminal, `github` for workflow annotations on the PR's own lines."""
@@ -194,8 +208,11 @@ def registry_lines() -> list[str]:
     lines.extend(f"{ident}  {check} — {defect}" for ident, check, defect in PLUGIN_INVARIANTS)
     lines.extend(f"{ident}  {check} — {defect}" for ident, check, defect in GITHUB_INVARIANTS)
     lines.extend(f"{ident}  {check}" for ident, check in VERSIONING_INVARIANTS)
+    lines.extend(
+        f"{ident}  {check} — {defect} {LINT_NOTE}" for ident, check, defect in LINT_INVARIANTS
+    )
     for ident, check, defect in DEFERRED_INVARIANTS:
-        note = TEST_NOTE if ident == "T1" else HYGIENE_NOTE
+        note = TEST_NOTE if ident == "T1" else f"({HYGIENE_TESTS[ident]})"
         lines.append(f"{ident}  {check} — {defect} {note}")
     return lines
 

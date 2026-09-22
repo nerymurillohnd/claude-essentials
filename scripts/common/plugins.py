@@ -114,6 +114,47 @@ def tracked_files(root: Path, *pathspecs: str) -> list[str]:
     )
 
 
+def working_files(root: Path, *pathspecs: str) -> list[str]:
+    """List the paths the working tree holds and the repository would ship.
+
+    `tracked_files` answers from the index alone, which is what a validator wants: it checks
+    what a plugin ships. A linter wants the other set — everything a commit could include —
+    so this adds the untracked, non-ignored files and drops the tracked paths that have been
+    deleted from the working tree. Filtering is the same `fnmatch.fnmatchcase` as
+    `tracked_files`, so `*` crosses `/`.
+
+    Args:
+        root: Any directory inside the working tree; `git ls-files` runs there.
+        *pathspecs: Patterns; a path is kept when it matches at least one.
+
+    Returns:
+        Sorted repository-relative paths that exist as files right now.
+
+    Raises:
+        GitLsFilesFailedError: If `git ls-files` cannot run or exits non-zero.
+    """
+    try:
+        completed = subprocess.run(
+            ["/usr/bin/git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+            executable=_git_executable(),
+            cwd=root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except subprocess.CalledProcessError as error:
+        raise GitLsFilesFailedError(str(error)) from error
+    except OSError as error:
+        raise GitLsFilesFailedError(str(error)) from error
+    paths = {entry for entry in completed.stdout.split("\0") if entry}
+    kept = [path for path in paths if (root / path).is_file()]
+    if not pathspecs:
+        return sorted(kept)
+    return sorted(
+        path for path in kept if any(fnmatch.fnmatchcase(path, spec) for spec in pathspecs)
+    )
+
+
 def git_output(root: Path, args: Sequence[str]) -> str:
     """Run a git command in the working tree and return its standard output.
 
