@@ -124,7 +124,7 @@ Also in this category: `git diff` (listed under Basic Snapshotting).
 | Command or page | Areas | Safety class | Corpus | Official |
 | --- | --- | --- | --- | --- |
 | `git bisect` | G2, G15, G21 | read (`log`, `terms`); mutates (`start`, `good`, `bad`, `skip`, `reset`, `replay` check out commits and write `refs/bisect/*`, `BISECT_LOG`; `--no-checkout` still writes refs); executes-config (`run` executes a script, `visualize` opens gitk) | [commands/git-bisect.md](commands/git-bisect.md) | [git-bisect](https://git-scm.com/docs/git-bisect) |
-| `git blame` | G21 | read (executes-config with `--textconv`) | [commands/git-blame.md](commands/git-blame.md) | [git-blame](https://git-scm.com/docs/git-blame) |
+| `git blame` | G21 | read (executes-config: `diff.<driver>.textconv` runs by default; pass `--no-textconv`) | [commands/git-blame.md](commands/git-blame.md) | [git-blame](https://git-scm.com/docs/git-blame) |
 | `git grep` | G14, G21 | read (executes-config with `--textconv` or `-O`/`--open-files-in-pager`; `--untracked --no-exclude-standard` reaches ignored secrets) | [commands/git-grep.md](commands/git-grep.md) | [git-grep](https://git-scm.com/docs/git-grep) |
 
 ## Email
@@ -156,7 +156,7 @@ Also in this category: `git apply` (listed under Patching).
 | `git reflog` | G16 | read (`show`, `list`, `exists`); mutates (`expire`, `delete`, `drop`) | [commands/git-reflog.md](commands/git-reflog.md) | [git-reflog](https://git-scm.com/docs/git-reflog) |
 | `git filter-branch` | G14, G15 | mutates (rewrites history, leaves `refs/original/`); executes-config (runs the filter scripts); superseded by `git filter-repo` per its own WARNING | [commands/git-filter-branch.md](commands/git-filter-branch.md) | [git-filter-branch](https://git-scm.com/docs/git-filter-branch) |
 | `git instaweb` | G18 | writes-local-state (writes `.git/gitweb/`) + network (starts a web server) + executes-config (`instaweb.browser`, `instaweb.httpd`) | [areas/footprints-and-references.md](areas/footprints-and-references.md) | [git-instaweb](https://git-scm.com/docs/git-instaweb) |
-| `git archive` | G4, G18 | read (writes the archive to `-o` or stdout; executes-config: `tar.<format>.command`, `export-subst`; network with `--remote`) | [commands/git-archive.md](commands/git-archive.md) | [git-archive](https://git-scm.com/docs/git-archive) |
+| `git archive` | G4, G18 | read (writes the archive to `-o` or stdout; executes-config: `tar.<format>.command`; `export-subst` only expands placeholders; network with `--remote`) | [commands/git-archive.md](commands/git-archive.md) | [git-archive](https://git-scm.com/docs/git-archive) |
 | `git bundle` | G16, G17 | read (`verify`, `list-heads`); writes-local-state (`create` writes a bundle file); mutates (`unbundle` writes objects) | [commands/git-bundle.md](commands/git-bundle.md) | [git-bundle](https://git-scm.com/docs/git-bundle) |
 
 ## Server Admin
@@ -236,7 +236,7 @@ Also in this category: `git apply` (listed under Patching).
 
 | Command or page | Areas | Safety class | Corpus | Official |
 | --- | --- | --- | --- | --- |
-| `git annotate` | G21 | read | [areas/tracing.md](areas/tracing.md) | [git-annotate](https://git-scm.com/docs/git-annotate) |
+| `git annotate` | G21 | read (executes-config: textconv by default, as `git blame`) | [areas/tracing.md](areas/tracing.md) | [git-annotate](https://git-scm.com/docs/git-annotate) |
 | `git diagnose` | G1, G17 | writes-local-state (writes a zip archive of repository metadata) | [areas/repository-and-operations.md](areas/repository-and-operations.md) | [git-diagnose](https://git-scm.com/docs/git-diagnose) |
 | `git merge-tree` | G5 | read (`--no-messages`, `--name-only`); mutates with `--write-tree` (writes tree objects; allowed only after the object census) | [commands/git-merge-tree.md](commands/git-merge-tree.md) | [git-merge-tree](https://git-scm.com/docs/git-merge-tree) |
 | `git rerere` | G12 | read (`status`, `diff`, `remaining`); mutates (`clear`, `forget`, `gc`) | [commands/git-rerere.md](commands/git-rerere.md) | [git-rerere](https://git-scm.com/docs/git-rerere) |

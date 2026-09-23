@@ -30,6 +30,10 @@ not a shallow audit: cover every area below at its routine depth.
 1. **Preflight.**
    - `git rev-parse --show-toplevel --absolute-git-dir --git-common-dir`. Exit 128 means this
      is not a repository: stop and say so.
+   - Before the first `git status`, list the config keys that run programs (filter, textconv,
+     fsmonitor, external diff, pager). The list is in `areas/config-links-identity.md`, G12.
+     `git status` runs a configured clean filter, so if one exists, say so and avoid the
+     commands that would run it.
    - Check for an operation in progress (`areas/repository-and-operations.md`). If one exists,
      report it first, and recommend nothing that touches the index or `HEAD` until the user
      decides.

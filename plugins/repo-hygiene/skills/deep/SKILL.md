@@ -27,18 +27,23 @@ everything. All reference paths below are under `${CLAUDE_PLUGIN_ROOT}/reference
    a defect. Every mutation needs an approved ID: an audit `R` ID or a plan `S` ID.
 2. **Follow `audit-contract.md`** before the first command. In this skill every inspection
    also runs with `-c core.fsmonitor=false -c gc.auto=0 -c maintenance.auto=false`.
-3. **Trust preflight first.** Compare the `.git` owner with the current user and list the
-   command-executing config keys. For a repository that is not the user's own, stop and
-   recommend `git clone --no-local` into a new path.
-4. **Order matters, because later steps write objects:**
+3. **Trust preflight first, before any `git status`.** Compare the `.git` owner with the
+   current user and list the command-executing config keys (G12). `git status` runs clean
+   filters. For a repository that is not the user's own, stop and recommend
+   `git clone --no-local` into a new path.
+4. **Reclamation destroys more than objects.** `git reflog expire --expire=now --all` also
+   empties the stash list, and a bundle omits reflogs and lower stash entries
+   (`program/execution.md`, section 4). Say so in every approval request for S11.
+5. **Order matters, because later steps write objects:**
    1. ref snapshot to the evidence package;
    2. reflogs;
    3. the unreachable census, with and without reflog roots;
    4. integrity;
    5. only then `merge-tree --write-tree` or `commit-tree`.
-5. **`--no-replace-objects`** on every count and walk. Redact in the same command that
+6. **`git --no-replace-objects`** (a global option, before the subcommand) on every count
+   and walk, and `--no-textconv` on `log`, `show` and `blame`. Redact in the same command that
    prints. Never read secret-shaped files or `cat` unknown payloads.
-6. **Mutations are sequential in this conversation.** Agents only read.
+7. **Mutations are sequential in this conversation.** Agents only read.
 
 ## Phase `audit`
 
