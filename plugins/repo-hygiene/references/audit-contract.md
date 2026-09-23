@@ -39,8 +39,16 @@ are in `areas/`.
 
 ## 2. Audit safety
 
-- Run porcelain reads as `git --no-optional-locks --no-pager …`. The flag stops `git status`
-  from refreshing the index.
+- Run porcelain reads as `git -c core.fsmonitor=false --no-optional-locks --no-pager …`, in
+  both skills. `--no-optional-locks` stops `git status` from refreshing the index, and
+  `core.fsmonitor=false` stops it from running a configured FSMonitor hook program (`[doc]`
+  git-config).
+- In a partial clone (`git config --get remote.origin.promisor` is `true`, or
+  `extensions.partialClone` is set), a read of a missing object downloads it. `[observed]`:
+  `git ls-tree -r -l` fetched 2 missing blobs. Add `--no-lazy-fetch` (Git ≥ 2.45) to every
+  read there. A missing object then shows as missing, and fetching it is an approved item.
+- Pass `--no-ext-diff` to `git diff`, `git log -p` and `git show`, because `diff.external`
+  runs a configured program for patch output (`[observed]`).
 - Run every count, log and history walk with `--no-replace-objects`. A replace ref changes
   what `log` and `rev-list` show. `[observed]`: with a replace ref active,
   `rev-list --left-right --count origin/main...main` reported `0 4` where the true value was
@@ -58,8 +66,7 @@ are in `areas/`.
   config keys (see `areas/config-links-identity.md`). For a repository that is not the user's
   own, stop and recommend `git clone --no-local <path> <new-path>` first.
 - Never add `-c safe.directory=…`. It disables the ownership protection.
-- In `deep`, run inspections with `-c core.fsmonitor=false -c gc.auto=0
-  -c maintenance.auto=false`.
+- In `deep`, also add `-c gc.auto=0 -c maintenance.auto=false` to every inspection.
 - Order in `deep`, because later steps write objects:
   1. ref snapshot to the evidence package;
   2. reflogs;
@@ -89,6 +96,10 @@ These rules follow https://git-scm.com/docs/gitcli.
 - Write every mutating command literally, one per call, with the exact ref, SHA or path. No
   `$(…)`, no variables, no loops. The user's permission prompt and guards such as
   `block-no-verify` must be able to read it.
+- Prefer literal commands for reads too. Guards such as `block-no-verify` also refuse
+  read-only Git commands built from variables (`[observed]`: `git var $v` and a
+  `-c core.hooksPath` probe were refused). When a read loop is refused, run the reads one by
+  one with literal arguments. Never rephrase the command to get past the guard.
 
 ## 4. Secrets
 
@@ -112,6 +123,11 @@ These rules follow https://git-scm.com/docs/gitcli.
   `[observed]`: without the `sed`, `git remote -v` printed `https://user:pat_TOKEN123@…`.
 - History searches print the commit and path (`--name-only`), never patch lines. Report a
   secret as: commit, path, pattern class, and whether it is still in the current tree.
+- Always pass `--name-status` (or `--stat`) to `git stash show`. With `stash.showPatch=true`
+  a bare `git stash show` prints file contents (`[observed]`).
+- Fingerprint files with `git hash-object --stdin <file`, or add `--no-filters` to the path
+  form. `git hash-object -- <path>` applies the path's clean filter, which runs a configured
+  program.
 - Never `cat` an unknown payload: `lost-found` files, `rr-cache` preimages, dangling blobs.
   Fingerprint it instead with `git hash-object --stdin <file` (no `-w`), `wc -c`, and
   `file -b`.
@@ -198,6 +214,8 @@ Check every finding against this list before writing it:
 | It looks like | It is not proof of |
 | --- | --- |
 | Clean checkout | No stash, no unreachable work |
+| Clean `git status` | No local edits (assume-unchanged, skip-worktree and broken `.git` files hide them) |
+| `git check-ignore -v` exits 0 | The path is ignored (a negated rule matches with exit 0) |
 | No open PR | No unresolved review conversation |
 | Closed without merge | Missing or lost source |
 | Unreachable object | Garbage |
