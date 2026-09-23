@@ -82,9 +82,10 @@ git commit -qm "rm blob"
 publish main:main
 
 # G7: tags
-git tag v0.1 HEAD~4
 git tag -a v0.2 -m rel HEAD
 publish refs/tags/v0.2:refs/tags/v0.2
+# Created after the publish above, so tag auto-following cannot copy it to origin.
+git tag v0.1 HEAD~4
 
 # G15: replace ref, note, refs/original leftover, agent tree ref
 git replace HEAD~1 HEAD~2
@@ -119,8 +120,6 @@ rm -rf ../wt-gone
 git worktree add -q ../wt-live -b wt/live
 
 # G2: abandoned bisect, merge/patch leftovers
-git bisect start -q HEAD HEAD~3 >/dev/null
-git bisect reset -q >/dev/null 2>&1 || true
 git bisect start HEAD HEAD~3 >/dev/null
 echo conflict >app.txt.orig
 echo rej >s.txt.rej

@@ -29,6 +29,9 @@ MIN_SCAFFOLD_COPIES: Final = 4
 MARKDOWN_LINK: Final = re.compile(r"\]\((?P<target>[^)\s]+)\)")
 """An inline Markdown link target."""
 
+CODE: Final = re.compile(r"```.*?```|`[^`\n]*`", re.DOTALL)
+"""Fenced blocks and inline code spans, which hold regexes and commands, not links."""
+
 CORPUS_PATH: Final = re.compile(r"`(?P<name>(?:commands|areas|program)/[a-z0-9-]+\.md)`")
 """A corpus file named in backticks, relative to the plugin's `references/` directory."""
 
@@ -76,7 +79,8 @@ def test_relative_links_resolve(rel: str) -> None:
     root = repo_root()
     source = root / rel
     broken: list[str] = []
-    for match in MARKDOWN_LINK.finditer(source.read_text(encoding="utf-8")):
+    prose = CODE.sub("", source.read_text(encoding="utf-8"))
+    for match in MARKDOWN_LINK.finditer(prose):
         target = match["target"]
         if target.startswith(("http://", "https://", "mailto:", "#")):
             continue

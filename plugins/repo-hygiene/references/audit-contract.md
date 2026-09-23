@@ -134,7 +134,7 @@ These rules follow https://git-scm.com/docs/gitcli.
              -e 's#^([^=]*(pass|token|secret|key|auth|cred)[^=]*=).*#\1***#I'
   ```
 
-  `[observed]`: without the `sed`, `git remote -v` printed `https://user:pat_TOKEN123@…`.
+  `[observed]`: without the `sed`, `git remote -v` printed a URL of the form `https://user:<token>@…` with the token in clear.
 - History searches print the commit and path (`--name-only`), never patch lines. Report a
   secret as: commit, path, pattern class, and whether it is still in the current tree.
 - Always pass `--name-status` (or `--stat`) to `git stash show`. With `stash.showPatch=true`

@@ -18,8 +18,9 @@ not a shallow audit: cover every area below at its routine depth.
 2. **Follow the audit contract** at `${CLAUDE_PLUGIN_ROOT}/references/audit-contract.md`.
    Read it before the first command. It covers safety flags, command form, secrets, findings,
    recommendations, execution and false positives.
-3. **Count and walk with `git --no-replace-objects`.** A replace ref silently falsifies
-   counts. Measured: an audit reported 4 commits ahead where the truth was 5.
+3. **Count and walk with `git --no-replace-objects`** (a global option, before the
+   subcommand), and pass `--no-textconv` to `log`, `show` and `blame`. A replace ref silently
+   falsifies counts. Measured: an audit reported 4 commits ahead where the truth was 5.
 4. **Redact in the same command that prints** remote URLs and config. Never read
    secret-shaped files, and never `cat` unknown payloads.
 5. **Finish the coverage before reporting.** An area is `inspected`, `not applicable` (with
