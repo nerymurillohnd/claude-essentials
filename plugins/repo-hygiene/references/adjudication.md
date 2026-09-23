@@ -110,19 +110,20 @@ saved to the evidence package.
 IDs.
 
 1. `git cat-file -e <name>` answers whether the object is still in the store.
-2. For files under `other/`, the file is the content. Verify it read-only, without writing
-   an object:
+2. Only blobs keep content. `fsck --lost-found` writes a blob's content under `other/`, but
+   writes just the object name and a newline (41 bytes) for trees under `other/` and for
+   every file under `commit/` (`[observed]`). Check which kind a file is by size:
+   `wc -c <file>`. For a 41-byte file, compare its first line with its name.
+3. For a blob file, verify it read-only, without writing an object:
 
    ```sh
-   git hash-object --stdin < .git/lost-found/other/<name>
+   git hash-object --no-filters --stdin < .git/lost-found/other/<name>
    ```
 
-   A matching ID means *intact*.
-3. For blobs, compare against `git hash-object -t blob`; if it differs, try `-t tree`. The
-   type is known when one matches.
+   A matching ID means *intact and recoverable*.
 4. Fingerprint without printing: `wc -c`, `file -b`. Never `cat`.
-5. Files under `commit/` are markers. A commit is recoverable only if its tree and parents
-   also exist (`git cat-file -e <commit>^{tree}`).
+5. A name-only file (a tree or commit marker) is recoverable only if the object itself and,
+   for a commit, its tree and parents still exist (`git cat-file -e <name>^{tree}`).
 
 | Verdict | Meaning |
 | --- | --- |

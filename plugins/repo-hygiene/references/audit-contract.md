@@ -27,7 +27,11 @@ are in `areas/`.
 - A command needs an approved item ID when it changes a ref, the index, the working tree, the
   object store, Git config, a remote, the hosting provider, or anything outside the repository.
 - These look like reads but write, so each is an item:
-  - `git fetch` moves remote-tracking refs and can start auto-maintenance.
+  - `git fetch` moves remote-tracking refs and can start auto-maintenance. Even
+    `git fetch --dry-run` downloads objects (`[observed]`); use `git ls-remote` to compare.
+  - `git push --dry-run` runs the `pre-push` hook (`[observed]`); never use it to inspect.
+  - `git describe --dirty` rewrites `.git/index` even with `--no-optional-locks`
+    (`[observed]`).
   - `git bisect start` checks out commits.
   - `git fsck --lost-found` writes `.git/lost-found/`.
   - `git stash` without a subcommand pushes a stash.
@@ -49,10 +53,20 @@ are in `areas/`.
   read there. A missing object then shows as missing, and fetching it is an approved item.
 - Pass `--no-ext-diff` to `git diff`, `git log -p` and `git show`, because `diff.external`
   runs a configured program for patch output (`[observed]`).
-- Run every count, log and history walk with `--no-replace-objects`. A replace ref changes
-  what `log` and `rev-list` show. `[observed]`: with a replace ref active,
+- Run every count, log and history walk as `git --no-replace-objects <command> …`. It is a
+  **global option**: it goes before the subcommand. `git log --no-replace-objects` fails with
+  "unrecognized argument" (`[observed]`). A replace ref changes what `log`, `rev-list`,
+  `for-each-ref %(ahead-behind:…)` and `bisect` see. `[observed]`: with a replace ref active,
   `rev-list --left-right --count origin/main...main` reported `0 4` where the true value was
-  `0 5`.
+  `0 5`. For commands that start other Git processes (`git bisect run`), export
+  `GIT_NO_REPLACE_OBJECTS=1` for that command instead.
+- Pass `--no-textconv` to `git log` (`-p`, `-S`, `-G`, `-L`), `git show` and `git blame`, and
+  `--no-ext-diff` wherever it applies. A configured `diff.<driver>.textconv` runs **by
+  default** for these (`[observed]`).
+- Check the command-executing config keys (`areas/config-links-identity.md`, G12) **before**
+  the first `git status`: `git status` runs `filter.<driver>.clean` on changed tracked files,
+  even with `--no-optional-locks` (`[observed]`). If a filter, fsmonitor or textconv driver is
+  configured, say so, and keep every later command away from what would run it.
 - Never run a command that executes configured programs while auditing:
   - `git grep --textconv`, `git grep -O`, `git diff --ext-diff`, `git difftool`,
     `git mergetool`;
@@ -134,8 +148,11 @@ These rules follow https://git-scm.com/docs/gitcli.
 - Protect secret-shaped paths in `git clean -X` with a **negated** exclude:
   `-e '!.env'`. `[observed]`: `-e '!.env'` keeps `.env`, while `-e .env` does not, because
   under `-X` an `-e` pattern adds an ignore rule.
-- Run scanners with redaction and no live verification: `gitleaks git --redact`,
-  `trufflehog git file://. --no-verification`.
+- Run scanners with redaction and no live verification:
+  - `gitleaks git --redact`;
+  - `trufflehog git file://. --no-verification --json`, piped through `jq` so that only the
+    detector name, file, commit and line leave the command. trufflehog has no redaction flag
+    and prints the raw secret otherwise. Without `jq`, do not run it.
 
 ## 5. Findings
 

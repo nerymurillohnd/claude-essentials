@@ -97,8 +97,13 @@ not recovery.
 7. Check again that the source refs did not drift during the capture.
 8. Remove the restore-test directory only after every comparison passes. Keep the archive.
 
-A `git bundle` holds named refs only, not unreachable objects. It does not replace this
-backup when unreachable objects will be reclaimed.
+A `git bundle` holds named refs only: no reflogs, no stash entries below `stash@{0}`, no
+unreachable or reset-away commits (`[observed]` by restore test). It does not replace this
+backup when any of those will be removed.
+
+`git reflog expire --expire=now --all` also empties the stash list, even though `refs/stash`
+remains (`[observed]`). Drop or archive every stash explicitly before S11, and state this
+consequence in the S11 approval request.
 
 ## 5. Disposition ledger
 
