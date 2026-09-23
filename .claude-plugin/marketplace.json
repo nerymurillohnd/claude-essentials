@@ -71,6 +71,27 @@
       "license": "Apache-2.0"
     },
     {
+      "name": "repo-hygiene",
+      "source": "./plugins/repo-hygiene",
+      "description": "Makes Claude audit a Git repository and its hosting provider like a senior Git expert: a routine skill that inspects every area without waiting to be told which commands to run, a user-invoked deep skill for forensics and multi-session cleanup programs (plan, restore-tested backup, review-thread adjudication, certificate), three read-only agents for large volumes, and a bundled Git reference with the official URL on every entry. It reads freely and changes nothing without the user's approval of each item.",
+      "category": "development",
+      "tags": [
+        "git",
+        "repository-hygiene",
+        "branch-cleanup",
+        "git-forensics",
+        "recovery",
+        "pull-requests",
+        "secrets",
+        "audit"
+      ],
+      "author": {
+        "name": "Nery Samuel Murillo",
+        "url": "https://github.com/nerymurillohnd"
+      },
+      "license": "Apache-2.0"
+    },
+    {
       "name": "ruff-quality",
       "source": "./plugins/ruff-quality",
       "description": "Makes every Python file Claude edits pass Ruff. A plugin hook applies Ruff's safe fixes, formats and re-checks each .py, .pyw and .pyi file with the Ruff already installed in your project or globally, using your own Ruff configuration; asks you before Claude adds a suppression comment or changes Ruff configuration; and keeps Claude working, up to 7 attempts, until the files it touched are clean. Its skill teaches Claude to install, configure, run, integrate and diagnose Ruff from the official documentation.",
