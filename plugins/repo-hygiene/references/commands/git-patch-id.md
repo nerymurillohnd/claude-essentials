@@ -27,7 +27,7 @@ history.
 
 ```sh
 git --no-replace-objects --no-pager diff-tree -p ffde723 | git patch-id --stable
-git --no-replace-objects --no-pager log -p --no-color feat/squashed ^origin/main | git patch-id --stable
+git --no-replace-objects --no-pager log -p --no-color --no-textconv --no-ext-diff feat/squashed ^origin/main | git patch-id --stable
 ```
 
 `[observed]` the squash commit `ffde723` has patch-id `d64e4be…`; the branch's two commits
@@ -35,7 +35,7 @@ have `f5d5d32…` and `f0e26ea…`: no match, although the combined change is id
 Compare a candidate against reachable history in the same date window:
 
 ```sh
-git --no-replace-objects --no-pager log -p --no-color --since=2026-09-01 --until=2026-09-30 main \
+git --no-replace-objects --no-pager log -p --no-color --no-textconv --no-ext-diff --since=2026-09-01 --until=2026-09-30 main \
   | git patch-id --stable | sort > <evidence>/patch-ids-main.txt
 ```
 

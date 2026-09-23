@@ -36,13 +36,13 @@ Input comes from the provider (`provider.md`, P3): the thread ID, `path`, `line`
 3. Follow the code:
 
    ```sh
-   git --no-replace-objects log --format='%h %ad %s' --date=short \
+   git --no-replace-objects log --no-textconv --format='%h %ad %s' --date=short \
      -L<start>,<end>:<path> <originalCommit>..HEAD --
    ```
 
-   - If the file moved: `git --no-replace-objects log --follow -M --format='%h %s' -- <path>`.
+   - If the file moved: `git --no-replace-objects log --no-textconv --follow -M --format='%h %s' -- <path>`.
    - If `log -L` cannot follow, run
-     `git --no-pager blame -C -C -M --ignore-revs-file=<file-if-present> -- <current-path>`
+     `git --no-pager blame --no-textconv -C -C -M --ignore-revs-file=<file-if-present> -- <current-path>`
      on the current file.
    - If the path no longer exists at `HEAD`, state that plainly. A removed path is not by
      itself a disposition.
@@ -88,9 +88,9 @@ saved to the evidence package.
    A commit whose tree is in the set is *tree identical to a reachable commit*. Name one such
    commit (`git --no-replace-objects log --all --format='%H %T' | grep <tree> | head -1`).
 3. **Patch already in a reachable branch.**
-   `git --no-pager show <c> | git patch-id --stable` gives the patch ID. Compare it with
+   `git --no-pager show --no-textconv --no-ext-diff <c> | git patch-id --stable` gives the patch ID. Compare it with
    the patch IDs of reachable commits in the same date window
-   (`git --no-replace-objects log --all --since=<c-date-minus-30d> --until=<c-date-plus-90d> -p | git patch-id --stable`).
+   (`git --no-replace-objects log --all --since=<c-date-minus-30d> --until=<c-date-plus-90d> -p --no-textconv --no-ext-diff | git patch-id --stable`).
 4. **Stash-shaped pairs.** Subjects `WIP on <branch>: …` and `index on <branch>: …` are one
    stash. Compare them as a unit: the WIP commit's tree against the branch's later trees,
    per file. A subject never proves which tool made the commit.
@@ -152,7 +152,7 @@ branch `M`:
    path), search `M`'s history after `B` for the added and removed lines:
 
    ```sh
-   git --no-replace-objects log --format='%h %s' -G'<escaped line>' B..M -- path
+   git --no-replace-objects log --no-textconv --format='%h %s' -G'<escaped line>' B..M -- path
    ```
 
    A later commit that changed the same lines, plus a decision record, gives *superseded by
