@@ -114,6 +114,7 @@ loads any of it. The user-facing surface is `plugins/`.
 | `test_python_version_guard.py` | Shipped Python parses on an old interpreter, so its version check can speak. |
 | `readme_contract.py` | The README contract: R1 to R14, over each plugin's README and the root catalog. |
 | `test_readme_contract.py` | The README contract: the structure, the badges, and the status collapse. |
+| `test_repo_hygiene_corpus.py` | The repo-hygiene plugin's bundled Git corpus and its eval fixture stay internally consistent. |
 | `run_plugin_suites.py` | `make test-slow`, second half: every plugin's own suite, under every bash that matters. |
 | `test_run_plugin_suites.py` | Every plugin suite, under every bash that matters, plus the Python smoke run and floor gate. |
 | `runtime_boundary.py` | B1: the boundary between the maintainer's environment and a user's machine (§2.1). |

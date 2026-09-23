@@ -24,6 +24,7 @@ body:
         - agent-self-knowledge
         - block-no-verify
         - evidence-reader
+        - repo-hygiene
         - ruff-quality
         - shell-quality
         - verify-completion

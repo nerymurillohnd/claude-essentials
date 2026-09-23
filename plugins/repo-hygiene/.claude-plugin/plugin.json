@@ -1,0 +1,38 @@
+{
+  "name": "repo-hygiene",
+  "displayName": "Repo Hygiene",
+  "version": "0.1.0",
+  "description": "Makes Claude audit a Git repository and its hosting provider like a senior Git expert: a routine skill that inspects every area without waiting to be told which commands to run, a user-invoked deep skill for forensics and multi-session cleanup programs (plan, restore-tested backup, review-thread adjudication, certificate), three read-only agents for large volumes, and a bundled Git reference with the official URL on every entry. It reads freely and changes nothing without the user's approval of each item.",
+  "author": {
+    "name": "Nery Samuel Murillo",
+    "url": "https://github.com/nerymurillohnd"
+  },
+  "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/repo-hygiene",
+  "repository": "https://github.com/nerymurillohnd/claude-essentials",
+  "license": "Apache-2.0",
+  "keywords": [
+    "git",
+    "repository-hygiene",
+    "branch-cleanup",
+    "git-forensics",
+    "recovery",
+    "pull-requests",
+    "audit",
+    "subagents"
+  ],
+  "metadata": {
+    "marketplace": {
+      "category": "development",
+      "tags": [
+        "git",
+        "repository-hygiene",
+        "branch-cleanup",
+        "git-forensics",
+        "recovery",
+        "pull-requests",
+        "secrets",
+        "audit"
+      ]
+    }
+  }
+}
