@@ -15,6 +15,62 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
 {plugin-name}--v{version} on merge. See docs/contributing/versioning.md.
 -->
 
+## [0.3.0] - 2026-09-24
+
+### Changed
+
+- **Breaking:** the skill is rewritten as a research contract. Every task starts with one
+  command, `ccdocs.py research "<phrase>" ...`, instead of the model choosing which pages to
+  read. It routes the phrases through `references/areas.md`, reads every page of the areas they
+  name, keeps the sections whose headings use each area's vocabulary, follows every hyperlink in
+  those sections one hop, checks six months of release notes, and writes a folder (`MAP.md`,
+  `changelog.md`, one file per page and per section) under `${CLAUDE_PLUGIN_DATA}/research`.
+- **Breaking:** answers end with a four-part structure (Answer, Evidence, Changelog, Not
+  verified) and one `Verified <date> against Claude Code v<version>` line. The `TOOLS USED`,
+  `ACTIVATION` and `NOT FOUND` block is gone.
+- Scope widened from Claude Code to Cowork and the Claude apps (Help Center) and the Claude API
+  (Platform docs), each with its own index and release notes.
+- Python requirement lowered from 3.14 to **3.12**. An older `python3` stops with one line
+  naming the version it found.
+- Skill frontmatter rewritten: `description` states what the skill does and that it takes
+  precedence over the built-in `claude-code-guide` agent; `when_to_use` carries the triggers.
+- An invalid `CCDOCS_CACHE_TTL`, `CCDOCS_CORPUS_TTL` or `CCDOCS_ANCHOR_TTL` now stops the
+  command with a one-line error instead of falling back to the default.
+
+### Added
+
+- `ccdocs.py` commands: `research`, `show` (reads a research folder and nothing outside it),
+  `url` (turns a docs MCP path, a bare `/en/` link or an old alias into the canonical, verified
+  URL), `quote` (verbatim sentence with its section URL; fails when the text is not on the live
+  page), `inventory`, `catalog`, `related`, `dossier` and `links`.
+- Section anchors come from the rendered page, including the old ids a renamed section keeps
+  and ids placed inside a paragraph; an anchor that can't be verified is dropped and reported.
+- References: `areas.md` (29 areas with triggers, vocabulary, official navigation groups and
+  pinned pages), `area-pages.md` (every page of every area), `docs-catalog.md` (all index pages
+  with their link neighbours) and `url-aliases.md` (old URLs and the page each one serves).
+- `selfcheck --live` checks section names against the live pages, and fails when an index page
+  or a navigation group belongs to no area.
+- `CCDOCS_ANCHOR_TTL` sets how long the rendered-page anchors stay cached.
+
+### Removed
+
+- The skill's `allowed-tools` no longer grants `curl` or `WebFetch`. Every page is read through
+  `ccdocs.py`, which downloads the raw markdown whole.
+
+### Fixed
+
+- Sections written as HTML headings (`<h2 id="...">`) are found by `page`, `outline` and
+  `research`; they were invisible before.
+- A Help Center article whose URL slug changed is resolved by its article number.
+
+### Security
+
+- `raw` and every fetch refuse any URL that is not `https://`; `file://` URLs are rejected. Any
+  `https` host is still accepted.
+- Cache entries are created with the default file permissions of your system instead of being
+  readable by their owner only.
+- `research` keeps the last 10 run folders in its output directory and deletes older ones.
+
 ## [0.2.0] - 2026-09-22
 
 ### Changed
@@ -90,6 +146,7 @@ and adds a "## [X.Y.Z] - YYYY-MM-DD" section below; CI enforces both and tags
   accepted on 2026-09-20; the vector, the evidence, and the closing condition
   are recorded in `docs/maintenance/pending-debt.md` and in the design spec.
 
-[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.2.0...HEAD
+[Unreleased]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.3.0...HEAD
+[0.3.0]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.2.0...agent-self-knowledge--v0.3.0
 [0.2.0]: https://github.com/nerymurillohnd/claude-essentials/compare/agent-self-knowledge--v0.1.0...agent-self-knowledge--v0.2.0
 [0.1.0]: https://github.com/nerymurillohnd/claude-essentials/tree/agent-self-knowledge--v0.1.0

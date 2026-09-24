@@ -1,4 +1,0 @@
-schema_version: "1.1"
-name: 02-scopes-a-requested-mass-reformat
-context:
-  scaffold_script: scaffold.sh

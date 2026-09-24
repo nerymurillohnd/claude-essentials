@@ -1,7 +1,7 @@
 # Topic routing — where each Claude Code topic lives
 
-Every slug and quoted section name below was validated against the live index and docs map on 2026-09-20
-by `ccdocs.py selfcheck` (map stamp 2026-09-19). Re-run `ccdocs.py selfcheck` to re-validate this file in
+Every slug and quoted section name below was validated against the live index and docs map on 2026-09-23
+by `ccdocs.py selfcheck` (map stamp 2026-09-23). Re-run `ccdocs.py selfcheck` to re-validate this file in
 two HTTP requests rather than trusting the date. Slugs are relative to `https://code.claude.com/docs/en/`
 (append `.md` for raw markdown). Page slugs change rarely; section names change more often. If a slug 404s
 or a section is missing, run `ccdocs.py find <keyword>`; if the term isn't a heading at all (env var,
@@ -72,7 +72,7 @@ There is no standalone LSP page. LSP is delivered through plugins:
 
 ## 4. Agents overview, subagents, forks
 - Chooser page: `agents` — "Choose an approach" across subagents, forks, agent teams, agent view, workflows, worktrees.
-- Subagents: `sub-agents` — "Built-in subagents", "Supported frontmatter fields", "Choose a model",
+- Subagents: `sub-agents` — "Built-in subagents", "Write subagent files", "Frontmatter reference", "Choose a model",
   "Available tools", "Restrict which subagents can be spawned", "Permission modes", "Preload skills into
   subagents", "Enable persistent memory", "Run subagents in foreground or background",
   "Let subagents spawn their own subagents", "Concurrent subagent limit", "Fork the current conversation".

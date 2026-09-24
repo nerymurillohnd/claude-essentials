@@ -35,10 +35,14 @@ When tier 2 and tier 3 disagree, report both: "Docs say X; changelog vX.Y.Z says
 ### Pages
 - Raw markdown: `https://code.claude.com/docs/en/<slug>.md` (e.g. `hooks.md`, `agent-sdk/hooks.md`).
   The HTML URL also returns markdown when requested with `Accept: text/markdown`.
-- Human-facing citation URL: drop `.md` → `https://code.claude.com/docs/en/<slug>`; section anchors follow the
-  rendered heading id (lowercase, spaces→`-`, punctuation dropped, `/` kept), e.g.
-  `memory#organize-rules-with-claude/rules/`, `hooks#exit-code-2-behavior-per-event`. Treat anchors as
-  best-effort; the page URL is always valid.
+- Human-facing citation URL: drop `.md` → `https://code.claude.com/docs/en/<slug>`.
+- **Section anchors are never constructed by hand.** Measured 2026-09-23 on 10 core pages: a
+  slugify-the-heading rule produced 113 wrong anchors out of 811. Reasons: explicit ids
+  (`Frontmatter reference` → `#supported-frontmatter-fields`), dots becoming hyphens (`CLAUDE.md` → `claude-md`),
+  typographic apostrophes kept (`what’s-next`), `@` kept, ids on a neighboring `<a id>` tag, and deep headings
+  with no anchor at all. `ccdocs.py` takes every anchor from the id on the rendered HTML page, matched by heading
+  text and level. When it can't verify one, it cites the page URL without an anchor and explains why in an
+  `ANCHORS:` footer. Copy anchors only from its output.
 - Pages are large and still growing (measured 2026-09-20: settings-reference ≈ 433 KB, hooks ≈ 321 KB,
   plugins-reference ≈ 138 KB, mcp ≈ 114 KB, sub-agents ≈ 112 KB, skills ≈ 112 KB, model-config ≈ 108 KB).
   Fetch a section, not the whole page.
@@ -54,9 +58,10 @@ When tier 2 and tier 3 disagree, report both: "Docs say X; changelog vX.Y.Z says
 - Tools: `search_claude_code_docs` (semantic search → titles + links), `query_docs_filesystem_claude_code_docs`
   (read-only virtual FS: `rg`, `grep`, `tree`, `ls`, `cat`, `head` over `/<path>.mdx`), and `submit_feedback`
   (reports a doc problem — only use if the user asks you to).
-- Install: `claude mcp add --transport http claude-code-docs https://code.claude.com/docs/mcp`
-  (add `--scope user` for all projects). Once connected the tools appear as
-  `mcp__claude-code-docs__search_claude_code_docs` etc.
+- Bundled by the `agent-self-knowledge` plugin (`.mcp.json`, server key `claude-code-docs`); no manual install needed.
+  In Claude Code the tools appear as `mcp__plugin_agent-self-knowledge_claude-code-docs__search_claude_code_docs` etc.
+  (plugin MCP naming per `mcp` › "Plugin-provided MCP servers"). Manual install outside the plugin:
+  `claude mcp add --transport http --scope user claude-code-docs https://code.claude.com/docs/mcp`.
 - Best for: fuzzy/conceptual questions and exact regex across the whole corpus without downloading 9.5 MB.
 
 ### Built-in helper

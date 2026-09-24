@@ -1,8 +1,8 @@
 {
   "name": "agent-self-knowledge",
   "displayName": "Agent Self-Knowledge",
-  "version": "0.2.0",
-  "description": "Stops Claude from answering about Claude Code from memory. Its skill queries the live official documentation, the upstream changelog and the npm registry, then answers with the exact sentence quoted verbatim, the source URL, and the version it verified against — and reports what it could not find instead of filling the gap.",
+  "version": "0.3.0",
+  "description": "Makes Claude research how Claude Code, Cowork, the Claude apps, the Agent SDK and the Claude API work today instead of answering from memory. One command routes the task through a table of documentation areas, reads every related live page, keeps the sections about the topic, follows their links one hop and checks six months of release notes; the answer cites exact URLs and verbatim quotes and lists what it could not verify.",
   "author": {
     "name": "Nery Samuel Murillo",
     "url": "https://github.com/nerymurillohnd"
@@ -15,8 +15,8 @@
     "citations",
     "live-docs",
     "changelog",
-    "hallucination",
     "verification",
+    "research",
     "claude-code",
     "self-knowledge"
   ],
@@ -29,9 +29,9 @@
         "live-docs",
         "changelog",
         "verification",
-        "hallucination",
+        "research",
         "self-knowledge",
-        "research"
+        "cowork"
       ]
     }
   }
