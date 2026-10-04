@@ -35,12 +35,12 @@ A pull request may release several plugins, each with its own bump; it carries e
 
 ## Pull request or direct push
 
-| Change                                         | Path                                                                                           |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Anything under `plugins/**`                    | Pull request: `scripts/check_pr.py` checks the release and only runs on pull requests          |
-| `.claude-plugin/marketplace.json`              | Pull request: it is what users see when they refresh the catalog                               |
-| `.github/workflows/**`, `CODEOWNERS`           | Pull request: code owner approval and the workflow audits                                      |
-| Docs, scripts, tests, rules, ADRs, root README | Direct push to `main`, by the maintainer only, signed, after `python3 scripts/check.py` passes |
+| Change                                         | Path                                                                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Anything under `plugins/**`                    | Pull request: `scripts/check_pr.py` checks the release and only runs on pull requests                        |
+| `.claude-plugin/marketplace.json`              | Pull request: it is what users see when they refresh the catalog                                             |
+| `.github/workflows/**`, `CODEOWNERS`           | Pull request: code owner approval and the workflow audits                                                    |
+| Docs, scripts, tests, rules, ADRs, root README | Direct push to `main`, signed, after `python3 scripts/check.py` passes and the maintainer approves that push |
 
 After a direct push, confirm that the Validate workflow passes on `main`.
 

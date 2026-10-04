@@ -8,14 +8,14 @@ argument-hint: "<plugin> [--prompt TEXT] [--source checkout|head] [--expect REGE
 
 The marketplace has no app to launch: its "running app" is a plugin inside a user's Claude Code session. Drive it with `scripts/drive_plugin.py`, which sends a prompt to a real headless session with only that plugin loaded and checks the reply. Paths are relative to the repository root.
 
-Every run is a real model call billed to the maintainer's plan (about \$0.01 with the default `haiku`, about \$0.14 with the session's default model); `--budget` caps it at \$0.50.
+Every run is a real model call billed to the maintainer's plan (about \$0.01 with the default `haiku`); the driver prints the cost, and `--budget` caps it at \$0.50 by default.
 
 ## Run (agent path)
 
 Smoke-test a plugin from the working tree (uncommitted changes included). The default prompt is the plugin's first skill as a slash command:
 
 ```bash
-python3 scripts/drive_plugin.py hello-example --expect 'hello-example.*installed'
+python3 scripts/drive_plugin.py <plugin> --expect '<what the first skill says>'
 ```
 
 Exit 0 means the plugin loaded alone, the session ended without error, every `--expect` regex matched the reply and the real configuration is unchanged. The output shows the source, prompt, loaded plugins, reply and cost; each problem is a `✘` line and exit 1.
@@ -23,15 +23,17 @@ Exit 0 means the plugin loaded alone, the session ended without error, every `--
 Test the copy a user receives (HEAD cloned bare, installed through a `git-subdir` marketplace in a throwaway config); commit first:
 
 ```bash
-python3 scripts/drive_plugin.py hello-example --source head --prompt "/hello-example:hello Ada" --expect 'Ada'
+python3 scripts/drive_plugin.py <plugin> --source head --prompt "/<plugin>:<skill> <input>" --expect '<what the reply must contain>'
 ```
 
-| Option                | Use                                                                                  |
-| --------------------- | ------------------------------------------------------------------------------------ |
-| `--prompt TEXT`       | Any request a user would type; required for a plugin without skills                  |
-| `--expect REGEX`      | Repeatable, case-insensitive; one per behaviour the change must show                 |
-| `--source head`       | Before tagging a release, to drive the exact files users install                     |
-| `--model`, `--budget` | Default `haiku` and `0.50`; use `--model sonnet` when the skill needs more reasoning |
+| Option                | Use                                                                                       |
+| --------------------- | ----------------------------------------------------------------------------------------- |
+| `--prompt TEXT`       | Any request a user would type; required for a plugin without skills                       |
+| `--expect REGEX`      | Repeatable, case-insensitive; one per behaviour the change must show                      |
+| `--source head`       | Before tagging a release, to drive the exact files users install                          |
+| `--model`, `--budget` | Default `haiku` and `0.50`; use `--model sonnet` when the skill needs more reasoning      |
+| `--tools LIST`        | Built-in tools; `--restricted` drops Bash and WebFetch unless named here                  |
+| `--permission-mode`   | `default`, `acceptEdits`, `plan` or `dontAsk`; in `-p` a call that would prompt is denied |
 
 For a change, write expectations for what the change adds, not only that the plugin answers.
 
@@ -65,6 +67,6 @@ python3 scripts/check.py
 
 - **`✘ plugins/<name> is not a plugin`**: the name is not a directory with `.claude-plugin/plugin.json` under `plugins/`.
 - **`✘ <name> has no skills; pass --prompt`**: the plugin ships only agents, hooks or MCP servers; pass the request that should exercise them.
-- **`✘ head: plugin install <name>@claude-essentials failed`**: HEAD does not contain the plugin yet; commit, then rerun.
+- **`✘ head: plugin install <name>@claude-essentials failed: …`**: usually HEAD does not contain the plugin yet; commit, then rerun, and read the printed output for any other cause.
 - **`✘ USER is unset, so Claude Code cannot find the login; export USER`**: see the `USER` gotcha.
 - **`✘ reply does not match '<regex>'`**: the plugin answered but not as expected; read the printed reply before changing the plugin or the expectation.

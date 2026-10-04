@@ -30,7 +30,7 @@ Invoked with `$plugin $level $topic`. When the second argument is `tag`, skip to
 3. **Notes.** Read `plugins/$plugin/CHANGELOG.md`. `## [Unreleased]` must describe every user-visible change in Keep a Changelog types; a MAJOR needs `### Migration`. If notes are missing, draft them from `git log main..HEAD -- plugins/$plugin` (optionally `uvx git-cliff@2.14.2 --include-path "plugins/$plugin/**" --tag-pattern "^$plugin--v" --unreleased`), rewrite them for users, and show them to the maintainer before continuing.
 4. **Bump.** `python3 scripts/bump_version.py plugin $plugin $level --dry-run`, then without `--dry-run`. Review `git diff`: the new section matches `plugin.json`, `[Unreleased]` is empty, the README badge moved.
 5. **Behaviour.** `python3 scripts/drive_plugin.py $plugin --expect '<what the change adds>'` (skill `run-marketplace`). A failure stops the release.
-6. **Commit.** Run the `verify` skill, then commit with a message written to a file (apostrophes break heredocs in hooks): `git add plugins/$plugin README.md` and `git commit -F <file>` using `feat($plugin): …` for minor, `fix($plugin): …` for patch, `feat($plugin)!: …` with a `BREAKING CHANGE:` footer for major. Then `python3 scripts/check.py test-install` (it tests HEAD).
+6. **Commit.** Run the `verify` skill, then commit with a message written to a file (a hook that parses the command line can reject multi-line quoted text, such as a heredoc with a stray apostrophe or a `<<'EOF'` inside the message): `git add plugins/$plugin README.md` and `git commit -F <file>` using `feat($plugin): …` for minor, `fix($plugin): …` for patch, `feat($plugin)!: …` with a `BREAKING CHANGE:` footer for major. Then `python3 scripts/check.py test-install` (it tests HEAD).
 7. **Push the branch.** `git push -u origin $plugin/$topic` and wait for the approval prompt.
 8. **Pull request.** Fill `.github/PULL_REQUEST_TEMPLATE.md` into a body file, then `gh pr create --title "<commit subject>" --body-file <file> --label semver:$level`. After the approval, print the URL and stop with: _Run `/github-ops:automatic-pr-lifecycle <number>` to work through reviews and merge; then `/release-plugin $plugin tag`._
 
@@ -51,5 +51,5 @@ Never delete, move or re-push a published tag: users may have installed it. Fix 
 
 - `bump_version.py` refuses an empty `[Unreleased]` and a skipped version; never edit `version` by hand (the `guard-edit` hook denies it).
 - A pull request carries exactly one `semver:` label, the highest bump among the plugins it releases; a new plugin needs none.
-- `claude plugin tag` refuses a dirty tree and an existing tag; never pass `--force`.
+- `claude plugin tag` refuses uncommitted changes under the plugin directory and an existing tag; never pass `--force`, which skips both checks.
 - Squash merges are signed by GitHub's key, so `git log --show-signature` shows them unverified locally; check with `gh api repos/nerymurillohnd/claude-essentials/commits/<sha> --jq .commit.verification`.
