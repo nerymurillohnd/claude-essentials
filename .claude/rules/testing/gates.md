@@ -10,7 +10,7 @@ paths:
 
 # Validation and gates
 
-- The single entry point is `python3 scripts/check.py`: 9 gates, the same command locally and in CI, no Makefile.
+- The single entry point is `python3 scripts/check.py`: 9 gates, the same command locally and in CI.
 - The gates are validate, repo, adrs, readmes, tests, format, python, workflows and schemas.
 - The `repo` gate (`scripts/check_repo.py`) checks the catalog, names, SemVer, changelogs, READMEs, portability, self-containment, mods, labels and the tag pattern.
 - No repository dependency is used: standard-library scripts run with `python3`, and tools resolved on PATH locally and pinned in CI.

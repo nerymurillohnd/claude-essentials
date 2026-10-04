@@ -33,12 +33,13 @@ Claude Code computes a plugin's version from `plugin.json` first, then the marke
 
 ## Decision outcome
 
-Chosen option: **SemVer in `plugin.json` only, official `<name>--v<version>` tags**. Each plugin is versioned independently. The marketplace has its own version in `marketplace.json` and tags `marketplace--v<version>` (the name `marketplace` is reserved for plugins).
+Chosen option: **SemVer in `plugin.json` only, official `<name>--v<version>` tags**. Each plugin is versioned independently. The marketplace has its own version in `marketplace.json` and tags `marketplace--v<version>` (no plugin may be named `marketplace`).
 
 - MAJOR: a breaking change for users, such as a renamed or removed skill, agent or command, changed hook behavior, a new required setting or a removed component. Requires a `### Migration` section (what broke, who is affected, exact steps).
 - MINOR: new components or backward-compatible features.
 - PATCH: fixes and documentation.
-- Deprecation: deprecate in a minor release with a note under `### Deprecated`, keep the component for at least one further minor release and 30 days, remove it in the next major.
+- Deprecating a component inside a plugin: deprecate in a minor release with a note under `### Deprecated`, keep the component for at least one further minor release and 30 days, remove it in the plugin's next major.
+- Deprecating a whole plugin follows the same notice period; the plugin is then removed from the catalog in a marketplace release with a `renames` entry ([docs/releasing.md](../../releasing.md)).
 
 ### Consequences
 

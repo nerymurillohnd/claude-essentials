@@ -27,12 +27,12 @@ Other plugin collections exist. Copying or imitating them would import their ass
 
 ## Considered options
 
-- Official docs and changelog only, plus runtime verification
+- Official docs and changelog only, plus runtime verification; other collections observed only on the maintainer's request
 - Also learn from other plugin collections
 
 ## Decision outcome
 
-Chosen option: **official docs and changelog only, plus runtime verification**. Contributors and maintainers do not reference, browse, copy or imitate any other Claude Code or AI-assistant marketplace or plugin collection. Generic repository engineering (READMEs, changelogs, CI, licenses) is exempt and follows [ADR sourcing-policy](ADR_2026-10-03_sourcing-policy.md). Pasted material from other projects is checked before use, and anything platform-specific to another assistant is rejected.
+Chosen option: **official docs and changelog only, plus runtime verification**. Contributors and maintainers do not copy or imitate any other Claude Code or AI-assistant marketplace or plugin collection. One may be consulted only at the maintainer's explicit request, limited to what the request names, to observe a convention, never as a source of content; the observation is recorded in [docs/sourcing-log.md](../../sourcing-log.md). The maintainer's earlier marketplace projects are never consulted. Generic repository engineering (READMEs, changelogs, CI, licenses) is exempt and follows [ADR sourcing-policy](ADR_2026-10-03_sourcing-policy.md). Pasted material from other projects is checked before use, and anything platform-specific to another assistant is rejected.
 
 ### Consequences
 

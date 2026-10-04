@@ -17,7 +17,7 @@ The foundation is built locally. The only plugin is the example `hello-example`.
 
 ## Commands
 
-There is no Makefile. Every operation is a standard-library Python script run with `python3 scripts/<script>.py`. In the order of the work:
+Every operation is a standard-library Python script run with `python3 scripts/<script>.py`. In the order of the work:
 
 | Step                                          | Command                                                                                                                  |
 | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -42,11 +42,11 @@ There is no Makefile. Every operation is a standard-library Python script run wi
 ## Non-negotiable rules
 
 - **Plugins are for distribution.** Describe every capability from the point of view of the user who installs it. Never install, enable, symlink or pre-configure these plugins in my real Claude Code configuration. Never derive a plugin's requirements from my machine.
-- **Clean room.** Take Claude Code specifics only from the official docs (`https://code.claude.com/docs/llms.txt`), the changelog and runtime checks. Never reference, browse, copy or imitate another Claude Code or AI-assistant marketplace or plugin collection, including ones installed here. Check pasted material for other platforms' content before using it.
+- **Clean room.** Take Claude Code specifics only from the official docs (`https://code.claude.com/docs/llms.txt`), the changelog and runtime checks. Never copy or imitate another Claude Code or AI-assistant marketplace or plugin collection. Consult one only when I ask, only what I name, and only to observe. My earlier marketplace projects are forbidden sources, listed in the untracked `CLAUDE.local.md`. Check pasted material for other platforms' content before using it.
 - **Automate and source first.** Use a native tool or generator, then an official template, then an open standard; hand-write only what is ours. Record each choice in `docs/sourcing-log.md`.
 - **Portability.** No absolute or home paths, user or machine names, personal data or secrets in plugins. Use `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}`; never `../`.
 - **Leave nothing behind.** Every test, scaffold or experiment removes what it creates and verifies the removal. Use the prefixes in `TEMP_PREFIXES` (`scripts/check.py`) and `docs/testing.md#cleanup`.
-- **No unagreed tooling.** Never introduce a tool or convention I did not agree to; ask first. The Makefile was removed for this reason.
+- **No unagreed tooling.** Never introduce a tool or convention I did not agree to; ask first.
 - **Gates.** Never skip, suppress or weaken a gate; fix the root cause.
 - **Signatures and approval.** Sign every commit and tag. No remote, push, pull request, merge or publication without my explicit approval for that exact action.
 

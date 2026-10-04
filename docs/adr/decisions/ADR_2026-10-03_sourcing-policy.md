@@ -65,4 +65,4 @@ The sourcing log has a row per artifact class; reviewers reject unexplained hand
 
 ## More information
 
-See [ADR clean-room-policy](ADR_2026-10-03_clean-room-policy.md) for the boundary: generic engineering sources are allowed; other Claude Code plugin collections are not.
+See [ADR clean-room-policy](ADR_2026-10-03_clean-room-policy.md) for the boundary: generic engineering sources are allowed; other Claude Code plugin collections are observed only on the maintainer's request and never copied.

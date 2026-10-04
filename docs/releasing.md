@@ -93,6 +93,8 @@ Release the marketplace when plugins are added, deprecated or removed, or when d
 
 ## Deprecate or remove a plugin
 
+This section covers a whole plugin. To remove a component inside a plugin (a skill, agent, hook or command), deprecate it under `### Deprecated` in a plugin minor, keep it for at least one further minor release and 30 days, and remove it in the plugin's next major with a `### Migration` section.
+
 1. Deprecate in a MINOR release: add `### Deprecated` with the replacement and the planned removal, and state it in the README Overview.
 2. Keep the plugin for at least one further minor release and 30 days.
 3. Remove it in a marketplace release: delete the entry and directory, add `"renames": { "<name>": null }` to `marketplace.json` (append-only), and note it in the root changelog. Never rename a published plugin unless a `renames` entry maps the old name to the new one ([rename or remove a plugin](https://code.claude.com/docs/en/plugins/host-marketplace#rename-or-remove-a-plugin)).

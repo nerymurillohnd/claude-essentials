@@ -13,7 +13,7 @@ Decide how plugin installation and the gates themselves are tested without touch
 
 ## Scope
 
-`scripts/test_install.py`, `tests/`, `uv run scripts/check.py test-install`, `uv run scripts/check.py tests`, CI.
+`scripts/test_install.py`, `tests/`, `python3 scripts/check.py test-install`, `python3 scripts/check.py tests`, CI.
 
 ## Context and problem statement
 
@@ -42,7 +42,7 @@ Chosen option: **isolated configuration tests plus injected-defect unit tests**.
 
 ### Confirmation
 
-CI runs `uv run scripts/check.py` (which includes `uv run scripts/check.py tests`) and `uv run scripts/check.py test-install`. Verified approaches that do not work, and must not be retried, are recorded in CLAUDE.md.
+CI runs `python3 scripts/check.py` (which includes the `tests` gate) and `python3 scripts/check.py test-install`. Verified approaches that do not work, and must not be retried, are recorded in `.claude/rules/testing/isolated-install.md`.
 
 ## Pros and cons of the options
 

@@ -23,7 +23,7 @@ READMEs repeat facts that live elsewhere: versions, categories, component lists,
 
 - Facts have one source of truth.
 - Authors still write the explanations only they can write.
-- The check runs in `uv run scripts/check.py` and agrees with the formatter.
+- The check runs in `python3 scripts/check.py` and agrees with the formatter.
 
 ## Considered options
 

@@ -40,7 +40,7 @@ Chosen option: **pin 2.1.289**. CI installs exactly this version with the offici
 
 ### Confirmation
 
-`repo.MIN_CLAUDE_CODE` and the release workflow pin change together in one pull request that records the reviewed changelog window in CLAUDE.md.
+`repo.MIN_CLAUDE_CODE` and the release workflow pin change together in one pull request that records the reviewed changelog window in `.claude/rules/claude-code-version.md`.
 
 ## Pros and cons of the options
 

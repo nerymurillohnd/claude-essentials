@@ -17,7 +17,7 @@ Decide how a plugin or marketplace release is prepared, tagged and published, an
 
 ## Context and problem statement
 
-Releases need user-facing notes, a version bump, a dated changelog section, a signed commit, a signed tag and a GitHub Release. Every commit and tag must be signed with the maintainer's key, and the repository has no dependency manifest. The catalog has no real plugin and no plugin tag yet, so it is unknown which release steps deserve to be combined.
+Releases need user-facing notes, a version bump, a dated changelog section, a signed commit, a signed tag and a GitHub Release. Every commit and tag must be signed with the maintainer's key, and the repository has no dependency manifest. Which release steps deserve to be combined is only known after real releases.
 
 ## Decision drivers
 
@@ -37,7 +37,7 @@ Releases need user-facing notes, a version bump, a dated changelog section, a si
 Chosen option: **editorial changelogs, a stdlib bump script, manual commit and `claude plugin tag`, CI publication**.
 
 - Each plugin keeps a hand-written `CHANGELOG.md`; contributors add notes under `## [Unreleased]`.
-- `uv run scripts/bump_version.py plugin <name> <level>` checks the notes (a MAJOR needs `### Migration`), moves them into a dated section, bumps `plugin.json` (the only place the version lives, so the catalog needs nothing else), regenerates the README content that shows the version and validates. It never commits, tags or pushes.
+- `python3 scripts/bump_version.py plugin <name> <level>` checks the notes (a MAJOR needs `### Migration`), moves them into a dated section, bumps `plugin.json` (the only place the version lives, so the catalog needs nothing else), regenerates the README content that shows the version and validates. It never commits, tags or pushes.
 - The maintainer reviews the diff, commits, and runs `claude plugin tag`, which creates the signed annotated tag after checking manifest and catalog agree.
 - Pushing the tag runs the release workflow: `scripts/release_notes.py verify` checks tag and manifest, the plugin is validated, and `scripts/release_notes.py notes` publishes that version's changelog section as the GitHub Release.
 - `uvx git-cliff@2.14.2 --include-path "plugins/<name>/**"` may be used occasionally to draft notes from history without adding a dependency; the draft is reviewed and rewritten, and never decides the bump or writes the changelog.
@@ -72,7 +72,7 @@ Unit tests cover changelog rewriting and the Migration requirement; `scripts/che
 ### git-cliff as the changelog source
 
 - Good, because it generates changelogs from Conventional Commits and filters by path for per-plugin versions.
-- Bad, because with no plugins and no history it adds configuration and a second source of notes, and commit subjects are not user-facing notes.
+- Bad, because it adds configuration and a second source of notes, and commit subjects are not user-facing notes.
 
 ## More information
 

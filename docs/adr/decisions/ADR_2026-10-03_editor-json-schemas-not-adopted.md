@@ -17,7 +17,7 @@ Any JSON Schema describing Claude Code file formats, for validation or editor au
 
 ## Context and problem statement
 
-Claude Code publishes no JSON Schema: the `$schema` URL that `claude plugin init` writes returns HTTP 404. Candidate schemas were offered, written against Claude Code 2.1.281 with `additionalProperties: false`. Checked against 2.1.289 docs and changelog, they reject valid configuration: the LSP schema lacks `requestTimeout` (documented since 2.1.288), and the MCP schema excludes `bareElicitationCapability`, which the 2.1.287 release notes tell users to add.
+Claude Code publishes no JSON Schema: the `$schema` URL that `claude plugin init` writes returns HTTP 404. Strict hand-written schemas (`additionalProperties: false`) fall behind every release and then reject valid configuration: checked against Claude Code 2.1.289, a schema written for 2.1.281 lacks the LSP `requestTimeout` (documented since 2.1.288) and excludes the MCP `bareElicitationCapability`, which the 2.1.287 release notes tell users to add.
 
 ## Decision drivers
 
@@ -55,7 +55,3 @@ Revisit when either Claude Code publishes an official schema, or a schema set is
 
 - Good, because editors can validate while typing.
 - Bad, because a stale schema blocks valid plugins, as shown above.
-
-## More information
-
-The runtime observation recorded with the LSP candidate (one invalid server drops every server in the same file) is noted in CLAUDE.md as a claim to re-verify before relying on it.

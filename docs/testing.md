@@ -1,6 +1,6 @@
 # Testing
 
-Every gate runs locally with `python3 scripts/check.py` and in CI with the same command. Decisions: [ADR scripts-run-with-python3](adr/decisions/ADR_2026-10-03_scripts-run-with-python3.md), [ADR testing-approach](adr/decisions/ADR_2026-10-03_testing-approach.md).
+Every gate runs locally with `python3 scripts/check.py` and in CI with the same command. Decisions: [ADR validation-stack](adr/decisions/ADR_2026-10-03_validation-stack.md), [ADR testing-approach](adr/decisions/ADR_2026-10-03_testing-approach.md).
 
 ## Targets
 

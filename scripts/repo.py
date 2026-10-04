@@ -1,7 +1,7 @@
 """Shared helpers for the claude-essentials repository scripts.
 
 Standard library only: the repository has no dependency manifest by design
-(docs/adr/decisions/ADR_2026-10-03_scripts-run-with-python3.md). Every Claude
+(docs/adr/decisions/ADR_2026-10-03_validation-stack.md). Every Claude
 Code fact used here is grounded in the official docs listed in CLAUDE.md.
 """
 

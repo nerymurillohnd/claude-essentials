@@ -10,7 +10,7 @@ Usage:
   python3 scripts/check.py --list           # list the gates
 
 The repository has no dependency manifest
-(docs/adr/decisions/ADR_2026-10-03_scripts-run-with-python3.md): tools are
+(docs/adr/decisions/ADR_2026-10-03_validation-stack.md): tools are
 resolved by name on PATH locally and installed at the pinned versions below on
 CI runners.
 """
