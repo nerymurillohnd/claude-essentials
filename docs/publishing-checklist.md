@@ -12,7 +12,7 @@ The repository was published on 2026-10-04 at https://github.com/nerymurillohnd/
 - [x] Features: Issues on; Wiki and Projects off.
 - [x] Pull requests: squash merging only (title and body of the pull request), delete head branches automatically.
 - [x] Security: private vulnerability reporting, secret scanning and push protection on. Dependabot security updates are on by GitHub's default for public repositories; Dependabot version updates stay deferred.
-- [ ] Moderation: enable content reporting to repository maintainers (Settings → Moderation options; the Code of Conduct relies on it). It has no API.
+- [x] Moderation: "Reported content" to maintainers exists only for organization-owned repositories, so it does not apply here; the Code of Conduct sends reports to the maintainer's contact details. Interaction limits and code review limits stay off and can be turned on temporarily if a discussion gets out of hand.
 - [x] Actions: GitHub-owned actions plus `astral-sh/setup-uv` and `crazy-max/ghaction-github-labeler` only, SHA pinning required, default `GITHUB_TOKEN` permissions read-only, Actions cannot approve pull requests.
 
 ## 3. Protect `main`
