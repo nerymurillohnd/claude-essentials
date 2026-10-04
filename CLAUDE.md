@@ -162,6 +162,5 @@ docs/                             guides and ADRs
   - refining the user-level Python rule;
   - a `uv cache prune` to repair cache entries removed by hand on 2026-10-03;
   - a rule that plugins declare every external tool they use and rely on no version-specific features;
-  - the public `owner.email` in `marketplace.json`;
   - short-lived `<plugin>/<topic>` branches as the branch convention.
 - Deferred: a scheduled Claude Code release watcher, Dependabot, link checking, git-cliff or release-please, and a single release command (only after real releases).
