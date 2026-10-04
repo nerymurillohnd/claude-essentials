@@ -55,7 +55,12 @@ def _script(name: str, *args: str) -> list[str]:
 
 
 def _validate() -> list[list[str]]:
-    targets = [".", *(str(plugin.relative_to(repo.ROOT)) for plugin in repo.plugin_dirs())]
+    # `.claude` checks the repository's own project skills and agents (Claude Code 2.1.233+).
+    targets = [
+        ".",
+        ".claude",
+        *(str(plugin.relative_to(repo.ROOT)) for plugin in repo.plugin_dirs()),
+    ]
     return [["claude", "plugin", "validate", target, "--strict"] for target in targets]
 
 
@@ -95,6 +100,10 @@ GATES: dict[str, tuple[str, Callable[[], list[list[str]]]]] = {
     "readmes": (
         "Generated README content is up to date",
         lambda: [_script("sync_readmes.py", "--check")],
+    ),
+    "docs": (
+        "Docs match the code: pins, gate list, script names, rule paths, links",
+        lambda: [_script("check_docs.py")],
     ),
     "tests": (
         "Gate tests with injected defects",

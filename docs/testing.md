@@ -6,10 +6,11 @@ Every gate runs locally with `python3 scripts/check.py` and in CI with the same 
 
 | Target                                  | What it proves                                                                                                                                    |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `python3 scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace and each plugin                                                                         |
+| `python3 scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace, the project's `.claude/` skills and agents, and each plugin                            |
 | `python3 scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, mods, labels, the release tag pattern and the local hook pins |
 | `python3 scripts/check.py adrs`         | Every ADR record has a dated name, valid frontmatter, required sections, no placeholders and working links                                        |
 | `python3 scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                                       |
+| `python3 scripts/check.py docs`         | Docs match the code: pinned versions, gate list, script names, rule `paths` and relative links                                                    |
 | `python3 scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                                             |
 | `python3 scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML                                                                                                    |
 | `python3 scripts/check.py python`       | ruff and basedpyright with warnings as errors                                                                                                     |

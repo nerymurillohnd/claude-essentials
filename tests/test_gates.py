@@ -19,6 +19,7 @@ import unittest
 
 import bump_version
 import check_commit_msg
+import check_docs
 import check_pr
 import check_repo
 import drive_plugin
@@ -514,6 +515,80 @@ class TagFormatTest(unittest.TestCase):
     def test_other_formats_rejected(self) -> None:
         for tag in ("v1.2.3", f"{PLUGIN}-v1.2.3", f"{PLUGIN}--v1.2"):
             assert repo.split_tag(tag) is None, tag
+
+
+class DocsGateTest(RepositoryFixture):
+    """The docs gate fails for each kind of drift, and only for it."""
+
+    def docs_errors(self) -> list[str]:
+        return check_docs.run_checks(self.root).errors
+
+    def assert_drift(self, fragment: str) -> None:
+        errors = self.docs_errors()
+        assert errors, "the docs gate passed although drift was injected"
+        assert all(fragment in error for error in errors), (
+            f"expected every error to mention {fragment!r}, got: {errors}"
+        )
+
+    def replace(self, relative: str, old: str, new: str) -> None:
+        path = self.root / relative
+        text = path.read_text(encoding="utf-8")
+        assert old in text, f"{old!r} not in {relative}"
+        _ = path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+    def test_unmodified_repository_passes(self) -> None:
+        assert self.docs_errors() == []
+
+    def test_claude_code_pin_drift_fails(self) -> None:
+        self.replace(".github/workflows/release.yml", repo.MIN_CLAUDE_CODE, "2.1.200")
+        self.assert_drift("2.1.200 must be")
+
+    def test_tool_pin_drift_fails(self) -> None:
+        self.replace(".claude/rules/testing/gates.md", "prettier 3.", "prettier 2.")
+        self.assert_drift("(PRETTIER_VERSION in check.py)")
+
+    def test_moved_pin_sentence_fails(self) -> None:
+        self.replace("docs/releasing.md", " or later", " and newer")
+        self.assert_drift("update the text or PIN_SITES")
+
+    def test_gate_count_drift_fails(self) -> None:
+        self.replace(".claude/rules/testing/gates.md", "10 gates", "9 gates")
+        self.assert_drift("gate count is 9")
+
+    def test_missing_target_row_fails(self) -> None:
+        self.replace("docs/testing.md", "| `python3 scripts/check.py docs`", "| `docs`")
+        self.assert_drift('no row for gate "docs"')
+
+    def test_unknown_script_fails(self) -> None:
+        self.append(self.root / "docs" / "testing.md", "\nRun `scripts/no_such.py`.\n")
+        self.assert_drift("scripts/no_such.py, which does not exist")
+
+    def test_unknown_check_target_fails(self) -> None:
+        self.append(self.root / "docs" / "testing.md", "\nRun `python3 scripts/check.py lint`.\n")
+        self.assert_drift('"python3 scripts/check.py lint" is no target')
+
+    def test_rule_matching_nothing_fails(self) -> None:
+        rule = self.root / ".claude" / "rules" / "orphan.md"
+        _ = rule.write_text('---\npaths:\n  - "nowhere/**"\n---\n\n# Orphan\n', encoding="utf-8")
+        self.assert_drift("the rule never loads")
+
+    def test_broken_link_fails(self) -> None:
+        self.append(self.root / "docs" / "testing.md", "\nSee [gone](gone.md).\n")
+        self.assert_drift("broken link gone.md")
+
+    def test_link_in_code_is_ignored(self) -> None:
+        self.append(self.root / "docs" / "testing.md", "\nWrite `[x](gone.md)` like this.\n")
+        assert self.docs_errors() == []
+
+    def test_skill_name_mismatch_fails(self) -> None:
+        self.replace(".claude/skills/verify/SKILL.md", "name: verify", "name: verify-all")
+        self.assert_drift("name verify-all must equal verify")
+
+    def test_glob_translation(self) -> None:
+        assert check_docs.glob_regex("plugins/**/README.md").match("plugins/a/README.md")
+        assert check_docs.glob_regex("plugins/**/README.md").match("plugins/README.md")
+        assert not check_docs.glob_regex("scripts/*.py").match("scripts/sub/x.py")
+        assert check_docs.glob_regex("**/*.json").match(".claude-plugin/marketplace.json")
 
 
 class DrivePluginTest(unittest.TestCase):

@@ -10,8 +10,9 @@ paths:
 
 # Validation and gates
 
-- The single entry point is `python3 scripts/check.py`: 9 gates, the same command locally and in CI.
-- The gates are validate, repo, adrs, readmes, tests, format, python, workflows and schemas.
+- The single entry point is `python3 scripts/check.py`: 10 gates, the same command locally and in CI.
+- The gates are validate, repo, adrs, readmes, docs, tests, format, python, workflows and schemas.
+- The `docs` gate (`scripts/check_docs.py`) fails when a copy of a pin, the gate list, a script name, a rule's `paths` or a relative link drifts from the code; when a pinned sentence moves, update `PIN_SITES` in that script. `validate` also checks the project's own `.claude/` skills and agents.
 - The `repo` gate (`scripts/check_repo.py`) checks the catalog, names, SemVer, changelogs, READMEs, portability, self-containment, mods, labels, the tag pattern and the local hook pins.
 - No repository dependency is used: standard-library scripts run with `python3`, and tools resolved on PATH locally and pinned in CI.
 - Pinned versions: prettier 3.9.9, actionlint 1.7.12, zizmor 1.30.1 (offline) and check-jsonschema with its built-in schemas.
