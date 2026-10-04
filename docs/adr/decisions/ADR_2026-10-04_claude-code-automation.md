@@ -13,7 +13,7 @@ Decide which Claude Code features the repository uses to maintain itself, so the
 
 ## Scope
 
-`.claude/settings.json`, `scripts/claude_hooks.py`, `scripts/check_docs.py` (the `docs` gate), `scripts/drive_plugin.py`, `scripts/add_component.py`, the project skills and agent in `.claude/`, the saved workflows in `.claude/workflows/`, `docs/automation.md`, and the branch convention. Plugins shipped to users are out of scope: these files maintain the repository and are never distributed.
+`.claude/settings.json`, `scripts/claude_hooks.py`, `scripts/check_docs.py` (the `docs` gate), `scripts/drive_plugin.py`, `scripts/add_component.py`, the project skills and agent in `.claude/`, the saved workflows in `.claude/workflows/`, `.claude/rules/automation.md`, and the branch convention. Plugins shipped to users are out of scope: these files maintain the repository and are never distributed.
 
 ## Context and problem statement
 

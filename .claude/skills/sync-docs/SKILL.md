@@ -22,7 +22,7 @@ The code is the source of truth; documents follow it. Mechanical drift is caught
    | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
    | `scripts/*.py`, a gate                     | `docs/testing.md`, `.claude/rules/testing/gates.md`, CLAUDE.md Commands, the script's docstring                        |
    | Release flow                               | `docs/releasing.md`, `.claude/skills/plugin-versioning`, `.claude/skills/release-plugin`, `.claude/rules/releasing.md` |
-   | Hooks, settings, skills, agents, workflows | `docs/automation.md`, CLAUDE.md Where Knowledge Lives                                                                  |
+   | Hooks, settings, skills, agents, workflows | `.claude/rules/automation.md`, CLAUDE.md Where Knowledge Lives                                                         |
    | A tool or template added                   | `docs/sourcing-log.md`, `THIRD_PARTY_NOTICES.md`                                                                       |
    | A decision                                 | a new dated ADR from `templates/adr/`; mark the old one `superseded`                                                   |
    | A Claude Code fact                         | the rule in `.claude/rules/`, with date and version                                                                    |

@@ -35,7 +35,7 @@ Run commands in this order. Every script is standard-library Python.
 - `claude plugin tag plugins/<name>` - Run on the merged commit.
 - `git tag -v <name>--v<version>` - Run right after tagging to verify the signature.
 - `python3 scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
-- `/<project-skill>` - Run when a task matches a project skill listed in `docs/automation.md`.
+- `/<project-skill>` - Run when a task matches a project skill listed in `.claude/rules/automation.md`.
 - `python3 scripts/check.py ci-tools` - Run on CI only.
 - `prek install` - Run once per clone to install the ruff and basedpyright pre-commit hooks (`uv tool install prek` first).
 - `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` - Run once to install the optional commit message check.
@@ -102,6 +102,7 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 - Repository scripts, gates, isolated installs: `.claude/rules/repo-scripts.md`, `.claude/rules/testing/gates.md`, `.claude/rules/testing/isolated-install.md`
 - CI, releases, tool pins: `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`
 - ADRs and Claude Code features: `.claude/rules/adrs.md`, `.claude/rules/claude-code-features.md`
+- Claude Code automation (settings, hooks, project skills, agent, workflows): `.claude/rules/automation.md`
 
 ### Guides to Read Before Acting
 
@@ -111,7 +112,6 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 - Edit a README or README template: read `docs/readme-guide.md`.
 - Bump, write changelog notes, tag, or release: read `docs/releasing.md`.
 - Change gates, tests, or CI: read `docs/testing.md`.
-- Use or change the Claude Code automation (settings, hooks, project skills, agent, workflows): read `docs/automation.md`.
 - Add a file, tool, template, or dependency: read `docs/sourcing-log.md` and `THIRD_PARTY_NOTICES.md`.
 - Change a rule or make a structural decision: read `docs/adr/README.md`.
   - Create a new ADR from `templates/adr/`.
@@ -169,7 +169,7 @@ docs/                             guides and ADRs
 - Published on 2026-10-04: every gate that existed at publication passed locally and in CI, `main` is protected by rulesets (signed commits, linear history, squash-only merges), labels are synced, and the marketplace installs like a user's install.
 - The full release flow ran end to end on pull request #2: `check_pr`, labeler, squash merge, signed tag `hello-example--v0.1.1` and its GitHub Release.
 - Open item in `docs/publishing-checklist.md`: checking the issue forms in the browser.
-- Claude Code automation added on 2026-10-04: see `docs/automation.md`.
+- Claude Code automation added on 2026-10-04: see `.claude/rules/automation.md`.
 - Its commits were pushed with the merge of PR #4 (`7314c58`, squash), which the maintainer approved on 2026-10-04; the commits from `8109002` to `7314c58` came after the handoff `2026-10-04-0852`.
 - The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `python3 scripts/check.py` passed all 10 gates locally on 2026-10-04.
 - `51e96f6` (2026-10-04) gave the bug report dropdowns a neutral first option; CI passed on `main`, and the forms still need the browser check.

@@ -231,7 +231,8 @@ __marimo__/
 __MACOSX/
 .AppleDouble
 .LSOverride
-Icon[]
+Icon[
+]
 
 # Resource forks
 ._*
@@ -252,7 +253,8 @@ Icon[]
 .file
 .disk_label*
 lost+found
-.HFS+ Private Directory Data[]
+.HFS+ Private Directory Data[
+]
 
 # Directories potentially created on remote AFP share
 .AppleDB
@@ -290,6 +292,6 @@ CLAUDE.local.md
 # Extracted MCP bundles created when a plugin is loaded locally.
 .mcpb-cache/
 
-# Claude Code worktrees and plugin eval results (docs/automation.md)
+# Claude Code worktrees and plugin eval results (.claude/rules/automation.md)
 .claude/worktrees/
 plugins/*/evals/results/
