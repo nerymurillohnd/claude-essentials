@@ -19,3 +19,4 @@ paths:
 - Review plugin instructions assuming they run under auto mode.
 - Plugin hooks must be robust and fast, and must never spawn daemons.
 - Avoid both `anthropic-skills` and `claude-ai` as names.
+- The `init --with hooks` scaffold runs `bun "${CLAUDE_PLUGIN_ROOT}/hooks-handlers/on-session-start.ts"`; never ship it unchanged, because hooks may only use interpreters the plugin declares as requirements.

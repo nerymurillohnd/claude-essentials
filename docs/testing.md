@@ -20,7 +20,7 @@ Every gate runs locally with `python3 scripts/check.py` and in CI with the same 
 
 ## Local hooks
 
-`.pre-commit-config.yaml` runs ruff (`ruff-check --fix`, then `ruff-format`) and basedpyright (`--warnings`) on the Python files of every commit, through [prek](https://github.com/j178/prek): `uv tool install prek`, then `prek install` once per clone; `prek run --all-files` checks the whole tree. The hooks follow the official [ruff](https://docs.astral.sh/ruff/integrations/#pre-commit) and [basedpyright](https://docs.basedpyright.com/latest/installation/prek-hook/) instructions. Their `rev` pins must equal `RUFF_VERSION` and `BASEDPYRIGHT_VERSION` in `scripts/check.py`; the `repo` gate fails otherwise. Before raising a pin, read the release notes of every version in between. The hooks are a fast local check; `python3 scripts/check.py` remains the authority.
+`.pre-commit-config.yaml` runs ruff (`ruff-check --fix`, then `ruff-format`) and basedpyright (`--warnings`) on the Python files of every commit, through [prek](https://github.com/j178/prek): `uv tool install prek`, then `prek install` once per clone; `prek run --all-files` checks the whole tree. The hooks are a fast local check; `python3 scripts/check.py` remains the authority.
 
 ## Gate tests
 
@@ -35,12 +35,6 @@ Every gate runs locally with `python3 scripts/check.py` and in CI with the same 
 3. **Session:** loads all plugins with `claude --plugin-dir plugins plugin list --json` and fails on load errors or notes.
 
 Outside CI, the script fingerprints `settings.json`, the plugin records, the plugin cache, the marketplaces directory and the skills directory of the real configuration before and after, and fails if any changed.
-
-## Drive a plugin
-
-`python3 scripts/drive_plugin.py <plugin> [--prompt TEXT] [--source checkout|head] [--expect REGEX] [--model MODEL] [--budget USD] [--tools LIST] [--permission-mode MODE]` uses a plugin the way a user does: it sends a prompt (by default the plugin's first skill as a slash command) to a headless `claude -p` session with only that plugin loaded, and fails unless the plugin loaded alone, the session ended without error, every `--expect` regex matches the reply and the real configuration is unchanged. `--source head` drives the copy a user receives, installed from a bare clone of HEAD in a throwaway configuration. `--budget` caps the spend of the session (default \$0.50). `--tools` (default `default,Bash,WebFetch`) restores Bash and WebFetch, which `--restricted` drops. The project skill `run-marketplace` documents it.
-
-The session runs with the maintainer's own login, because an isolated `CLAUDE_CONFIG_DIR` has no credentials, under `--restricted` (no user or project settings), `--strict-mcp-config` (no claude.ai connectors) and `--no-session-persistence` (no transcript), started in an empty temporary directory so neither the project `CLAUDE.md` nor the git snapshot reaches the model. It is a fast smoke test on the maintainer's login; `claude plugin eval` (below) is the clean-room check. Each run is a real model call (about \$0.01 with the default `haiku`), so it is not a CI gate; run it before a pull request that changes a plugin's behavior.
 
 ## Cleanup
 

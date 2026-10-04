@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 # Release a plugin
 
-`docs/releasing.md` is the procedure and wins if this skill ever differs; `plugin-versioning` decides the level. Every push, pull request and tag push stops at a permission prompt (project `permissions.ask` and the `guard-bash` hook): that prompt is the maintainer's approval for that exact action, so never route around it. This skill never merges: reviews, CI repairs and the merge belong to `/github-ops:automatic-pr-lifecycle`.
+`.claude/rules/releasing.md` (tag, publish, roll back) and `docs/releasing.md` (notes, bump, pull request) are the procedure and win if this skill ever differs; `plugin-versioning` decides the level. Every push, pull request and tag push stops at a permission prompt (project `permissions.ask` and the `guard-bash` hook): that prompt is the maintainer's approval for that exact action, so never route around it. This skill never merges: reviews, CI repairs and the merge belong to `/github-ops:automatic-pr-lifecycle`.
 
 Invoked with `$plugin $level $topic`. When the second argument is `tag`, skip to Part 2.
 
@@ -45,7 +45,7 @@ Invoked with `$plugin $level $topic`. When the second argument is `tag`, skip to
 
 ## Roll back
 
-Never delete, move or re-push a published tag: users may have installed it. Fix forward: revert or correct in a new `$plugin/<topic>` branch and release a PATCH (or a MAJOR with `### Migration` if users must act). To withdraw a whole plugin, follow "Deprecate or remove a plugin" in `docs/releasing.md`. The "Roll back a release" section there has the details.
+Never delete, move or re-push a published tag: users may have installed it. Fix forward: revert or correct in a new `$plugin/<topic>` branch and release a PATCH (or a MAJOR with `### Migration` if users must act). To withdraw a whole plugin, follow "Deprecate or remove a plugin" in `docs/releasing.md`. The roll-back details are in `.claude/rules/releasing.md`.
 
 ## Gotchas
 

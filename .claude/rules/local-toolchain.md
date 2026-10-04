@@ -1,3 +1,12 @@
+---
+paths:
+  - "scripts/**"
+  - "tests/**"
+  - ".pre-commit-config.yaml"
+  - "ruff.toml"
+  - "pyrightconfig.json"
+---
+
 # Local toolchain (only for the repository's own scripts)
 
 - Verified on 2026-10-04 with uv 0.12.23; CI pins uv 0.12.22 in `.github/workflows/validate.yml`.

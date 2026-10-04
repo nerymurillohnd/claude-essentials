@@ -81,7 +81,7 @@ paths:
 
 - `scripts/claude_hooks.py` - The hooks above; each decision is unit-tested in `tests/test_gates.py`.
 - `scripts/check_docs.py` - The `docs` gate.
-- `scripts/drive_plugin.py` - Drives a plugin in a headless session (section Drive a Plugin of `docs/testing.md`).
+- `scripts/drive_plugin.py` - Drives a plugin in a headless session (`.claude/rules/testing/drive-plugin.md`).
 - `scripts/add_component.py` - Adds a skill or agent to an existing plugin.
 
 ## Limits

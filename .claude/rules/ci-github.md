@@ -19,3 +19,21 @@ paths:
 - Labels are defined as code with crazy-max (which deletes the ones not in the file), and `actions/labeler` applies them by path.
 - The label prefixes are `type:`, `semver:`, `status:`, `priority:`, `category:` and `plugin:<name>`, plus `security-review`.
 - Pinned action versions: checkout v7.0.1, setup-uv v10.2.0, setup-node v7.0.0, labeler v7.0.0, crazy-max/ghaction-github-labeler v6.0.0 and anthropics/claude-code-action v1.0.241.
+
+## Repository Settings
+
+- Applied 2026-10-04; the repository is public at `nerymurillohnd/claude-essentials`.
+- Topics: `claude-code`, `plugin-marketplace`, `skills`, `mcp`, `agents`. Never use an official marketplace name, such as a reserved name from the marketplace reference, as a topic.
+- Issues on; Wiki and Projects off.
+- Squash merging only (title and body of the pull request), and head branches deleted automatically.
+- Private vulnerability reporting, secret scanning and push protection on. Dependabot security updates are on by GitHub's default for public repositories; version updates stay deferred.
+- "Reported content" to maintainers exists only for organization-owned repositories, so it does not apply here; the Code of Conduct sends reports to the maintainer's contact details.
+- Interaction limits and code review limits stay off and can be turned on temporarily if a discussion gets out of hand.
+- Actions allows GitHub-owned actions plus `astral-sh/setup-uv`, `crazy-max/ghaction-github-labeler` and `anthropics/claude-code-action@*` only, with SHA pinning required, read-only default `GITHUB_TOKEN` permissions, and Actions unable to approve pull requests.
+- Ruleset `main: signed commits` on the default branch: signed commits, linear history, no force pushes, no deletion, no bypass.
+- Ruleset `release tags` on `refs/tags/*--v*`: only admins create, update or delete them, and the tagged commit must be signed. Rulesets cannot require a signed tag object; `git tag -v` verifies it.
+- Required pull request reviews and status checks (`Gates and isolated install test`, `Commit convention and release discipline`) stay off: the only collaborator is the maintainer, and Claude acts through that account (GitHub API, checked 2026-10-04). They would block direct pushes the release policy allows; enable them when a second collaborator joins.
+- The remote labels equal `.github/labels.yml`; `gh workflow run labels.yml` syncs them and the GitHub defaults are gone.
+- Community standards report 100 %: README, Code of Conduct, Contributing, License, Security policy and pull request template.
+- Verify the published marketplace like a user only in a throwaway configuration, never in the maintainer's own: `export HOME="$(mktemp -d)" CLAUDE_CONFIG_DIR="$HOME/.claude"`, then `claude plugin marketplace add nerymurillohnd/claude-essentials`, `claude plugin install <plugin>@claude-essentials` and `claude plugin list --json`.
+- `hello-example` 0.1.0 stays untagged; its first tag is `hello-example--v0.1.1`.

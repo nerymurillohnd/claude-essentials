@@ -5,7 +5,6 @@ paths:
   - "templates/readme/**"
   - "scripts/sync_readmes.py"
   - "SECURITY.md"
-  - "docs/publishing-checklist.md"
 ---
 
 # Distribution and updates

@@ -2,7 +2,7 @@
 
 How plugin versions, changelogs, tags, releases and labels work, and which changes go through a pull request. Decisions: [ADR per-plugin-versioning](adr/decisions/ADR_2026-10-03_per-plugin-versioning.md), [ADR release-automation](adr/decisions/ADR_2026-10-03_release-automation.md) (superseded by [ADR release-orchestration](adr/decisions/ADR_2026-10-04_release-orchestration.md)), [ADR labels-and-pr-automation](adr/decisions/ADR_2026-10-03_labels-and-pr-automation.md).
 
-**Contents:** [Versions](#versions) · [When a change needs a release](#when-a-change-needs-a-release) · [Pull request or direct push](#pull-request-or-direct-push) · [Commit messages](#commit-messages) · [Changelogs](#changelogs) · [Release a plugin](#release-a-plugin) · [Roll back a release](#roll-back-a-release) · [Deprecate or remove a plugin](#deprecate-or-remove-a-plugin) · [Labels](#labels)
+**Contents:** [Versions](#versions) · [When a change needs a release](#when-a-change-needs-a-release) · [Pull request or direct push](#pull-request-or-direct-push) · [Commit messages](#commit-messages) · [Changelogs](#changelogs) · [Release a plugin](#release-a-plugin) · [Deprecate or remove a plugin](#deprecate-or-remove-a-plugin) · [Labels](#labels)
 
 ## Versions
 
@@ -72,7 +72,7 @@ Both changelogs use the change types of [Keep a Changelog 1.1.0](https://keepach
 
 Users receive a plugin from `main`: Claude Code clones the marketplace's default branch and caches each plugin by its `version`, so the merge of a pull request with a bump is the release, and users get it on their next `claude plugin update` or auto-update ([host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace#release-a-new-version)). The tag and the GitHub Release come after it as the signed record and for dependency version ranges ([dependencies](https://code.claude.com/docs/en/plugins/dependencies#create-a-release-tag)); Claude Code reads tags only to resolve a dependent plugin's version constraint on this plugin, never to install a plugin itself. Keep `main` releasable at all times.
 
-The release is prepared in the pull request that changes the plugin, and tagged after the merge. The project skill `/release-plugin <plugin> <level> <topic>` runs the steps below in order and stops at an approval prompt before every push and pull request; reviews and the merge go through `/github-ops:automatic-pr-lifecycle`, and `/release-plugin <plugin> tag` finishes after the merge ([ADR release-orchestration](adr/decisions/ADR_2026-10-04_release-orchestration.md)). The steps also work by hand.
+The release is prepared in the pull request that changes the plugin, and tagged after the merge ([ADR release-orchestration](adr/decisions/ADR_2026-10-04_release-orchestration.md)). The steps below also work by hand.
 
 0. **Branch.** Work on a short-lived `<plugin>/<topic>` branch from an up-to-date `main` (`git switch -c <plugin>/<topic>`); GitHub deletes it on merge, and `git fetch --prune` removes the local remote-tracking reference. Non-plugin pull requests use the commit scope as prefix: `marketplace/`, `scripts/`, `ci/` or `docs/` ([ADR branch-naming](adr/decisions/ADR_2026-10-04_branch-naming.md)).
 
@@ -104,25 +104,7 @@ Requirements: signing configured for commits and tags, Claude Code 2.1.289 or la
 
    `scripts/check_pr.py` fails the pull request when the plugin changed without a single-step bump, when the release section or label does not match the bump, when `## [Unreleased]` is not empty, when a MAJOR has no Migration, when the title is not a Conventional Commit or its scope is not the plugin name while exactly one plugin changed, or when `.claude-plugin/marketplace.json` changed without a note in the root `CHANGELOG.md`.
 
-4. **Tag the merged commit.** `claude plugin tag` checks that `plugin.json` and the catalog agree and creates the annotated tag `<name>--v<version>`, signed when `tag.gpgsign` is on:
-
-   ```bash
-   git switch main && git pull --ff-only
-   claude plugin tag plugins/<name>
-   git tag -v <name>--v<version>
-   ```
-
-5. **Publish, only when approved.** `git push origin <name>--v<version>`. The push runs `.github/workflows/release.yml`, which checks the tag against `plugin.json` (`scripts/release_notes.py verify`), validates the plugin and publishes a GitHub Release whose notes are that version's changelog section (`scripts/release_notes.py notes`).
-
-## Roll back a release
-
-A published tag and its GitHub Release stay: users may already have installed that version, and Claude Code delivers updates only when `version` changes. Never delete, move or force-push a tag that was pushed.
-
-1. **Fix forward.** On a new `<plugin>/<topic>` branch, revert the faulty change (`git revert <sha>`) or correct it, write a `### Fixed` note under `## [Unreleased]`, and release a PATCH with `/release-plugin <plugin> patch <topic>`. If users must act, release a MAJOR with a `### Migration` section instead.
-2. **Tell users.** The GitHub Release of the fix carries its changelog section; for a serious defect also edit the faulty release's notes to point at the fix (an approval prompt guards `gh release edit`).
-3. **Withdraw a plugin** only through [Deprecate or remove a plugin](#deprecate-or-remove-a-plugin) below.
-
-A tag that was created but not pushed can be deleted locally with `git tag -d <name>--v<version>`.
+After the merge a maintainer tags the merged commit and publishes the GitHub Release as the signed record; the maintainer steps are in `.claude/rules/releasing.md`. A published tag is never deleted or moved: fix forward with a new release, a PATCH, or a MAJOR with a `### Migration` section if users must act.
 
 ## Deprecate or remove a plugin
 

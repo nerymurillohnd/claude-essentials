@@ -6,6 +6,10 @@ paths:
   - ".claude-plugin/marketplace.json"
   - "scripts/bump_version.py"
   - "scripts/release_notes.py"
+  - "scripts/check_pr.py"
+  - "scripts/check_commit_msg.py"
+  - ".github/workflows/pull-request.yml"
+  - ".github/release.yml"
   - ".github/workflows/release.yml"
   - "docs/releasing.md"
   - "templates/changelog/**"
@@ -28,3 +32,10 @@ paths:
 - A full release in a throwaway clone verified the tag signature: `git tag -v` reports a good ED25519 signature.
 - Release dates are UTC.
 - If `version` is set and not bumped, users never receive the new commits.
+- After the merge, tag from an up-to-date `main`: `git switch main && git pull --ff-only`, then `claude plugin tag plugins/<name>` and `git tag -v <name>--v<version>`.
+- Push the tag only when approved: `git push origin <name>--v<version>`. The push runs `.github/workflows/release.yml`, which checks the tag against `plugin.json` (`scripts/release_notes.py verify`), validates the plugin and publishes a GitHub Release whose notes are that version's changelog section (`scripts/release_notes.py notes`).
+- Roll back by fixing forward. Never delete, move or force-push a pushed tag or its GitHub Release: users may have installed that version, and Claude Code delivers updates only when `version` changes.
+- Fix forward on a new `<plugin>/<topic>` branch: revert the faulty change (`git revert <sha>`) or correct it, write a `### Fixed` note under `## [Unreleased]`, and release a PATCH with `/release-plugin <plugin> patch <topic>`. Release a MAJOR with a `### Migration` section if users must act.
+- For a serious defect also edit the faulty release's notes to point at the fix; an approval prompt guards `gh release edit`.
+- A tag that was created but not pushed can be deleted locally with `git tag -d <name>--v<version>`.
+- Withdraw a plugin only through "Deprecate or remove a plugin" in `docs/releasing.md`.

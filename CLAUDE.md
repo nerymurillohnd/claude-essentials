@@ -105,8 +105,6 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 - Add a file, tool, template, or dependency: read `docs/sourcing-log.md` and `THIRD_PARTY_NOTICES.md`.
 - Change a rule or make a structural decision: read `docs/adr/README.md`.
   - Create a new ADR from `templates/adr/`.
-- Publish the repository: read `docs/publishing-checklist.md`.
-  - Publish only after my approval.
 - Answer contributors: read `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, and `CODE_OF_CONDUCT.md`.
 
 ### Decisions
@@ -158,7 +156,7 @@ docs/                             guides and ADRs
 
 - Published on 2026-10-04: every gate that existed at publication passed locally and in CI, `main` is protected by rulesets (signed commits, linear history, squash-only merges), labels are synced, and the marketplace installs like a user's install.
 - The full release flow ran end to end on pull request #2: `check_pr`, labeler, squash merge, signed tag `hello-example--v0.1.1` and its GitHub Release.
-- Open item in `docs/publishing-checklist.md`: checking the issue forms in the browser.
+- Open item: confirm in the browser that `/issues/new/choose` lists the three issue forms and the three contact links (the API reported the contact links; the forms are only visible signed in).
 - Claude Code automation added on 2026-10-04: see `.claude/rules/automation.md`.
 - The Claude GitHub workflows arrived with the squash merge of PR #4 (`7314c58`). The automation commits `44fc258` to `60f7a5a` were already on `origin/main` before it; how they were pushed is not recorded here. They came after the handoff `2026-10-04-0852`.
 - The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `python3 scripts/check.py` passed all 10 gates locally on 2026-10-04.
