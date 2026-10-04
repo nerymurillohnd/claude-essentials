@@ -43,7 +43,7 @@ claude plugin list --json
 
 ## 7. First release
 
-- [ ] Decide whether to tag `hello-example--v0.1.0` with `claude plugin tag plugins/hello-example` and push the tag; the release workflow publishes the GitHub Release. The catalog has no version and no tag.
+- [x] Pull request #2 released `hello-example` 0.1.1 (its own `LICENSE`); after the squash merge, `claude plugin tag plugins/hello-example` created the signed `hello-example--v0.1.1`, and the release workflow published the GitHub Release from its changelog section. 0.1.0 stays untagged. The catalog has no version and no tag.
 
 ## 8. After publishing
 

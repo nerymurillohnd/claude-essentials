@@ -155,7 +155,8 @@ docs/                             guides and ADRs
 ## Current state
 
 - Published on 2026-10-04: every gate in `python3 scripts/check.py --list` passes locally and in CI, `main` is protected by rulesets (signed commits, linear history, squash-only merges), labels are synced, and the marketplace installs like a user's install.
-- Open items in `docs/publishing-checklist.md`: moderation content reporting (no API), checking the issue forms in the browser, and whether to tag `hello-example--v0.1.0`.
+- The full release flow ran end to end on pull request #2: `check_pr`, labeler, squash merge, signed tag `hello-example--v0.1.1` and its GitHub Release.
+- Open items in `docs/publishing-checklist.md`: moderation content reporting (no API) and checking the issue forms in the browser.
 - Next: the first real plugin (proposal, `new_plugin.py`, a pull request that follows `docs/releasing.md`), then removal of `hello-example` with a `renames` entry.
 - Awaiting my decision:
   - refining the user-level Python rule;
