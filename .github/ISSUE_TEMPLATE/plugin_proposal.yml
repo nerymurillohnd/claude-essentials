@@ -1,0 +1,70 @@
+name: Plugin proposal
+description: Propose a new plugin, or a significant change to an existing one, before writing it.
+title: "proposal: <plugin-name>"
+labels: ["type:feature", "status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A proposal lets maintainers confirm the idea fits the marketplace before you invest in it.
+        Read the [quality bar](https://github.com/nerymurillohnd/claude-essentials/blob/main/docs/quality-bar.md) and the [naming rules](https://github.com/nerymurillohnd/claude-essentials/blob/main/docs/naming.md) first.
+  - type: input
+    id: name
+    attributes:
+      label: Proposed plugin name
+      description: kebab-case, permanent once published; must not start with `claude-` or `anthropic-`.
+      placeholder: release-notes-writer
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - workflows
+        - agents
+        - audits
+        - code-review
+        - documentation
+        - development
+        - best-practices
+        - research
+        - model-behavior
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What do Claude Code users struggle with today, and who are they?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed components
+      description: Which skills, agents, hooks, MCP or LSP servers, output styles or mods, and what each one does.
+    validations:
+      required: true
+  - type: checkboxes
+    id: runs-code
+    attributes:
+      label: Code that runs on the user's machine
+      description: These components need the security review in docs/security-review.md.
+      options:
+        - label: Hooks
+        - label: MCP or LSP servers
+        - label: Executables in bin/
+        - label: A mod
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Existing tools or plain Claude Code features that solve part of this.
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Confirmation
+      options:
+        - label: I have the right to contribute this work under the MIT License.
+          required: true

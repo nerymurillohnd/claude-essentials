@@ -1,0 +1,33 @@
+# Categories for GitHub's automatically generated release notes, matching the label
+# taxonomy in .github/labels.yml. Plugin releases use the notes from each plugin's
+# CHANGELOG.md (.github/workflows/release.yml); this file applies when notes are
+# generated from pull requests, for example in the GitHub release editor.
+changelog:
+  exclude:
+    labels:
+      - status:blocked
+  categories:
+    - title: Breaking changes
+      labels:
+        - semver:major
+        - type:breaking
+    - title: Security
+      labels:
+        - type:security
+    - title: New features
+      labels:
+        - type:feature
+        - semver:minor
+    - title: Fixes
+      labels:
+        - type:bug
+        - semver:patch
+    - title: Documentation
+      labels:
+        - type:docs
+    - title: Maintenance
+      labels:
+        - type:chore
+    - title: Other changes
+      labels:
+        - "*"

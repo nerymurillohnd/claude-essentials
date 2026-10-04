@@ -1,0 +1,10 @@
+# Code owners review every change (docs/security-review.md).
+# Later, more specific patterns take precedence over earlier ones.
+
+*                     @nerymurillohnd
+
+# Code that runs on users' machines, the catalog and CI always need an owner's review.
+/.claude-plugin/      @nerymurillohnd
+/plugins/             @nerymurillohnd
+/.github/             @nerymurillohnd
+/scripts/             @nerymurillohnd

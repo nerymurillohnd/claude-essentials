@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/nerymurillohnd/claude-essentials/security/advisories/new
+    about: Report vulnerabilities privately, never in a public issue. See SECURITY.md.
+  - name: Get help using a plugin
+    url: https://github.com/nerymurillohnd/claude-essentials/blob/main/SUPPORT.md
+    about: Where to ask questions and what to include.
+  - name: Problems with Claude Code itself
+    url: https://code.claude.com/docs/en/plugins/troubleshooting
+    about: Plugin loading and marketplace errors in Claude Code are covered by the official troubleshooting guide.

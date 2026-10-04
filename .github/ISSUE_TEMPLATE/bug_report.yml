@@ -1,0 +1,87 @@
+name: Bug report
+description: A plugin, the catalog or the documentation does not work as documented.
+title: "bug(<plugin>): <short summary>"
+labels: ["type:bug", "status:needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Do not include secrets, tokens or private data.
+        **Security issues must not be reported here**: follow [SECURITY.md](https://github.com/nerymurillohnd/claude-essentials/blob/main/SECURITY.md) instead.
+  - type: input
+    id: plugin
+    attributes:
+      label: Plugin
+      description: The plugin name as you installed it, or "marketplace" for the catalog itself.
+      placeholder: my-plugin
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: From `claude plugin list`.
+      placeholder: 1.2.3
+    validations:
+      required: true
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code version
+      description: From `claude --version`.
+      placeholder: 2.1.289
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where do you run Claude Code?
+      options:
+        - Terminal (CLI)
+        - VS Code extension
+        - JetBrains plugin
+        - Desktop app
+        - Claude Code on the web
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Windows (WSL)
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact prompts or commands, in order.
+      placeholder: |
+        1. /plugin install my-plugin@claude-essentials
+        2. /my-plugin:skill ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include error messages and the plugin's entry in the `/plugin` Errors tab, if any.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Output of `claude plugin list --json` for this plugin, debug log excerpts, screenshots.
