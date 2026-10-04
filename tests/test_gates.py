@@ -22,6 +22,7 @@ import check_commit_msg
 import check_docs
 import check_pr
 import check_repo
+import claude_hooks
 import drive_plugin
 import repo
 import validate_adrs
@@ -29,6 +30,11 @@ import validate_adrs
 ROOT = repo.ROOT
 
 PLUGIN = "hello-example"
+# A CLAUDE.local.md in the format the clean-room hook reads.
+LOCAL_NOTES = """\
+- GitHub: `owner/old-repo`, `owner/kept-deprecated`.
+- Local: `~/projects/marketplace/kept`.
+"""
 IGNORED = shutil.ignore_patterns(".git", "__pycache__", ".venv", ".ruff_cache", ".DS_Store")
 
 
@@ -589,6 +595,148 @@ class DocsGateTest(RepositoryFixture):
         assert check_docs.glob_regex("plugins/**/README.md").match("plugins/README.md")
         assert not check_docs.glob_regex("scripts/*.py").match("scripts/sub/x.py")
         assert check_docs.glob_regex("**/*.json").match(".claude-plugin/marketplace.json")
+
+
+class ClaudeHooksTest(unittest.TestCase):
+    """The repository's Claude Code hooks decide for the reason they give, and only then."""
+
+    root: Path = ROOT
+    _tmp: tempfile.TemporaryDirectory[str] | None = None
+
+    @override
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory(prefix="gate-fixture-")
+        self.root = Path(self._tmp.name)
+
+    @override
+    def tearDown(self) -> None:
+        if self._tmp is not None:
+            location = Path(self._tmp.name)
+            self._tmp.cleanup()
+            assert not location.exists(), f"fixture {location} was not removed"
+
+    @staticmethod
+    def verdict(answer: dict[str, repo.JSON] | None) -> str | None:
+        if answer is None:
+            return None
+        output = repo.as_dict(answer.get("hookSpecificOutput")) or {}
+        return repo.as_str(output.get("permissionDecision"))
+
+    def test_pushes_ask_in_every_spelling(self) -> None:
+        for command in (
+            "git push",
+            "git push origin main",
+            "git -C . push origin main",
+            "git -c push.default=current push",
+            "FOO=1 git push",
+            "git status && git push --tags",
+            "/usr/bin/git push",
+        ):
+            assert self.verdict(claude_hooks.bash_decision(command)) == "ask", command
+
+    def test_reads_and_local_git_pass(self) -> None:
+        for command in ("git status", "git log -1", "echo git push", "git commit -S -m x"):
+            assert claude_hooks.bash_decision(command) is None, command
+
+    def test_signing_bypass_is_denied(self) -> None:
+        for command in (
+            "git commit --no-gpg-sign -m x",
+            "git -c commit.gpgsign=false commit -m x",
+            "git commit --no-verify -m x",
+        ):
+            assert self.verdict(claude_hooks.bash_decision(command)) == "deny", command
+
+    def test_github_writes_ask_and_reads_pass(self) -> None:
+        for command in (
+            "gh pr create --fill",
+            "gh release create x",
+            "gh api -X POST repos/o/r/labels",
+            "gh api repos/o/r/labels -f name=x",
+            "claude plugin tag plugins/x --push",
+        ):
+            assert self.verdict(claude_hooks.bash_decision(command)) == "ask", command
+        for command in (
+            "gh pr view 2",
+            "gh api repos/o/r",
+            "claude plugin tag plugins/x --dry-run",
+        ):
+            assert claude_hooks.bash_decision(command) is None, command
+
+    def write(self, relative: str, text: str) -> Path:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _ = path.write_text(text, encoding="utf-8")
+        return path
+
+    def test_manual_version_edit_is_denied(self) -> None:
+        manifest = self.write("plugins/p/.claude-plugin/plugin.json", '{"version": "0.1.0"}\n')
+        edit: dict[str, repo.JSON] = {
+            "file_path": str(manifest),
+            "old_string": '"0.1.0"',
+            "new_string": '"0.2.0"',
+        }
+        assert self.verdict(claude_hooks.edit_decision("Edit", edit, self.root)) == "deny"
+        rename: dict[str, repo.JSON] = {
+            "file_path": str(manifest),
+            "old_string": '{"version"',
+            "new_string": '{ "version"',
+        }
+        assert claude_hooks.edit_decision("Edit", rename, self.root) is None
+
+    def test_generated_block_edit_is_denied(self) -> None:
+        readme = self.write(
+            "plugins/p/README.md",
+            "intro\n<!-- BEGIN GENERATED: header -->\nold\n<!-- END GENERATED: header -->\n",
+        )
+        inside: dict[str, repo.JSON] = {
+            "file_path": str(readme),
+            "old_string": "old",
+            "new_string": "new",
+        }
+        assert self.verdict(claude_hooks.edit_decision("Edit", inside, self.root)) == "deny"
+        outside: dict[str, repo.JSON] = {
+            "file_path": str(readme),
+            "old_string": "intro",
+            "new_string": "Intro",
+        }
+        assert claude_hooks.edit_decision("Edit", outside, self.root) is None
+
+    def test_forbidden_sources_are_denied_at_exact_boundaries(self) -> None:
+        _ = self.write(
+            "CLAUDE.local.md",
+            LOCAL_NOTES,
+        )
+        forbidden_path = str(Path.home() / "projects" / "marketplace" / "kept" / "x.md")
+        allowed_path = str(Path.home() / "work" / "kept" / "x.md")
+        cases: list[tuple[dict[str, repo.JSON], str | None]] = [
+            ({"file_path": forbidden_path}, "deny"),
+            ({"command": "ls ~/projects/marketplace/kept"}, "deny"),
+            ({"file_path": allowed_path}, None),
+            ({"command": "ls ~/projects/marketplace/kept-new"}, None),
+            ({"command": "gh repo clone owner/old-repo"}, "deny"),
+            ({"command": "gh repo view owner/kept"}, None),
+            ({"owner": "owner", "repo": "kept-deprecated"}, "deny"),
+        ]
+        for tool_input, expected in cases:
+            answer = claude_hooks.sources_decision(tool_input, self.root)
+            assert self.verdict(answer) == expected, tool_input
+
+    def test_no_local_notes_means_no_denial(self) -> None:
+        assert claude_hooks.sources_decision({"command": "ls"}, self.root) is None
+
+    def test_format_reports_only_real_changes(self) -> None:
+        messy = self.write("doc.md", "# Title\n\n\n\nText\n")
+        answer = claude_hooks.format_file(messy, self.root)
+        assert answer is not None
+        assert "prettier reformatted doc.md" in json.dumps(answer)
+        assert claude_hooks.format_file(messy, self.root) is None
+        outside = Path(tempfile.gettempdir()) / "not-in-repo.md"
+        assert claude_hooks.format_file(outside, self.root) is None
+
+    def test_session_status_names_the_branch(self) -> None:
+        status = claude_hooks.session_status(ROOT)
+        assert status.startswith("claude-essentials: "), status
+        assert "path-scoped rules" in status
 
 
 class DrivePluginTest(unittest.TestCase):

@@ -289,3 +289,7 @@ tmbootpicker.efi
 CLAUDE.local.md
 # Extracted MCP bundles created when a plugin is loaded locally.
 .mcpb-cache/
+
+# Claude Code worktrees and plugin eval results (docs/automation.md)
+.claude/worktrees/
+plugins/*/evals/results/
