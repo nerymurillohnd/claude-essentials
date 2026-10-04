@@ -66,7 +66,7 @@ Commit this to your repository's `.claude/settings.json` so everyone who trusts 
 ```
 
 <details>
-<summary>Pin a release, or clone only what Claude Code needs</summary>
+<summary>Pin a branch or tag, or clone only what Claude Code needs</summary>
 
 Pin the catalog to a branch or tag by appending it to the source: `/plugin marketplace add nerymurillohnd/claude-essentials#<ref>`.
 
@@ -84,7 +84,7 @@ A plugin runs with the permissions of the person who installs it. Every plugin h
 
 ## Contributing
 
-Plugin proposals, fixes and new plugins are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), then the [authoring guide](docs/authoring.md). New plugins are created with `python3 scripts/new_plugin.py`, and `python3 scripts/check.py` runs every gate that CI runs.
+This repository is developed and maintained only by its maintainer and Claude, so pull requests from others are not accepted. Bug reports and plugin proposals are welcome as issues: start with [CONTRIBUTING.md](CONTRIBUTING.md). We attend every issue and update the catalog ourselves.
 
 ## Project documentation
 

@@ -8,18 +8,18 @@ paths:
 
 # Plugin manifest
 
-- Forbidden prefixes: `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-`; also the exact names `claude`, `anthropic`, `anthropics`, `claude-code`, `claude-mods`, `anthropic-skills` and `claude-ai`; `scripts/repo.py` holds the enforced lists.
+- Forbidden prefixes: `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-`; also the exact names `claude`, `anthropic`, `anthropics`, `claude-code`, `claude-mods`, `anthropic-skills` and `claude-ai`; `scripts/repo.py` holds the enforced lists. The match ignores case and collapses separator runs, and only `init`, `tag` and `validate` enforce it.
 - Our own reservation: the repository areas `marketplace`, `scripts`, `ci` and `docs` are never plugin names, because they are commit scopes and branch prefixes (ADR branch-naming, 2026-10-04).
 - Having `claude` or `anthropic` as a standalone word in the name gives a warning, which is a failure under `--strict`.
 - The `version` in `plugin.json` wins over the one in the catalog entry.
 - If the entry has the same version it passes; if it has a different one, `validate` warns and `claude plugin tag` refuses to tag.
 - `commands`, `agents`, `outputStyles` and `workflows` replace their default folder, `skills` adds to its own, and `hooks`, `mcpServers` and `lspServers` merge.
-- The components `workflows/`, `themes/`, `monitors/monitors.json` and `settings.json` exist; the latter only accepts `agent` and `subagentStatusLine`.
+- The components `workflows/`, `themes/`, `monitors/monitors.json` and `settings.json` exist; the latter only accepts `agent` and `subagentStatusLine`. Declare themes and monitors under `experimental.themes` and `experimental.monitors`: the top-level `themes` and `monitors` keys warn, which fails `--strict`. Monitors run only in interactive sessions, not on Bedrock, Agent Platform or Foundry.
 - claude.ai and Cowork reject plugins with a `bin/` at the root.
 - A `CLAUDE.md` at the plugin root is not loaded and `validate` warns.
-- `${CLAUDE_PLUGIN_ROOT}` changes with every update and `${CLAUDE_PLUGIN_DATA}` persists unless the plugin is uninstalled without `--keep-data`.
+- `${CLAUDE_PLUGIN_ROOT}` changes with every update and `${CLAUDE_PLUGIN_DATA}` is kept across updates and deleted only when the plugin is uninstalled from its last scope without `--keep-data`; it also stays if another installed plugin shares the folder or the install records cannot be read back.
 - These variables do not reach the Bash tool's environment: they are substituted inline in the Markdown.
-- `${user_config.KEY}` is rejected in shell hooks, monitors and `headersHelper`; there you use exec form or `CLAUDE_PLUGIN_OPTION_<KEY>`.
+- `${user_config.KEY}` is rejected in shell-form hook commands, monitor commands and MCP `headersHelper`. Hooks can use exec form with `args` or read `CLAUDE_PLUGIN_OPTION_<KEY>`; monitors and `headersHelper` receive no option values, so the script must obtain the value itself.
 - Symlinks to elsewhere in the marketplace are dereferenced and those pointing outside it are skipped.
 - Only `name` is required, and only the manifest goes inside `.claude-plugin/`; every component lives at the plugin root.
 - Putting `official` next to `claude` or `anthropic` in a name is a validate error.

@@ -13,7 +13,7 @@ Decide which Claude Code features the repository uses to maintain itself, so the
 
 ## Scope
 
-`.claude/settings.json`, `scripts/claude_hooks.py`, `scripts/check_docs.py` (the `docs` gate), `scripts/drive_plugin.py`, `scripts/add_component.py`, the project skills and agent in `.claude/`, the saved workflows in `.claude/workflows/`, `docs/automation.md`, and the branch convention. Plugins shipped to users are out of scope: these files maintain the repository and are never distributed.
+`.claude/settings.json`, `scripts/claude_hooks.py`, `scripts/check_docs.py` (the `docs` gate), `scripts/drive_plugin.py`, `scripts/add_component.py`, the project skills and agent in `.claude/`, the saved workflows in `.claude/workflows/`, `.claude/rules/automation.md`, and the branch convention. Plugins shipped to users are out of scope: these files maintain the repository and are never distributed.
 
 ## Context and problem statement
 
@@ -43,7 +43,7 @@ Chosen option: **permission rules plus stdlib hooks, project skills, one review 
 - The `docs` gate fails on drift between code and docs: pinned versions, the gate list, script and check.py target names, rule `paths`, links and `docs/*.md` references.
 - Project skills: `new-plugin`, `add-component`, `release-plugin` (see [ADR release-orchestration](ADR_2026-10-04_release-orchestration.md)), `review-pr` with the `plugin-reviewer` agent, `run-marketplace`, `sync-docs`, `cc-currency`, alongside `verify` and `plugin-versioning`.
 - Saved workflows `review-pr-deep`, `drift-audit` and `rules-currency` for fan-out work, each under ten agents.
-- Branch convention: short-lived `<plugin>/<topic>` branches, deleted on merge (approved by the maintainer on 2026-10-04).
+- Branch convention: short-lived `<plugin>/<topic>` branches, deleted on merge (replaced by ADR branch-naming).
 
 ### Consequences
 

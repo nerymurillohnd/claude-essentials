@@ -1,6 +1,7 @@
 ---
 paths:
-  - "**/*.json"
+  - ".claude-plugin/**"
+  - "plugins/**/.claude-plugin/plugin.json"
   - "plugins/**/.lsp.json"
   - "plugins/**/.mcp.json"
 ---

@@ -9,7 +9,7 @@ paths:
 
 - With a temporary `HOME` and `CLAUDE_CONFIG_DIR` the install is fully isolated; the fingerprints of the real configuration do not change.
 - A marketplace added from a directory loads the plugin in place and ignores the version.
-- Even so, `plugin list --json` reports a cache copy as `installPath`, so it does not tell you where the plugin loads from.
+- Even so, `plugin list --json` reports a cache copy as `installPath`, which is not the load location; since 2.1.289 `readFromFolder` holds the real source directory and `folderVersion` its version (observed 2026-10-04).
 - The real user path is tested by cloning HEAD to a bare repo and using `git-subdir` entries with a `file://` URL.
 - That test only covers HEAD, so commit before running it.
 - Approaches that do not work and must not be retried: `marketplace add file://…git`, `extraKnownMarketplaces` from the CLI, and git over "dumb" HTTP.

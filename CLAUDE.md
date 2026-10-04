@@ -29,13 +29,13 @@ Run commands in this order. Every script is standard-library Python.
 - `python3 scripts/check.py` - Run when you need every gate, exactly as CI does.
 - `python3 scripts/validate_adrs.py` - Run after copying `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`.
 - `python3 scripts/drive_plugin.py <plugin> [--prompt "…"] [--expect <regex>] [--source head]` - Run when you need to see a plugin work in a real session.
-- `verify` (project skill) - Run before every commit.
+- `verify` (project skill) - Run before every commit, including the docs-only and tests-only ones that Claude Code does not prompt for.
 - `python3 scripts/check.py test-install` - Run after committing, because it tests HEAD.
 - `python3 scripts/bump_version.py plugin <name> <level> [--dry-run]` - Run in the same PR when a plugin changes.
 - `claude plugin tag plugins/<name>` - Run on the merged commit.
 - `git tag -v <name>--v<version>` - Run right after tagging to verify the signature.
 - `python3 scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
-- `/<project-skill>` - Run when a task matches a project skill listed in `docs/automation.md`.
+- `/<project-skill>` - Run when a task matches a project skill listed in `.claude/rules/automation.md`.
 - `python3 scripts/check.py ci-tools` - Run on CI only.
 - `prek install` - Run once per clone to install the ruff and basedpyright pre-commit hooks (`uv tool install prek` first).
 - `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` - Run once to install the optional commit message check.
@@ -52,33 +52,24 @@ Run commands in this order. Every script is standard-library Python.
 
 ### Executable Scripts
 
-- `chmod +x <file>` - Run when a script has a shebang.
-- `git update-index --chmod=+x <file>` - Run together with `chmod`, so git records the bit.
-- `git ls-files -s` - Run to check the bit. Expect `100755`.
-- Give scripts with `#!/usr/bin/env python3` mode 755.
-- Give imported modules no shebang and mode 644.
-- Read `.claude/rules/repo-scripts.md` for details.
+- A script with a shebang is mode 755 on disk and in git; an imported module has no shebang and mode 644. See `.claude/rules/repo-scripts.md`.
 
 ## Non-negotiable rules
 
-- **Plugins are for distribution.** Describe every capability from the point of view of the user who installs it. Never install, enable, symlink or pre-configure these plugins in my real Claude Code configuration. Never derive a plugin's requirements from my machine.
+- **Plugins are for distribution.** Describe every capability from the point of view of the user who installs it. Never install, enable, symlink or pre-configure these plugins in my real Claude Code configuration. Never derive a plugin's requirements or compatibility from my machine, its PATH or its binaries.
 - **Clean room.** Take Claude Code specifics only from the official docs (`https://code.claude.com/docs/llms.txt`), the changelog and runtime checks. Never copy or imitate another Claude Code or AI-assistant marketplace or plugin collection. Consult one only when I ask, only what I name, and only to observe. My earlier marketplace projects are forbidden sources, listed in the untracked `CLAUDE.local.md`. Check pasted material for other platforms' content before using it.
 - **Automate and source first.** Use a native tool or generator, then an official template, then an open standard; hand-write only what is ours. Record each choice in `docs/sourcing-log.md`.
 - **Portability.** No absolute or home paths, user or machine names, personal data or secrets in plugins. Use `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}`; never `../`.
 - **Leave nothing behind.** Every test, scaffold or experiment removes what it creates and verifies the removal. Use the prefixes in `TEMP_PREFIXES` (`scripts/check.py`) and `docs/testing.md#cleanup`.
 - **No unagreed tooling.** Never introduce a tool or convention I did not agree to; ask first.
 - **Gates.** Never skip, suppress or weaken a gate; fix the root cause.
+- **Who changes this repository.** Only the maintainer and Claude develop and maintain it. No third party opens a pull request or modifies anything here; the repository allows pull requests from collaborators only. Third parties write issues, and we attend, resolve and update them. No pull request goes to a second collaborator: every pull request is ours, so it is reviewed and merged directly by us.
 - **Signatures and approval.** Sign every commit and tag. No remote, push, pull request, merge or publication without my explicit approval for that exact action.
 
 ## Before schema, component, release or distribution work
 
-1. Fetch `https://code.claude.com/docs/llms.txt` and read the current pages for the area you touch.
-2. Compare `claude --version` and the latest published version with 2.1.289.
-3. Read every changelog entry newer than 2.1.289 in full (`https://code.claude.com/docs/en/changelog`).
-4. When behavior changed, update the matching rule in `.claude/rules/` and the pins, with the date and version.
-5. Flag every conflict between the docs, the changelog and these files; follow the live source.
-
-Run this routine with the `/cc-currency` skill.
+- Run `/cc-currency`: it compares `claude --version` and the latest published version with 2.1.289, reads every newer changelog entry in full and updates the matching rules and pins with the date and version.
+- Flag every conflict between the docs, the changelog and these files; follow the live source.
 
 The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that are newer than your training or contradict it. Trust them over memory, and re-verify them when the installed version is newer.
 
@@ -102,6 +93,7 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 - Repository scripts, gates, isolated installs: `.claude/rules/repo-scripts.md`, `.claude/rules/testing/gates.md`, `.claude/rules/testing/isolated-install.md`
 - CI, releases, tool pins: `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`
 - ADRs and Claude Code features: `.claude/rules/adrs.md`, `.claude/rules/claude-code-features.md`
+- Claude Code automation (settings, hooks, project skills, agent, workflows): `.claude/rules/automation.md`
 
 ### Guides to Read Before Acting
 
@@ -111,13 +103,10 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 - Edit a README or README template: read `docs/readme-guide.md`.
 - Bump, write changelog notes, tag, or release: read `docs/releasing.md`.
 - Change gates, tests, or CI: read `docs/testing.md`.
-- Use or change the Claude Code automation (settings, hooks, project skills, agent, workflows): read `docs/automation.md`.
 - Add a file, tool, template, or dependency: read `docs/sourcing-log.md` and `THIRD_PARTY_NOTICES.md`.
 - Change a rule or make a structural decision: read `docs/adr/README.md`.
   - Create a new ADR from `templates/adr/`.
-- Publish the repository: read `docs/publishing-checklist.md`.
-  - Publish only after my approval.
-- Answer contributors: read `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, and `CODE_OF_CONDUCT.md`.
+- Answer issue authors: read `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, and `CODE_OF_CONDUCT.md`.
 
 ### Decisions
 
@@ -127,7 +116,7 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 ## Architecture
 
 ```text
-.claude-plugin/marketplace.json   catalog: name, owner, version, entries (source ./plugins/<name>)
+.claude-plugin/marketplace.json   catalog: name, owner, entries (source ./plugins/<name>); no version
 plugins/<name>/                   one self-contained plugin per directory
 scripts/                          stdlib Python run with `python3` (no dependency manifest)
   check.py                        single entry point: every gate, test-install, clean, ci-tools
@@ -168,14 +157,15 @@ docs/                             guides and ADRs
 
 - Published on 2026-10-04: every gate that existed at publication passed locally and in CI, `main` is protected by rulesets (signed commits, linear history, squash-only merges), labels are synced, and the marketplace installs like a user's install.
 - The full release flow ran end to end on pull request #2: `check_pr`, labeler, squash merge, signed tag `hello-example--v0.1.1` and its GitHub Release.
-- Open item in `docs/publishing-checklist.md`: checking the issue forms in the browser.
-- Claude Code automation added on 2026-10-04: see `docs/automation.md`.
-- Its commits were pushed with the merge of PR #4 (`7314c58`, squash), which the maintainer approved on 2026-10-04; the commits from `8109002` to `7314c58` came after the handoff `2026-10-04-0852`.
+- Open item: confirm in the browser that `/issues/new/choose` lists the two issue forms and the three contact links (the API reported the contact links; the forms are only visible signed in).
+- Claude Code automation added on 2026-10-04: see `.claude/rules/automation.md`.
+- The Claude GitHub workflows arrived with the squash merge of PR #4 (`7314c58`). The automation commits `44fc258` to `60f7a5a` were already on `origin/main` before it; how they were pushed is not recorded here. They came after the handoff `2026-10-04-0852`.
 - The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `python3 scripts/check.py` passed all 10 gates locally on 2026-10-04.
 - `51e96f6` (2026-10-04) gave the bug report dropdowns a neutral first option; CI passed on `main`, and the forms still need the browser check.
 - Branch naming settled on 2026-10-04 in ADR branch-naming: the prefix is the commit scope, and `marketplace`, `scripts`, `ci` and `docs` are reserved plugin names. CI passed on its commit `7c49526` (`Validate`, run 37201134748, checked with `gh run list` on 2026-10-04).
-- The gate tests run on a fixture plugin outside the catalog (`tests/fixtures/plugins/sample-plugin/`), so removing `hello-example` cannot break them (2026-10-04).
-- The only GitHub collaborator is the maintainer, and Claude works through that account, so required reviews on `main` stay off (`docs/publishing-checklist.md`).
+- The gate tests run on a fixture plugin outside the catalog (`tests/fixtures/plugins/sample-plugin/`), so removing `hello-example` cannot break them (PR #6, 2026-10-04).
+- The automatic Claude review ran on PR #6 and posted nothing: the action loads the repository's `.claude/settings.json`, whose `permissions.ask` list denied `gh pr comment`. PR #7 (`f5884f8`) passes `--setting-sources user`; the first pull request after it shows whether the review now posts (details in `.claude/rules/ci-github.md`).
+- The only GitHub collaborator is the maintainer, and Claude works through that account, so required reviews on `main` stay off (`.claude/rules/ci-github.md`).
 - Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
 - Awaiting my decision:
   - refining the user-level Python rule;

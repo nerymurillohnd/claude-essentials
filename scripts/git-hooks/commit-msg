@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Optional git commit-msg hook: rejects messages that break Conventional Commits.
 
-Install it in your clone (docs/contributing-setup in CONTRIBUTING.md):
+Install it in your clone (Set up in docs/testing.md):
   cp scripts/git-hooks/commit-msg .git/hooks/commit-msg
-It runs the same checker CI runs on pull requests.
+It runs the same checker CI runs on every commit.
 """
 
 from pathlib import Path

@@ -17,7 +17,7 @@ const AREAS = [
   {
     key: "guides",
     prompt:
-      "Compare docs/authoring.md, docs/testing.md, docs/releasing.md, docs/automation.md and CONTRIBUTING.md with the scripts they describe in scripts/ (read the scripts and their --help). Report every sentence that describes a command, flag, step, file or behaviour the code no longer has, or misses one the code has.",
+      "Compare docs/authoring.md, docs/testing.md, docs/releasing.md and CONTRIBUTING.md with the scripts they describe in scripts/ (read the scripts and their --help). Report every sentence that describes a command, flag, step, file or behaviour the code no longer has, or misses one the code has.",
   },
   {
     key: "rules",
@@ -32,7 +32,7 @@ const AREAS = [
   {
     key: "automation",
     prompt:
-      "Compare the project skills (.claude/skills/*/SKILL.md), the agent (.claude/agents/), the workflows (.claude/workflows/), .claude/settings.json and scripts/claude_hooks.py with docs/automation.md and the ADRs in docs/adr/decisions/ dated 2026-10-04. Report every skill step, hook, permission rule or workflow that the docs describe differently from what the files do.",
+      "Compare the project skills (.claude/skills/*/SKILL.md), the agent (.claude/agents/), the workflows (.claude/workflows/), .claude/settings.json and scripts/claude_hooks.py with .claude/rules/automation.md and the ADRs in docs/adr/decisions/ dated 2026-10-04. Report every skill step, hook, permission rule or workflow that the docs describe differently from what the files do.",
   },
 ];
 

@@ -23,4 +23,4 @@ python3 scripts/check.py test-install
 
 - Report the exact commands and the relevant raw output. Say which gate failed and why; never summarize a failure as success.
 - Fix the root cause and re-run until every gate passes. Never weaken, skip or suppress a gate, and never edit a generated README block by hand: run `python3 scripts/sync_readmes.py` instead.
-- If a tool is missing from PATH, name it and point to the setup table in CONTRIBUTING.md instead of installing anything.
+- If a tool is missing from PATH, name it and point to the Set up table in `docs/testing.md` instead of installing anything.

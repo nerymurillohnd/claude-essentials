@@ -8,7 +8,7 @@ paths:
 
 These load whenever you read or edit a plugin or a template. The full guidance is in docs/authoring.md, docs/quality-bar.md and docs/security-review.md: read the matching one before non-trivial work.
 
-- Plugins are for third parties. Describe every capability from the point of view of the user who installs it. Never install, enable or symlink a plugin into the maintainer's real Claude Code configuration; `python3 scripts/check.py test-install` uses throwaway configurations.
+- Plugins are for third parties (CLAUDE.md, Non-negotiable rules); `python3 scripts/check.py test-install` uses throwaway configurations.
 - Create plugins only with `python3 scripts/new_plugin.py`; never create a plugin directory by hand.
 - A new skill, agent, hook or command goes either into a new plugin (`new_plugin.py --with …`) or into the existing plugin it belongs to; never place one outside `plugins/<name>/`.
 - Everything a plugin needs stays inside `plugins/<name>/`. Use `${CLAUDE_PLUGIN_ROOT}` for bundled files and `${CLAUDE_PLUGIN_DATA}` for state; no `../`, absolute or home paths, user or machine names, personal emails or secrets.

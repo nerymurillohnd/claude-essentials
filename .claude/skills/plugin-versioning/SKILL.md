@@ -5,7 +5,7 @@ description: Decides whether a change needs a plugin release, which bump level, 
 
 # Plugin versioning and release flow
 
-`docs/releasing.md` is the full procedure and wins over this skill if they ever differ. `scripts/check_pr.py` enforces every pull request rule below, and `python3 scripts/check.py` every repository rule.
+`docs/releasing.md` and `.claude/rules/releasing.md` are the full procedure and win over this skill if they ever differ. `scripts/check_pr.py` enforces every pull request rule below, and `python3 scripts/check.py` every repository rule.
 
 ## When to bump
 
@@ -28,21 +28,21 @@ Only plugins are versioned. The catalog has no `version` (neither top-level nor 
 
 ## Pull request or direct push
 
-- **Pull request** for `plugins/**`, `.claude-plugin/marketplace.json`, `.github/workflows/**`, `CODEOWNERS`, and every change from an external contributor: `check_pr.py` and the security review only run on pull requests.
-- **Direct push to `main`** only for docs, scripts, tests, rules, ADRs and the root README, only by the maintainer.
-- **Branches** for pull requests are short-lived and deleted on merge, prefixed with the commit scope: `<plugin>/<topic>` (for example `hello-example/add-license`), or `marketplace/`, `scripts/`, `ci/` or `docs/` plus `<topic>` for other work. The `release-plugin` skill creates plugin branches and runs the whole flow below.
+- **Pull request** for `plugins/**`, `.claude-plugin/marketplace.json`, `.github/workflows/**`, `CODEOWNERS`: `check_pr.py` and the security review only run on pull requests.
+- **Direct push to `main`** only for docs, scripts, tests, rules, ADRs and the root README, and only with the maintainer's approval of that exact push.
+- **Branches** for pull requests are short-lived and deleted on merge, prefixed with the commit scope: `<plugin>/<topic>` (for example `<plugin>/add-license`), or `marketplace/`, `scripts/`, `ci/` or `docs/` plus `<topic>` for other work. The `release-plugin` skill creates plugin branches and runs the whole release flow.
 - **The merge is the release**: users receive `main`, cached by `version`, so a merged bump reaches them on their next update. The tag after the merge is the signed record; Claude Code does not read it to install.
 
 ## Checklists
 
-Every commit is signed and follows Conventional Commits; the project skill `verify` runs `python3 scripts/check.py` before each commit.
+Every commit is signed and follows Conventional Commits; run the project skill `verify` (`python3 scripts/check.py`) before each commit.
 
 Direct push:
 
 ```
 - [ ] python3 scripts/check.py passes; fix every failure
 - [ ] Changed scripts: shebang ⇔ mode 755, checked with git ls-files -s (100755)
-- [ ] Signed commit, push to main, then confirm the Validate workflow passes on main
+- [ ] Signed commit; push to main only after the maintainer approves that push, then confirm the Validate workflow passes on main
 ```
 
 Plugin pull request:
@@ -64,5 +64,4 @@ Plugin pull request:
 - `bump_version.py` refuses an empty `## [Unreleased]`: write the notes first.
 - A skipped version (`1.0.0 → 1.2.0`) fails: one pull request is exactly one bump per plugin.
 - `[Unreleased]` is always empty on `main`; notes never wait there for a later release.
-- Executable bit: ruff EXE001 fails a shebang without the bit and EXE002 the bit without a shebang. Git versions the bit and CI sees only the index, so set both: `chmod +x <file>` and `git update-index --chmod=+x <file>`. Imported modules have no shebang and stay 644 (`.claude/rules/repo-scripts.md`).
-- `python3 scripts/check.py ci-tools` installs the pinned tools and runs only on CI.
+- Executable bit: ruff EXE001 fails a shebang without the bit and EXE002 the bit without a shebang. Git versions the bit and CI sees only the index, so set both (commands and the 644 rule for imported modules: `.claude/rules/repo-scripts.md`).

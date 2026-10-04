@@ -1,6 +1,6 @@
 # Security review
 
-Plugins run with the permissions of the person who installs them ([plugin security and trust](https://code.claude.com/docs/en/plugins/security)). This review applies to every pull request that adds or changes code that runs on a user's machine: hooks, MCP and LSP servers, executables in `bin/`, monitors and mods. Those pull requests receive the `security-review` label automatically and need a code owner's approval. Policy: [ADR security-posture](adr/decisions/ADR_2026-10-03_security-posture.md).
+Plugins run with the permissions of the person who installs them ([plugin security and trust](https://code.claude.com/docs/en/plugins/security)). This review applies to every pull request that adds or changes code that runs on a user's machine: hooks, MCP and LSP servers, executables in `bin/`, monitors and mods, and to every change to `.github/workflows/`. Pull requests that touch `plugins/*/hooks/`, `.mcp.json`, `.lsp.json`, `bin/`, `monitors/` or `.github/workflows/` receive the `security-review` label automatically; for declarations inside `plugin.json` or mod sources elsewhere, the reviewer applies it by hand. They need a code owner's approval. Policy: [ADR security-posture](adr/decisions/ADR_2026-10-03_security-posture.md).
 
 ## Reviewer checklist
 
