@@ -15,6 +15,12 @@ on:
 
 permissions: {}
 
+# One run per issue or pull request at a time; a new request waits instead of
+# cancelling the one in progress.
+concurrency:
+  group: claude-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
 jobs:
   claude:
     name: Claude Code
@@ -26,11 +32,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
-      id-token: write
-      actions: read
+      contents: read # read the checked-out code
+      pull-requests: read # read the pull request a comment belongs to
+      issues: read # read the issue or comment that mentions @claude
+      id-token: write # OIDC exchange for the Claude GitHub App token
+      actions: read # read CI results of a pull request
     steps:
       - name: Check out the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

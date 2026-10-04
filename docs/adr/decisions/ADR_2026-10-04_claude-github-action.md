@@ -35,17 +35,17 @@ Decide whether the repository runs Claude Code on GitHub, and under which limits
 
 Chosen option: **adopt both workflows, hardened**, because the review workflow catches bugs on every pull request even when the local review was skipped, and the `@claude` workflow lets the maintainer hand a third party's issue to Claude from GitHub, while the action's own checks keep third parties from triggering it.
 
-- `claude-code-review.yml` runs the official `code-review` plugin on each pull request and posts inline comments. It reviews correctness only; `/review-pr` stays the check for this repository's rules.
+- `claude-code-review.yml` reviews every push with a repository-specific prompt instead of the generated workflow's `code-review` plugin, which skips a pull request that already has a Claude comment: the maintainer requires every update to be reviewed again. Each run re-checks earlier findings, reviews correctness and this repository's rules, posts inline comments and one summary.
 - `claude.yml` answers `@claude` in issues, pull requests and reviews. The action rejects any triggering user without write access to the repository and any bot (official Claude Code GitHub Actions docs, "Who can trigger runs").
 - Both pin `anthropics/claude-code-action` to the commit of v1.0.241 (which ships Claude Code 2.1.289) and checkout v7.0.1 by SHA, set `permissions: {}`, `persist-credentials: false` and job timeouts, and authenticate with the `CLAUDE_CODE_OAUTH_TOKEN` secret.
-- `anthropics/claude-code-action@*` is added to the repository's allowed actions.
+- `anthropics/claude-code-action@*` is added to the repository's allowed actions, and so is the action it runs internally that GitHub does not own, `oven-sh/setup-bun`, pinned to the SHA the action uses.
 
 ### Consequences
 
 - Good, because every pull request gets an automatic bug review, and issues can be delegated to Claude with one comment.
 - Bad, because each run uses the maintainer's Claude subscription.
 - Bad, because the Claude GitHub App holds broad permissions GitHub does not let an installer narrow, and a run the maintainer triggers with `@claude` can push `claude/` branches with the app's token without a local approval prompt; triggering it is the approval.
-- Bad, because the review installs the `code-review` plugin from its marketplace's default branch on every run, which is not pinned.
+- Bad, because the allowed-actions list applies to actions nested inside other actions: updating `claude-code-action` means checking its internal `uses:` again and updating the `oven-sh/setup-bun` entry.
 
 ### Confirmation
 
