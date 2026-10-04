@@ -42,7 +42,7 @@ Chosen option: **prefix equals the commit scope**, because the Conventional Comm
 - Other work: `marketplace/<topic>`, `scripts/<topic>`, `ci/<topic>` or `docs/<topic>`.
 - `<topic>` is short kebab-case. Branches are short-lived, start from an up-to-date `main` and are deleted on merge (GitHub `delete_branch_on_merge` is on; `git fetch --prune` removes the remote-tracking reference).
 - `marketplace`, `scripts`, `ci` and `docs` are reserved: no plugin may use them as its name, enforced by `repo.plugin_name_problems`.
-- Approved by the maintainer in the session of 2026-10-04, after reviewing the options and the distribution model above.
+- Decided by the maintainer in the session of 2026-10-04, after reviewing the options and the distribution model above; the approval has no written record.
 
 ### Consequences
 

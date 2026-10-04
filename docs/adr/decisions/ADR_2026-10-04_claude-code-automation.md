@@ -43,7 +43,7 @@ Chosen option: **permission rules plus stdlib hooks, project skills, one review 
 - The `docs` gate fails on drift between code and docs: pinned versions, the gate list, script and check.py target names, rule `paths`, links and `docs/*.md` references.
 - Project skills: `new-plugin`, `add-component`, `release-plugin` (see [ADR release-orchestration](ADR_2026-10-04_release-orchestration.md)), `review-pr` with the `plugin-reviewer` agent, `run-marketplace`, `sync-docs`, `cc-currency`, alongside `verify` and `plugin-versioning`.
 - Saved workflows `review-pr-deep`, `drift-audit` and `rules-currency` for fan-out work, each under ten agents.
-- Branch convention: short-lived `<plugin>/<topic>` branches, deleted on merge (approved by the maintainer on 2026-10-04).
+- Branch convention: short-lived `<plugin>/<topic>` branches, deleted on merge (replaced by ADR branch-naming).
 
 ### Consequences
 
