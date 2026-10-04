@@ -117,6 +117,28 @@ def _split(command: str) -> list[list[str]]:
     return [words for words in commands if words]
 
 
+_HEREDOC_RE = re.compile(
+    r"<<-?[ \t]*(['\"]?)(\w+)\1[^\n]*\n(?P<body>.*?)\n[ \t]*\2[ \t]*(?=\n|$)", re.DOTALL
+)
+
+
+def _without_git_heredocs(command: str) -> str:
+    """Drop heredoc bodies fed to git: a commit or tag message is text, never a command.
+
+    Bodies fed to any other program stay, because `bash <<EOF` runs them.
+    """
+    kept: list[str] = []
+    cursor = 0
+    for match in _HEREDOC_RE.finditer(command):
+        line_start = command.rfind("\n", 0, match.start()) + 1
+        before = _split(command[line_start : match.start()])
+        if before and Path(before[-1][0]).name == "git":
+            kept.append(command[cursor : match.start("body")])
+            cursor = match.end("body")
+    kept.append(command[cursor:])
+    return "".join(kept)
+
+
 def _commands(command: str, depth: int = 0) -> list[list[str]]:
     """Simple commands of a command line, including scripts run by `bash -c` (best effort)."""
     result: list[list[str]] = []
@@ -181,7 +203,7 @@ def _git_subcommand(words: list[str], start: int) -> tuple[str | None, list[str]
 
 def bash_decision(command: str) -> dict[str, JSON] | None:
     """Deny signing or hook bypasses; ask before anything that publishes."""
-    for words in _commands(command):
+    for words in _commands(_without_git_heredocs(command)):
         git = _program_index(words, "git")
         if git is not None:
             subcommand, _options = _git_subcommand(words, git)

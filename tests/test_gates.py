@@ -713,6 +713,12 @@ class ClaudeHooksTest(unittest.TestCase):
         for command in ("git commit -n -m x", "git -ccore.hooksPath=/dev/null commit"):
             assert self.verdict(claude_hooks.bash_decision(command)) == "deny", command
 
+    def test_heredoc_message_text_is_not_a_command(self) -> None:
+        message = "git commit -S -F - <<'EOF'\nfix: explain --no-verify and -n\nEOF"
+        assert claude_hooks.bash_decision(message) is None
+        flagged = "git commit --no-verify -F - <<'EOF'\nfix: x\nEOF"
+        assert self.verdict(claude_hooks.bash_decision(flagged)) == "deny"
+
     def test_search_walking_into_a_forbidden_source_is_denied(self) -> None:
         _ = self.write("CLAUDE.local.md", LOCAL_NOTES)
         parent = Path.home() / "projects" / "marketplace"
