@@ -1,0 +1,2 @@
+# Ruff configuration for the repository scripts (Python standard library only).
+target-version = "py312"
