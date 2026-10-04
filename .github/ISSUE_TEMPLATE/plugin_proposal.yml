@@ -12,7 +12,7 @@ body:
     id: name
     attributes:
       label: Proposed plugin name
-      description: kebab-case, permanent once published; must not start with `claude-` or `anthropic-`.
+      description: kebab-case, permanent once published; see docs/naming.md for the forbidden names.
       placeholder: release-notes-writer
     validations:
       required: true

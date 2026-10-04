@@ -9,7 +9,7 @@ paths:
 
 # Official CLI
 
-- `claude plugin validate` exits with 0, 1 or 2, and its `--json` mode prints the `hooks:` and `calls:` lines of mods.
+- `claude plugin validate` exits with 0, 1 or 2, and its `--json` mode prints the `hooks:` and `calls:` lines of mods (the docs show them in the text output only).
 - From the marketplace root it does not check the inside of the plugins, so validate each plugin separately.
 - `validate` checks MCP since 2.1.281 and the paths of `outputStyles`, `themes`, `monitors` and `lspServers` since 2.1.283.
 - `claude plugin init` only writes to `<config>/skills/<name>`, honors `CLAUDE_CONFIG_DIR` and generates a root `SKILL.md` plus `"skills": ["./"]`.

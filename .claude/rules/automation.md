@@ -25,7 +25,7 @@ paths:
 - The `format` hook runs after Edit and Write. It runs prettier on edited Markdown, JSON, YAML and workflow scripts and tells Claude to re-read the file.
 - The `session-status` hook runs at session start, resume, clear and compaction. It prints the branch, changed files, a notice when Claude Code is newer than the pin, and a reminder to read files with the Read tool.
 - `worktree.baseRef: head` makes new worktrees start from the local `HEAD`, so unpushed commits are present.
-- The `verify` skill runs before every commit: Claude runs `python3 scripts/check.py`. Claude Code runs a project skill named `verify` before commits, except docs-only and tests-only ones.
+- The `verify` skill: Claude Code tells Claude to run it before each commit, and it runs `python3 scripts/check.py`. The instruction applies when the skill loads from a project, personal, enterprise, additional-directory or `.claude/commands/` location, Claude may invoke it (no `disable-model-invocation: true`) and `includeGitInstructions` is not off. Docs-only and tests-only changes are excepted, and plugin skills do not count.
 - Approving a prompt with "don't ask again" saves an allow rule in the local settings. It never overrides a project `ask` rule, so the next push asks again.
 
 ## Skills
@@ -50,7 +50,7 @@ paths:
   - It reviews the current head for correctness and this repository's rules (CLAUDE.md, quality bar, security review, releasing, portability).
   - It posts new findings inline and one summary with a verdict and a fixed/open table.
   - CI runs the gates; `/review-pr` additionally runs them on a checkout.
-  - The action skips, with a green check, a pull request whose copy of the workflow differs from `main`, so a change to these workflows is reviewed only locally.
+  - The action skips, with a green check, a pull request whose copy of the workflow differs from `main`, so a change to these workflows is reviewed only locally (observed 2026-10-04; the action's docs do not state it).
 - `.github/workflows/claude.yml` answers `@claude` in an issue, a pull request comment or a review.
   - Only users with write access can trigger it, so a third party's issue runs nothing until a maintainer comments `@claude <request>`.
   - Claude may then push a branch prefixed `claude/` with the app's token; asking is the approval.
@@ -58,7 +58,7 @@ paths:
 ## Review and Agent
 
 - For every pull request, run the bundled `/code-review high` for correctness bugs and `/review-pr` for this repository's own rules (release discipline, quality bar, security, portability, docs). Neither replaces the other.
-- For a plugin with hooks or MCP servers, `/code-review ultra` (cloud, billed after three free runs) is an optional extra pass before the merge.
+- For a plugin with hooks or MCP servers, `/code-review ultra` (cloud research preview; Pro and Max accounts get three one-time free runs, then it bills as usage credits, about $5 to $25 per review; on Bedrock, Agent Platform, Foundry and Zero Data Retention organizations it runs a local review instead) is an optional extra pass before the merge.
 - `plugin-reviewer` (`.claude/agents/plugin-reviewer.md`) reviews a pull request or branch without editing anything.
   - It checks out the head in a temporary worktree (prefix `claude-essentials-review-`).
   - It runs `python3 scripts/check.py` and `scripts/check_pr.py` there and reads the rules for each changed path.
@@ -95,7 +95,7 @@ paths:
 - Skills and workflows guide Claude; the gates, `scripts/check_pr.py` and the permission prompts enforce.
 - `scripts/drive_plugin.py` uses the maintainer's login, so the session sees the account email. For proof that holds for strangers, run `claude plugin eval plugins/<name> --no-publish`.
 - Hooks run `python3` on every tool call for anyone who trusts the folder (`CONTRIBUTING.md`).
-- A new `.claude/agents/` directory or `.claude/workflows/` file may need `/reload-skills` or a new session before it appears.
+- A new `.claude/agents/` directory needs a new session; a new or edited `.claude/workflows/` file needs `/reload-skills` or a new session.
 
 ## Change the Automation
 

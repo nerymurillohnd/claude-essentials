@@ -27,7 +27,7 @@ plugins/<name>/
 Source: [Plugin manifest reference, standard layout](https://code.claude.com/docs/en/plugins/manifest-reference#standard-layout).
 
 - A `CLAUDE.md` at the plugin root is never loaded; put instructions in a skill.
-- A root `SKILL.md` is the skills-directory layout; marketplace plugins use `skills/<name>/SKILL.md`.
+- A root `SKILL.md` with no `skills/` directory and no `skills` key loads as a single skill, also in a marketplace install; set `name` in its frontmatter. This marketplace uses `skills/<name>/SKILL.md` by convention.
 
 ## Components
 
@@ -45,7 +45,7 @@ Plugin skills and agents are namespaced: a skill `review` in plugin `code-checks
 
 ## Paths and portability
 
-Claude Code copies each installed plugin, alone, to `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` ([loading reference](https://code.claude.com/docs/en/plugins/loading#find-plugins-on-disk)). Everything a plugin needs must be inside its directory.
+Claude Code copies each plugin installed from a git, URL or other remote marketplace, alone, to `<plugins root>/cache/<marketplace>/<plugin>/<version>/` (the plugins root is `~/.claude/plugins` by default; plugins from a local-path marketplace load in place) ([loading reference](https://code.claude.com/docs/en/plugins/loading#find-plugins-on-disk)). Everything a plugin needs must be inside its directory.
 
 - Reference bundled files as `${CLAUDE_PLUGIN_ROOT}/...` and persistent state as `${CLAUDE_PLUGIN_DATA}/...` ([environment variables](https://code.claude.com/docs/en/plugins/manifest-reference#environment-variables)). `${CLAUDE_PLUGIN_ROOT}` changes on every update, so never write state there.
 - In shell-form hook commands, quote the variable: `"${CLAUDE_PLUGIN_ROOT}"/scripts/check.sh`, or use exec form with `args`.

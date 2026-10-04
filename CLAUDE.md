@@ -29,7 +29,7 @@ Run commands in this order. Every script is standard-library Python.
 - `python3 scripts/check.py` - Run when you need every gate, exactly as CI does.
 - `python3 scripts/validate_adrs.py` - Run after copying `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`.
 - `python3 scripts/drive_plugin.py <plugin> [--prompt "…"] [--expect <regex>] [--source head]` - Run when you need to see a plugin work in a real session.
-- `verify` (project skill) - Run before every commit.
+- `verify` (project skill) - Run before every commit, including the docs-only and tests-only ones that Claude Code does not prompt for.
 - `python3 scripts/check.py test-install` - Run after committing, because it tests HEAD.
 - `python3 scripts/bump_version.py plugin <name> <level> [--dry-run]` - Run in the same PR when a plugin changes.
 - `claude plugin tag plugins/<name>` - Run on the merged commit.
@@ -127,7 +127,7 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 ## Architecture
 
 ```text
-.claude-plugin/marketplace.json   catalog: name, owner, version, entries (source ./plugins/<name>)
+.claude-plugin/marketplace.json   catalog: name, owner, entries (source ./plugins/<name>); no version
 plugins/<name>/                   one self-contained plugin per directory
 scripts/                          stdlib Python run with `python3` (no dependency manifest)
   check.py                        single entry point: every gate, test-install, clean, ci-tools
@@ -170,7 +170,7 @@ docs/                             guides and ADRs
 - The full release flow ran end to end on pull request #2: `check_pr`, labeler, squash merge, signed tag `hello-example--v0.1.1` and its GitHub Release.
 - Open item in `docs/publishing-checklist.md`: checking the issue forms in the browser.
 - Claude Code automation added on 2026-10-04: see `.claude/rules/automation.md`.
-- Its commits were pushed with the merge of PR #4 (`7314c58`, squash), which the maintainer approved on 2026-10-04; the commits from `8109002` to `7314c58` came after the handoff `2026-10-04-0852`.
+- The Claude GitHub workflows arrived with the squash merge of PR #4 (`7314c58`). The automation commits `44fc258` to `60f7a5a` were already on `origin/main` before it; how they were pushed is not recorded here. They came after the handoff `2026-10-04-0852`.
 - The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `python3 scripts/check.py` passed all 10 gates locally on 2026-10-04.
 - `51e96f6` (2026-10-04) gave the bug report dropdowns a neutral first option; CI passed on `main`, and the forms still need the browser check.
 - Branch naming settled on 2026-10-04 in ADR branch-naming: the prefix is the commit scope, and `marketplace`, `scripts`, `ci` and `docs` are reserved plugin names. CI passed on its commit `7c49526` (`Validate`, run 37201134748, checked with `gh run list` on 2026-10-04).

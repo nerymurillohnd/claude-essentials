@@ -74,7 +74,7 @@ Never install plugins from this repository into your own Claude Code configurati
 
 ## Review
 
-Maintainers may request changes for correctness, security, portability, licensing or unclear instructions. Plugins with hooks, MCP or LSP servers, executables or mods also go through the [security review](docs/security-review.md). A merged plugin change is released as soon as a maintainer tags the merged commit.
+Maintainers may request changes for correctness, security, portability, licensing or unclear instructions. Plugins with hooks, MCP or LSP servers, executables or mods also go through the [security review](docs/security-review.md). A merged plugin change with its version bump reaches users on their next update; a maintainer then tags the merged commit as the signed record.
 
 ## Licensing
 

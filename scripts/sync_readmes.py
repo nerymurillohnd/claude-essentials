@@ -9,8 +9,9 @@ Usage:
   catalog in .claude-plugin/marketplace.json. Edit the template, never README.md.
 * Each plugin README keeps the author's prose and holds generated blocks between
   `<!-- BEGIN GENERATED: <block> -->` and `<!-- END GENERATED: <block> -->`:
-  header, requirements, installation, components, uninstall, and, when they apply,
-  configuration (userConfig options) and runtime (what the plugin runs).
+  header, requirements, installation, components, uninstall, documentation,
+  license, and, when they apply, configuration (userConfig options) and runtime
+  (what the plugin runs).
 
 Generated Markdown is passed through Prettier so `prettier --check` and this
 gate always agree (docs/readme-guide.md).

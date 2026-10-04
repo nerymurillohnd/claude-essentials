@@ -66,9 +66,9 @@ Commit this to your repository's `.claude/settings.json` so everyone who trusts 
 ```
 
 <details>
-<summary>Pin a release, or clone only what Claude Code needs</summary>
+<summary>Pin a commit or branch, or clone only what Claude Code needs</summary>
 
-Pin the catalog to a branch or tag by appending it to the source: `/plugin marketplace add nerymurillohnd/claude-essentials#<ref>`.
+Pin the catalog to a branch, tag or commit by appending it to the source (a tag pins every plugin in the catalog to that commit, because plugin versions come from `main`): `/plugin marketplace add nerymurillohnd/claude-essentials#<ref>`.
 
 Clone only the catalog and the plugins, without documentation and tooling:
 

@@ -10,7 +10,7 @@ Only plugins are versioned. Each plugin has its own [SemVer](https://semver.org/
 
 Claude Code reads `plugin.json` first and caches each plugin by name and version, so users receive a new copy only when that version changes ([versions and updates](https://code.claude.com/docs/en/plugins/loading#versions-and-updates)).
 
-The catalog (`.claude-plugin/marketplace.json`) has no `version`, neither top-level nor `metadata.version`. Claude Code does not use it to deliver anything: users always receive the latest catalog from `main`. The catalog's history is the dated root `CHANGELOG.md`.
+The catalog (`.claude-plugin/marketplace.json`) has no `version`, neither top-level nor `metadata.version`. Claude Code does not use it to deliver anything: users receive the latest catalog from the default branch whenever their copy refreshes (`/plugin marketplace update`, `claude plugin update` or auto-update, which is off by default; users who added a `#<ref>` stay on that ref). The catalog's history is the dated root `CHANGELOG.md`.
 
 | Bump  | When                                  | Examples                                                                                                     |
 | ----- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -70,7 +70,7 @@ Both changelogs use the change types of [Keep a Changelog 1.1.0](https://keepach
 
 ## Release a plugin
 
-Users receive a plugin from `main`: Claude Code clones the marketplace's default branch and caches each plugin by its `version`, so the merge of a pull request with a bump is the release, and users get it on their next `claude plugin update` or auto-update ([host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace#release-a-new-version)). The tag and the GitHub Release come after it as the signed record and for dependency version ranges ([dependencies](https://code.claude.com/docs/en/plugins/dependencies#create-a-release-tag)); Claude Code never reads them to install. Keep `main` releasable at all times.
+Users receive a plugin from `main`: Claude Code clones the marketplace's default branch and caches each plugin by its `version`, so the merge of a pull request with a bump is the release, and users get it on their next `claude plugin update` or auto-update ([host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace#release-a-new-version)). The tag and the GitHub Release come after it as the signed record and for dependency version ranges ([dependencies](https://code.claude.com/docs/en/plugins/dependencies#create-a-release-tag)); Claude Code reads tags only to resolve a dependent plugin's version constraint on this plugin, never to install a plugin itself. Keep `main` releasable at all times.
 
 The release is prepared in the pull request that changes the plugin, and tagged after the merge. The project skill `/release-plugin <plugin> <level> <topic>` runs the steps below in order and stops at an approval prompt before every push and pull request; reviews and the merge go through `/github-ops:automatic-pr-lifecycle`, and `/release-plugin <plugin> tag` finishes after the merge ([ADR release-orchestration](adr/decisions/ADR_2026-10-04_release-orchestration.md)). The steps also work by hand.
 
@@ -128,7 +128,7 @@ A tag that was created but not pushed can be deleted locally with `git tag -d <n
 
 To remove a component inside a plugin (a skill, agent, hook or command), deprecate it under `### Deprecated` in a plugin minor, keep it for at least one further minor release and 30 days, and remove it in the plugin's next major with a `### Migration` section.
 
-To remove a whole plugin:
+To remove a whole plugin (exception: a confirmed vulnerability that cannot be fixed quickly removes it at once, as `SECURITY.md` promises, so skip steps 1 and 2):
 
 1. Deprecate it in a plugin MINOR release: add `### Deprecated` with the replacement and the planned removal, and state it in the README Overview. Add a dated `### Deprecated` note to the root `CHANGELOG.md`.
 2. Keep the plugin for at least one further minor release and 30 days.
