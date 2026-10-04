@@ -40,11 +40,11 @@ jobs:
 
       - name: Install the pinned tools
         run: |
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          uv run scripts/check.py ci-tools
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+          python3 scripts/check.py ci-tools
 
       - name: Run every gate
-        run: uv run scripts/check.py
+        run: python3 scripts/check.py
 
       - name: Install every plugin in an isolated config
-        run: uv run scripts/check.py test-install
+        run: python3 scripts/check.py test-install

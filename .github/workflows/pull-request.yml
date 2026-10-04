@@ -24,17 +24,11 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with:
-          version: "0.12.22"
-          enable-cache: false
-
       - name: Commit messages follow Conventional Commits
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: uv run scripts/check_commit_msg.py --range "$BASE_SHA..$HEAD_SHA"
+        run: python3 scripts/check_commit_msg.py --range "${BASE_SHA}..${HEAD_SHA}"
 
       - name: Version, changelog and semver label discipline
         env:
@@ -42,4 +36,4 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: uv run scripts/check_pr.py --base "$BASE_SHA" --head "$HEAD_SHA" --title "$PR_TITLE" --labels "$PR_LABELS"
+        run: python3 scripts/check_pr.py --base "${BASE_SHA}" --head "${HEAD_SHA}" --title "${PR_TITLE}" --labels "${PR_LABELS}"

@@ -1,18 +1,19 @@
 """Shared helpers for the claude-essentials repository scripts.
 
 Standard library only: the repository has no dependency manifest by design
-(docs/adr/decisions/ADR_2026-10-03_validation-stack.md). Every Claude Code fact used here is
-grounded in the official docs listed in CLAUDE.md.
+(docs/adr/decisions/ADR_2026-10-03_scripts-run-with-python3.md). Every Claude
+Code fact used here is grounded in the official docs listed in CLAUDE.md.
 """
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 import datetime as _dt
 import json
+from pathlib import Path
 import re
 import subprocess
-from dataclasses import dataclass, field
-from pathlib import Path
+import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 MARKETPLACE_FILE = ROOT / ".claude-plugin" / "marketplace.json"
@@ -73,9 +74,12 @@ CHANGE_TYPES: tuple[str, ...] = (
 
 # Regular expression suggested by the SemVer 2.0.0 specification
 # (https://semver.org/spec/v2.0.0.html, CC BY 3.0; see THIRD_PARTY_NOTICES.md).
-SEMVER_RE = re.compile(
-    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+_SEMVER_PATTERN = (
+    r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)"
+    r"(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?"
+    r"(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
 )
+SEMVER_RE = re.compile(_SEMVER_PATTERN)
 
 KEBAB_RE = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
 MAX_NAME_LENGTH = 64
@@ -97,15 +101,54 @@ _RESERVED_EXACT = frozenset(
     }
 )
 _BRAND_WORDS = frozenset({"claude", "anthropic", "anthropics"})
+_KEBAB_HINT = "lowercase letters, digits, single hyphens, starting with a letter"
+_BRAND_HINT = "which reads as an Anthropic plugin"
+
+
+# --------------------------------------------------------------------------
+# Output and errors. The scripts are command-line tools: their report is
+# their output, written to standard output.
+
+
+def emit(text: str = "") -> None:
+    """Write one line of command output and flush it immediately."""
+    _ = sys.stdout.write(f"{text}\n")
+    _ = sys.stdout.flush()
+
+
+class InvalidVersionError(ValueError):
+    """A version string is not valid SemVer."""
+
+    def __init__(self, version: str) -> None:
+        """Describe the invalid version."""
+        super().__init__(f'"{version}" is not a valid SemVer version')
+
+
+class UnknownBumpLevelError(ValueError):
+    """A bump level is not `major`, `minor` or `patch`."""
+
+    def __init__(self, level: str) -> None:
+        """Describe the unknown level."""
+        super().__init__(f'unknown bump level "{level}"')
+
+
+class ToolFailedError(SystemExit):
+    """An external tool the scripts depend on exited with an error."""
+
+    def __init__(self, tool: str, detail: str) -> None:
+        """Describe which tool failed and why."""
+        super().__init__(f"{tool} failed: {detail}")
+
+
+# --------------------------------------------------------------------------
+# Names, versions and tags.
 
 
 def plugin_name_problems(name: str) -> list[str]:
     """Return every reason a plugin name is not acceptable (empty when valid)."""
     problems: list[str] = []
     if not KEBAB_RE.match(name):
-        problems.append(
-            f'"{name}" is not kebab-case (lowercase letters, digits, single hyphens, starting with a letter)'
-        )
+        problems.append(f'"{name}" is not kebab-case ({_KEBAB_HINT})')
     if len(name) > MAX_NAME_LENGTH:
         problems.append(f'"{name}" is longer than {MAX_NAME_LENGTH} characters')
     lowered = name.lower()
@@ -115,9 +158,7 @@ def plugin_name_problems(name: str) -> list[str]:
         problems.append(f'"{name}" starts with a prefix reserved for Anthropic plugins')
     words = set(re.split(r"[-_.]+", lowered))
     if words & _BRAND_WORDS:
-        problems.append(
-            f'"{name}" contains "claude" or "anthropic" as a word, which reads as an Anthropic plugin'
-        )
+        problems.append(f'"{name}" contains "claude" or "anthropic" as a word, {_BRAND_HINT}')
     return problems
 
 
@@ -133,7 +174,7 @@ def bump(version: str, level: str) -> str:
     """Bump a release version by `major`, `minor` or `patch`."""
     parsed = parse_semver(version)
     if parsed is None:
-        raise ValueError(f'"{version}" is not a valid SemVer version')
+        raise InvalidVersionError(version)
     major, minor, patch = parsed
     if level == "major":
         return f"{major + 1}.0.0"
@@ -141,7 +182,7 @@ def bump(version: str, level: str) -> str:
         return f"{major}.{minor + 1}.0"
     if level == "patch":
         return f"{major}.{minor}.{patch + 1}"
-    raise ValueError(f'unknown bump level "{level}"')
+    raise UnknownBumpLevelError(level)
 
 
 def plugin_tag(name: str, version: str) -> str:
@@ -164,10 +205,11 @@ def split_tag(tag: str) -> tuple[str, str] | None:
 # JSON helpers. `JSON` is the recursive type of a decoded document, so an
 # `isinstance` check narrows to a known type instead of `Unknown`.
 
-type JSON = str | int | float | bool | None | list[JSON] | dict[str, JSON]
+type JSON = str | int | float | bool | list[JSON] | dict[str, JSON] | None
 
 
 def load_json(path: Path) -> JSON:
+    """Decode a JSON file into the `JSON` type."""
     with path.open(encoding="utf-8") as handle:
         # Verified false positive: typeshed declares json.load() -> Any, but the
         # json module only ever decodes to dict/list/str/int/float/bool/None
@@ -179,9 +221,7 @@ def load_json(path: Path) -> JSON:
 
 def dump_json(path: Path, data: JSON) -> None:
     """Write JSON and format it with Prettier, the repository's formatter."""
-    _ = path.write_text(
-        json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
+    _ = path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     format_files([path])
 
 
@@ -192,18 +232,22 @@ def format_files(paths: list[Path]) -> None:
         check=False,
     )
     if result.returncode != 0:
-        raise SystemExit(f"prettier failed: {result.stderr.strip()}")
+        tool = "prettier"
+        raise ToolFailedError(tool, result.stderr.strip())
 
 
 def as_dict(value: JSON) -> dict[str, JSON] | None:
+    """Return the value when it is a JSON object, else None."""
     return value if isinstance(value, dict) else None
 
 
 def as_list(value: JSON) -> list[JSON] | None:
+    """Return the value when it is a JSON array, else None."""
     return value if isinstance(value, list) else None
 
 
 def as_str(value: JSON) -> str | None:
+    """Return the value when it is a JSON string, else None."""
     return value if isinstance(value, str) else None
 
 
@@ -217,6 +261,8 @@ _SECTION_HEADING_RE = re.compile(r"^### (?P<kind>.+?)\s*$")
 
 @dataclass
 class Release:
+    """One released version of a changelog."""
+
     version: str
     date: str
     body: str
@@ -224,73 +270,89 @@ class Release:
 
 @dataclass
 class Changelog:
+    """A parsed changelog and the structural problems found in it."""
+
     unreleased: str = ""
     releases: list[Release] = field(default_factory=list)
     problems: list[str] = field(default_factory=list)
 
 
+@dataclass
+class _ChangelogScan:
+    """Line-by-line state while parsing a changelog."""
+
+    result: Changelog
+    unreleased_lines: list[str] = field(default_factory=list)
+    release_lines: list[list[str]] = field(default_factory=list)
+    current: list[str] | None = None
+    seen_unreleased: bool = False
+
+    def feed(self, line: str) -> None:
+        """Route one line to the section it belongs to."""
+        if line.strip() == _UNRELEASED_HEADING:
+            self._start_unreleased()
+            return
+        release = _RELEASE_HEADING_RE.match(line)
+        if release:
+            self.result.releases.append(
+                Release(release.group("version"), release.group("date"), "")
+            )
+            self.current = []
+            self.release_lines.append(self.current)
+            return
+        if line.startswith("## "):
+            self.result.problems.append(f'unexpected heading "{line.strip()}"')
+            self.current = None
+            return
+        section = _SECTION_HEADING_RE.match(line)
+        if section and section.group("kind") not in CHANGE_TYPES:
+            kind = section.group("kind")
+            allowed = ", ".join(CHANGE_TYPES)
+            self.result.problems.append(f'unknown change type "### {kind}" (allowed: {allowed})')
+        if self.current is not None:
+            self.current.append(line)
+
+    def _start_unreleased(self) -> None:
+        if self.seen_unreleased:
+            self.result.problems.append('more than one "## [Unreleased]" section')
+        if self.result.releases:
+            self.result.problems.append('"## [Unreleased]" must come before every release')
+        self.seen_unreleased = True
+        self.current = self.unreleased_lines
+
+
+def _release_problems(release: Release) -> list[str]:
+    problems: list[str] = []
+    if parse_semver(release.version) is None:
+        problems.append(f'release "{release.version}" is not a valid SemVer version')
+    try:
+        _ = _dt.date.fromisoformat(release.date)
+    except ValueError:
+        problems.append(f'release {release.version} has date "{release.date}", expected YYYY-MM-DD')
+    if not release.body:
+        problems.append(f"release {release.version} has no entries")
+    return problems
+
+
 def parse_changelog(text: str) -> Changelog:
     """Parse a changelog and report structural problems instead of raising."""
-    result = Changelog()
+    scan = _ChangelogScan(Changelog())
+    result = scan.result
     lines = text.splitlines()
     if not lines or lines[0].strip() != "# Changelog":
         result.problems.append('first line must be "# Changelog"')
-    current: list[str] | None = None
-    unreleased_lines: list[str] = []
-    seen_unreleased = False
-    release_lines: dict[int, list[str]] = {}
     for line in lines:
-        if line.strip() == _UNRELEASED_HEADING:
-            if seen_unreleased:
-                result.problems.append('more than one "## [Unreleased]" section')
-            if result.releases:
-                result.problems.append(
-                    '"## [Unreleased]" must come before every release'
-                )
-            seen_unreleased = True
-            current = unreleased_lines
-            continue
-        release = _RELEASE_HEADING_RE.match(line)
-        if release:
-            result.releases.append(
-                Release(release.group("version"), release.group("date"), "")
-            )
-            current = release_lines.setdefault(len(result.releases) - 1, [])
-            continue
-        if line.startswith("## "):
-            result.problems.append(f'unexpected heading "{line.strip()}"')
-            current = None
-            continue
-        section = _SECTION_HEADING_RE.match(line)
-        if section and section.group("kind") not in CHANGE_TYPES:
-            result.problems.append(
-                f'unknown change type "### {section.group("kind")}" (allowed: {", ".join(CHANGE_TYPES)})'
-            )
-        if current is not None:
-            current.append(line)
-    if not seen_unreleased:
+        scan.feed(line)
+    if not scan.seen_unreleased:
         result.problems.append('missing "## [Unreleased]" section')
-    result.unreleased = "\n".join(unreleased_lines).strip()
-    for index, release_entry in enumerate(result.releases):
-        release_entry.body = "\n".join(release_lines.get(index, [])).strip()
-        if parse_semver(release_entry.version) is None:
-            result.problems.append(
-                f'release "{release_entry.version}" is not a valid SemVer version'
-            )
-        try:
-            _ = _dt.date.fromisoformat(release_entry.date)
-        except ValueError:
-            result.problems.append(
-                f'release {release_entry.version} has date "{release_entry.date}", expected YYYY-MM-DD'
-            )
-        if not release_entry.body:
-            result.problems.append(f"release {release_entry.version} has no entries")
+    result.unreleased = "\n".join(scan.unreleased_lines).strip()
+    for release, body in zip(result.releases, scan.release_lines, strict=True):
+        release.body = "\n".join(body).strip()
+        result.problems.extend(_release_problems(release))
     versions = [parse_semver(r.version) for r in result.releases]
     valid = [v for v in versions if v is not None]
     if valid != sorted(valid, reverse=True) or len(set(valid)) != len(valid):
-        result.problems.append(
-            "releases must be listed newest first, without duplicates"
-        )
+        result.problems.append("releases must be listed newest first, without duplicates")
     return result
 
 
@@ -339,8 +401,7 @@ def git_show(ref: str, path: str) -> str | None:
 
 
 def plugin_dirs() -> list[Path]:
+    """Every plugin directory under plugins/, sorted by name."""
     if not PLUGINS_DIR.is_dir():
         return []
-    return sorted(
-        p for p in PLUGINS_DIR.iterdir() if p.is_dir() and not p.name.startswith(".")
-    )
+    return sorted(p for p in PLUGINS_DIR.iterdir() if p.is_dir() and not p.name.startswith("."))

@@ -1,2 +1,154 @@
-# Ruff configuration for the repository scripts (Python standard library only).
+# ~/.config/ruff/ruff.toml
+#
+# Global Ruff baseline (user-level fallback configuration).
+#
+# Verified against: ruff 0.16.10 + basedpyright 1.40.1 (pyright 1.1.414), 2026-10-03.
+#
+# How Ruff uses this file (crates/ruff/src/resolve.rs, docs/configuration.md):
+# - Only applies when no project config (pyproject.toml with [tool.ruff], ruff.toml,
+#   .ruff.toml) exists in the file's ancestor directories. A project config fully
+#   replaces this file; Ruff never merges them (use `extend` to inherit explicitly).
+# - If a `pyproject.toml` with `[project] requires-python` exists in an ancestor of the
+#   current working directory, its minimum version overrides `target-version` below.
+# - Ruff does NOT read PEP 723 inline-script `requires-python`; scripts that need a newer
+#   floor must live under a pyproject.toml or be checked with `--target-version`.
+#
+# Ownership contract with basedpyright (`typeCheckingMode = "recommended"` or `"all"`):
+# - basedpyright owns typing: annotations, deprecated typing aliases
+#   (`deprecateTypingAliases` is true in both modes), single-line implicit string
+#   concatenation, re-export semantics and overload docstrings.
+# - Ruff owns lint style, correctness, security, complexity, imports and formatting.
+# - Rules are disabled here only when they are a true conflict with basedpyright or the
+#   formatter, or when basedpyright's own maintainers delegate them to basedpyright.
+
+line-length = 100
+indent-width = 4
+
+# Compatibility floor, not the interpreter you run. Ruff never proposes syntax or stdlib
+# APIs newer than this, and it reports newer syntax (e.g. PEP 758 `except A, B:`,
+# PEP 750 t-strings) as an error, so loose scripts stay runnable on 3.12 and 3.13.
 target-version = "py312"
+
+required-version = ">=0.16.10"
+respect-gitignore = true
+force-exclude = true
+
+# Explicit, not implicit: preview rules, fixes and formatter style change between patch
+# releases and are not a quality gate. `ruff check --preview` still opts in per run.
+preview = false
+
+[lint]
+
+# `select`, not `extend-select`: the rule set is defined here in full instead of being
+# layered on top of Ruff's default set (413 rules since 0.16.0). Ruff's own guidance:
+# "Prefer lint.select over lint.extend-select to make your rule set explicit."
+# `ALL` enables every stable rule and auto-enables new stable rules on upgrade.
+#
+# Pure duplicates of basedpyright that have no conflict (F401, F811, F821, F841, B018,
+# SLF001, ARG, PGH003) deliberately stay on: Ruff autofixes several of them, runs
+# without import resolution, and basedpyright's maintainers keep them on as well.
+select = ["ALL"]
+
+ignore = [
+    # === Owned by basedpyright ===
+    # Source: DetachHead/basedpyright pyproject.toml [tool.ruff.lint] ("covered by
+    # basedpyright"), cross-checked against basedpyright 1.40.1 configOptions.ts.
+
+    "ANN",     # flake8-annotations -> reportMissingParameterType, reportUnknown*, reportAny
+    "PLE0605", # invalid-all-format -> basedpyright validates __all__
+    "RUF013",  # implicit-optional -> strictParameterNoneValue
+    "RUF016",  # invalid-index-type -> type-aware indexing checks
+    "UP006",   # non-pep585-annotation -> deprecateTypingAliases (List, Dict, ...)
+    "UP007",   # non-pep604-annotation-union -> deprecateTypingAliases (typing.Union)
+    "UP035",   # deprecated-import -> deprecateTypingAliases + reportDeprecated
+    "UP045",   # non-pep604-annotation-optional -> deprecateTypingAliases (typing.Optional)
+    "D418",    # overload-with-docstring -> basedpyright shows per-overload docstrings
+    "PLC0414", # useless-import-alias -> conflicts: `x as x` is the explicit re-export
+    #            form reportPrivateLocalImportUsage requires
+    "ISC001",  # single-line-implicit-string-concatenation -> reportImplicitStringConcatenation
+    "ISC004",  # implicit concat in collection literal -> reportImplicitStringConcatenation
+    #            (ISC002/ISC003 stay on: basedpyright exempts parenthesized multi-line
+    #            implicit concatenation, which is exactly what ISC003 asks for)
+
+    # === Ruff formatter conflicts (docs/formatter.md#conflicting-lint-rules) ===
+
+    "W191",   # tab-indentation
+    "E111",   # indentation-with-invalid-multiple
+    "E114",   # indentation-with-invalid-multiple-comment
+    "E117",   # over-indented
+    "D206",   # docstring-tab-indentation
+    "D300",   # triple-single-quotes
+    "Q000",   # bad-quotes-inline-string
+    "Q001",   # bad-quotes-multiline-string
+    "Q002",   # bad-quotes-docstring
+    "Q003",   # avoidable-escaped-quote
+    "Q004",   # unnecessary-escaped-quote
+    "COM812", # missing-trailing-comma
+    "COM819", # prohibited-trailing-comma
+
+    # === Global standalone-script policy ===
+
+    "CPY001", # missing-copyright-notice (stable since 0.16.0); enable per project
+    "D100",   # missing-docstring-in-public-module
+    "D104",   # missing-docstring-in-public-package
+    "S603",   # subprocess-without-shell-equals-true (fires on every subprocess call)
+    "INP001", # implicit-namespace-package (loose scripts are not packages)
+]
+
+fixable = ["ALL"]
+unfixable = []
+
+# Loose scripts often run without third-party deps; never let a fix import
+# `typing_extensions` to backport a symbol missing from the 3.12 `typing` module.
+typing-extensions = false
+
+[lint.per-file-ignores]
+"**/{tests,test}/**/*.py" = [
+    "S101",    # assert is the pytest idiom
+    "PLR2004", # magic-value-comparison in expected values
+    "D",       # test docstrings
+    "SLF001",  # private member access in white-box tests
+]
+"**/{test_*,*_test,conftest}.py" = ["S101", "PLR2004", "D", "SLF001"]
+"*.pyi" = [
+    "A001", # builtin-variable-shadowing: names mirror the runtime module
+    "A002", # builtin-argument-shadowing
+    "N",    # pep8-naming: third-party names are not ours to choose
+]
+
+[lint.isort]
+
+# Formatter-compatible isort settings only (see docs/formatter.md).
+force-sort-within-sections = true
+combine-as-imports = true
+order-by-type = true
+
+[lint.mccabe]
+
+max-complexity = 8
+
+[lint.pydocstyle]
+
+# Google convention disables D203, D204, D213, D215, D400, D401, D404, D406, D407,
+# D408, D409 and D413 automatically.
+convention = "google"
+
+[lint.flake8-tidy-imports]
+
+# Together with basedpyright reportImplicitRelativeImport, this forces fully
+# qualified absolute imports everywhere.
+ban-relative-imports = "all"
+
+[lint.pycodestyle]
+
+max-doc-length = 100
+ignore-overlong-task-comments = true
+
+[format]
+
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+docstring-code-format = true
+docstring-code-line-length = 100

@@ -1,12 +1,9 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = []
-# ///
+#!/usr/bin/env python3
 """Prepare a version bump from the hand-written changelog (docs/releasing.md).
 
 Usage:
-  uv run scripts/bump_version.py plugin <name> <major|minor|patch> [--dry-run]
-  uv run scripts/bump_version.py marketplace <major|minor|patch> [--dry-run]
+  python3 scripts/bump_version.py plugin <name> <major|minor|patch> [--dry-run]
+  python3 scripts/bump_version.py marketplace <major|minor|patch> [--dry-run]
 
 It only prepares files; it never commits, tags or pushes:
 
@@ -20,24 +17,48 @@ It only prepares files; it never commits, tags or pushes:
 
 Then review the diff, commit, and tag by hand as docs/releasing.md describes.
 Releases are not bundled into a single command until the first real release
-shows which steps belong together (docs/adr/decisions/ADR_2026-10-03_release-automation.md).
+shows which steps belong together
+(docs/adr/decisions/ADR_2026-10-03_release-automation.md).
 """
 
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass
 import datetime as dt
 import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import repo
-from repo import JSON
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from repo import JSON
 
 LEVELS = ("major", "minor", "patch")
 
 
+class NotAJsonObjectError(SystemExit):
+    """A manifest that must be a JSON object is something else."""
+
+    def __init__(self, path: Path) -> None:
+        """Name the file that is not a JSON object."""
+        super().__init__(f"{path} is not a JSON object")
+
+
+@dataclass(frozen=True)
+class Target:
+    """What a bump changes: the changelog, the manifest and what to validate."""
+
+    label: str
+    changelog: Path
+    manifest: Path
+    validate: Path
+
+
 def _fail(message: str) -> int:
-    print(f"✘ {message}")
+    repo.emit(f"✘ {message}")
     return 1
 
 
@@ -63,10 +84,9 @@ def prepare(changelog_path: Path, current: str, level: str) -> tuple[str, str] |
     if not changelog.unreleased:
         return f"{changelog_path}: ## [Unreleased] is empty; write the user-facing notes first"
     if changelog.releases and changelog.releases[0].version != current:
-        return f"{changelog_path}: latest release {changelog.releases[0].version} does not match current version {current}"
-    if level == "major" and not repo.has_section_content(
-        changelog.unreleased, "Migration"
-    ):
+        latest = changelog.releases[0].version
+        return f"{changelog_path}: latest release {latest} does not match current version {current}"
+    if level == "major" and not repo.has_section_content(changelog.unreleased, "Migration"):
         return f'{changelog_path}: a major release needs a non-empty "### Migration" section'
     new_version = repo.bump(current, level)
     today = dt.datetime.now(dt.UTC).date().isoformat()
@@ -74,53 +94,47 @@ def prepare(changelog_path: Path, current: str, level: str) -> tuple[str, str] |
 
 
 def set_version(path: Path, version: str) -> None:
+    """Replace `version` in a manifest, keeping every other key and the key order."""
     data = repo.as_dict(repo.load_json(path))
     if data is None:
-        raise SystemExit(f"{path} is not a JSON object")
+        raise NotAJsonObjectError(path)
     updated: dict[str, JSON] = {
         key: (version if key == "version" else value) for key, value in data.items()
     }
     repo.dump_json(path, updated)
 
 
-def _apply(
-    label: str,
-    changelog: Path,
-    manifest: Path,
-    level: str,
-    dry_run: bool,
-    validate_target: Path,
-) -> int:
-    data = repo.as_dict(repo.load_json(manifest)) or {}
+def _apply(target: Target, level: str, *, dry_run: bool) -> int:
+    data = repo.as_dict(repo.load_json(target.manifest)) or {}
     current = repo.as_str(data.get("version")) or ""
-    prepared = prepare(changelog, current, level)
+    prepared = prepare(target.changelog, current, level)
     if isinstance(prepared, str):
         return _fail(prepared)
     new_version, changelog_text = prepared
-    print(f"{label}: {current} → {new_version} ({level})")
+    repo.emit(f"{target.label}: {current} → {new_version} ({level})")
     if dry_run:
-        print(changelog_text)
+        repo.emit(changelog_text)
         return 0
-    _ = changelog.write_text(changelog_text, encoding="utf-8")
-    set_version(manifest, new_version)
+    _ = target.changelog.write_text(changelog_text, encoding="utf-8")
+    set_version(target.manifest, new_version)
     for command in (
-        ["uv", "run", str(repo.ROOT / "scripts" / "sync_readmes.py")],
-        ["claude", "plugin", "validate", str(validate_target), "--strict"],
-        ["uv", "run", str(repo.ROOT / "scripts" / "check_repo.py")],
+        [sys.executable, str(repo.ROOT / "scripts" / "sync_readmes.py")],
+        ["claude", "plugin", "validate", str(target.validate), "--strict"],
+        [sys.executable, str(repo.ROOT / "scripts" / "check_repo.py")],
     ):
         result = repo.run(command, check=False)
         if result.returncode != 0:
-            print(result.stdout + result.stderr)
+            repo.emit(result.stdout + result.stderr)
             return _fail(f"{' '.join(command)} failed; fix it before committing")
-    tag_name = repo.MARKETPLACE_TAG_NAME if label == "marketplace" else label
+    tag_name = repo.MARKETPLACE_TAG_NAME if target.label == "marketplace" else target.label
     tag = repo.plugin_tag(tag_name, new_version)
-    print(
-        f"✔ files prepared for {tag}. Review `git diff`, then follow docs/releasing.md to commit and tag."
-    )
+    next_steps = "Review `git diff`, then commit and tag (docs/releasing.md)."
+    repo.emit(f"✔ files prepared for {tag}. {next_steps}")
     return 0
 
 
 def main() -> int:
+    """Parse the command line and prepare the bump."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -142,15 +156,10 @@ def main() -> int:
         manifest = plugin / ".claude-plugin" / "plugin.json"
         if not manifest.is_file():
             return _fail(f"unknown plugin {name}")
-        return _apply(name, plugin / "CHANGELOG.md", manifest, level, dry_run, plugin)
-    return _apply(
-        "marketplace",
-        repo.ROOT / "CHANGELOG.md",
-        repo.MARKETPLACE_FILE,
-        level,
-        dry_run,
-        repo.ROOT,
-    )
+        target = Target(name, plugin / "CHANGELOG.md", manifest, plugin)
+    else:
+        target = Target("marketplace", repo.ROOT / "CHANGELOG.md", repo.MARKETPLACE_FILE, repo.ROOT)
+    return _apply(target, level, dry_run=dry_run)
 
 
 if __name__ == "__main__":

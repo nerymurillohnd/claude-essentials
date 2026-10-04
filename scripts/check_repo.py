@@ -1,10 +1,7 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = []
-# ///
+#!/usr/bin/env python3
 """Repository gates that `claude plugin validate` does not cover.
 
-Run: uv run scripts/check_repo.py [--root PATH]
+Run: python3 scripts/check_repo.py [--root PATH]
 
 Exit 0 when every gate passes, 1 when any gate fails. Each failure names the
 file and the rule, so the fix is obvious. Rules and their reasons are in
@@ -14,16 +11,19 @@ docs/quality-bar.md and docs/adr/.
 from __future__ import annotations
 
 import argparse
+from dataclasses import dataclass, field
 import fnmatch
 import os
+from pathlib import Path
 import re
 import socket
 import sys
-from dataclasses import dataclass, field
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import repo
-from repo import JSON
+
+if TYPE_CHECKING:
+    from repo import JSON
 
 TEXT_SUFFIXES = frozenset(
     {
@@ -47,7 +47,8 @@ TEXT_SUFFIXES = frozenset(
     }
 )
 
-# Machine-specific path shapes (portability gate, docs/adr/decisions/ADR_2026-10-03_security-posture.md).
+# Machine-specific path shapes (portability gate,
+# docs/adr/decisions/ADR_2026-10-03_security-posture.md).
 _ABSOLUTE_PATH_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("macOS home path", re.compile(r"/Users/[^/\s]+")),
     ("Linux home path", re.compile(r"/home/[^/\s]+")),
@@ -82,10 +83,13 @@ _PLACEHOLDER_RE = re.compile(r"\bTODO\b|YYYY-MM-DD|\{\{[^}]+\}\}|<your-[^>]*>")
 _PATH_TOKEN_RE = re.compile(r"(?<![\w}$])\.{0,2}/[\w./-]+")
 # Paths built on Claude Code's plugin variables, quoted or not, are portable
 # (docs: plugins/manifest-reference#environment-variables).
-_ALLOWED_PATH_RE = re.compile(
-    r'"?\$\{CLAUDE_(?:PLUGIN_ROOT|PLUGIN_DATA|PROJECT_DIR)\}"?[\w./-]*'
-)
+_ALLOWED_PATH_RE = re.compile(r'"?\$\{CLAUDE_(?:PLUGIN_ROOT|PLUGIN_DATA|PROJECT_DIR)\}"?[\w./-]*')
 _URL_RE = re.compile(r"[a-z][a-z0-9+.-]*://\S+", re.IGNORECASE)
+_PLUGIN_VARIABLES = "${CLAUDE_PLUGIN_ROOT} or ${CLAUDE_PLUGIN_DATA}"
+_PORTABLE_ALTERNATIVE = "use ${CLAUDE_PLUGIN_ROOT} or a documented setting"
+_EMAIL_ALTERNATIVE = 'use plugin.json "author.email" or an example.com address'
+# User and host names shorter than this match too many ordinary words.
+_MIN_MARKER_LENGTH = 4
 
 _README_HEADINGS = (
     "## Overview",
@@ -98,6 +102,7 @@ _README_HEADINGS = (
     "## License",
 )
 _PERMISSIONS_HEADING = "## Permissions"
+_PRIVILEGED_WHAT = "plugins with hooks, MCP or LSP servers, bin/, monitors or mods"
 _REQUIRED_MANIFEST_KEYS = (
     "name",
     "version",
@@ -107,13 +112,26 @@ _REQUIRED_MANIFEST_KEYS = (
     "repository",
 )
 _PRIVILEGED_PATHS = ("hooks", ".mcp.json", ".lsp.json", "bin", "monitors")
+_COMPONENT_KEYS = (
+    "skills",
+    "commands",
+    "agents",
+    "hooks",
+    "mcpServers",
+    "lspServers",
+    "outputStyles",
+    "workflows",
+)
 
 
 @dataclass
 class Report:
+    """Collected gate failures, each prefixed with the file it concerns."""
+
     errors: list[str] = field(default_factory=list)
 
     def fail(self, where: Path | str, message: str) -> None:
+        """Record one failure."""
         self.errors.append(f"{where}: {message}")
 
 
@@ -125,19 +143,60 @@ def _rel(root: Path, path: Path) -> str:
 
 
 def _iter_text_files(base: Path) -> list[Path]:
-    files: list[Path] = []
-    for path in sorted(base.rglob("*")):
-        if path.is_symlink() or not path.is_file():
-            continue
-        if ".mcpb-cache" in path.parts or path.name == ".DS_Store":
-            continue
-        if path.suffix.lower() in TEXT_SUFFIXES:
-            files.append(path)
-    return files
+    return [
+        path
+        for path in sorted(base.rglob("*"))
+        if not path.is_symlink()
+        and path.is_file()
+        and ".mcpb-cache" not in path.parts
+        and path.name != ".DS_Store"
+        and path.suffix.lower() in TEXT_SUFFIXES
+    ]
 
 
 # --------------------------------------------------------------------------
 # Marketplace
+
+
+def _check_catalog_fields(data: dict[str, JSON], where: str, report: Report) -> None:
+    if data.get("name") != repo.MARKETPLACE_NAME:
+        report.fail(where, f'"name" must be "{repo.MARKETPLACE_NAME}"')
+    description = repo.as_str(data.get("description")) or ""
+    if repo.DISCLAIMER not in description:
+        report.fail(where, f'"description" must state the project is "{repo.DISCLAIMER}"')
+    version = repo.as_str(data.get("version")) or ""
+    if repo.parse_semver(version) is None:
+        report.fail(where, '"version" must be a SemVer version')
+    owner = repo.as_dict(data.get("owner"))
+    if owner is None or not repo.as_str(owner.get("name")):
+        report.fail(where, '"owner.name" is required')
+
+
+def _check_entry_tags(entry: dict[str, JSON], label: str, report: Report) -> None:
+    tags = repo.as_list(entry.get("tags"))
+    if not tags:
+        report.fail(label, '"tags" must be a non-empty array')
+        return
+    for tag in tags:
+        tag_text = repo.as_str(tag)
+        if tag_text is None or not repo.KEBAB_RE.match(tag_text):
+            report.fail(label, f"tag {tag!r} must be a kebab-case string")
+
+
+def _check_entry(name: str, entry: dict[str, JSON], label: str, report: Report) -> None:
+    for problem in repo.plugin_name_problems(name):
+        report.fail(label, problem)
+    if entry.get("source") != f"./plugins/{name}":
+        reason = "in-repo plugins only, ADR in-repo-plugins-only"
+        report.fail(label, f'"source" must be "./plugins/{name}" ({reason})')
+    if "version" in entry:
+        report.fail(label, '"version" belongs only in plugin.json (ADR per-plugin-versioning)')
+    if not repo.as_str(entry.get("description")):
+        report.fail(label, '"description" is required')
+    category = repo.as_str(entry.get("category"))
+    if category not in repo.CATEGORIES:
+        report.fail(label, f'"category" must be one of: {", ".join(repo.CATEGORIES)}')
+    _check_entry_tags(entry, label, report)
 
 
 def check_marketplace(root: Path, report: Report) -> dict[str, dict[str, JSON]]:
@@ -151,20 +210,7 @@ def check_marketplace(root: Path, report: Report) -> dict[str, dict[str, JSON]]:
     if data is None:
         report.fail(where, "must be a JSON object")
         return {}
-    if data.get("name") != repo.MARKETPLACE_NAME:
-        report.fail(where, f'"name" must be "{repo.MARKETPLACE_NAME}"')
-    description = repo.as_str(data.get("description")) or ""
-    if repo.DISCLAIMER not in description:
-        report.fail(
-            where, f'"description" must state the project is "{repo.DISCLAIMER}"'
-        )
-    version = repo.as_str(data.get("version")) or ""
-    if repo.parse_semver(version) is None:
-        report.fail(where, '"version" must be a SemVer version')
-    owner = repo.as_dict(data.get("owner"))
-    if owner is None or not repo.as_str(owner.get("name")):
-        report.fail(where, '"owner.name" is required')
-
+    _check_catalog_fields(data, where, report)
     entries: dict[str, dict[str, JSON]] = {}
     plugins = repo.as_list(data.get("plugins"))
     if plugins is None:
@@ -177,36 +223,10 @@ def check_marketplace(root: Path, report: Report) -> dict[str, dict[str, JSON]]:
             report.fail(label, "entry must be an object")
             continue
         name = repo.as_str(entry.get("name")) or ""
-        for problem in repo.plugin_name_problems(name):
-            report.fail(label, problem)
         if name in entries:
             report.fail(label, f'duplicate plugin name "{name}"')
         entries[name] = entry
-        if entry.get("source") != f"./plugins/{name}":
-            report.fail(
-                label,
-                f'"source" must be "./plugins/{name}" (in-repo plugins only, ADR in-repo-plugins-only)',
-            )
-        if "version" in entry:
-            report.fail(
-                label,
-                '"version" belongs only in plugin.json (ADR per-plugin-versioning)',
-            )
-        if not repo.as_str(entry.get("description")):
-            report.fail(label, '"description" is required')
-        category = repo.as_str(entry.get("category"))
-        if category not in repo.CATEGORIES:
-            report.fail(
-                label, f'"category" must be one of: {", ".join(repo.CATEGORIES)}'
-            )
-        tags = repo.as_list(entry.get("tags"))
-        if tags is None or not tags:
-            report.fail(label, '"tags" must be a non-empty array')
-        else:
-            for tag in tags:
-                tag_text = repo.as_str(tag)
-                if tag_text is None or not repo.KEBAB_RE.match(tag_text):
-                    report.fail(label, f"tag {tag!r} must be a kebab-case string")
+        _check_entry(name, entry, label, report)
     names = list(entries)
     if names != sorted(names):
         report.fail(where, "plugin entries must be sorted by name")
@@ -219,37 +239,31 @@ def check_marketplace(root: Path, report: Report) -> dict[str, dict[str, JSON]]:
 
 def _manifest_component_paths(manifest: dict[str, JSON]) -> list[str]:
     paths: list[str] = []
-    for key in (
-        "skills",
-        "commands",
-        "agents",
-        "hooks",
-        "mcpServers",
-        "lspServers",
-        "outputStyles",
-        "workflows",
-    ):
+    for key in _COMPONENT_KEYS:
         value = manifest.get(key)
         candidates: list[JSON] = []
         if isinstance(value, str):
             candidates = [value]
         elif isinstance(value, list):
             candidates = value
-        for candidate in candidates:
-            if isinstance(candidate, str) and not candidate.startswith("https://"):
-                paths.append(candidate)
+        paths.extend(
+            candidate
+            for candidate in candidates
+            if isinstance(candidate, str) and not candidate.startswith("https://")
+        )
     return paths
 
 
 def _hook_files(plugin: Path, manifest: dict[str, JSON]) -> list[Path]:
-    files = [plugin / "hooks" / "hooks.json"]
-    for path in _manifest_component_paths({"hooks": manifest.get("hooks")}):
-        files.append(plugin / path)
+    files = [
+        plugin / "hooks" / "hooks.json",
+        *(plugin / path for path in _manifest_component_paths({"hooks": manifest.get("hooks")})),
+    ]
     return [f for f in files if f.is_file()]
 
 
 def is_mod(plugin: Path, manifest: dict[str, JSON]) -> bool:
-    """A plugin is a mod when a hooks file declares `modules` (docs: plugins/mods/reference#files)."""
+    """True when a hooks file declares `modules` (docs: plugins/mods/reference#files)."""
     for hook_file in _hook_files(plugin, manifest):
         data = repo.as_dict(repo.load_json(hook_file))
         if data is not None and "modules" in data:
@@ -275,9 +289,79 @@ def _command_strings(value: JSON, key: str | None = None) -> list[str]:
     return found
 
 
-def check_plugin(
-    root: Path, plugin: Path, entry: dict[str, JSON] | None, report: Report
+def _check_manifest_identity(
+    name: str, manifest: dict[str, JSON], mwhere: str, report: Report
 ) -> None:
+    for key in _REQUIRED_MANIFEST_KEYS:
+        if key not in manifest:
+            report.fail(mwhere, f'"{key}" is required')
+    if manifest.get("name") != name:
+        report.fail(mwhere, f'"name" must match the directory name "{name}"')
+    if "$schema" in manifest:
+        report.fail(
+            mwhere,
+            '"$schema" must be omitted: the published schema URL returns 404 (CLAUDE.md)',
+        )
+    version = repo.as_str(manifest.get("version")) or ""
+    if repo.parse_semver(version) is None:
+        report.fail(mwhere, f'"version" "{version}" is not a valid SemVer version')
+
+
+def _check_manifest_ownership(manifest: dict[str, JSON], mwhere: str, report: Report) -> None:
+    if manifest.get("license") != "MIT":
+        report.fail(mwhere, '"license" must be "MIT" (repository license)')
+    if manifest.get("repository") != repo.REPOSITORY_URL:
+        report.fail(mwhere, f'"repository" must be "{repo.REPOSITORY_URL}"')
+    author = repo.as_dict(manifest.get("author"))
+    if author is None or not repo.as_str(author.get("name")):
+        report.fail(mwhere, '"author.name" is required')
+
+
+@dataclass(frozen=True)
+class _PluginPlace:
+    """A plugin directory and how failures name it and its manifest."""
+
+    path: Path
+    where: str
+    mwhere: str
+
+
+def _check_layout(
+    place: _PluginPlace, manifest: dict[str, JSON], entry: dict[str, JSON] | None, report: Report
+) -> None:
+    plugin, where, mwhere = place.path, place.where, place.mwhere
+    if entry is not None:
+        category = repo.as_str(entry.get("category"))
+        keywords = repo.as_list(manifest.get("keywords")) or []
+        if category and category not in keywords:
+            report.fail(mwhere, f'"keywords" must include the category "{category}"')
+    for component in _manifest_component_paths(manifest):
+        if component not in (".", "./") and not component.startswith("./"):
+            report.fail(mwhere, f'component path "{component}" must start with "./"')
+        resolved = (plugin / component).resolve()
+        if not resolved.is_relative_to(plugin.resolve()):
+            report.fail(mwhere, f'component path "{component}" escapes the plugin directory')
+    if (plugin / "CLAUDE.md").exists():
+        report.fail(
+            where, "CLAUDE.md at a plugin root is never loaded; put instructions in a skill"
+        )
+    if (plugin / "SKILL.md").exists():
+        report.fail(
+            where,
+            "root SKILL.md is the skills-directory layout; use skills/<name>/SKILL.md",
+        )
+
+
+def _is_privileged(plugin: Path, manifest: dict[str, JSON], *, mod: bool) -> bool:
+    return (
+        mod
+        or any((plugin / p).exists() for p in _PRIVILEGED_PATHS)
+        or any(key in manifest for key in ("hooks", "mcpServers", "lspServers"))
+    )
+
+
+def check_plugin(root: Path, plugin: Path, entry: dict[str, JSON] | None, report: Report) -> None:
+    """Run every plugin-level gate on one plugin directory."""
     name = plugin.name
     where = _rel(root, plugin)
     if entry is None:
@@ -294,59 +378,13 @@ def check_plugin(
     if manifest is None:
         report.fail(mwhere, "must be a JSON object")
         return
-    for key in _REQUIRED_MANIFEST_KEYS:
-        if key not in manifest:
-            report.fail(mwhere, f'"{key}" is required')
-    if manifest.get("name") != name:
-        report.fail(mwhere, f'"name" must match the directory name "{name}"')
-    if "$schema" in manifest:
-        report.fail(
-            mwhere,
-            '"$schema" must be omitted: the published schema URL returns 404 (CLAUDE.md)',
-        )
-    version = repo.as_str(manifest.get("version")) or ""
-    if repo.parse_semver(version) is None:
-        report.fail(mwhere, f'"version" "{version}" is not a valid SemVer version')
-    if manifest.get("license") != "MIT":
-        report.fail(mwhere, '"license" must be "MIT" (repository license)')
-    if manifest.get("repository") != repo.REPOSITORY_URL:
-        report.fail(mwhere, f'"repository" must be "{repo.REPOSITORY_URL}"')
-    author = repo.as_dict(manifest.get("author"))
-    if author is None or not repo.as_str(author.get("name")):
-        report.fail(mwhere, '"author.name" is required')
-    if entry is not None:
-        category = repo.as_str(entry.get("category"))
-        keywords = repo.as_list(manifest.get("keywords")) or []
-        if category and category not in keywords:
-            report.fail(mwhere, f'"keywords" must include the category "{category}"')
-
-    for component in _manifest_component_paths(manifest):
-        if component not in (".", "./") and not component.startswith("./"):
-            report.fail(mwhere, f'component path "{component}" must start with "./"')
-        resolved = (plugin / component).resolve()
-        if not resolved.is_relative_to(plugin.resolve()):
-            report.fail(
-                mwhere, f'component path "{component}" escapes the plugin directory'
-            )
-
-    if (plugin / "CLAUDE.md").exists():
-        report.fail(
-            where,
-            "CLAUDE.md at a plugin root is never loaded; put instructions in a skill",
-        )
-    if (plugin / "SKILL.md").exists():
-        report.fail(
-            where,
-            "root SKILL.md is the skills-directory layout; use skills/<name>/SKILL.md",
-        )
+    _check_manifest_identity(name, manifest, mwhere, report)
+    _check_manifest_ownership(manifest, mwhere, report)
+    _check_layout(_PluginPlace(plugin, where, mwhere), manifest, entry, report)
 
     mod = is_mod(plugin, manifest)
-    privileged = (
-        mod
-        or any((plugin / p).exists() for p in _PRIVILEGED_PATHS)
-        or any(key in manifest for key in ("hooks", "mcpServers", "lspServers"))
-    )
-    check_readme(root, plugin, privileged, report)
+    check_readme(root, plugin, report, privileged=_is_privileged(plugin, manifest, mod=mod))
+    version = repo.as_str(manifest.get("version")) or ""
     check_plugin_changelog(root, plugin, version, report)
     if mod:
         check_mod(root, plugin, manifest, report)
@@ -358,19 +396,17 @@ def check_plugin(
 def check_metadata(
     root: Path, manifest_path: Path, manifest: dict[str, JSON], report: Report
 ) -> None:
+    """`metadata.minClaudeCodeVersion`, when present, is x.y.z."""
     metadata = repo.as_dict(manifest.get("metadata"))
     if metadata is None:
         return
     minimum = repo.as_str(metadata.get("minClaudeCodeVersion"))
     if minimum is not None and repo.parse_semver(minimum) is None:
-        report.fail(
-            _rel(root, manifest_path), '"metadata.minClaudeCodeVersion" must be x.y.z'
-        )
+        report.fail(_rel(root, manifest_path), '"metadata.minClaudeCodeVersion" must be x.y.z')
 
 
-def check_mod(
-    root: Path, plugin: Path, manifest: dict[str, JSON], report: Report
-) -> None:
+def check_mod(root: Path, plugin: Path, manifest: dict[str, JSON], report: Report) -> None:
+    """Mods declare the minimum Claude Code version for mods and ship tests."""
     where = _rel(root, plugin)
     metadata = repo.as_dict(manifest.get("metadata")) or {}
     minimum = repo.parse_semver(repo.as_str(metadata.get("minClaudeCodeVersion")) or "")
@@ -382,12 +418,11 @@ def check_mod(
         )
     tests = [p for p in plugin.rglob("*") if p.name.endswith((".test.ts", ".test.tsx"))]
     if not tests:
-        report.fail(
-            where, "mods must ship tests that `claude plugin test` runs (*.test.ts)"
-        )
+        report.fail(where, "mods must ship tests that `claude plugin test` runs (*.test.ts)")
 
 
-def check_readme(root: Path, plugin: Path, privileged: bool, report: Report) -> None:
+def check_readme(root: Path, plugin: Path, report: Report, *, privileged: bool) -> None:
+    """The plugin README has every required section and the install identifier."""
     readme = plugin / "README.md"
     where = _rel(root, readme)
     if not readme.is_file():
@@ -397,13 +432,9 @@ def check_readme(root: Path, plugin: Path, privileged: bool, report: Report) -> 
     for heading in _README_HEADINGS:
         if not re.search(rf"^{re.escape(heading)}\s*$", text, re.MULTILINE):
             report.fail(where, f'missing "{heading}" section')
-    if privileged and not re.search(
-        rf"^{re.escape(_PERMISSIONS_HEADING)}\s*$", text, re.MULTILINE
-    ):
-        report.fail(
-            where,
-            f'"{_PERMISSIONS_HEADING}" section is required for plugins with hooks, MCP or LSP servers, bin/, monitors or mods',
-        )
+    permissions = re.search(rf"^{re.escape(_PERMISSIONS_HEADING)}\s*$", text, re.MULTILINE)
+    if privileged and not permissions:
+        report.fail(where, f'"{_PERMISSIONS_HEADING}" section is required for {_PRIVILEGED_WHAT}')
     if f"@{repo.MARKETPLACE_NAME}" not in text:
         report.fail(
             where,
@@ -411,9 +442,8 @@ def check_readme(root: Path, plugin: Path, privileged: bool, report: Report) -> 
         )
 
 
-def check_plugin_changelog(
-    root: Path, plugin: Path, version: str, report: Report
-) -> None:
+def check_plugin_changelog(root: Path, plugin: Path, version: str, report: Report) -> None:
+    """The plugin changelog is well formed and agrees with plugin.json."""
     path = plugin / "CHANGELOG.md"
     where = _rel(root, path)
     if not path.is_file():
@@ -440,17 +470,14 @@ def check_plugin_changelog(
             )
 
 
-def check_self_containment(
-    root: Path, plugin: Path, manifest: dict[str, JSON], report: Report
-) -> None:
+def _check_symlinks(root: Path, plugin: Path, report: Report) -> None:
     plugin_root = plugin.resolve()
     for path in sorted(plugin.rglob("*")):
-        if path.is_symlink():
-            target = path.resolve()
-            if not target.is_relative_to(plugin_root):
-                report.fail(
-                    _rel(root, path), "symlink points outside the plugin directory"
-                )
+        if path.is_symlink() and not path.resolve().is_relative_to(plugin_root):
+            report.fail(_rel(root, path), "symlink points outside the plugin directory")
+
+
+def _check_parent_escapes(root: Path, plugin: Path, report: Report) -> None:
     for path in _iter_text_files(plugin):
         text = path.read_text(encoding="utf-8", errors="replace")
         for number, line in enumerate(text.splitlines(), start=1):
@@ -459,24 +486,40 @@ def check_self_containment(
                     f"{_rel(root, path)}:{number}",
                     '"../" reference: plugins are copied alone to a cache',
                 )
-    structures: list[JSON] = []
-    for hook_file in _hook_files(plugin, manifest):
-        structures.append(repo.load_json(hook_file))
+
+
+def _command_structures(plugin: Path, manifest: dict[str, JSON]) -> list[JSON]:
+    structures: list[JSON] = [repo.load_json(f) for f in _hook_files(plugin, manifest)]
     mcp_file = plugin / ".mcp.json"
     if mcp_file.is_file():
         structures.append(repo.load_json(mcp_file))
     structures.append(manifest.get("hooks"))
     structures.append(manifest.get("mcpServers"))
-    for structure in structures:
+    return structures
+
+
+def _relative_command_paths(command: str) -> list[str]:
+    cleaned = _ALLOWED_PATH_RE.sub("", _URL_RE.sub("", command))
+    return [
+        match.group(0)
+        for match in _PATH_TOKEN_RE.finditer(cleaned)
+        if match.group(0).startswith(("./", "../", "/"))
+    ]
+
+
+def check_self_containment(
+    root: Path, plugin: Path, manifest: dict[str, JSON], report: Report
+) -> None:
+    """Nothing in the plugin reaches outside its directory."""
+    _check_symlinks(root, plugin, report)
+    _check_parent_escapes(root, plugin, report)
+    for structure in _command_structures(plugin, manifest):
         for command in _command_strings(structure):
-            cleaned = _ALLOWED_PATH_RE.sub("", _URL_RE.sub("", command))
-            for match in _PATH_TOKEN_RE.finditer(cleaned):
-                token = match.group(0)
-                if token.startswith(("./", "../", "/")):
-                    report.fail(
-                        _rel(root, plugin),
-                        f'command path "{token}" in "{command}" must start with ${{CLAUDE_PLUGIN_ROOT}} or ${{CLAUDE_PLUGIN_DATA}}',
-                    )
+            for token in _relative_command_paths(command):
+                report.fail(
+                    _rel(root, plugin),
+                    f'command path "{token}" in "{command}" must start with {_PLUGIN_VARIABLES}',
+                )
 
 
 def _machine_markers() -> list[tuple[str, str]]:
@@ -488,17 +531,51 @@ def _machine_markers() -> list[tuple[str, str]]:
     if len(home) > 1:
         markers.append(("home directory", home))
     user = os.environ.get("USER") or os.environ.get("USERNAME") or ""
-    if len(user) >= 4:
+    if len(user) >= _MIN_MARKER_LENGTH:
         markers.append(("user name", user))
     host = socket.gethostname().split(".")[0]
-    if len(host) >= 4:
+    if len(host) >= _MIN_MARKER_LENGTH:
         markers.append(("host name", host))
     return markers
 
 
-def check_portability(
-    root: Path, plugin: Path, manifest: dict[str, JSON], report: Report
-) -> None:
+def _email_problems(line: str, allowed_emails: set[str]) -> list[str]:
+    problems: list[str] = []
+    for match in _EMAIL_RE.finditer(line):
+        email, domain = match.group(0), match.group(1).lower()
+        if email not in allowed_emails and not domain.endswith(_ALLOWED_EMAIL_DOMAINS):
+            problems.append(f'personal email "{email}"; {_EMAIL_ALTERNATIVE}')
+    return problems
+
+
+def _line_problems(
+    line: str, allowed_emails: set[str], markers: list[tuple[str, str]]
+) -> list[str]:
+    problems = [
+        f"{label} is machine-specific; {_PORTABLE_ALTERNATIVE}"
+        for label, pattern in _ABSOLUTE_PATH_PATTERNS
+        if pattern.search(line)
+    ]
+    problems.extend(
+        f"possible {label}; secrets never belong in a plugin"
+        for label, pattern in _SECRET_PATTERNS
+        if pattern.search(line)
+    )
+    problems.extend(_email_problems(line, allowed_emails))
+    # The canonical repository slug names the GitHub owner on purpose.
+    scrubbed = line.replace(repo.REPOSITORY_SLUG, "")
+    problems.extend(
+        f"contains this machine's {label}"
+        for label, marker in markers
+        if re.search(rf"(?<![\w]){re.escape(marker)}(?![\w])", scrubbed, re.IGNORECASE)
+    )
+    if _PLACEHOLDER_RE.search(line):
+        problems.append("unfinished placeholder (TODO or YYYY-MM-DD)")
+    return problems
+
+
+def check_portability(root: Path, plugin: Path, manifest: dict[str, JSON], report: Report) -> None:
+    """No machine-specific paths, secrets, personal emails or placeholders in the plugin."""
     author = repo.as_dict(manifest.get("author")) or {}
     allowed_emails = {repo.as_str(author.get("email")) or ""}
     markers = _machine_markers()
@@ -506,34 +583,8 @@ def check_portability(
         text = path.read_text(encoding="utf-8", errors="replace")
         for number, line in enumerate(text.splitlines(), start=1):
             location = f"{_rel(root, path)}:{number}"
-            for label, pattern in _ABSOLUTE_PATH_PATTERNS:
-                if pattern.search(line):
-                    report.fail(
-                        location,
-                        f"{label} is machine-specific; use ${{CLAUDE_PLUGIN_ROOT}} or a documented setting",
-                    )
-            for label, pattern in _SECRET_PATTERNS:
-                if pattern.search(line):
-                    report.fail(
-                        location, f"possible {label}; secrets never belong in a plugin"
-                    )
-            for match in _EMAIL_RE.finditer(line):
-                email, domain = match.group(0), match.group(1).lower()
-                if email in allowed_emails or domain.endswith(_ALLOWED_EMAIL_DOMAINS):
-                    continue
-                report.fail(
-                    location,
-                    f'personal email "{email}"; use plugin.json "author.email" or an example.com address',
-                )
-            # The canonical repository slug names the GitHub owner on purpose.
-            scrubbed = line.replace(repo.REPOSITORY_SLUG, "")
-            for label, marker in markers:
-                if re.search(
-                    rf"(?<![\w]){re.escape(marker)}(?![\w])", scrubbed, re.IGNORECASE
-                ):
-                    report.fail(location, f"contains this machine's {label}")
-            if _PLACEHOLDER_RE.search(line):
-                report.fail(location, "unfinished placeholder (TODO or YYYY-MM-DD)")
+            for problem in _line_problems(line, allowed_emails, markers):
+                report.fail(location, problem)
 
 
 # --------------------------------------------------------------------------
@@ -562,9 +613,8 @@ def _yaml_tag_patterns(workflow: Path) -> list[str]:
     return patterns
 
 
-def check_release_workflow(
-    root: Path, entries: dict[str, dict[str, JSON]], report: Report
-) -> None:
+def check_release_workflow(root: Path, entries: dict[str, dict[str, JSON]], report: Report) -> None:
+    """The release workflow fires on every official tag and nothing else."""
     workflow = root / ".github" / "workflows" / "release.yml"
     where = _rel(root, workflow)
     if not workflow.is_file():
@@ -590,9 +640,8 @@ def check_release_workflow(
             )
 
 
-def check_labels(
-    root: Path, entries: dict[str, dict[str, JSON]], report: Report
-) -> None:
+def check_labels(root: Path, entries: dict[str, dict[str, JSON]], report: Report) -> None:
+    """Every required label exists and the labeler covers every plugin and category."""
     labels_file = root / ".github" / "labels.yml"
     labeler_file = root / ".github" / "labeler.yml"
     if not labels_file.is_file() or not labeler_file.is_file():
@@ -632,6 +681,7 @@ def check_labels(
 
 
 def check_root_changelog(root: Path, report: Report) -> None:
+    """The marketplace changelog is well formed and agrees with marketplace.json."""
     path = root / "CHANGELOG.md"
     where = _rel(root, path)
     if not path.is_file():
@@ -640,9 +690,7 @@ def check_root_changelog(root: Path, report: Report) -> None:
     changelog = repo.parse_changelog(path.read_text(encoding="utf-8"))
     for problem in changelog.problems:
         report.fail(where, problem)
-    data = (
-        repo.as_dict(repo.load_json(root / ".claude-plugin" / "marketplace.json")) or {}
-    )
+    data = repo.as_dict(repo.load_json(root / ".claude-plugin" / "marketplace.json")) or {}
     version = repo.as_str(data.get("version"))
     if changelog.releases and changelog.releases[0].version != version:
         report.fail(
@@ -652,6 +700,7 @@ def check_root_changelog(root: Path, report: Report) -> None:
 
 
 def run_checks(root: Path) -> Report:
+    """Run every repository gate on the repository at `root`."""
     report = Report()
     entries = check_marketplace(root, report)
     plugins_dir = root / "plugins"
@@ -672,19 +721,18 @@ def run_checks(root: Path) -> Report:
 
 
 def main() -> int:
+    """Run the gates and report every failure."""
     parser = argparse.ArgumentParser(description=__doc__)
-    _ = parser.add_argument(
-        "--root", type=Path, default=repo.ROOT, help="repository root to check"
-    )
+    _ = parser.add_argument("--root", type=Path, default=repo.ROOT, help="repository root to check")
     args = parser.parse_args()
     root_arg: Path = args.root  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
     report = run_checks(root_arg.resolve())
     for error in report.errors:
-        print(f"✘ {error}")
+        repo.emit(f"✘ {error}")
     if report.errors:
-        print(f"\ncheck_repo: {len(report.errors)} problem(s) found")
+        repo.emit(f"\ncheck_repo: {len(report.errors)} problem(s) found")
         return 1
-    print("check_repo: all repository gates passed")
+    repo.emit("check_repo: all repository gates passed")
     return 0
 
 

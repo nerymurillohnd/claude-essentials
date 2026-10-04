@@ -53,8 +53,8 @@ Requirements: a clean working tree on `main`, signing configured for commits and
 2. **Bump.** Preview, then prepare the files:
 
    ```bash
-   uv run scripts/bump_version.py plugin <name> <major|minor|patch> --dry-run
-   uv run scripts/bump_version.py plugin <name> <major|minor|patch>
+   python3 scripts/bump_version.py plugin <name> <major|minor|patch> --dry-run
+   python3 scripts/bump_version.py plugin <name> <major|minor|patch>
    ```
 
    The script refuses an empty `[Unreleased]`, a MAJOR without Migration, and a changelog that disagrees with `plugin.json`. It moves the notes into `## [<version>] - <date>` (UTC), bumps `plugin.json`, regenerates the README content that shows the version, and runs `claude plugin validate --strict` and `scripts/check_repo.py`. It does not commit, tag or push.
@@ -82,7 +82,7 @@ When protected branches require pull requests, do steps 2 and 3 on a branch, ope
 Same steps on the root `CHANGELOG.md` and `marketplace.json`:
 
 ```bash
-uv run scripts/bump_version.py marketplace <major|minor|patch>
+python3 scripts/bump_version.py marketplace <major|minor|patch>
 git add CHANGELOG.md .claude-plugin/marketplace.json README.md
 git commit -m "chore(marketplace): release <version>"
 git tag -a marketplace--v<version> -m "marketplace <version>"

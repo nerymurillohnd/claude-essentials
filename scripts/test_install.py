@@ -1,10 +1,7 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = []
-# ///
+#!/usr/bin/env python3
 """Install every plugin the way a third-party user would, in a throwaway config.
 
-Run: uv run scripts/test_install.py
+Run: python3 scripts/test_install.py
 
 Nothing touches the real Claude Code configuration: each scenario runs with a
 temporary HOME and CLAUDE_CONFIG_DIR, and outside CI the script snapshots the
@@ -26,9 +23,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from pathlib import Path
 import sys
 import tempfile
-from pathlib import Path
 
 import repo
 from repo import JSON
@@ -50,9 +47,7 @@ def snapshot() -> dict[str, str]:
     ):
         path = base / relative
         result[relative] = (
-            hashlib.sha256(path.read_bytes()).hexdigest()
-            if path.is_file()
-            else "absent"
+            hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else "absent"
         )
     for relative in ("plugins/cache", "plugins/marketplaces", "skills"):
         path = base / relative
@@ -87,13 +82,42 @@ def plugin_names() -> list[str]:
     return names
 
 
+def _cache_problems(name: str, item: dict[str, JSON]) -> list[str]:
+    # Runtime-verified on 2.1.289: `installPath` names the cache entry for every
+    # marketplace install, even a local-directory marketplace that loads the
+    # plugin in place (`plugin list` text shows "Read from: <source>"). So only
+    # the cache-copy scenario asserts the location.
+    install_path = repo.as_str(item.get("installPath")) or ""
+    problems: list[str] = []
+    if f"/plugins/cache/{repo.MARKETPLACE_NAME}/{name}/" not in install_path:
+        problems.append(f"{name} installPath {install_path} is not a cache copy")
+    if not (Path(install_path) / ".claude-plugin" / "plugin.json").is_file():
+        problems.append(f"{name} cache copy at {install_path} has no manifest")
+    return problems
+
+
+def _item_problems(name: str, item: dict[str, JSON] | None, *, expect_cache: bool) -> list[str]:
+    if item is None:
+        return [f"{name} is not listed as installed"]
+    problems: list[str] = []
+    if item.get("enabled") is not True:
+        problems.append(f"{name} is not enabled")
+    if item.get("errors"):
+        problems.append(f"{name} load errors: {item.get('errors')}")
+    if expect_cache:
+        problems.extend(_cache_problems(name, item))
+    return problems
+
+
 def check_installed(
     env: dict[str, str],
     names: list[str],
+    *,
     expect_cache: bool,
     errors: list[str],
     label: str,
 ) -> None:
+    """Check that every plugin is installed, enabled and loads without errors."""
     code, output = claude(["plugin", "list", "--json"], env)
     if code != 0:
         errors.append(f"{label}: plugin list failed: {output}")
@@ -105,44 +129,22 @@ def check_installed(
         by_id[repo.as_str(item.get("id")) or ""] = item
     for name in names:
         item = by_id.get(f"{name}@{repo.MARKETPLACE_NAME}")
-        if item is None:
-            errors.append(f"{label}: {name} is not listed as installed")
-            continue
-        if item.get("enabled") is not True:
-            errors.append(f"{label}: {name} is not enabled")
-        if item.get("errors"):
-            errors.append(f"{label}: {name} load errors: {item.get('errors')}")
-        # Runtime-verified on 2.1.289: `installPath` names the cache entry for every
-        # marketplace install, even a local-directory marketplace that loads the
-        # plugin in place (`plugin list` text shows "Read from: <source>"). So only
-        # the cache-copy scenario asserts the location.
-        install_path = repo.as_str(item.get("installPath")) or ""
-        in_cache = f"/plugins/cache/{repo.MARKETPLACE_NAME}/{name}/" in install_path
-        if expect_cache and not in_cache:
-            errors.append(
-                f"{label}: {name} installPath {install_path} is not a cache copy"
-            )
-        if (
-            expect_cache
-            and not (Path(install_path) / ".claude-plugin" / "plugin.json").is_file()
-        ):
-            errors.append(
-                f"{label}: {name} cache copy at {install_path} has no manifest"
-            )
+        errors.extend(
+            f"{label}: {problem}"
+            for problem in _item_problems(name, item, expect_cache=expect_cache)
+        )
 
 
 def scenario_directory(tmp: Path, names: list[str], errors: list[str]) -> None:
     env = isolated_env(tmp / "directory")
     code, output = claude(["plugin", "marketplace", "add", str(repo.ROOT)], env)
-    print(output)
+    repo.emit(output)
     if code != 0:
         errors.append(f"directory: marketplace add failed: {output}")
         return
     for name in names:
-        code, output = claude(
-            ["plugin", "install", f"{name}@{repo.MARKETPLACE_NAME}"], env
-        )
-        print(output)
+        code, output = claude(["plugin", "install", f"{name}@{repo.MARKETPLACE_NAME}"], env)
+        repo.emit(output)
         if code != 0:
             errors.append(f"directory: install {name} failed")
         code, output = claude(["plugin", "details", name], env)
@@ -157,18 +159,17 @@ def scenario_cache_copy(tmp: Path, names: list[str], errors: list[str]) -> None:
     marketplace = tmp / "copy-marketplace"
     (marketplace / ".claude-plugin").mkdir(parents=True)
     source_data = repo.as_dict(repo.load_json(repo.MARKETPLACE_FILE)) or {}
-    entries: list[JSON] = []
-    for name in names:
-        entries.append(
-            {
-                "name": name,
-                "source": {
-                    "source": "git-subdir",
-                    "url": bare.as_uri(),
-                    "path": f"plugins/{name}",
-                },
-            }
-        )
+    entries: list[JSON] = [
+        {
+            "name": name,
+            "source": {
+                "source": "git-subdir",
+                "url": bare.as_uri(),
+                "path": f"plugins/{name}",
+            },
+        }
+        for name in names
+    ]
     copy: dict[str, JSON] = {
         "name": repo.MARKETPLACE_NAME,
         "description": repo.as_str(source_data.get("description")) or "",
@@ -178,15 +179,13 @@ def scenario_cache_copy(tmp: Path, names: list[str], errors: list[str]) -> None:
     repo.dump_json(marketplace / ".claude-plugin" / "marketplace.json", copy)
     env = isolated_env(tmp / "cache")
     code, output = claude(["plugin", "marketplace", "add", str(marketplace)], env)
-    print(output)
+    repo.emit(output)
     if code != 0:
         errors.append(f"cache: marketplace add failed: {output}")
         return
     for name in names:
-        code, output = claude(
-            ["plugin", "install", f"{name}@{repo.MARKETPLACE_NAME}"], env
-        )
-        print(output)
+        code, output = claude(["plugin", "install", f"{name}@{repo.MARKETPLACE_NAME}"], env)
+        repo.emit(output)
         if code != 0:
             errors.append(
                 f"cache: install {name} failed (HEAD must contain the plugin; commit first)"
@@ -196,9 +195,7 @@ def scenario_cache_copy(tmp: Path, names: list[str], errors: list[str]) -> None:
 
 def scenario_session(tmp: Path, names: list[str], errors: list[str]) -> None:
     env = isolated_env(tmp / "session")
-    code, output = claude(
-        ["--plugin-dir", str(repo.PLUGINS_DIR), "plugin", "list", "--json"], env
-    )
+    code, output = claude(["--plugin-dir", str(repo.PLUGINS_DIR), "plugin", "list", "--json"], env)
     if code != 0:
         errors.append(f"session: plugin list failed: {output}")
         return
@@ -212,9 +209,7 @@ def scenario_session(tmp: Path, names: list[str], errors: list[str]) -> None:
         if item is None:
             errors.append(f"session: {name} did not load with --plugin-dir")
         elif item.get("errors") or item.get("notes"):
-            errors.append(
-                f"session: {name} errors={item.get('errors')} notes={item.get('notes')}"
-            )
+            errors.append(f"session: {name} errors={item.get('errors')} notes={item.get('notes')}")
 
 
 def main() -> int:
@@ -242,23 +237,20 @@ def main() -> int:
     if orphans:
         errors.append(f"orphaned temporary entries: {', '.join(orphans)}")
     else:
-        print("no orphaned temporary files or directories")
+        repo.emit("no orphaned temporary files or directories")
     if before is not None:
         after = snapshot()
         changed = sorted(key for key in before if before[key] != after[key])
         if changed:
-            errors.append(
-                f"the real Claude Code configuration changed: {', '.join(changed)}"
-            )
+            errors.append(f"the real Claude Code configuration changed: {', '.join(changed)}")
         else:
-            print(f"real configuration unchanged ({len(before)} fingerprints compared)")
+            repo.emit(f"real configuration unchanged ({len(before)} fingerprints compared)")
     for error in errors:
-        print(f"✘ {error}")
+        repo.emit(f"✘ {error}")
     if errors:
         return 1
-    print(
-        f"test_install: {len(names)} plugin(s) installed in place, from a cache copy and per session"
-    )
+    modes = "in place, from a cache copy and per session"
+    repo.emit(f"test_install: {len(names)} plugin(s) installed {modes}")
     return 0
 
 

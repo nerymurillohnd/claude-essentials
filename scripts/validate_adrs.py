@@ -1,10 +1,7 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = []
-# ///
+#!/usr/bin/env python3
 """Validate the architecture decision records in docs/adr/decisions/.
 
-Run: uv run scripts/validate_adrs.py [--root PATH]
+Run: python3 scripts/validate_adrs.py [--root PATH]
 
 Rules (docs/adr/README.md):
   * file name `ADR_YYYY-MM-DD_<slug>.md` with a real date and a kebab-case slug;
@@ -20,9 +17,9 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+from pathlib import Path
 import re
 import sys
-from pathlib import Path
 
 import repo
 
@@ -67,16 +64,72 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str | list[str]], str] | Non
         if pair:
             current = str(pair.group(1))
             value = str(pair.group(2)).strip().strip("'\"")
-            fields[current] = value if value else []
+            fields[current] = value or []
     return fields, text[end + 5 :]
 
 
-def validate_record(path: Path, decisions: Path) -> list[str]:
+def _frontmatter_problems(fields: dict[str, str | list[str]], file_date: str) -> list[str]:
     problems: list[str] = []
+    if fields.get("date") != file_date:
+        problems.append(
+            f'frontmatter date "{fields.get("date")}" must equal the file name date {file_date}'
+        )
+    status = fields.get("status")
+    if not isinstance(status, str) or status not in STATUSES:
+        problems.append(f'status "{status}" must be one of: {", ".join(sorted(STATUSES))}')
+    makers = fields.get("decision-makers")
+    if not isinstance(makers, list) or not makers:
+        problems.append("decision-makers must list at least one accountable person or role")
+    problems.extend(
+        f"remove the empty {optional} field"
+        for optional in ("consulted", "informed")
+        if optional in fields and not fields[optional]
+    )
+    return problems
+
+
+def _structure_problems(text: str, body: str) -> list[str]:
+    problems: list[str] = []
+    titles = [line for line in body.splitlines() if line.startswith("# ")]
+    if len(titles) != 1:
+        problems.append("the record needs exactly one # title")
+    problems.extend(
+        f'missing "{section}" section'
+        for section in REQUIRED_SECTIONS
+        if not re.search(rf"^{re.escape(section)}\s*$", body, re.MULTILINE)
+    )
+    problems.extend(
+        f"template placeholder left: {placeholder}"
+        for placeholder in sorted({m.group(0) for m in PLACEHOLDER_RE.finditer(text)})
+    )
+    return problems
+
+
+def _link_problems(
+    path: Path, decisions: Path, body: str, status: str | list[str] | None
+) -> list[str]:
+    links = [m.group(1) for m in LINK_RE.finditer(body)]
+    problems = [
+        f"broken link: {target}"
+        for target in links
+        if "://" not in target
+        and not target.startswith("mailto:")
+        and not (path.parent / target).resolve().exists()
+    ]
+    if status == "superseded" and not any(
+        FILENAME_RE.match(Path(t).name) and (decisions / Path(t).name) != path for t in links
+    ):
+        problems.append("a superseded record must link to the record that supersedes it")
+    return problems
+
+
+def validate_record(path: Path, decisions: Path) -> list[str]:
+    """Return every problem of one ADR record."""
     match = FILENAME_RE.match(path.name)
     if match is None:
         return ["file name must be ADR_YYYY-MM-DD_<kebab-case-slug>.md"]
     file_date = match.group(1)
+    problems: list[str] = []
     try:
         _ = dt.date.fromisoformat(file_date)
     except ValueError:
@@ -86,51 +139,14 @@ def validate_record(path: Path, decisions: Path) -> list[str]:
     if parsed is None:
         return [*problems, "missing YAML frontmatter between --- lines"]
     fields, body = parsed
-    if fields.get("date") != file_date:
-        problems.append(
-            f'frontmatter date "{fields.get("date")}" must equal the file name date {file_date}'
-        )
-    status = fields.get("status")
-    if not isinstance(status, str) or status not in STATUSES:
-        problems.append(
-            f'status "{status}" must be one of: {", ".join(sorted(STATUSES))}'
-        )
-    makers = fields.get("decision-makers")
-    if not isinstance(makers, list) or not makers:
-        problems.append(
-            "decision-makers must list at least one accountable person or role"
-        )
-    for optional in ("consulted", "informed"):
-        if optional in fields and not fields[optional]:
-            problems.append(f"remove the empty {optional} field")
-    titles = [line for line in body.splitlines() if line.startswith("# ")]
-    if len(titles) != 1:
-        problems.append("the record needs exactly one # title")
-    for section in REQUIRED_SECTIONS:
-        if not re.search(rf"^{re.escape(section)}\s*$", body, re.MULTILINE):
-            problems.append(f'missing "{section}" section')
-    for placeholder in sorted({m.group(0) for m in PLACEHOLDER_RE.finditer(text)}):
-        problems.append(f"template placeholder left: {placeholder}")
-    links = [m.group(1) for m in LINK_RE.finditer(body)]
-    for target in links:
-        if "://" in target or target.startswith("mailto:"):
-            continue
-        if not (path.parent / target).resolve().exists():
-            problems.append(f"broken link: {target}")
-    if status == "superseded":
-        successors = [
-            t
-            for t in links
-            if FILENAME_RE.match(Path(t).name) and (decisions / Path(t).name) != path
-        ]
-        if not successors:
-            problems.append(
-                "a superseded record must link to the record that supersedes it"
-            )
+    problems.extend(_frontmatter_problems(fields, file_date))
+    problems.extend(_structure_problems(text, body))
+    problems.extend(_link_problems(path, decisions, body, fields.get("status")))
     return problems
 
 
 def validate(root: Path) -> list[str]:
+    """Return every problem in docs/adr/decisions/ under `root`."""
     decisions = root / "docs" / "adr" / "decisions"
     if not decisions.is_dir():
         return ["docs/adr/decisions/ is missing"]
@@ -143,29 +159,26 @@ def validate(root: Path) -> list[str]:
         if path.is_dir() or path.suffix != ".md":
             problems.append(f"{where}: only ADR Markdown files belong in decisions/")
             continue
-        problems.extend(
-            f"{where}: {problem}" for problem in validate_record(path, decisions)
-        )
+        problems.extend(f"{where}: {problem}" for problem in validate_record(path, decisions))
     return problems
 
 
 def main() -> int:
+    """Validate every record and report the problems."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    _ = parser.add_argument(
-        "--root", type=Path, default=repo.ROOT, help="repository root"
-    )
+    _ = parser.add_argument("--root", type=Path, default=repo.ROOT, help="repository root")
     args = parser.parse_args()
     root: Path = args.root  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
     problems = validate(root.resolve())
     for problem in problems:
-        print(f"✘ {problem}")
+        repo.emit(f"✘ {problem}")
     if problems:
-        print(f"\nvalidate_adrs: {len(problems)} problem(s); see docs/adr/README.md")
+        repo.emit(f"\nvalidate_adrs: {len(problems)} problem(s); see docs/adr/README.md")
         return 1
     count = len(list((root / "docs" / "adr" / "decisions").glob("ADR_*.md")))
-    print(f"validate_adrs: {count} record(s) valid")
+    repo.emit(f"validate_adrs: {count} record(s) valid")
     return 0
 
 

@@ -1,32 +1,33 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = []
-# ///
+#!/usr/bin/env python3
 """Single entry point for every gate. CI runs exactly these commands.
 
 Usage:
-  uv run scripts/check.py                  # every gate (same as CI)
-  uv run scripts/check.py <gate> [...]     # selected gates, in the given order
-  uv run scripts/check.py test-install     # isolated install test (tests committed HEAD)
-  uv run scripts/check.py clean            # remove caches and orphaned test directories
-  uv run scripts/check.py ci-tools         # CI only: install the pinned tool versions
-  uv run scripts/check.py --list           # list the gates
+  python3 scripts/check.py                  # every gate (same as CI)
+  python3 scripts/check.py <gate> [...]     # selected gates, in the given order
+  python3 scripts/check.py test-install     # isolated install test (tests committed HEAD)
+  python3 scripts/check.py clean            # remove caches and orphaned test directories
+  python3 scripts/check.py ci-tools         # CI only: install the pinned tool versions
+  python3 scripts/check.py --list           # list the gates
 
-The repository has no dependency manifest (docs/adr/decisions/ADR_2026-10-03_validation-stack.md):
-tools are resolved by name on PATH locally and installed at the pinned
-versions below on CI runners.
+The repository has no dependency manifest
+(docs/adr/decisions/ADR_2026-10-03_scripts-run-with-python3.md): tools are
+resolved by name on PATH locally and installed at the pinned versions below on
+CI runners.
 """
 
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 import shutil
 import sys
 import tempfile
-from collections.abc import Callable
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import repo
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 CLAUDE_CODE_VERSION = repo.MIN_CLAUDE_CODE
 PRETTIER_VERSION = "3.9.9"
@@ -44,30 +45,18 @@ TEMP_PREFIXES = ("claude-essentials-install-", "new-plugin-", "gate-fixture-")
 SCRIPTS = repo.ROOT / "scripts"
 
 
-def _uv_script(name: str, *args: str) -> list[str]:
-    return ["uv", "run", str(SCRIPTS / name), *args]
+def _script(name: str, *args: str) -> list[str]:
+    return [sys.executable, str(SCRIPTS / name), *args]
 
 
 def _validate() -> list[list[str]]:
-    commands = [["claude", "plugin", "validate", ".", "--strict"]]
-    for plugin in repo.plugin_dirs():
-        commands.append(
-            [
-                "claude",
-                "plugin",
-                "validate",
-                str(plugin.relative_to(repo.ROOT)),
-                "--strict",
-            ]
-        )
-    return commands
+    targets = [".", *(str(plugin.relative_to(repo.ROOT)) for plugin in repo.plugin_dirs())]
+    return [["claude", "plugin", "validate", target, "--strict"] for target in targets]
 
 
 def _schemas() -> list[list[str]]:
     github = repo.ROOT / ".github"
-    workflows = sorted(
-        str(p.relative_to(repo.ROOT)) for p in (github / "workflows").glob("*.yml")
-    )
+    workflows = sorted(str(p.relative_to(repo.ROOT)) for p in (github / "workflows").glob("*.yml"))
     forms = sorted(
         str(p.relative_to(repo.ROOT))
         for p in (github / "ISSUE_TEMPLATE").glob("*.yml")
@@ -92,15 +81,15 @@ GATES: dict[str, tuple[str, Callable[[], list[list[str]]]]] = {
     ),
     "repo": (
         "Catalog, names, versions, changelogs, portability, labels, tags",
-        lambda: [_uv_script("check_repo.py")],
+        lambda: [_script("check_repo.py")],
     ),
     "adrs": (
         "Architecture decision records: names, dates, status, sections, links",
-        lambda: [_uv_script("validate_adrs.py")],
+        lambda: [_script("validate_adrs.py")],
     ),
     "readmes": (
         "Generated README content is up to date",
-        lambda: [_uv_script("sync_readmes.py", "--check")],
+        lambda: [_script("sync_readmes.py", "--check")],
     ),
     "tests": (
         "Gate tests with injected defects",
@@ -151,30 +140,32 @@ GATES: dict[str, tuple[str, Callable[[], list[list[str]]]]] = {
 
 
 def run_commands(commands: list[list[str]]) -> bool:
+    """Run commands in order, echoing each one and its output; stop at the first failure."""
     for command in commands:
-        print(f"$ {' '.join(command)}", flush=True)
+        repo.emit(f"$ {' '.join(command)}")
         result = repo.run(command, check=False)
         output = (result.stdout + result.stderr).rstrip()
         if output:
-            print(output, flush=True)
+            repo.emit(output)
         if result.returncode != 0:
-            print(f"✘ exit {result.returncode}: {' '.join(command)}", flush=True)
+            repo.emit(f"✘ exit {result.returncode}: {' '.join(command)}")
             return False
     return True
 
 
 def run_gates(names: list[str]) -> int:
+    """Run the named gates and summarize which ones failed."""
     failed: list[str] = []
     for name in names:
         description, commands = GATES[name]
-        print(f"\n=== {name}: {description}", flush=True)
+        repo.emit(f"\n=== {name}: {description}")
         if not run_commands(commands()):
             failed.append(name)
-    print()
+    repo.emit()
     if failed:
-        print(f"check: {len(failed)} gate(s) failed: {', '.join(failed)}")
+        repo.emit(f"check: {len(failed)} gate(s) failed: {', '.join(failed)}")
         return 1
-    print(f"check: all {len(names)} gate(s) passed")
+    repo.emit(f"check: all {len(names)} gate(s) passed")
     return 0
 
 
@@ -185,6 +176,7 @@ def orphaned_temp_dirs() -> list[Path]:
 
 
 def clean() -> int:
+    """Remove repository caches and orphaned temporary directories, then verify."""
     removed = 0
     for cache in [*repo.ROOT.rglob("__pycache__"), *repo.ROOT.rglob(".ruff_cache")]:
         if ".git" not in cache.parts and cache.is_dir():
@@ -195,9 +187,9 @@ def clean() -> int:
         removed += 1
     leftovers = orphaned_temp_dirs()
     if leftovers:
-        print("✘ could not remove: " + ", ".join(str(p) for p in leftovers))
+        repo.emit("✘ could not remove: " + ", ".join(str(p) for p in leftovers))
         return 1
-    print(
+    repo.emit(
         f"clean: removed {removed} cache or temporary director{'y' if removed == 1 else 'ies'}"
     )
     return 0
@@ -234,6 +226,7 @@ def ci_tools() -> int:
 
 
 def main() -> int:
+    """Run the selected gates or command."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -247,10 +240,10 @@ def main() -> int:
 
     if list_only:
         for name, (description, _commands) in GATES.items():
-            print(f"  {name:<10} {description}")
+            repo.emit(f"  {name:<10} {description}")
         return 0
     if targets == ["test-install"]:
-        return 0 if run_commands([_uv_script("test_install.py")]) else 1
+        return 0 if run_commands([_script("test_install.py")]) else 1
     if targets == ["clean"]:
         return clean()
     if targets == ["ci-tools"]:

@@ -1,13 +1,10 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = []
-# ///
+#!/usr/bin/env python3
 """Check that commit messages or a pull request title follow Conventional Commits 1.0.0.
 
 Usage:
-  uv run scripts/check_commit_msg.py --file .git/COMMIT_EDITMSG   # git commit-msg hook
-  uv run scripts/check_commit_msg.py --message "feat(my-plugin): add x"
-  uv run scripts/check_commit_msg.py --range BASE..HEAD           # every commit in a range
+  python3 scripts/check_commit_msg.py --file .git/COMMIT_EDITMSG   # git commit-msg hook
+  python3 scripts/check_commit_msg.py --message "feat(my-plugin): add x"
+  python3 scripts/check_commit_msg.py --range BASE..HEAD           # every commit in a range
 
 The scope, when present, is a plugin name or a repository area (docs/releasing.md).
 A breaking change is marked with `!` before the colon or a `BREAKING CHANGE:` footer.
@@ -16,10 +13,10 @@ A breaking change is marked with `!` before the colon or a `BREAKING CHANGE:` fo
 from __future__ import annotations
 
 import argparse
-import re
-import sys
 from dataclasses import dataclass
 from pathlib import Path
+import re
+import sys
 
 import repo
 
@@ -37,9 +34,12 @@ TYPES: tuple[str, ...] = (
     "revert",
 )
 MAX_HEADER_LENGTH = 100
-HEADER_RE = re.compile(
-    rf"^(?P<type>{'|'.join(TYPES)})(?:\((?P<scope>[a-z0-9][a-z0-9-]*)\))?(?P<bang>!)?: (?P<subject>\S.*)$"
+_TYPE_ALTERNATION = "|".join(TYPES)
+_HEADER_PATTERN = (
+    rf"^(?P<type>{_TYPE_ALTERNATION})"
+    r"(?:\((?P<scope>[a-z0-9][a-z0-9-]*)\))?(?P<bang>!)?: (?P<subject>\S.*)$"
 )
+HEADER_RE = re.compile(_HEADER_PATTERN)
 _BREAKING_FOOTER_RE = re.compile(r"^BREAKING[ -]CHANGE: \S", re.MULTILINE)
 # Merge commits created by GitHub when a branch is updated are not authored messages.
 _EXEMPT_RE = re.compile(r"^Merge (?:branch|pull request|remote-tracking branch) ")
@@ -47,6 +47,8 @@ _EXEMPT_RE = re.compile(r"^Merge (?:branch|pull request|remote-tracking branch) 
 
 @dataclass(frozen=True)
 class Parsed:
+    """The parts of a Conventional Commits header."""
+
     type: str
     scope: str | None
     breaking: bool
@@ -64,14 +66,11 @@ def parse(message: str) -> tuple[Parsed | None, list[str]]:
         return None, []
     match = HEADER_RE.match(header)
     if match is None:
-        problems.append(
-            f'header "{header}" must be "<type>(<scope>)!: <subject>" with type one of: {", ".join(TYPES)}'
-        )
+        shape = "<type>(<scope>)!: <subject>"
+        problems.append(f'header "{header}" must be "{shape}" with type one of: {", ".join(TYPES)}')
         return None, problems
     if len(header) > MAX_HEADER_LENGTH:
-        problems.append(
-            f"header is {len(header)} characters; the limit is {MAX_HEADER_LENGTH}"
-        )
+        problems.append(f"header is {len(header)} characters; the limit is {MAX_HEADER_LENGTH}")
     if len(lines) > 1 and lines[1].strip():
         problems.append("the line after the header must be blank")
     body = "\n".join(lines[1:])
@@ -98,17 +97,14 @@ def _messages_in_range(revision_range: str) -> list[tuple[str, str]]:
 
 
 def main() -> int:
+    """Check a message file, a single message or every commit in a range."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     group = parser.add_mutually_exclusive_group(required=True)
-    _ = group.add_argument(
-        "--file", type=Path, help="commit message file (commit-msg hook)"
-    )
+    _ = group.add_argument("--file", type=Path, help="commit message file (commit-msg hook)")
     _ = group.add_argument("--message", help="a single message or pull request title")
-    _ = group.add_argument(
-        "--range", dest="revision_range", help="git revision range BASE..HEAD"
-    )
+    _ = group.add_argument("--range", dest="revision_range", help="git revision range BASE..HEAD")
     args = parser.parse_args()
     file_arg: Path | None = args.file  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
     message_arg: str | None = args.message  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
@@ -127,11 +123,11 @@ def main() -> int:
         _, problems = parse(message)
         for problem in problems:
             failures += 1
-            print(f"✘ {label}: {problem}")
+            repo.emit(f"✘ {label}: {problem}")
     if failures:
-        print("\nSee docs/releasing.md#commit-messages for the convention.")
+        repo.emit("\nSee docs/releasing.md#commit-messages for the convention.")
         return 1
-    print(f"check_commit_msg: {len(targets)} message(s) follow Conventional Commits")
+    repo.emit(f"check_commit_msg: {len(targets)} message(s) follow Conventional Commits")
     return 0
 
 

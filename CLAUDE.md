@@ -17,26 +17,27 @@ The foundation is built locally. The only plugin is the example `hello-example`.
 
 ## Commands
 
-There is no Makefile. Every operation is a stdlib Python script run with `uv run`. In the order of the work:
+There is no Makefile. Every operation is a standard-library Python script run with `python3 scripts/<script>.py`. In the order of the work:
 
-| Step                                          | Command                                                                                                                 |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| 1. List the gates                             | `uv run scripts/check.py --list`                                                                                        |
-| 2. Create a plugin                            | `uv run scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]`            |
-| 3. Refresh generated README content           | `uv run scripts/sync_readmes.py`                                                                                        |
-| 4. Validate with the official CLI             | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                                |
-| 5. Run one gate                               | `uv run scripts/check.py <gate>`                                                                                        |
-| 6. Run every gate, exactly as CI does         | `uv run scripts/check.py`                                                                                               |
-| 7. Record a decision                          | Copy `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`, then `uv run scripts/validate_adrs.py` |
-| 8. Commit (signed, Conventional Commits)      | The project skill `verify` runs step 6 first                                                                            |
-| 9. Install every plugin in a throwaway config | `uv run scripts/check.py test-install` (after committing: it tests HEAD)                                                |
-| 10. Prepare a release                         | `uv run scripts/bump_version.py plugin <name> <level> [--dry-run]`, review, commit                                      |
-| 11. Tag and verify the signature              | `claude plugin tag plugins/<name>`, then `git tag -v <name>--v<version>`                                                |
-| 12. Remove caches and orphaned test dirs      | `uv run scripts/check.py clean`                                                                                         |
+| Step                                          | Command                                                                                                                  |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| 1. List the gates                             | `python3 scripts/check.py --list`                                                                                        |
+| 2. Create a plugin                            | `python3 scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]`            |
+| 3. Refresh generated README content           | `python3 scripts/sync_readmes.py`                                                                                        |
+| 4. Validate with the official CLI             | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                                 |
+| 5. Run one gate                               | `python3 scripts/check.py <gate>`                                                                                        |
+| 6. Run every gate, exactly as CI does         | `python3 scripts/check.py`                                                                                               |
+| 7. Record a decision                          | Copy `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`, then `python3 scripts/validate_adrs.py` |
+| 8. Commit (signed, Conventional Commits)      | The project skill `verify` runs step 6 first                                                                             |
+| 9. Install every plugin in a throwaway config | `python3 scripts/check.py test-install` (after committing: it tests HEAD)                                                |
+| 10. Prepare a release                         | `python3 scripts/bump_version.py plugin <name> <level> [--dry-run]`, review, commit                                      |
+| 11. Tag and verify the signature              | `claude plugin tag plugins/<name>`, then `git tag -v <name>--v<version>`                                                 |
+| 12. Remove caches and orphaned test dirs      | `python3 scripts/check.py clean`                                                                                         |
 
 - Step 11 is followed by a push only when I approve that exact push (`docs/releasing.md`).
-- `uv run scripts/check.py ci-tools` installs the pinned tools; it runs only on CI.
+- `python3 scripts/check.py ci-tools` installs the pinned tools; it runs only on CI.
 - `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` installs the optional commit message check.
+- A shebang and the executable bit always go together (ruff EXE001/EXE002): scripts with `#!/usr/bin/env python3` are mode 755, imported modules have no shebang and stay 644. Git versions the bit, and CI sees only what is in the index, so set it on disk and in git: `chmod +x <file>` and `git update-index --chmod=+x <file>`; check with `git ls-files -s` (`100755`). Details: `.claude/rules/repo-scripts.md`.
 
 ## Non-negotiable rules
 
@@ -65,16 +66,16 @@ Always loaded: `.claude/rules/project-identity.md`, `.claude/rules/claude-code-v
 
 Loaded when you read or edit matching paths:
 
-| Area                               | Rule                                                                                                                   |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Catalog file                       | `.claude/rules/marketplace-file.md`                                                                                    |
-| Plugin authoring and manifest      | `.claude/rules/plugins/authoring.md`, `.claude/rules/plugins/manifest.md`                                              |
-| Hooks, permissions, mods, security | `.claude/rules/plugins/hooks-and-permissions.md`, `.claude/rules/plugins/mods.md`, `.claude/rules/plugins/security.md` |
-| READMEs and distribution           | `.claude/rules/plugins/readmes.md`, `.claude/rules/distribution.md`                                                    |
-| Official CLI and schemas           | `.claude/rules/claude-cli.md`, `.claude/rules/schemas.md`                                                              |
-| Gates and isolated installs        | `.claude/rules/testing/gates.md`, `.claude/rules/testing/isolated-install.md`                                          |
-| CI, releases, tool pins            | `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`                        |
-| ADRs and Claude Code features      | `.claude/rules/adrs.md`, `.claude/rules/claude-code-features.md`                                                       |
+| Area                                         | Rule                                                                                                                   |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Catalog file                                 | `.claude/rules/marketplace-file.md`                                                                                    |
+| Plugin authoring and manifest                | `.claude/rules/plugins/authoring.md`, `.claude/rules/plugins/manifest.md`                                              |
+| Hooks, permissions, mods, security           | `.claude/rules/plugins/hooks-and-permissions.md`, `.claude/rules/plugins/mods.md`, `.claude/rules/plugins/security.md` |
+| READMEs and distribution                     | `.claude/rules/plugins/readmes.md`, `.claude/rules/distribution.md`                                                    |
+| Official CLI and schemas                     | `.claude/rules/claude-cli.md`, `.claude/rules/schemas.md`                                                              |
+| Repository scripts, gates, isolated installs | `.claude/rules/repo-scripts.md`, `.claude/rules/testing/gates.md`, `.claude/rules/testing/isolated-install.md`         |
+| CI, releases, tool pins                      | `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`                        |
+| ADRs and Claude Code features                | `.claude/rules/adrs.md`, `.claude/rules/claude-code-features.md`                                                       |
 
 A rule loads only when you touch its paths. Before planning work in an area you have not touched yet, read its rule.
 
@@ -100,7 +101,7 @@ Decisions and their reasons are dated ADRs in `docs/adr/decisions/`. Read the AD
 ```text
 .claude-plugin/marketplace.json   catalog: name, owner, version, entries (source ./plugins/<name>)
 plugins/<name>/                   one self-contained plugin per directory
-scripts/                          stdlib Python run with `uv run` (no dependency manifest)
+scripts/                          stdlib Python run with `python3` (no dependency manifest)
   check.py                        single entry point: every gate, test-install, clean, ci-tools
   repo.py                         shared constants, naming, SemVer, changelog parsing
   check_repo.py                   repository gates
@@ -122,8 +123,8 @@ docs/                             guides and ADRs
 
 ## Definition of done
 
-- `uv run scripts/check.py` passes, with raw output shown.
-- For plugin changes, `uv run scripts/check.py test-install` passes and my real configuration is unchanged.
+- `python3 scripts/check.py` passes, with raw output shown.
+- For plugin changes, `python3 scripts/check.py test-install` passes and my real configuration is unchanged.
 - Negative cases fail for the intended reason (`tests/`).
 - Changelog notes, labels and the sourcing log are updated where needed; generated READMEs are current.
 - A changed decision gets a new dated ADR; the old one becomes `superseded`.
@@ -139,6 +140,5 @@ docs/                             guides and ADRs
   - refining the user-level Python rule;
   - a `uv cache prune` to repair cache entries removed by hand on 2026-10-03;
   - a rule that plugins declare every external tool they use and rely on no version-specific features;
-  - removal of old session scratch files;
   - the LICENSE copyright holder.
 - Deferred: a scheduled Claude Code release watcher, Dependabot, link checking, git-cliff or release-please, and a single release command (only after real releases).

@@ -1,12 +1,9 @@
-# /// script
-# requires-python = ">=3.12"
-# dependencies = []
-# ///
+#!/usr/bin/env python3
 """Release workflow helpers (.github/workflows/release.yml).
 
 Usage:
-  uv run scripts/release_notes.py verify <tag>   # the tag matches the manifest version
-  uv run scripts/release_notes.py notes <tag>    # print that version's changelog section
+  python3 scripts/release_notes.py verify <tag>   # the tag matches the manifest version
+  python3 scripts/release_notes.py notes <tag>    # print that version's changelog section
 
 Tags use the official `claude plugin tag` format `<name>--v<version>`; the
 marketplace uses `marketplace--v<version>`.
@@ -16,13 +13,16 @@ from __future__ import annotations
 
 import argparse
 import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import repo
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
 
 def _fail(message: str) -> int:
-    print(f"✘ {message}")
+    repo.emit(f"✘ {message}")
     return 1
 
 
@@ -38,6 +38,7 @@ def _sources(tag: str) -> tuple[str, Path, Path] | str:
 
 
 def verify(tag: str) -> int:
+    """Check that the tag's version matches the version in its manifest."""
     sources = _sources(tag)
     if isinstance(sources, str):
         return _fail(sources)
@@ -47,14 +48,13 @@ def verify(tag: str) -> int:
     data = repo.as_dict(repo.load_json(manifest)) or {}
     declared = repo.as_str(data.get("version"))
     if declared != version:
-        return _fail(
-            f'{tag}: {manifest.relative_to(repo.ROOT)} declares version "{declared}"'
-        )
-    print(f"✔ {tag} matches {manifest.relative_to(repo.ROOT)}")
+        return _fail(f'{tag}: {manifest.relative_to(repo.ROOT)} declares version "{declared}"')
+    repo.emit(f"✔ {tag} matches {manifest.relative_to(repo.ROOT)}")
     return 0
 
 
 def notes(tag: str) -> int:
+    """Print the changelog section of the tagged version (the release notes)."""
     sources = _sources(tag)
     if isinstance(sources, str):
         return _fail(sources)
@@ -64,14 +64,13 @@ def notes(tag: str) -> int:
     changelog = repo.parse_changelog(changelog_path.read_text(encoding="utf-8"))
     for release in changelog.releases:
         if release.version == version:
-            print(release.body)
+            repo.emit(release.body)
             return 0
-    return _fail(
-        f"{changelog_path.relative_to(repo.ROOT)} has no section for {version}"
-    )
+    return _fail(f"{changelog_path.relative_to(repo.ROOT)} has no section for {version}")
 
 
 def main() -> int:
+    """Parse the command line and run `verify` or `notes`."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )

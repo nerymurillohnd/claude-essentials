@@ -1,8 +1,4 @@
-#!/usr/bin/env -S uv run --script
-# /// script
-# requires-python = ">=3.12"
-# dependencies = []
-# ///
+#!/usr/bin/env python3
 """Optional git commit-msg hook: rejects messages that break Conventional Commits.
 
 Install it in your clone (docs/contributing-setup in CONTRIBUTING.md):
@@ -10,20 +6,17 @@ Install it in your clone (docs/contributing-setup in CONTRIBUTING.md):
 It runs the same checker CI runs on pull requests.
 """
 
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
 
 
 def main() -> int:
-    top = subprocess.run(
-        ["git", "rev-parse", "--show-toplevel"],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
-    checker = Path(top) / "scripts" / "check_commit_msg.py"
-    return subprocess.call(["uv", "run", str(checker), "--file", sys.argv[1]])
+    """Check the commit message file git passes as the first argument."""
+    # git runs a hook from the root of the working tree (`git help githooks`),
+    # so the checker path is relative to the current directory.
+    checker = Path.cwd() / "scripts" / "check_commit_msg.py"
+    return subprocess.call([sys.executable, str(checker), "--file", sys.argv[1]])
 
 
 if __name__ == "__main__":

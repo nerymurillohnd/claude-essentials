@@ -1,6 +1,6 @@
 # Quality bar
 
-What a plugin must meet to be accepted and to stay in the catalog. Items marked **gate** are enforced by `uv run scripts/check.py` or CI; the rest are checked in review.
+What a plugin must meet to be accepted and to stay in the catalog. Items marked **gate** are enforced by `python3 scripts/check.py` or CI; the rest are checked in review.
 
 ## Purpose and fit
 
@@ -12,7 +12,7 @@ What a plugin must meet to be accepted and to stay in the catalog. Items marked 
 ## Correctness
 
 - [ ] `claude plugin validate --strict` passes for the plugin and the marketplace. **gate**
-- [ ] Installs and loads in a clean configuration, in place and from a cache copy. **gate** (`uv run scripts/check.py test-install`)
+- [ ] Installs and loads in a clean configuration, in place and from a cache copy. **gate** (`python3 scripts/check.py test-install`)
 - [ ] Skills trigger on the requests they describe and not on unrelated ones; the author tested this in real sessions.
 - [ ] Hooks and servers handle missing tools, empty input and errors without blocking the user's work.
 

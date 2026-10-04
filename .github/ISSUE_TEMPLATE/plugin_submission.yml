@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Open this after your proposal is accepted and your pull request is ready.
-        Plugins live in this repository under `plugins/<name>/` and are created with `uv run scripts/new_plugin.py`.
+        Plugins live in this repository under `plugins/<name>/` and are created with `python3 scripts/new_plugin.py`.
   - type: input
     id: proposal
     attributes:
@@ -35,7 +35,7 @@ body:
       label: Quality bar
       description: Every item in docs/quality-bar.md applies; confirm the ones maintainers check first.
       options:
-        - label: "`uv run scripts/check.py` passes locally, including the isolated install test (`uv run scripts/check.py test-install`)."
+        - label: "`python3 scripts/check.py` passes locally, including the isolated install test (`python3 scripts/check.py test-install`)."
           required: true
         - label: The plugin README explains every component with a concrete example and has no TODO left.
           required: true

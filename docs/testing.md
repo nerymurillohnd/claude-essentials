@@ -1,21 +1,21 @@
 # Testing
 
-Every gate runs locally with `uv run scripts/check.py` and in CI with the same command. Decisions: [ADR validation-stack](adr/decisions/ADR_2026-10-03_validation-stack.md), [ADR testing-approach](adr/decisions/ADR_2026-10-03_testing-approach.md).
+Every gate runs locally with `python3 scripts/check.py` and in CI with the same command. Decisions: [ADR scripts-run-with-python3](adr/decisions/ADR_2026-10-03_scripts-run-with-python3.md), [ADR testing-approach](adr/decisions/ADR_2026-10-03_testing-approach.md).
 
 ## Targets
 
-| Target                                 | What it proves                                                                                                               |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `uv run scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace and each plugin                                                    |
-| `uv run scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, mods, labels and the release tag pattern |
-| `uv run scripts/check.py adrs`         | Every ADR record has a dated name, valid frontmatter, required sections, no placeholders and working links                   |
-| `uv run scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                  |
-| `uv run scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                        |
-| `uv run scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML                                                                               |
-| `uv run scripts/check.py python`       | ruff and basedpyright with warnings as errors                                                                                |
-| `uv run scripts/check.py workflows`    | actionlint and the zizmor security audit                                                                                     |
-| `uv run scripts/check.py schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                        |
-| `uv run scripts/check.py test-install` | Every plugin installs and loads like a user's install                                                                        |
+| Target                                  | What it proves                                                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `python3 scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace and each plugin                                                    |
+| `python3 scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, mods, labels and the release tag pattern |
+| `python3 scripts/check.py adrs`         | Every ADR record has a dated name, valid frontmatter, required sections, no placeholders and working links                   |
+| `python3 scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                  |
+| `python3 scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                        |
+| `python3 scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML                                                                               |
+| `python3 scripts/check.py python`       | ruff and basedpyright with warnings as errors                                                                                |
+| `python3 scripts/check.py workflows`    | actionlint and the zizmor security audit                                                                                     |
+| `python3 scripts/check.py schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                        |
+| `python3 scripts/check.py test-install` | Every plugin installs and loads like a user's install                                                                        |
 
 ## Gate tests
 
@@ -37,8 +37,8 @@ Tests leave nothing behind: no directories, configurations, clones, caches or pr
 
 - Everything a script or test creates lives in a temporary directory with a known prefix (`claude-essentials-install-`, `new-plugin-`, `gate-fixture-`) and is removed when the script or test ends, including on failure.
 - The cleanup is verified, not assumed: `tests/test_gates.py` asserts each fixture directory is gone after the test; `scripts/new_plugin.py` stops if its scaffold directory survives; `scripts/test_install.py` fails if its directory survives, if a directory with its prefix remains, or if any new entry containing `claude` appears in the system temporary directory during the run.
-- `uv run scripts/check.py clean` removes Python and ruff caches in the repository and any orphaned directory with the prefixes above, then confirms none remain.
-- Tool caches are not test leftovers: `uv run` keeps one environment per script in its cache by design. Never delete uv cache entries by hand (the uv docs call that unsafe); use `uv cache prune` or `uv cache clean`.
+- `python3 scripts/check.py clean` removes Python and ruff caches in the repository and any orphaned directory with the prefixes above, then confirms none remain.
+- Tool caches (uv, prettier, ruff) are not test leftovers. Never delete them by hand; use the tool's own command (for uv, `uv cache prune` or `uv cache clean`).
 - Never point a test at a real configuration or a permanent location. New scripts and tests follow the same rules and use the same prefixes, registered in `TEMP_PREFIXES` in `scripts/check.py`.
 
 ## Behavioral evaluation

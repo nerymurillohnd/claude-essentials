@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-03
 decision-makers:
   - "Nery Samuel Murillo (maintainer)"
@@ -73,3 +73,5 @@ CI runs `uv run scripts/check.py` and `uv run scripts/check.py test-install`. Ma
 ## More information
 
 No hand-written JSON Schema for Claude Code files is used: the published schema URL returns 404, and the official validator is the authority (see [ADR editor-json-schemas-not-adopted](ADR_2026-10-03_editor-json-schemas-not-adopted.md)).
+
+Superseded by [ADR_2026-10-03_scripts-run-with-python3](ADR_2026-10-03_scripts-run-with-python3.md): scripts now run with `python3`, without `uv run` or PEP 723 metadata.
