@@ -1,0 +1,18 @@
+---
+paths:
+  - "scripts/**"
+  - "tests/**"
+  - "ruff.toml"
+  - "pyrightconfig.json"
+  - "docs/testing.md"
+---
+
+# Validation and gates
+
+- The single entry point is `uv run scripts/check.py`: 9 gates, the same command locally and in CI, no Makefile.
+- The gates are validate, repo, adrs, readmes, tests, format, python, workflows and schemas.
+- The `repo` gate (`scripts/check_repo.py`) checks the catalog, names, SemVer, changelogs, READMEs, portability, self-containment, mods, labels and the tag pattern.
+- No repository dependency is used: stdlib scripts with PEP 723, and tools resolved on PATH locally and pinned in CI.
+- Pinned versions: prettier 3.9.9, actionlint 1.7.12, zizmor 1.30.1 (offline) and check-jsonschema with its built-in schemas.
+- The 50 tests each inject one defect and check that the gate fails for that reason only.
+- Markdownlint, link checking and Dependabot were deferred.

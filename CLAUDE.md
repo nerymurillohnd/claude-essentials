@@ -26,7 +26,7 @@ Project memory for Claude Code sessions in this repository. Read it first. The *
 
 | Before you                                                | Read                                                                                                                                                                                             |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Create or change a plugin                                 | [docs/authoring.md](docs/authoring.md), [docs/naming.md](docs/naming.md) (auto-loaded summary: `.claude/rules/plugin-authoring.md`)                                                              |
+| Create or change a plugin                                 | [docs/authoring.md](docs/authoring.md), [docs/naming.md](docs/naming.md) (auto-loaded summary: `.claude/rules/plugins/`)                                                                         |
 | Accept or review a plugin                                 | [docs/quality-bar.md](docs/quality-bar.md)                                                                                                                                                       |
 | Touch hooks, MCP or LSP servers, `bin/`, monitors or mods | [docs/security-review.md](docs/security-review.md), [ADR security-posture](docs/adr/decisions/ADR_2026-10-03_security-posture.md)                                                                |
 | Edit a README or a README template                        | [docs/readme-guide.md](docs/readme-guide.md)                                                                                                                                                     |
@@ -59,7 +59,7 @@ templates/                        ADR, changelog and README templates
 tests/                            gate tests with injected defects
 docs/                             guides and ADRs
 .github/                          workflows, labels, labeler, issue forms, PR template, CODEOWNERS
-.claude/                          project skill `verify`, path-scoped plugin authoring rules
+.claude/                          project skill `verify`; rules/ (always-loaded facts, path-scoped rules per area)
 ```
 
 ## Commands
