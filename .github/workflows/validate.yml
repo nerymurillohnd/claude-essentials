@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   check:
-    name: make check and isolated install test
+    name: Gates and isolated install test
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -41,10 +41,10 @@ jobs:
       - name: Install the pinned tools
         run: |
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          make ci-tools
+          uv run scripts/check.py ci-tools
 
       - name: Run every gate
-        run: make check
+        run: uv run scripts/check.py
 
       - name: Install every plugin in an isolated config
-        run: make test-install
+        run: uv run scripts/check.py test-install

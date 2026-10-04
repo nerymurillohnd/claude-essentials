@@ -9,11 +9,11 @@ decision-makers:
 
 ## Purpose
 
-Choose the tools behind `make check` and how they are installed.
+Choose the tools behind `uv run scripts/check.py` and how they are installed.
 
 ## Scope
 
-`Makefile`, `scripts/`, `tests/`, `pyrightconfig.json`, `ruff.toml`, `.github/workflows/validate.yml`.
+`scripts/check.py`, `scripts/`, `tests/`, `pyrightconfig.json`, `ruff.toml`, `.github/workflows/validate.yml`.
 
 ## Context and problem statement
 
@@ -33,7 +33,7 @@ The repository distributes plugins; it is not an application with a runtime. It 
 
 ## Decision outcome
 
-Chosen option: **official validator, stdlib Python gates, tools on PATH, pinned in CI**.
+Chosen option: **official validator, stdlib Python gates, tools on PATH, pinned in CI**. The single entry point is `uv run scripts/check.py`, a standard-library Python script like every other script in the repository; CI runs exactly the same command. An initial Makefile was replaced by it on 2026-10-03 because the maintainer had agreed on Python scripts run with uv, not on make; the Python entry point also works for contributors without make, such as on Windows.
 
 | Gate                     | Tool                                                                                                                            |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -47,16 +47,16 @@ Chosen option: **official validator, stdlib Python gates, tools on PATH, pinned 
 | GitHub file schemas      | check-jsonschema built-in schemas for workflows and issue forms                                                                 |
 | Commits                  | `scripts/check_commit_msg.py` (Conventional Commits)                                                                            |
 
-`make ci-tools` installs the pinned versions on CI runners; locally each tool is resolved by name on PATH.
+`uv run scripts/check.py ci-tools` installs the pinned versions on CI runners; locally each tool is resolved by name on PATH.
 
 ### Consequences
 
-- Good, because there is nothing to install in the repository and CI mirrors `make check` exactly.
+- Good, because there is nothing to install in the repository and CI mirrors `uv run scripts/check.py` exactly.
 - Bad, because a contributor needs the tools on PATH (documented in CONTRIBUTING.md), and local versions can differ from the CI pins.
 
 ### Confirmation
 
-CI runs `make check` and `make test-install`. Markdown linting, link checking and Dependabot were considered and deferred; revisit when the catalog has several plugins.
+CI runs `uv run scripts/check.py` and `uv run scripts/check.py test-install`. Markdown linting, link checking and Dependabot were considered and deferred; revisit when the catalog has several plugins.
 
 ## Pros and cons of the options
 

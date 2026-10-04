@@ -186,7 +186,7 @@ def dump_json(path: Path, data: JSON) -> None:
 
 
 def format_files(paths: list[Path]) -> None:
-    """Format files in place with Prettier so script output matches `make format`."""
+    """Format files in place with Prettier so script output matches the format gate."""
     result = run(
         ["prettier", "--write", "--log-level", "warn", *[str(p) for p in paths]],
         check=False,

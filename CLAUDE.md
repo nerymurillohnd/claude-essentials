@@ -12,13 +12,15 @@ Project memory for Claude Code sessions in this repository. Read it first. The *
 - **Clean room.** Claude Code specifics (schemas, structure, components, validation, distribution) come only from the official docs (`https://code.claude.com/docs/llms.txt`) and changelog, plus runtime checks. Never reference, browse, copy or imitate any other Claude Code or AI-assistant marketplace or plugin collection, including ones installed on this machine. Check pasted material for content from other platforms before using it. ([ADR 0003](docs/adr/0003-clean-room-policy.md))
 - **Automate and source first.** Use a native tool or generator, then an official template, then an open standard; hand-write only what is ours, and record the decision in `docs/sourcing-log.md`. ([ADR 0004](docs/adr/0004-sourcing-policy.md))
 - **Portability.** No absolute or home paths, user or machine names, personal data or secrets in plugins; `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` only; no `../`.
+- **Leave nothing behind.** Every test, scaffold or experiment removes what it creates (directories, configurations, clones, caches, processes) and verifies the removal; no orphaned or ghost directories, here or in the system temporary directory. Use the prefixes in `TEMP_PREFIXES` (`scripts/check.py`) and `uv run scripts/check.py clean`. See [docs/testing.md#cleanup](docs/testing.md#cleanup).
+- **Entry point.** `uv run scripts/check.py` runs every gate, exactly as CI does. There is no Makefile: the maintainer agreed on stdlib Python scripts run with uv, and never approved make. Do not introduce tools or conventions the maintainer did not agree to; ask first.
 - **Quality gates.** Never skip, suppress or weaken a gate to get green; fix the root cause. Every commit and tag is signed. No remote, push, pull request, merge or publication without the maintainer's explicit approval for that exact action.
 
 ## Mandatory routine before schema, component, release or distribution work
 
 1. Fetch `https://code.claude.com/docs/llms.txt` and read the current pages for the area you touch.
 2. Compare `claude --version` and the latest published version with **2.1.289**, the version these facts were verified on. Read every changelog entry newer than 2.1.289 in full (`https://code.claude.com/docs/en/changelog`).
-3. Update **Verified facts** and the pins (`Makefile` `CLAUDE_CODE_VERSION`, `repo.MIN_CLAUDE_CODE`, workflows) when behavior changed, with the date and version. Flag every conflict between docs, changelog and this file; follow the live source.
+3. Update **Verified facts** and the pins (`repo.MIN_CLAUDE_CODE`, used by `scripts/check.py` and new plugins, and `CLAUDE_CODE_VERSION` in `.github/workflows/release.yml`) when behavior changed, with the date and version. Flag every conflict between docs, changelog and this file; follow the live source.
 
 ## Document map: read before acting
 
@@ -43,7 +45,7 @@ plugins/<name>/                   one self-contained plugin per directory
 scripts/                          stdlib Python run with `uv run` (no dependency manifest)
   repo.py                         shared constants, naming, SemVer, changelog parsing
   check_repo.py                   repository gates
-  sync_readmes.py                 generated README content (--check in make check)
+  sync_readmes.py                 generated README content (--check in scripts/check.py)
   new_plugin.py                   scaffold wrapping `claude plugin init` in a throwaway config
   release.py                      plugin and marketplace releases, CI verify and notes
   check_pr.py                     release discipline for pull requests
@@ -59,18 +61,18 @@ docs/                             guides and ADRs
 
 ## Commands
 
-| Task                                       | Command                                                                                                      |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| Every gate (same as CI)                    | `make check`                                                                                                 |
-| Install every plugin in a throwaway config | `make test-install` (commit first: the cache-copy scenario tests HEAD)                                       |
-| New plugin                                 | `uv run scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]` |
-| Refresh generated README content           | `uv run scripts/sync_readmes.py`                                                                             |
-| Release preview / release                  | `make release-dry-run PLUGIN=<name> LEVEL=<level>` / `uv run scripts/release.py plugin <name> <level>`       |
-| Official validation                        | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                     |
+| Task                                       | Command                                                                                                         |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| Every gate (same as CI)                    | `uv run scripts/check.py`                                                                                       |
+| Install every plugin in a throwaway config | `uv run scripts/check.py test-install` (commit first: the cache-copy scenario tests HEAD)                       |
+| New plugin                                 | `uv run scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]`    |
+| Refresh generated README content           | `uv run scripts/sync_readmes.py`                                                                                |
+| Release preview / release                  | `uv run scripts/release.py plugin <name> <level> --dry-run` / `uv run scripts/release.py plugin <name> <level>` |
+| Official validation                        | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                        |
 
 ## Definition of done
 
-- `make check` passes with raw output shown; `make test-install` passes for plugin changes, with the real configuration unchanged.
+- `uv run scripts/check.py` passes with raw output shown; `uv run scripts/check.py test-install` passes for plugin changes, with the real configuration unchanged.
 - Negative cases fail for the intended reason (gate tests in `tests/`).
 - Changelog notes, labels, ADRs and the sourcing log are updated where the change requires them; generated READMEs are current.
 - Commits are signed and follow Conventional Commits; nothing is pushed or published without explicit approval.
@@ -134,14 +136,14 @@ Verified against Claude Code **2.1.289** docs and changelog window 2.1.284–2.1
 - A marketplace added from a local directory loads relative-path plugins **in place** (version ignored). That alone never proves what users receive. Runtime nuance (2.1.289): Claude Code still writes a copy to `plugins/cache/...` and `claude plugin list --json` reports that copy as `installPath`, while the text output of `claude plugin list` shows `Read from: <source dir>`. Do not infer the load location from `installPath`.
 - **Cache-copy path (what real users get), runtime-verified 2026-10-03:** clone HEAD to a bare repo, write a temporary marketplace whose entries use `{"source": "git-subdir", "url": "file://<bare>.git", "path": "plugins/<name>"}`, add that marketplace directory and install. The plugin lands in `<config>/plugins/cache/claude-essentials/<name>/<version>/`, exactly as from the published repository. It tests committed HEAD only, so commit before running it. `scripts/test_install.py` runs both modes plus a `--plugin-dir` session load.
 - Approaches verified **not** to work, do not retry: `claude plugin marketplace add file://<bare>.git` ("Invalid marketplace source format"); `extraKnownMarketplaces` in the isolated `settings.json` (registers only at interactive session start, so CLI commands report the marketplace as not found); a git remote served over dumb HTTP (`python -m http.server` + `git update-server-info`) fails with "dumb http transport does not support shallow capabilities".
-- **READMEs never drift from the plugins:** the root README catalog and each plugin README's metadata and component tables are generated blocks rewritten from `marketplace.json`, `plugin.json` and the plugin's files; a gate in `make check` fails when a generated block is stale. Edit the source files, never the generated blocks.
+- **READMEs never drift from the plugins:** the root README catalog and each plugin README's metadata and component tables are generated blocks rewritten from `marketplace.json`, `plugin.json` and the plugin's files; a gate in `uv run scripts/check.py` fails when a generated block is stale. Edit the source files, never the generated blocks.
 
 ### Changelog findings 2.1.280–2.1.289 (read in full 2026-10-03)
 
 - **Minimum version for our tooling: 2.1.289.** Validator fixes landed in this window: plugin skipped when the folder also holds a marketplace manifest (2.1.289), names Claude Code cannot install now fail (2.1.283), `outputStyles`/`themes`/`monitors`/`lspServers` path checks (2.1.283), MCP checks plus an unquoted `${CLAUDE_PLUGIN_ROOT}` warning (2.1.281). Pin CI to 2.1.289 or newer.
 - **Mods (2.1.287, docs `plugins/mods/*`):** plugins can now ship mods, JS/TS functions that run inside Claude Code with the user's full permissions, unsandboxed. They see every prompt and tool call, can rewrite them, can approve tool calls (even ones a user hook blocked), make network requests and spend the user's usage. Many mod fixes followed in 2.1.288–2.1.289, so the feature is young. Administrators can stop user-installed mods through managed settings. `claude plugin validate` prints `hooks:` and `calls:` lines that list what a mod does; `claude plugin test` runs a mod's `.test.ts` tests. The note shown to the user above the prompt comes from the built-in `cc-plugin-you-should-know` mod.
 - **`claude plugin init --with hooks` scaffolds a settings hook that runs `bun "${CLAUDE_PLUGIN_ROOT}/hooks-handlers/on-session-start.ts"`**, which assumes `bun` exists on third-party machines. Never ship that unchanged; hooks must use interpreters the plugin documents as requirements.
-- **Project skill named `verify` (2.1.286, docs `skills#run-your-checks-before-each-commit`):** when a project skill named `verify` (or `simplify`) exists and Claude may invoke it, Claude is told to run it right before every commit, except docs-only or tests-only commits. Use it to run `make check`. Plugin skills don't count.
+- **Project skill named `verify` (2.1.286, docs `skills#run-your-checks-before-each-commit`):** when a project skill named `verify` (or `simplify`) exists and Claude may invoke it, Claude is told to run it right before every commit, except docs-only or tests-only commits. Use it to run `uv run scripts/check.py`. Plugin skills don't count.
 - **AGENTS.md (≥ 2.1.277):** Claude Code reads `AGENTS.md` only when no `CLAUDE.md` exists in the working directory or above it, or when `CLAUDE.md` imports it. With our `CLAUDE.md`, a separate `AGENTS.md` is ignored by Claude Code unless imported.
 - **Path-scoped `.claude/rules/` with `paths:` frontmatter** now load on Write/Edit as well as Read (2.1.288), which makes them reliable for `plugins/**` authoring rules.
 - **`/doctor prompt-audit [path]` (2.1.283)** audits CLAUDE.md, skills, agents, commands and output styles for prompting patterns written for older models, stale paths and stale commands. It is interactive; use it as a review step for plugin content.

@@ -35,7 +35,7 @@ body:
       label: Quality bar
       description: Every item in docs/quality-bar.md applies; confirm the ones maintainers check first.
       options:
-        - label: "`make check` passes locally, including the isolated install test (`make test-install`)."
+        - label: "`uv run scripts/check.py` passes locally, including the isolated install test (`uv run scripts/check.py test-install`)."
           required: true
         - label: The plugin README explains every component with a concrete example and has no TODO left.
           required: true

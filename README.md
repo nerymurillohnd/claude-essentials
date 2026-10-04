@@ -96,7 +96,7 @@ A plugin runs with the permissions of the person who installs it. Every plugin h
 
 ## Contributing
 
-Plugin proposals, fixes and new plugins are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), then the [authoring guide](docs/authoring.md). New plugins are created with `uv run scripts/new_plugin.py`, and `make check` runs every gate that CI runs.
+Plugin proposals, fixes and new plugins are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md), then the [authoring guide](docs/authoring.md). New plugins are created with `uv run scripts/new_plugin.py`, and `uv run scripts/check.py` runs every gate that CI runs.
 
 ## Project documentation
 

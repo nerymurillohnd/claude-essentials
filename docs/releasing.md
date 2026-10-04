@@ -41,7 +41,7 @@ Each plugin has `CHANGELOG.md` in [Keep a Changelog 1.1.0](https://keepachangelo
 Requirements: a clean working tree on `main`, signing configured for commits and tags, Claude Code 2.1.289 or later.
 
 ```bash
-make release-dry-run PLUGIN=<name> LEVEL=minor     # preview the new changelog
+uv run scripts/release.py plugin <name> minor --dry-run   # preview the new changelog
 uv run scripts/release.py plugin <name> minor      # bump, commit, tag
 git push origin main <name>--v<version>            # only when approved
 ```

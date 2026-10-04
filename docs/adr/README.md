@@ -1,6 +1,6 @@
 # Architecture decision records
 
-Decisions that shape this repository, in the format defined by [ADR 0001](0001-record-architecture-decisions.md). Start a new record from [the template](../../templates/adr/adr-template.md), number it after the last one, and add it to this index in the same pull request; `make check` fails otherwise. To change a decision, write a new record that supersedes the old one and set the old one's `status` to `superseded by NNNN`.
+Decisions that shape this repository, in the format defined by [ADR 0001](0001-record-architecture-decisions.md). Start a new record from [the template](../../templates/adr/adr-template.md), number it after the last one, and add it to this index in the same pull request; `uv run scripts/check.py` fails otherwise. To change a decision, write a new record that supersedes the old one and set the old one's `status` to `superseded by NNNN`.
 
 | ADR                                             | Decision                                                                          | Status   |
 | ----------------------------------------------- | --------------------------------------------------------------------------------- | -------- |

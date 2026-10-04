@@ -13,7 +13,7 @@ Describe the change and why users need it. Link the issue it resolves (for examp
 
 Pull request title and commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), with the plugin name as scope for plugin changes, for example `fix(my-plugin): handle empty input`.
 
-- [ ] `make check` passes locally; `make test-install` passes for plugin changes.
+- [ ] `uv run scripts/check.py` passes locally; `uv run scripts/check.py test-install` passes for plugin changes.
 - [ ] **Changelog:** each changed plugin has a user-facing note under `## [Unreleased]` in its `CHANGELOG.md` (not needed for release pull requests).
 - [ ] **Version:** `version` in `plugin.json` is unchanged, unless this is a release made with `scripts/release.py`.
 - [ ] **Semver label:** exactly one of `semver:major`, `semver:minor`, `semver:patch` is applied for plugin changes.

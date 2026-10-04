@@ -5,7 +5,7 @@ defect, and asserts that the gate fails for that reason and no other. The
 positive baseline proves the unmodified copy passes, so a failure in a
 negative test can only come from the injected defect.
 
-Run: make tests
+Run: uv run scripts/check.py tests
 """
 
 from __future__ import annotations
@@ -45,7 +45,10 @@ class RepositoryFixture(unittest.TestCase):
     @override
     def tearDown(self) -> None:
         if self._tmp is not None:
+            location = Path(self._tmp.name)
             self._tmp.cleanup()
+            # Every fixture is removed; nothing may outlive a test (docs/testing.md#cleanup).
+            self.assertFalse(location.exists(), f"fixture {location} was not removed")
 
     @property
     def plugin(self) -> Path:

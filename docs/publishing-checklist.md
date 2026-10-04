@@ -26,7 +26,7 @@ git push -u origin main
 Ruleset for `main`:
 
 - [ ] Require a pull request with one approval and code owner review.
-- [ ] Require status checks: `make check and isolated install test` and `Commit convention and release discipline`.
+- [ ] Require status checks: `Gates and isolated install test` and `Commit convention and release discipline`.
 - [ ] Require signed commits and linear history; block force pushes and deletion.
 - [ ] Tag ruleset for `*--v*`: restrict creation to maintainers and require signed tags.
 

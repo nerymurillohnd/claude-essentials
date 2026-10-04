@@ -1,20 +1,20 @@
 # Testing
 
-Every gate runs locally with `make check` and in CI with the same command. Decisions: [ADR 0008](adr/0008-validation-stack.md), [ADR 0010](adr/0010-testing-approach.md).
+Every gate runs locally with `uv run scripts/check.py` and in CI with the same command. Decisions: [ADR 0008](adr/0008-validation-stack.md), [ADR 0010](adr/0010-testing-approach.md).
 
 ## Targets
 
-| Target              | What it proves                                                                                                               |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `make validate`     | `claude plugin validate --strict` accepts the marketplace and each plugin                                                    |
-| `make repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, mods, labels and the release tag pattern |
-| `make readmes`      | Generated README content matches manifests and plugin files                                                                  |
-| `make tests`        | Each gate fails for the defect it targets (see below)                                                                        |
-| `make format`       | Prettier formatting of Markdown, JSON and YAML                                                                               |
-| `make python`       | ruff and basedpyright with warnings as errors                                                                                |
-| `make workflows`    | actionlint and the zizmor security audit                                                                                     |
-| `make schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                        |
-| `make test-install` | Every plugin installs and loads like a user's install                                                                        |
+| Target                                 | What it proves                                                                                                               |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `uv run scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace and each plugin                                                    |
+| `uv run scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, mods, labels and the release tag pattern |
+| `uv run scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                  |
+| `uv run scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                        |
+| `uv run scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML                                                                               |
+| `uv run scripts/check.py python`       | ruff and basedpyright with warnings as errors                                                                                |
+| `uv run scripts/check.py workflows`    | actionlint and the zizmor security audit                                                                                     |
+| `uv run scripts/check.py schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                        |
+| `uv run scripts/check.py test-install` | Every plugin installs and loads like a user's install                                                                        |
 
 ## Gate tests
 
@@ -29,6 +29,15 @@ Every gate runs locally with `make check` and in CI with the same command. Decis
 3. **Session:** loads all plugins with `claude --plugin-dir plugins plugin list --json` and fails on load errors or notes.
 
 Outside CI, the script fingerprints `settings.json`, the plugin records, the plugin cache and the skills directory of the real configuration before and after, and fails if any changed.
+
+## Cleanup
+
+Tests leave nothing behind: no directories, configurations, clones, caches or processes.
+
+- Everything a script or test creates lives in a temporary directory with a known prefix (`claude-essentials-install-`, `new-plugin-`, `gate-fixture-`) and is removed when the script or test ends, including on failure.
+- The cleanup is verified, not assumed: `tests/test_gates.py` asserts each fixture directory is gone after the test; `scripts/new_plugin.py` stops if its scaffold directory survives; `scripts/test_install.py` fails if its directory survives, if a directory with its prefix remains, or if any new entry containing `claude` appears in the system temporary directory during the run.
+- `uv run scripts/check.py clean` removes Python and ruff caches in the repository and any orphaned directory with the prefixes above, then confirms none remain.
+- Never point a test at a real configuration or a permanent location. New scripts and tests follow the same rules and use the same prefixes, registered in `TEMP_PREFIXES` in `scripts/check.py`.
 
 ## Behavioral evaluation
 

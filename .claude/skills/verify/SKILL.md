@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Runs every repository gate for the claude-essentials marketplace with make check and reports the raw result. Use before every commit, and whenever asked to verify, validate or check the marketplace, a plugin or the tooling.
+description: Runs every repository gate for the claude-essentials marketplace with uv run scripts/check.py and reports the raw result. Use before every commit, and whenever asked to verify, validate or check the marketplace, a plugin or the tooling.
 ---
 
 # Verify the repository
@@ -8,16 +8,16 @@ description: Runs every repository gate for the claude-essentials marketplace wi
 Run the same gates CI runs, from the repository root:
 
 ```bash
-make check
+uv run scripts/check.py
 ```
 
 When the change touches `plugins/`, `.claude-plugin/` or `scripts/test_install.py`, and the change is committed, also run:
 
 ```bash
-make test-install
+uv run scripts/check.py test-install
 ```
 
-`make test-install` checks committed HEAD in its cache-copy scenario, so commit first or say that HEAD was tested.
+`uv run scripts/check.py test-install` checks committed HEAD in its cache-copy scenario, so commit first or say that HEAD was tested.
 
 ## Rules
 

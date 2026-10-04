@@ -14,7 +14,6 @@
           - scripts/**
           - tests/**
           - templates/**
-          - Makefile
           - .editorconfig
           - .gitignore
           - pyrightconfig.json

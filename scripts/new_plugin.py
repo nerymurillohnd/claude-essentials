@@ -18,7 +18,7 @@ plugins/<name>/ and adapts it to the marketplace layout (docs/adr/0004-sourcing-
   * fills plugin.json metadata, README.md and CHANGELOG.md from templates/;
   * adds the marketplace entry, the `plugin:<name>` label and the labeler rules.
 
-The result deliberately keeps TODO placeholders, which `make check` rejects
+The result deliberately keeps TODO placeholders, which `uv run scripts/check.py` rejects
 until the author replaces them with real content.
 """
 
@@ -218,6 +218,8 @@ def main() -> int:
         generated = run_init(name, description, components, Path(tmp))
         target.parent.mkdir(parents=True, exist_ok=True)
         _ = shutil.copytree(generated, target)
+    if Path(tmp).exists():
+        raise SystemExit(f"temporary scaffold directory {tmp} was not removed")
 
     root_skill = target / "SKILL.md"
     if root_skill.exists():
@@ -264,7 +266,7 @@ def main() -> int:
     steps = [
         f"Created plugins/{name}. Next steps:",
         "  1. Replace every TODO (skills, agents, README) with real content.",
-        "  2. Run `make check` until it passes.",
+        "  2. Run `uv run scripts/check.py` until it passes.",
         f"  3. Commit with `feat({name}): add {name} plugin` and open a pull request.",
     ]
     print("\n" + "\n".join(steps))

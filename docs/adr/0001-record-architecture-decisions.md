@@ -38,7 +38,7 @@ Chosen option: **MADR 4 template adapted with Purpose and Scope sections**, stor
 ### Consequences
 
 - Good, because MADR is a maintained open standard (license `MIT OR CC0-1.0`), familiar to many contributors.
-- Good, because `make check` fails when an ADR is missing from the [index](README.md).
+- Good, because `uv run scripts/check.py` fails when an ADR is missing from the [index](README.md).
 - Bad, because writing an ADR adds a step to significant changes.
 
 ### Confirmation

@@ -224,11 +224,25 @@ def main() -> int:
     errors: list[str] = []
     if not names:
         errors.append("marketplace.json lists no plugins")
+    temp_root = Path(tempfile.gettempdir())
+    temp_before = {p.name for p in temp_root.iterdir()}
     with tempfile.TemporaryDirectory(prefix="claude-essentials-install-") as raw_tmp:
         tmp = Path(raw_tmp)
         scenario_directory(tmp, names, errors)
         scenario_cache_copy(tmp, names, errors)
         scenario_session(tmp, names, errors)
+    # Nothing the test created may outlive it (docs/testing.md#cleanup).
+    if tmp.exists():
+        errors.append(f"temporary directory {tmp} was not removed")
+    orphans = sorted(
+        name
+        for name in {p.name for p in temp_root.iterdir()} - temp_before
+        if name.startswith("claude-essentials-install-") or "claude" in name.lower()
+    )
+    if orphans:
+        errors.append(f"orphaned temporary entries: {', '.join(orphans)}")
+    else:
+        print("no orphaned temporary files or directories")
     if before is not None:
         after = snapshot()
         changed = sorted(key for key in before if before[key] != after[key])

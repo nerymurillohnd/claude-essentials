@@ -49,7 +49,7 @@ Claude Code copies each installed plugin, alone, to `~/.claude/plugins/cache/<ma
 - Reference bundled files as `${CLAUDE_PLUGIN_ROOT}/...` and persistent state as `${CLAUDE_PLUGIN_DATA}/...` ([environment variables](https://code.claude.com/docs/en/plugins/manifest-reference#environment-variables)). `${CLAUDE_PLUGIN_ROOT}` changes on every update, so never write state there.
 - In shell-form hook commands, quote the variable: `"${CLAUDE_PLUGIN_ROOT}"/scripts/check.sh`, or use exec form with `args`.
 - The variables are not set in the Bash tool's environment; in skills and agents, write the `${...}` reference in the Markdown body so Claude Code substitutes it.
-- Never use `../`, absolute or home paths, user or machine names, personal emails or secrets. `make check` rejects them.
+- Never use `../`, absolute or home paths, user or machine names, personal emails or secrets. `uv run scripts/check.py` rejects them.
 - Links from a plugin README to other repository files are absolute GitHub URLs; `scripts/sync_readmes.py` generates them.
 
 ## Manifest
@@ -90,8 +90,8 @@ The README template has author sections (Overview, Usage, the explanation under 
 
 ```bash
 claude plugin validate plugins/<name> --strict   # official validator
-make check                                        # every gate CI runs
-make test-install                                 # install in a throwaway config
+uv run scripts/check.py                                        # every gate CI runs
+uv run scripts/check.py test-install                                 # install in a throwaway config
 ```
 
 For plugins that shape Claude's behavior, `claude plugin eval` compares results with and without the plugin ([plugin evals](https://code.claude.com/docs/en/plugin-evals)); include results in your pull request when you have them.

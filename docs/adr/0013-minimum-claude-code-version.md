@@ -13,7 +13,7 @@ Fix the Claude Code version the repository tooling relies on and the default min
 
 ## Scope
 
-`Makefile` (`CLAUDE_CODE_VERSION`), the CI workflows, `repo.MIN_CLAUDE_CODE`, `metadata.minClaudeCodeVersion` in new plugins.
+`repo.MIN_CLAUDE_CODE` (used by `scripts/check.py` to install Claude Code on CI), `CLAUDE_CODE_VERSION` in the release workflow, `metadata.minClaudeCodeVersion` in new plugins.
 
 ## Context and problem statement
 
@@ -40,7 +40,7 @@ Chosen option: **pin 2.1.289**. CI installs exactly this version with the offici
 
 ### Confirmation
 
-The Makefile pin and `repo.MIN_CLAUDE_CODE` change together in one pull request that records the reviewed changelog window in CLAUDE.md.
+`repo.MIN_CLAUDE_CODE` and the release workflow pin change together in one pull request that records the reviewed changelog window in CLAUDE.md.
 
 ## Pros and cons of the options
 

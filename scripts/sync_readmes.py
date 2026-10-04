@@ -6,7 +6,7 @@
 
 Usage:
   uv run scripts/sync_readmes.py          # rewrite generated content
-  uv run scripts/sync_readmes.py --check  # fail when anything is stale (make check)
+  uv run scripts/sync_readmes.py --check  # fail when anything is stale (scripts/check.py)
 
 * README.md (root) is rendered entirely from templates/readme/root.md plus the
   catalog in .claude-plugin/marketplace.json. Edit the template, never README.md.

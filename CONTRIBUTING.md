@@ -24,18 +24,18 @@ The repository has no dependency manifest and nothing to install inside it. You 
 | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | [Claude Code](https://code.claude.com/docs/en/setup) 2.1.289 or later                                           | `claude plugin validate`, the scaffold, tags and install tests             |
 | [uv](https://docs.astral.sh/uv/)                                                                                | Runs the standard-library Python scripts (`uv run scripts/...`) and zizmor |
-| git, make                                                                                                       | Version control and the `make` targets                                     |
+| git                                                                                                             | Version control                                                            |
 | [Prettier](https://prettier.io/)                                                                                | Formatting of Markdown, JSON and YAML                                      |
 | [ruff](https://docs.astral.sh/ruff/), [basedpyright](https://docs.basedpyright.com/)                            | Python lint, format and type checks                                        |
 | [actionlint](https://github.com/rhysd/actionlint), [check-jsonschema](https://check-jsonschema.readthedocs.io/) | Workflow and GitHub file checks                                            |
 
-`make check` runs every gate that CI runs; `make help` lists the targets. Optionally install the commit message hook in your clone:
+`uv run scripts/check.py` runs every gate that CI runs; `uv run scripts/check.py --list` lists them. Optionally install the commit message hook in your clone:
 
 ```bash
 cp scripts/git-hooks/commit-msg .git/hooks/commit-msg
 ```
 
-Never install plugins from this repository into your own Claude Code configuration to test them: `make test-install` installs them in a throwaway configuration (see [testing](docs/testing.md)).
+Never install plugins from this repository into your own Claude Code configuration to test them: `uv run scripts/check.py test-install` installs them in a throwaway configuration (see [testing](docs/testing.md)).
 
 ## Add a plugin
 
@@ -47,8 +47,8 @@ Never install plugins from this repository into your own Claude Code configurati
      --description "<one sentence>" --author "<your name>" [--with skills agents]
    ```
 
-3. Replace every `TODO` with real content. `make check` fails until none is left.
-4. Run `make check` and `make test-install` until both pass.
+3. Replace every `TODO` with real content. `uv run scripts/check.py` fails until none is left.
+4. Run `uv run scripts/check.py` and `uv run scripts/check.py test-install` until both pass.
 5. Commit with `feat(<name>): add <name> plugin` and open a pull request.
 
 ## Change a plugin
@@ -64,7 +64,7 @@ Never install plugins from this repository into your own Claude Code configurati
 - Title and commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `<type>(<scope>): <subject>`, where the scope is the plugin name for plugin changes. Mark breaking changes with `!` or a `BREAKING CHANGE:` footer.
 - Apply exactly one `semver:major`, `semver:minor` or `semver:patch` label to pull requests that change a plugin. Other labels are applied automatically.
 - Describe the plugin's purpose, required permissions and external services, and the manual verification you did.
-- Fill in the pull request checklist; CI runs `make check`, the install test and the release-discipline check.
+- Fill in the pull request checklist; CI runs `uv run scripts/check.py`, the install test and the release-discipline check.
 
 ## Review
 
