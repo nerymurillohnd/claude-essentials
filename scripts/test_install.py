@@ -112,11 +112,22 @@ def check_installed(
             errors.append(f"{label}: {name} is not enabled")
         if item.get("errors"):
             errors.append(f"{label}: {name} load errors: {item.get('errors')}")
+        # Runtime-verified on 2.1.289: `installPath` names the cache entry for every
+        # marketplace install, even a local-directory marketplace that loads the
+        # plugin in place (`plugin list` text shows "Read from: <source>"). So only
+        # the cache-copy scenario asserts the location.
         install_path = repo.as_str(item.get("installPath")) or ""
         in_cache = f"/plugins/cache/{repo.MARKETPLACE_NAME}/{name}/" in install_path
-        if expect_cache != in_cache:
+        if expect_cache and not in_cache:
             errors.append(
-                f"{label}: {name} installPath {install_path} (expected {'cache copy' if expect_cache else 'in place'})"
+                f"{label}: {name} installPath {install_path} is not a cache copy"
+            )
+        if (
+            expect_cache
+            and not (Path(install_path) / ".claude-plugin" / "plugin.json").is_file()
+        ):
+            errors.append(
+                f"{label}: {name} cache copy at {install_path} has no manifest"
             )
 
 
