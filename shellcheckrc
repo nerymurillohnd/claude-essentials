@@ -1,0 +1,23 @@
+# ==============================================================================
+# ShellCheck configuration (ShellCheck >= 0.10.0)
+# ==============================================================================
+# The maintainer's strict global configuration, copied so every machine and CI
+# apply the same checks (actionlint runs shellcheck on workflow `run:` blocks).
+# ShellCheck reads `.shellcheckrc` or `shellcheckrc` from the script's directory
+# and its parents before any global file.
+# Valid rc keys (Parser.hs): disable, enable, source, source-path, shell,
+# extended-analysis, external-sources. Unknown keys are silently ignored.
+# -S style and -a have no rc equivalent; pass them on the command line.
+
+# -o all: enable every optional check.
+enable=all
+
+# -x: follow `source` statements even when the file is not given as input.
+external-sources=true
+
+# Resolve relative `source` paths from the script's directory. One path per line;
+# `SCRIPTDIR:.` on a single line is read as one literal path and breaks resolution.
+source-path=SCRIPTDIR
+
+# Dataflow analysis (default since 0.10.0); explicit for self-documentation.
+extended-analysis=true
