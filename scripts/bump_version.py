@@ -20,7 +20,7 @@ It only prepares files; it never commits, tags or pushes:
 
 Then review the diff, commit, and tag by hand as docs/releasing.md describes.
 Releases are not bundled into a single command until the first real release
-shows which steps belong together (docs/adr/0007-release-automation.md).
+shows which steps belong together (docs/adr/decisions/ADR_2026-10-03_release-automation.md).
 """
 
 from __future__ import annotations

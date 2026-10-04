@@ -46,7 +46,7 @@ Chosen option: **editorial changelogs, a stdlib bump script, manual commit and `
 
 - Good, because notes are written for users and every commit and tag carries the maintainer's signature.
 - Good, because nothing is automated before its value is known.
-- Bad, because a release takes a few manual commands, documented in [docs/releasing.md](../releasing.md).
+- Bad, because a release takes a few manual commands, documented in [docs/releasing.md](../../releasing.md).
 
 ### Confirmation
 
@@ -76,4 +76,4 @@ Unit tests cover changelog rewriting and the Migration requirement; `scripts/che
 
 ## More information
 
-Procedure: [docs/releasing.md](../releasing.md). git-cliff: [monorepo usage](https://git-cliff.org/docs/usage/monorepos/); pinned execution with uv: [uv tools](https://docs.astral.sh/uv/concepts/tools/).
+Procedure: [docs/releasing.md](../../releasing.md). git-cliff: [monorepo usage](https://git-cliff.org/docs/usage/monorepos/); pinned execution with uv: [uv tools](https://docs.astral.sh/uv/concepts/tools/).

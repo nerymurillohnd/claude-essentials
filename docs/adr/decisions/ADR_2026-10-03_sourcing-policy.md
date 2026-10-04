@@ -40,7 +40,7 @@ Chosen option: **ordered sourcing procedure with a sourcing log**. For each arti
 3. Established open standards and widely adopted templates (Keep a Changelog, SemVer, Conventional Commits, Contributor Covenant, MADR).
 4. Hand-writing, only for what is ours (quality bar, security policy, CLAUDE.md, plugin rules).
 
-High-value artifacts are synthesized from several sources rather than copied from one. Every decision and attribution is recorded in [docs/sourcing-log.md](../sourcing-log.md) and [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md).
+High-value artifacts are synthesized from several sources rather than copied from one. Every decision and attribution is recorded in [docs/sourcing-log.md](../../sourcing-log.md) and [THIRD_PARTY_NOTICES.md](../../../THIRD_PARTY_NOTICES.md).
 
 ### Consequences
 
@@ -65,4 +65,4 @@ The sourcing log has a row per artifact class; reviewers reject unexplained hand
 
 ## More information
 
-See [ADR 0003](0003-clean-room-policy.md) for the boundary: generic engineering sources are allowed; other Claude Code plugin collections are not.
+See [ADR clean-room-policy](ADR_2026-10-03_clean-room-policy.md) for the boundary: generic engineering sources are allowed; other Claude Code plugin collections are not.

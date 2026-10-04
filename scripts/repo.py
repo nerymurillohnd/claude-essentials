@@ -1,7 +1,7 @@
 """Shared helpers for the claude-essentials repository scripts.
 
 Standard library only: the repository has no dependency manifest by design
-(docs/adr/0008-validation-stack.md). Every Claude Code fact used here is
+(docs/adr/decisions/ADR_2026-10-03_validation-stack.md). Every Claude Code fact used here is
 grounded in the official docs listed in CLAUDE.md.
 """
 

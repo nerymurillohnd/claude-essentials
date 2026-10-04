@@ -48,7 +48,7 @@ Chosen option: **strict review**:
 
 ### Confirmation
 
-`scripts/check_repo.py` requires the Permissions section for privileged plugins and the mod requirements; the labeler applies `security-review`; CODEOWNERS covers `plugins/` and `.github/`. See [docs/security-review.md](../security-review.md).
+`scripts/check_repo.py` requires the Permissions section for privileged plugins and the mod requirements; the labeler applies `security-review`; CODEOWNERS covers `plugins/` and `.github/`. See [docs/security-review.md](../../security-review.md).
 
 ## Pros and cons of the options
 

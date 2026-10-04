@@ -1,6 +1,6 @@
 # Testing
 
-Every gate runs locally with `uv run scripts/check.py` and in CI with the same command. Decisions: [ADR 0008](adr/0008-validation-stack.md), [ADR 0010](adr/0010-testing-approach.md).
+Every gate runs locally with `uv run scripts/check.py` and in CI with the same command. Decisions: [ADR validation-stack](adr/decisions/ADR_2026-10-03_validation-stack.md), [ADR testing-approach](adr/decisions/ADR_2026-10-03_testing-approach.md).
 
 ## Targets
 
@@ -8,6 +8,7 @@ Every gate runs locally with `uv run scripts/check.py` and in CI with the same c
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `uv run scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace and each plugin                                                    |
 | `uv run scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, mods, labels and the release tag pattern |
+| `uv run scripts/check.py adrs`         | Every ADR record has a dated name, valid frontmatter, required sections, no placeholders and working links                   |
 | `uv run scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                  |
 | `uv run scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                        |
 | `uv run scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML                                                                               |

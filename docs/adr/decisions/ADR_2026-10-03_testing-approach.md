@@ -58,4 +58,4 @@ CI runs `uv run scripts/check.py` (which includes `uv run scripts/check.py tests
 
 ## More information
 
-Docs: [CLAUDE_CONFIG_DIR](https://code.claude.com/docs/en/env-vars), [Plugin sources](https://code.claude.com/docs/en/plugins/marketplace-reference#git-subdir-plugin-source). Procedure in [docs/testing.md](../testing.md).
+Docs: [CLAUDE_CONFIG_DIR](https://code.claude.com/docs/en/env-vars), [Plugin sources](https://code.claude.com/docs/en/plugins/marketplace-reference#git-subdir-plugin-source). Procedure in [docs/testing.md](../../testing.md).

@@ -57,4 +57,4 @@ Chosen option: **rendered root README and generated blocks in plugin READMEs**. 
 
 ## More information
 
-Authoring rules for READMEs: [docs/readme-guide.md](../readme-guide.md).
+Authoring rules for READMEs: [docs/readme-guide.md](../../readme-guide.md).

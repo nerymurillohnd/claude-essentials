@@ -11,7 +11,7 @@ Usage:
 It builds on the official generator instead of hand-written files: it runs
 `claude plugin init` inside a throwaway HOME and CLAUDE_CONFIG_DIR, so nothing
 touches the user's Claude Code configuration, then moves the result into
-plugins/<name>/ and adapts it to the marketplace layout (docs/adr/0004-sourcing-policy.md):
+plugins/<name>/ and adapts it to the marketplace layout (docs/adr/decisions/ADR_2026-10-03_sourcing-policy.md):
 
   * removes the skills-directory root SKILL.md and its `"skills": ["./"]` entry;
   * removes the `$schema` URL `claude plugin init` writes, which returns HTTP 404;

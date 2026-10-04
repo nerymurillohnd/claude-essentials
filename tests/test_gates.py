@@ -21,6 +21,7 @@ import bump_version
 import check_commit_msg
 import check_repo
 import repo
+import validate_adrs
 
 ROOT = repo.ROOT
 
@@ -255,6 +256,77 @@ class CatalogGateTest(RepositoryFixture):
         errors = self.errors()
         self.assertTrue(any("mods require" in e for e in errors), errors)
         self.assertTrue(any("*.test.ts" in e for e in errors), errors)
+
+
+class AdrValidatorTest(RepositoryFixture):
+    """validate_adrs.py fails for each defect in a record, and only for it."""
+
+    record_name: str = "ADR_2026-10-03_testing-approach.md"
+
+    @property
+    def decisions(self) -> Path:
+        return self.root / "docs" / "adr" / "decisions"
+
+    @property
+    def record(self) -> Path:
+        return self.decisions / self.record_name
+
+    def adr_errors(self) -> list[str]:
+        return validate_adrs.validate(self.root)
+
+    def assert_adr_fails_with(self, fragment: str) -> None:
+        errors = self.adr_errors()
+        self.assertTrue(errors, "the ADR gate passed although a defect was injected")
+        self.assertTrue(
+            all(fragment in error for error in errors),
+            f"expected every error to mention {fragment!r}, got: {errors}",
+        )
+
+    def replace_in_record(self, old: str, new: str) -> None:
+        text = self.record.read_text(encoding="utf-8")
+        self.assertIn(old, text)
+        _ = self.record.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+    def test_records_pass(self) -> None:
+        self.assertEqual(self.adr_errors(), [])
+
+    def test_numbered_file_name_fails(self) -> None:
+        _ = self.record.rename(self.decisions / "0010-testing-approach.md")
+        self.assert_adr_fails_with("file name must be ADR_YYYY-MM-DD")
+
+    def test_date_mismatch_fails(self) -> None:
+        self.replace_in_record("date: 2026-10-03", "date: 2026-10-02")
+        self.assert_adr_fails_with("must equal the file name date")
+
+    def test_unknown_status_fails(self) -> None:
+        self.replace_in_record("status: accepted", "status: approved")
+        self.assert_adr_fails_with('status "approved"')
+
+    def test_template_placeholder_fails(self) -> None:
+        self.replace_in_record(
+            "## Purpose\n", "## Purpose\n\n{State what this decision establishes.}\n"
+        )
+        self.assert_adr_fails_with("template placeholder left")
+
+    def test_missing_section_fails(self) -> None:
+        self.replace_in_record("### Confirmation", "### Verification")
+        self.assert_adr_fails_with('missing "### Confirmation" section')
+
+    def test_superseded_without_successor_fails(self) -> None:
+        self.replace_in_record("status: accepted", "status: superseded")
+        self.assert_adr_fails_with("must link to the record that supersedes it")
+
+    def test_broken_link_fails(self) -> None:
+        self.replace_in_record(
+            "## Purpose\n", "## Purpose\n\nSee [missing](ADR_2026-10-03_missing.md).\n"
+        )
+        self.assert_adr_fails_with("broken link")
+
+    def test_plugin_root_variable_is_not_a_placeholder(self) -> None:
+        self.replace_in_record(
+            "## Purpose\n", "## Purpose\n\nPaths use `${CLAUDE_PLUGIN_ROOT}`.\n"
+        )
+        self.assertEqual(self.adr_errors(), [])
 
 
 class NameRulesTest(unittest.TestCase):

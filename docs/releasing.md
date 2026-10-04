@@ -1,6 +1,6 @@
 # Releasing
 
-How plugin and marketplace versions, changelogs, tags, releases and labels work. Decisions: [ADR 0006](adr/0006-per-plugin-versioning.md), [ADR 0007](adr/0007-release-automation.md), [ADR 0011](adr/0011-labels-and-pr-automation.md).
+How plugin and marketplace versions, changelogs, tags, releases and labels work. Decisions: [ADR per-plugin-versioning](adr/decisions/ADR_2026-10-03_per-plugin-versioning.md), [ADR release-automation](adr/decisions/ADR_2026-10-03_release-automation.md), [ADR labels-and-pr-automation](adr/decisions/ADR_2026-10-03_labels-and-pr-automation.md).
 
 **Contents:** [Versions](#versions) · [Commit messages](#commit-messages) · [Changelogs](#changelogs) · [Release a plugin](#release-a-plugin) · [Release the marketplace](#release-the-marketplace) · [Deprecate or remove a plugin](#deprecate-or-remove-a-plugin) · [Labels](#labels)
 
@@ -38,7 +38,7 @@ Each plugin has `CHANGELOG.md` in [Keep a Changelog 1.1.0](https://keepachangelo
 
 ## Release a plugin
 
-A release is a short sequence of explicit steps. They are deliberately not bundled into one command: that will make sense after the first real releases show which steps belong together ([ADR 0007](adr/0007-release-automation.md)).
+A release is a short sequence of explicit steps. They are deliberately not bundled into one command: that will make sense after the first real releases show which steps belong together ([ADR release-automation](adr/decisions/ADR_2026-10-03_release-automation.md)).
 
 Requirements: a clean working tree on `main`, signing configured for commits and tags, Claude Code 2.1.289 or later.
 

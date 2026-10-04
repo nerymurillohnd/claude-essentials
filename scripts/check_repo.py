@@ -47,7 +47,7 @@ TEXT_SUFFIXES = frozenset(
     }
 )
 
-# Machine-specific path shapes (portability gate, docs/adr/0009-security-posture.md).
+# Machine-specific path shapes (portability gate, docs/adr/decisions/ADR_2026-10-03_security-posture.md).
 _ABSOLUTE_PATH_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("macOS home path", re.compile(r"/Users/[^/\s]+")),
     ("Linux home path", re.compile(r"/home/[^/\s]+")),
@@ -185,10 +185,13 @@ def check_marketplace(root: Path, report: Report) -> dict[str, dict[str, JSON]]:
         if entry.get("source") != f"./plugins/{name}":
             report.fail(
                 label,
-                f'"source" must be "./plugins/{name}" (in-repo plugins only, ADR 0005)',
+                f'"source" must be "./plugins/{name}" (in-repo plugins only, ADR in-repo-plugins-only)',
             )
         if "version" in entry:
-            report.fail(label, '"version" belongs only in plugin.json (ADR 0006)')
+            report.fail(
+                label,
+                '"version" belongs only in plugin.json (ADR per-plugin-versioning)',
+            )
         if not repo.as_str(entry.get("description")):
             report.fail(label, '"description" is required')
         category = repo.as_str(entry.get("category"))
@@ -648,18 +651,6 @@ def check_root_changelog(root: Path, report: Report) -> None:
         )
 
 
-def check_adr_index(root: Path, report: Report) -> None:
-    adr_dir = root / "docs" / "adr"
-    index = adr_dir / "README.md"
-    if not index.is_file():
-        report.fail(_rel(root, index), "missing ADR index")
-        return
-    text = index.read_text(encoding="utf-8")
-    for adr in sorted(adr_dir.glob("[0-9][0-9][0-9][0-9]-*.md")):
-        if f"({adr.name})" not in text:
-            report.fail(_rel(root, index), f"ADR {adr.name} is not listed in the index")
-
-
 def run_checks(root: Path) -> Report:
     report = Report()
     entries = check_marketplace(root, report)
@@ -677,7 +668,6 @@ def run_checks(root: Path) -> Report:
     check_release_workflow(root, entries, report)
     check_labels(root, entries, report)
     check_root_changelog(root, report)
-    check_adr_index(root, report)
     return report
 
 

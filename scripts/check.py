@@ -12,7 +12,7 @@ Usage:
   uv run scripts/check.py ci-tools         # CI only: install the pinned tool versions
   uv run scripts/check.py --list           # list the gates
 
-The repository has no dependency manifest (docs/adr/0008-validation-stack.md):
+The repository has no dependency manifest (docs/adr/decisions/ADR_2026-10-03_validation-stack.md):
 tools are resolved by name on PATH locally and installed at the pinned
 versions below on CI runners.
 """
@@ -93,6 +93,10 @@ GATES: dict[str, tuple[str, Callable[[], list[list[str]]]]] = {
     "repo": (
         "Catalog, names, versions, changelogs, portability, labels, tags",
         lambda: [_uv_script("check_repo.py")],
+    ),
+    "adrs": (
+        "Architecture decision records: names, dates, status, sections, links",
+        lambda: [_uv_script("validate_adrs.py")],
     ),
     "readmes": (
         "Generated README content is up to date",

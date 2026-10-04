@@ -27,7 +27,7 @@ What a plugin must meet to be accepted and to stay in the catalog. Items marked 
 
 - [ ] Code that runs on the user's machine is listed and justified under Permissions. **gate** for the section
 - [ ] Passes the [security review](security-review.md).
-- [ ] Mods meet the extra requirements in [ADR 0009](adr/0009-security-posture.md). **gate**
+- [ ] Mods meet the extra requirements in [ADR security-posture](adr/decisions/ADR_2026-10-03_security-posture.md). **gate**
 
 ## Documentation
 

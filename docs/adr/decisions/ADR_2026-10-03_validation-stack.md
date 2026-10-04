@@ -72,4 +72,4 @@ CI runs `uv run scripts/check.py` and `uv run scripts/check.py test-install`. Ma
 
 ## More information
 
-No hand-written JSON Schema for Claude Code files is used: the published schema URL returns 404, and the official validator is the authority (see [ADR 0014](0014-editor-json-schemas-not-adopted.md)).
+No hand-written JSON Schema for Claude Code files is used: the published schema URL returns 404, and the official validator is the authority (see [ADR editor-json-schemas-not-adopted](ADR_2026-10-03_editor-json-schemas-not-adopted.md)).

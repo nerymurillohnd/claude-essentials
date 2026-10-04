@@ -1,20 +1,14 @@
-# Architecture decision records
+# Architecture Decision Records
 
-Decisions that shape this repository, in the format defined by [ADR 0001](0001-record-architecture-decisions.md). Start a new record from [the template](../../templates/adr/adr-template.md), number it after the last one, and add it to this index in the same pull request; `uv run scripts/check.py` fails otherwise. To change a decision, write a new record that supersedes the old one and set the old one's `status` to `superseded by NNNN`.
+Use [the ADR template](../../templates/adr/ADR_YYYY-MM-DD_decision-slug.md) when an important decision for Claude Essentials needs a record. Save the record in [decisions/](decisions) as `ADR_YYYY-MM-DD_<decision-slug>.md`. The date is the registration date and the slug is lowercase kebab-case, so the file list shows what was decided and when without opening a record.
 
-| ADR                                             | Decision                                                                                 | Status   |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------- | -------- |
-| [0001](0001-record-architecture-decisions.md)   | Record architecture decisions as MADR-based ADRs                                         | Accepted |
-| [0002](0002-marketplace-name-and-disclaimer.md) | Marketplace name `claude-essentials` with a non-affiliation disclaimer                   | Accepted |
-| [0003](0003-clean-room-policy.md)               | Clean-room policy for Claude Code content                                                | Accepted |
-| [0004](0004-sourcing-policy.md)                 | Sourcing policy: automate and source first, hand-write last                              | Accepted |
-| [0005](0005-in-repo-plugins-only.md)            | In-repository plugins only                                                               | Accepted |
-| [0006](0006-per-plugin-versioning.md)           | Independent SemVer per plugin, version only in `plugin.json`, official tags              | Accepted |
-| [0007](0007-release-automation.md)              | Release process: editorial changelogs, a bump script, manual signed tags, CI publication | Accepted |
-| [0008](0008-validation-stack.md)                | Validation stack with zero repository dependencies                                       | Accepted |
-| [0009](0009-security-posture.md)                | Security posture for code that runs on users' machines                                   | Accepted |
-| [0010](0010-testing-approach.md)                | Testing approach: isolated install tests and gates proven by injected defects            | Accepted |
-| [0011](0011-labels-and-pr-automation.md)        | Labels and pull request automation as code                                               | Accepted |
-| [0012](0012-generated-readme-content.md)        | Generated README content that cannot drift from the plugins                              | Accepted |
-| [0013](0013-minimum-claude-code-version.md)     | Minimum Claude Code version 2.1.289 for tooling and new plugins                          | Accepted |
-| [0014](0014-editor-json-schemas-not-adopted.md) | Hand-written JSON Schemas for Claude Code files are not adopted yet                      | Accepted |
+## Create a record
+
+1. Copy the template into `decisions/` and replace every brace-delimited placeholder.
+2. Keep the frontmatter `date` equal to the filename date. Use one `status`: `proposed`, `accepted`, `rejected`, `deprecated`, or `superseded`. Name accountable decision makers.
+3. Omit unused `consulted` and `informed` fields. Keep the purpose, scope, context, drivers, options, rationale, consequences, and confirmation concrete. Remove the optional `Pros and cons of the options` or `More information` sections when they add no value.
+4. Link supporting issues, pull requests, tests, or other evidence. Run `uv run scripts/validate_adrs.py` (also part of `uv run scripts/check.py`) and review the rendered Markdown.
+
+Recording a discussion does not imply acceptance. Keep accepted ADRs as historical records. To change one, create a new ADR, link both records, and mark the earlier one `superseded` without rewriting its rationale.
+
+This project uses the MADR decision structure without corporate document metadata: the filename and Git history already identify the record, and taxonomy or copyright fields would not improve this repository's decisions.

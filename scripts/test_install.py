@@ -9,7 +9,7 @@ Run: uv run scripts/test_install.py
 Nothing touches the real Claude Code configuration: each scenario runs with a
 temporary HOME and CLAUDE_CONFIG_DIR, and outside CI the script snapshots the
 real configuration before and after and fails if anything changed
-(docs/adr/0010-testing-approach.md, docs/testing.md).
+(docs/adr/decisions/ADR_2026-10-03_testing-approach.md, docs/testing.md).
 
 Scenarios:
   1. directory: `claude plugin marketplace add <repo>` (accepts the marketplace

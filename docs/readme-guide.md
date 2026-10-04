@@ -1,6 +1,6 @@
 # README guide
 
-How the root README and plugin READMEs are built. Decision: [ADR 0012](adr/0012-generated-readme-content.md).
+How the root README and plugin READMEs are built. Decision: [ADR generated-readme-content](adr/decisions/ADR_2026-10-03_generated-readme-content.md).
 
 ## Two templates
 

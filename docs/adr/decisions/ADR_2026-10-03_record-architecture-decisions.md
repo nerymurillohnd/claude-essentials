@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-03
 decision-makers:
   - "Nery Samuel Murillo (maintainer)"
@@ -38,7 +38,7 @@ Chosen option: **MADR 4 template adapted with Purpose and Scope sections**, stor
 ### Consequences
 
 - Good, because MADR is a maintained open standard (license `MIT OR CC0-1.0`), familiar to many contributors.
-- Good, because `uv run scripts/check.py` fails when an ADR is missing from the [index](README.md).
+- Good, because `uv run scripts/check.py` fails when an ADR is missing from the [index](../README.md).
 - Bad, because writing an ADR adds a step to significant changes.
 
 ### Confirmation
@@ -59,4 +59,6 @@ Chosen option: **MADR 4 template adapted with Purpose and Scope sections**, stor
 
 ## More information
 
-Source: [MADR template](https://github.com/adr/madr/blob/develop/template/adr-template.md); attribution in [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md).
+Source: [MADR template](https://github.com/adr/madr/blob/develop/template/adr-template.md); attribution in [THIRD_PARTY_NOTICES.md](../../../THIRD_PARTY_NOTICES.md).
+
+Superseded by [ADR_2026-10-03_adr-dated-records](ADR_2026-10-03_adr-dated-records.md): records are now dated files in `docs/adr/decisions/`, checked by `scripts/validate_adrs.py`.

@@ -9,8 +9,8 @@ Project memory for Claude Code sessions in this repository. Read it first. The *
 ## Non-negotiable rules
 
 - **Built for third parties.** Every capability is described and evaluated from the point of view of **the user who installs the plugin**. The maintainer is not a special user: to use a plugin locally they add the published marketplace and install it like anyone else. Never install, enable, symlink or pre-configure these plugins in the maintainer's real Claude Code configuration; tests use throwaway configurations only.
-- **Clean room.** Claude Code specifics (schemas, structure, components, validation, distribution) come only from the official docs (`https://code.claude.com/docs/llms.txt`) and changelog, plus runtime checks. Never reference, browse, copy or imitate any other Claude Code or AI-assistant marketplace or plugin collection, including ones installed on this machine. Check pasted material for content from other platforms before using it. ([ADR 0003](docs/adr/0003-clean-room-policy.md))
-- **Automate and source first.** Use a native tool or generator, then an official template, then an open standard; hand-write only what is ours, and record the decision in `docs/sourcing-log.md`. ([ADR 0004](docs/adr/0004-sourcing-policy.md))
+- **Clean room.** Claude Code specifics (schemas, structure, components, validation, distribution) come only from the official docs (`https://code.claude.com/docs/llms.txt`) and changelog, plus runtime checks. Never reference, browse, copy or imitate any other Claude Code or AI-assistant marketplace or plugin collection, including ones installed on this machine. Check pasted material for content from other platforms before using it. ([ADR clean-room-policy](docs/adr/decisions/ADR_2026-10-03_clean-room-policy.md))
+- **Automate and source first.** Use a native tool or generator, then an official template, then an open standard; hand-write only what is ours, and record the decision in `docs/sourcing-log.md`. ([ADR sourcing-policy](docs/adr/decisions/ADR_2026-10-03_sourcing-policy.md))
 - **Portability.** No absolute or home paths, user or machine names, personal data or secrets in plugins; `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}` only; no `../`.
 - **Leave nothing behind.** Every test, scaffold or experiment removes what it creates (directories, configurations, clones, caches, processes) and verifies the removal; no orphaned or ghost directories, here or in the system temporary directory. Use the prefixes in `TEMP_PREFIXES` (`scripts/check.py`) and `uv run scripts/check.py clean`. See [docs/testing.md#cleanup](docs/testing.md#cleanup).
 - **Entry point.** `uv run scripts/check.py` runs every gate, exactly as CI does. There is no Makefile: the maintainer agreed on stdlib Python scripts run with uv, and never approved make. Do not introduce tools or conventions the maintainer did not agree to; ask first.
@@ -24,18 +24,18 @@ Project memory for Claude Code sessions in this repository. Read it first. The *
 
 ## Document map: read before acting
 
-| Before you                                                | Read                                                                                                                                |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Create or change a plugin                                 | [docs/authoring.md](docs/authoring.md), [docs/naming.md](docs/naming.md) (auto-loaded summary: `.claude/rules/plugin-authoring.md`) |
-| Accept or review a plugin                                 | [docs/quality-bar.md](docs/quality-bar.md)                                                                                          |
-| Touch hooks, MCP or LSP servers, `bin/`, monitors or mods | [docs/security-review.md](docs/security-review.md), [ADR 0009](docs/adr/0009-security-posture.md)                                   |
-| Edit a README or a README template                        | [docs/readme-guide.md](docs/readme-guide.md)                                                                                        |
-| Bump a version, write changelog notes, tag or release     | [docs/releasing.md](docs/releasing.md)                                                                                              |
-| Change gates, tests or CI                                 | [docs/testing.md](docs/testing.md), [ADR 0008](docs/adr/0008-validation-stack.md), [ADR 0010](docs/adr/0010-testing-approach.md)    |
-| Add a file, tool, template or dependency                  | [docs/sourcing-log.md](docs/sourcing-log.md), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)                                      |
-| Change a rule or make a structural decision               | [docs/adr/README.md](docs/adr/README.md) and a new ADR from [templates/adr/adr-template.md](templates/adr/adr-template.md)          |
-| Publish the repository                                    | [docs/publishing-checklist.md](docs/publishing-checklist.md), only after explicit approval                                          |
-| Answer contributors                                       | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [SUPPORT.md](SUPPORT.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)  |
+| Before you                                                | Read                                                                                                                                                                                             |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Create or change a plugin                                 | [docs/authoring.md](docs/authoring.md), [docs/naming.md](docs/naming.md) (auto-loaded summary: `.claude/rules/plugin-authoring.md`)                                                              |
+| Accept or review a plugin                                 | [docs/quality-bar.md](docs/quality-bar.md)                                                                                                                                                       |
+| Touch hooks, MCP or LSP servers, `bin/`, monitors or mods | [docs/security-review.md](docs/security-review.md), [ADR security-posture](docs/adr/decisions/ADR_2026-10-03_security-posture.md)                                                                |
+| Edit a README or a README template                        | [docs/readme-guide.md](docs/readme-guide.md)                                                                                                                                                     |
+| Bump a version, write changelog notes, tag or release     | [docs/releasing.md](docs/releasing.md)                                                                                                                                                           |
+| Change gates, tests or CI                                 | [docs/testing.md](docs/testing.md), [ADR validation-stack](docs/adr/decisions/ADR_2026-10-03_validation-stack.md), [ADR testing-approach](docs/adr/decisions/ADR_2026-10-03_testing-approach.md) |
+| Add a file, tool, template or dependency                  | [docs/sourcing-log.md](docs/sourcing-log.md), [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)                                                                                                   |
+| Change a rule or make a structural decision               | [docs/adr/README.md](docs/adr/README.md) and a new ADR from [templates/adr/ADR_YYYY-MM-DD_decision-slug.md](templates/adr/ADR_YYYY-MM-DD_decision-slug.md)                                       |
+| Publish the repository                                    | [docs/publishing-checklist.md](docs/publishing-checklist.md), only after explicit approval                                                                                                       |
+| Answer contributors                                       | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [SUPPORT.md](SUPPORT.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)                                                               |
 
 ## Architecture
 
@@ -51,6 +51,7 @@ scripts/                          stdlib Python run with `uv run` (no dependency
   release_notes.py                release workflow: tag check and notes from the changelog
   check_pr.py                     release discipline for pull requests
   check_commit_msg.py             Conventional Commits checker (CI and optional hook)
+  validate_adrs.py                ADR records: names, dates, status, sections, links
   test_install.py                 isolated install test (in place, cache copy, session)
   git-hooks/commit-msg            optional local commit-msg hook
 templates/                        ADR, changelog and README templates
@@ -81,7 +82,7 @@ docs/                             guides and ADRs
 
 ## Decisions
 
-Recorded as ADRs in [docs/adr/](docs/adr/README.md). Summary: owner `nerymurillohnd`, MIT, in-repo plugins only, SemVer in `plugin.json` only with official `<name>--v<version>` tags, editorial changelogs with a stdlib bump script (no commit or tag), manual signed commits and `claude plugin tag`, CI publication, no single release command until real releases justify one, `uvx git-cliff@2.14.2` only for occasional reviewed drafts, zero repository dependencies, strict review for code that runs on users' machines (mods only when nothing else can do the job), isolated install tests, labels as code, generated README content, Claude Code 2.1.289 pinned, hand-written Claude Code JSON Schemas not adopted.
+Recorded as dated ADRs in [docs/adr/decisions/](docs/adr/decisions/) (`ADR_YYYY-MM-DD_<slug>.md`, procedure in [docs/adr/README.md](docs/adr/README.md)). Summary: owner `nerymurillohnd`, MIT, in-repo plugins only, SemVer in `plugin.json` only with official `<name>--v<version>` tags, editorial changelogs with a stdlib bump script (no commit or tag), manual signed commits and `claude plugin tag`, CI publication, no single release command until real releases justify one, `uvx git-cliff@2.14.2` only for occasional reviewed drafts, zero repository dependencies, strict review for code that runs on users' machines (mods only when nothing else can do the job), isolated install tests, labels as code, generated README content, Claude Code 2.1.289 pinned, hand-written Claude Code JSON Schemas not adopted.
 
 ## Verified facts (not from training knowledge)
 

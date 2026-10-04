@@ -32,7 +32,7 @@ Other plugin collections exist. Copying or imitating them would import their ass
 
 ## Decision outcome
 
-Chosen option: **official docs and changelog only, plus runtime verification**. Contributors and maintainers do not reference, browse, copy or imitate any other Claude Code or AI-assistant marketplace or plugin collection. Generic repository engineering (READMEs, changelogs, CI, licenses) is exempt and follows [ADR 0004](0004-sourcing-policy.md). Pasted material from other projects is checked before use, and anything platform-specific to another assistant is rejected.
+Chosen option: **official docs and changelog only, plus runtime verification**. Contributors and maintainers do not reference, browse, copy or imitate any other Claude Code or AI-assistant marketplace or plugin collection. Generic repository engineering (READMEs, changelogs, CI, licenses) is exempt and follows [ADR sourcing-policy](ADR_2026-10-03_sourcing-policy.md). Pasted material from other projects is checked before use, and anything platform-specific to another assistant is rejected.
 
 ### Consequences
 
