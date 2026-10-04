@@ -148,7 +148,7 @@ docs/                             guides and ADRs
 - For plugin changes, `python3 scripts/check.py test-install` passes and my real configuration is unchanged.
 - Negative cases fail for the intended reason (`tests/`).
 - Changelog notes, labels and the sourcing log are updated where needed; generated READMEs are current.
-- A changed decision gets a new dated ADR; the old one becomes `superseded`.
+- A changed decision gets a new dated ADR; the old one becomes `superseded`, or keeps `accepted` with a dated pointer note when the new one replaces only part of it (`.claude/rules/adrs.md`).
 - A changed Claude Code fact is updated in its rule, with date and version.
 - Commits are signed and follow Conventional Commits; nothing is pushed without my approval.
 - Limitations, skipped checks and risks are reported, and **Current state** is updated.
