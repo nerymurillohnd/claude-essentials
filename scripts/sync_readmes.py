@@ -49,7 +49,7 @@ PART_OF = (
 )
 THIRD_PARTY = f"[THIRD_PARTY_NOTICES.md]({BLOB}/THIRD_PARTY_NOTICES.md)"
 LICENSE_TEXT = (
-    f"This plugin is released under the [MIT License]({BLOB}/LICENSE), like the rest of "
+    "This plugin is released under the [MIT License](LICENSE), like the rest of "
     f"Claude Essentials. Third-party material is listed in {THIRD_PARTY}."
 )
 DOCUMENTATION_ROWS = [
@@ -389,7 +389,7 @@ def _header(plugin: Plugin, *, privileged: bool, has_config: bool) -> str:
             badge("version", plugin.version, "blue", "CHANGELOG.md"),
             badge("category", plugin.category, "informational", f"{BLOB}/README.md#categories"),
             badge("Claude Code", f"≥ {plugin.min_claude_code}", "orange", DOCS_URL),
-            badge("license", "MIT", "green", f"{BLOB}/LICENSE"),
+            badge("license", "MIT", "green", "LICENSE"),
             ci_badge(),
             *component_badges(plugin),
             badge(

@@ -30,7 +30,7 @@ Each plugin's README lists its requirements, components and the exact commands t
 
 | Plugin                                           | Install as      | Category                   | Version | Description                                                                           |
 | ------------------------------------------------ | --------------- | -------------------------- | ------- | ------------------------------------------------------------------------------------- |
-| [Hello Example](plugins/hello-example/README.md) | `hello-example` | [development](#categories) | 0.1.0   | Example plugin that proves the Claude Essentials pipeline end to end; safe to remove. |
+| [Hello Example](plugins/hello-example/README.md) | `hello-example` | [development](#categories) | 0.1.1   | Example plugin that proves the Claude Essentials pipeline end to end; safe to remove. |
 
 ## Categories
 

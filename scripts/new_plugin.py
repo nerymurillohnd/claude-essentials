@@ -298,6 +298,13 @@ def _write_docs(spec: PluginSpec) -> None:
     changelog = render(repo.ROOT / "templates" / "changelog" / "CHANGELOG.md", {})
     changelog = changelog.replace("YYYY-MM-DD", dt.datetime.now(dt.UTC).date().isoformat())
     _ = (spec.target / "CHANGELOG.md").write_text(changelog, encoding="utf-8")
+    # The plugin is copied alone into the user's cache, so the MIT notice travels with it.
+    year = str(dt.datetime.now(dt.UTC).year)
+    license_text = render(
+        repo.ROOT / "templates" / "license" / "LICENSE",
+        {"YEAR": year, "COPYRIGHT_HOLDER": spec.author},
+    )
+    _ = (spec.target / "LICENSE").write_text(license_text, encoding="utf-8")
 
 
 def add_catalog_note(spec: PluginSpec) -> None:
