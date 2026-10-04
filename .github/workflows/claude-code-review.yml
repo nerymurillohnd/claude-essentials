@@ -43,5 +43,9 @@ jobs:
             3. Report only findings you can cite with file:line from the current head. Post each new finding with `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`). Then post one summary comment with `gh pr comment` that starts with "Claude review of <short head sha>" and contains: a verdict (ready, changes needed or blocked), a table of earlier findings with fixed, partly fixed or open, and the count of new findings.
 
             Never approve, request changes as a review state, push, edit files or close anything.
+          # The action loads the repository's .claude/settings.json by default. Its permissions.ask rules
+          # (for example gh pr comment) beat --allowedTools and are denied without a user to answer, so the
+          # review could never post. The user source alone loads nothing from the checkout.
           claude_args: >-
+            --setting-sources user
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*),Bash(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments),Read,Grep,Glob"
