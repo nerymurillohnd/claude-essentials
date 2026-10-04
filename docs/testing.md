@@ -18,6 +18,27 @@ Every gate runs locally with `python3 scripts/check.py` and in CI with the same 
 | `python3 scripts/check.py schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                                                             |
 | `python3 scripts/check.py test-install` | Every plugin installs and loads like a user's install                                                                                                             |
 
+## Set up
+
+The repository has no dependency manifest and nothing to install inside it. These tools must be on your PATH:
+
+| Tool                                                                                                            | Used for                                                                     |
+| --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [Claude Code](https://code.claude.com/docs/en/setup) 2.1.289 or later                                           | `claude plugin validate`, the scaffold, tags and install tests               |
+| [uv](https://docs.astral.sh/uv/)                                                                                | Provides `python3` (3.12 or later) for `python3 scripts/...` and runs zizmor |
+| git                                                                                                             | Version control                                                              |
+| [Prettier](https://prettier.io/)                                                                                | Formatting of Markdown, JSON and YAML                                        |
+| [ruff](https://docs.astral.sh/ruff/), [basedpyright](https://docs.basedpyright.com/)                            | Python lint, format and type checks                                          |
+| [actionlint](https://github.com/rhysd/actionlint), [check-jsonschema](https://check-jsonschema.readthedocs.io/) | Workflow and GitHub file checks                                              |
+
+`python3 scripts/check.py` runs every gate that CI runs; `python3 scripts/check.py --list` lists them. Install the local hooks once per clone, and optionally the commit message check:
+
+```bash
+uv tool install prek
+prek install
+cp scripts/git-hooks/commit-msg .git/hooks/commit-msg
+```
+
 ## Local hooks
 
 `.pre-commit-config.yaml` runs ruff (`ruff-check --fix`, then `ruff-format`) and basedpyright (`--warnings`) on the Python files of every commit, through [prek](https://github.com/j178/prek): `uv tool install prek`, then `prek install` once per clone; `prek run --all-files` checks the whole tree. The hooks are a fast local check; `python3 scripts/check.py` remains the authority.

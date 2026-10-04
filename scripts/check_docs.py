@@ -98,11 +98,6 @@ PIN_SITES: tuple[PinSite, ...] = (
         ("CLAUDE_CODE_VERSION",),
     ),
     PinSite(
-        ".github/ISSUE_TEMPLATE/plugin_submission.yml",
-        r"label: Minimum Claude Code version tested\n(?:.*\n)*?\s+placeholder: (\d+\.\d+\.\d+)",
-        ("CLAUDE_CODE_VERSION",),
-    ),
-    PinSite(
         ".claude/rules/testing/gates.md",
         r"prettier (\S+), actionlint (\S+), zizmor (\S+) \(offline\)",
         ("PRETTIER_VERSION", "ACTIONLINT_VERSION", "ZIZMOR_VERSION"),

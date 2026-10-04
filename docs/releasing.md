@@ -41,7 +41,6 @@ A pull request may release several plugins, each with its own bump; it carries e
 | `.claude-plugin/marketplace.json`              | Pull request: it is what users see when they refresh the catalog                               |
 | `.github/workflows/**`, `CODEOWNERS`           | Pull request: code owner approval and the workflow audits                                      |
 | Docs, scripts, tests, rules, ADRs, root README | Direct push to `main`, by the maintainer only, signed, after `python3 scripts/check.py` passes |
-| Any change from an external contributor        | Pull request                                                                                   |
 
 After a direct push, confirm that the Validate workflow passes on `main`.
 

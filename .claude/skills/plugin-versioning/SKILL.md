@@ -28,7 +28,7 @@ Only plugins are versioned. The catalog has no `version` (neither top-level nor 
 
 ## Pull request or direct push
 
-- **Pull request** for `plugins/**`, `.claude-plugin/marketplace.json`, `.github/workflows/**`, `CODEOWNERS`, and every change from an external contributor: `check_pr.py` and the security review only run on pull requests.
+- **Pull request** for `plugins/**`, `.claude-plugin/marketplace.json`, `.github/workflows/**`, `CODEOWNERS`: `check_pr.py` and the security review only run on pull requests.
 - **Direct push to `main`** only for docs, scripts, tests, rules, ADRs and the root README, only by the maintainer.
 - **Branches** for pull requests are short-lived and deleted on merge, prefixed with the commit scope: `<plugin>/<topic>` (for example `hello-example/add-license`), or `marketplace/`, `scripts/`, `ci/` or `docs/` plus `<topic>` for other work. The `release-plugin` skill creates plugin branches and runs the whole flow below.
 - **The merge is the release**: users receive `main`, cached by `version`, so a merged bump reaches them on their next update. The tag after the merge is the signed record; Claude Code does not read it to install.
