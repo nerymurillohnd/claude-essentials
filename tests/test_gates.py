@@ -186,6 +186,12 @@ class CatalogGateTest(RepositoryFixture):
         _ = changelog.write_text(text, encoding="utf-8")
         self.assert_fails_with('expected "## YYYY-MM-DD"')
 
+    def test_issue_form_label_must_exist(self) -> None:
+        form = self.root / ".github" / "ISSUE_TEMPLATE" / "bug_report.yml"
+        text = form.read_text(encoding="utf-8").replace('"type:bug"', '"type:defect"')
+        _ = form.write_text(text, encoding="utf-8")
+        self.assert_fails_with('label "type:defect" is not defined')
+
     def test_hook_pin_drift_fails(self) -> None:
         config = self.root / ".pre-commit-config.yaml"
         text = config.read_text(encoding="utf-8").replace("rev: 1.40.1", "rev: 1.40.0")

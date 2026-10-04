@@ -1,11 +1,13 @@
 # Pull request labels by changed path (actions/labeler v7 format).
 # scripts/new_plugin.py appends the plugin:<name> and category:<category> rules.
 
+# Repository docs only: Markdown inside plugins (skills, agents, READMEs) is plugin content.
 "type:docs":
   - changed-files:
       - any-glob-to-any-file:
-          - "**/*.md"
+          - "*.md"
           - docs/**
+          - .claude/**/*.md
 
 "type:chore":
   - changed-files:
@@ -18,6 +20,8 @@
           - .gitignore
           - pyrightconfig.json
           - ruff.toml
+          - shellcheckrc
+          - .pre-commit-config.yaml
 
 "security-review":
   - changed-files:

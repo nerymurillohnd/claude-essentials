@@ -681,6 +681,15 @@ def check_labels(root: Path, entries: dict[str, dict[str, JSON]], report: Report
     required |= {f"plugin:{name}" for name in entries}
     required |= {f"semver:{level}" for level in ("major", "minor", "patch")}
     required |= {"status:needs-triage", "security-review"}
+    # Labels that issue forms and the labeler apply must exist, or GitHub drops them.
+    for form in sorted((root / ".github" / "ISSUE_TEMPLATE").glob("*.yml")):
+        listed = re.search(r"^labels: \[(.*)\]$", form.read_text(encoding="utf-8"), re.MULTILINE)
+        if listed:
+            required |= set(re.findall(r'"([^"]+)"', listed.group(1)))
+    labeler_keys = re.findall(
+        r'^"([^"]+)":$', labeler_file.read_text(encoding="utf-8"), re.MULTILINE
+    )
+    required |= set(labeler_keys)
     for label in sorted(required - defined):
         report.fail(_rel(root, labels_file), f'label "{label}" is not defined')
     labeler_text = labeler_file.read_text(encoding="utf-8")
