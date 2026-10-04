@@ -42,6 +42,9 @@ import test_install
 TEMP_PREFIX = "claude-essentials-drive-"
 DEFAULT_MODEL = "haiku"
 DEFAULT_BUDGET_USD = "0.50"
+# The default preset does not bring back what --restricted removes; naming the
+# tools does (observed on 2.1.289, matching the CLI reference for --restricted).
+DEFAULT_TOOLS = "default,Bash,WebFetch"
 
 
 @dataclass
@@ -154,6 +157,12 @@ def drive(
         "--strict-mcp-config",
         "--plugin-dir",
         str(plugin_path),
+        # --restricted removes Bash and the other code-running tools unless --tools
+        # names them; a user's session has them, so the plugin gets them back.
+        "--tools",
+        str(args.tools),  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
+        "--permission-mode",
+        str(args.permission_mode),  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
         "--model",
         str(args.model),  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
         "--max-budget-usd",
@@ -194,6 +203,17 @@ def _parse_args() -> argparse.Namespace:
     )
     _ = parser.add_argument("--model", default=DEFAULT_MODEL, help="model alias or id")
     _ = parser.add_argument("--budget", default=DEFAULT_BUDGET_USD, help="spend cap in USD")
+    _ = parser.add_argument(
+        "--tools",
+        default=DEFAULT_TOOLS,
+        help="built-in tools; --restricted drops Bash and WebFetch unless named here",
+    )
+    _ = parser.add_argument(
+        "--permission-mode",
+        default="default",
+        choices=("default", "acceptEdits", "plan", "dontAsk"),
+        help="permission mode; in -p a call that would prompt is denied",
+    )
     return parser.parse_args()
 
 

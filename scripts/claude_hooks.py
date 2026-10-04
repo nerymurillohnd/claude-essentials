@@ -34,13 +34,6 @@ from repo import JSON
 _GIT_OPTIONS_WITH_VALUE = frozenset(
     {"-C", "-c", "--git-dir", "--work-tree", "--namespace", "--exec-path", "--config-env"}
 )
-_SIGNING_BYPASS = (
-    "--no-gpg-sign",
-    "--no-verify",
-    "commit.gpgsign=false",
-    "tag.gpgsign=false",
-    "core.hookspath",
-)
 # gh subcommands that publish or change something on GitHub.
 _GH_PUBLISHING = {
     "pr": {"create", "merge", "edit", "close", "comment", "review", "reopen", "ready"},
@@ -58,7 +51,7 @@ _GENERATED_RE = re.compile(
     r"<!-- BEGIN GENERATED: [\w-]+ -->.*?<!-- END GENERATED: [\w-]+ -->", re.DOTALL
 )
 _VERSION_RE = re.compile(r'"version"\s*:\s*"([^"]*)"')
-_PRETTIER_SUFFIXES = frozenset({".md", ".json", ".yml", ".yaml"})
+_PRETTIER_SUFFIXES = frozenset({".md", ".json", ".yml", ".yaml", ".js"})
 _BACKTICKED_RE = re.compile(r"`([^`]+)`")
 
 # One-line reasons: Claude reads them as the explanation of a denied or asked call.
@@ -69,6 +62,11 @@ _TAG_PUSH_REASON = "Pushing a release tag publishes it: it needs the maintainer'
 _VERSION_REASON = "Change versions only with `python3 scripts/bump_version.py` (docs/releasing.md)."
 _GENERATED_REASON = "GENERATED blocks are written by `python3 scripts/sync_readmes.py`; run it."
 _SOURCE_REASON = "{source} is a forbidden source (CLAUDE.local.md); the repo is clean-room."
+_TRAVERSE_REASON = "A search under {root} would walk into {source} (CLAUDE.local.md); narrow it."
+# Shell commands that walk directory trees.
+_RECURSIVE_RE = re.compile(
+    r"(?:^|[\s;&|(])(?:find|rg|fd|ag|tree|du|grep\s+(?:-\w*[rR]\w*|--recursive)|ls\s+-\w*R)\b"
+)
 _RULES_REMINDER = "Read repo files with Read, not cat: path-scoped rules load only on Read/Edit."
 _FORMATTED_NOTE = "prettier reformatted {name}; re-read it before the next edit."
 _NEWER_NOTE = "Claude Code {installed} is newer than the pin {pin}: run /cc-currency first."
@@ -89,8 +87,19 @@ def decision(event: str, verdict: str, reason: str) -> dict[str, JSON]:
     }
 
 
-def _commands(command: str) -> list[list[str]]:
-    """Split a shell command line into simple commands (best effort, no expansion)."""
+# Programs that run the command after them, possibly after options of their own.
+_PREFIX_PROGRAMS = frozenset(
+    {"env", "command", "exec", "sudo", "xargs", "eval", "time", "nice", "nohup", "caffeinate"}
+)
+_SHELLS = frozenset({"bash", "sh", "zsh", "dash"})
+_BYPASS_FLAGS = frozenset({"--no-gpg-sign", "--no-verify"})
+_BYPASS_CONFIG_RE = re.compile(
+    r"(?:commit|tag)\.gpgsign=(?:false|0|no|off)|core\.hookspath", re.IGNORECASE
+)
+_MAX_NESTING = 3
+
+
+def _split(command: str) -> list[list[str]]:
     lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|()")
     lexer.whitespace_split = True
     lexer.commenters = ""
@@ -107,13 +116,49 @@ def _commands(command: str) -> list[list[str]]:
     return [words for words in commands if words]
 
 
-def _program_index(words: list[str], name: str) -> int | None:
-    """Where `name` runs in a simple command, skipping VAR=value, env and command."""
-    for index, word in enumerate(words):
-        if re.fullmatch(r"\w+=.*", word) or word in {"env", "command", "exec", "sudo"}:
+def _commands(command: str, depth: int = 0) -> list[list[str]]:
+    """Simple commands of a command line, including scripts run by `bash -c` (best effort)."""
+    result: list[list[str]] = []
+    for words in _split(command):
+        result.append(words)
+        if depth >= _MAX_NESTING:
             continue
-        return index if Path(word).name == name else None
+        for index, word in enumerate(words[:-2]):
+            option = words[index + 1]
+            if Path(word).name in _SHELLS and re.fullmatch(r"-\w*c\w*", option):
+                result += _commands(words[index + 2], depth + 1)
+                break
+    return result
+
+
+def _program_index(words: list[str], name: str) -> int | None:
+    """Where `name` runs in a simple command, after VAR=value and prefix programs."""
+    after_prefix = False
+    for index, word in enumerate(words):
+        base = Path(word).name
+        if re.fullmatch(r"\w+=.*", word):
+            continue
+        if base in _PREFIX_PROGRAMS:
+            after_prefix = True
+            continue
+        if after_prefix and (word.startswith("-") or word.isdigit()):
+            continue
+        return index if base == name else None
     return None
+
+
+def _bypasses_signing(words: list[str], start: int, subcommand: str | None) -> bool:
+    """True when git options or config switch signing or hooks off; message text never counts."""
+    rest = words[start + 1 :]
+    for index, word in enumerate(rest):
+        value = rest[index + 1] if word in {"-c", "--config-env"} and index + 1 < len(rest) else ""
+        if _BYPASS_CONFIG_RE.search(value) or (
+            word.startswith("-c") and _BYPASS_CONFIG_RE.search(word)
+        ):
+            return True
+    if any(word in _BYPASS_FLAGS for word in rest):
+        return True
+    return subcommand == "commit" and "-n" in rest
 
 
 def _git_subcommand(words: list[str], start: int) -> tuple[str | None, list[str]]:
@@ -136,12 +181,11 @@ def _git_subcommand(words: list[str], start: int) -> tuple[str | None, list[str]
 def bash_decision(command: str) -> dict[str, JSON] | None:
     """Deny signing or hook bypasses; ask before anything that publishes."""
     for words in _commands(command):
-        lowered = [word.lower() for word in words]
         git = _program_index(words, "git")
         if git is not None:
-            if any(flag in word for word in lowered for flag in _SIGNING_BYPASS):
-                return decision("PreToolUse", "deny", _SIGNING_REASON)
             subcommand, _options = _git_subcommand(words, git)
+            if _bypasses_signing(words, git, subcommand):
+                return decision("PreToolUse", "deny", _SIGNING_REASON)
             if subcommand == "push":
                 return decision("PreToolUse", "ask", _PUSH_REASON)
         gh = _program_index(words, "gh")
@@ -216,16 +260,38 @@ def _mentions_path(text: str, forbidden: Path) -> bool:
     )
 
 
+def _search_roots(tool_input: dict[str, JSON]) -> list[Path]:
+    """Directories a search tool or a recursive shell command would walk."""
+    roots: list[Path] = []
+    search_path = repo.as_str(tool_input.get("path"))
+    if search_path:
+        roots.append(Path(search_path).expanduser())
+    command = repo.as_str(tool_input.get("command")) or ""
+    if _RECURSIVE_RE.search(command):
+        roots += [
+            Path(word).expanduser()
+            for words in _commands(command)
+            for word in words
+            if word.startswith(("/", "~", "$HOME"))
+        ]
+    return [Path(str(root).replace("$HOME", str(Path.home()), 1)) for root in roots]
+
+
 def sources_decision(tool_input: dict[str, JSON], root: Path) -> dict[str, JSON] | None:
-    """Deny any tool call that would read a forbidden source (clean room)."""
+    """Deny any tool call that would read a forbidden source or walk into one (clean room)."""
     paths, slugs = forbidden_sources(root)
     text = json.dumps(tool_input)
     owner_repo = (
         f"{repo.as_str(tool_input.get('owner')) or ''}/{repo.as_str(tool_input.get('repo')) or ''}"
     )
+    search_roots = _search_roots(tool_input)
     for forbidden in paths:
         if _mentions_path(text, forbidden):
             return decision("PreToolUse", "deny", _SOURCE_REASON.format(source=forbidden))
+        walked = next((r for r in search_roots if forbidden.is_relative_to(r)), None)
+        if walked is not None:
+            reason = _TRAVERSE_REASON.format(root=walked, source=forbidden)
+            return decision("PreToolUse", "deny", reason)
     for slug in slugs:
         pattern = r"(?<![\w.-])" + re.escape(slug) + r"(?![\w.-])"
         if re.search(pattern, text) or owner_repo == slug:

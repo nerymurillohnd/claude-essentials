@@ -99,6 +99,11 @@ def main() -> int:
     if target.exists():
         msg = f"{target.relative_to(repo.ROOT)} already exists"
         raise ComponentError(msg)
+    # Check everything the run will write before writing anything.
+    changelog = plugin / "CHANGELOG.md"
+    if "## [Unreleased]" not in changelog.read_text(encoding="utf-8").splitlines():
+        msg = f"{changelog.relative_to(repo.ROOT)} has no '## [Unreleased]' section"
+        raise ComponentError(msg)
     with tempfile.TemporaryDirectory(prefix=TEMP_PREFIX) as tmp:
         output = new_plugin.run_init("scaffold", description, [f"{kind}s"], Path(tmp))
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -107,7 +112,6 @@ def main() -> int:
     if Path(tmp).exists():
         msg = f"temporary scaffold directory {tmp} was not removed"
         raise ComponentError(msg)
-    changelog = plugin / "CHANGELOG.md"
     note = f"TODO: describe the new `{name}` {kind} for users."
     _ = changelog.write_text(
         add_unreleased_note(changelog.read_text(encoding="utf-8"), note), encoding="utf-8"

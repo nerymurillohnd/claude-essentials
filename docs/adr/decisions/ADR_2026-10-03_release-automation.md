@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-03
 decision-makers:
   - "Nery Samuel Murillo (maintainer)"
@@ -75,5 +75,7 @@ Unit tests cover changelog rewriting and the Migration requirement; `scripts/che
 - Bad, because it adds configuration and a second source of notes, and commit subjects are not user-facing notes.
 
 ## More information
+
+Superseded on 2026-10-04 by [ADR release-orchestration](ADR_2026-10-04_release-orchestration.md): the release is now orchestrated by the `release-plugin` project skill; the scripts and tag flow decided here are unchanged.
 
 Procedure: [docs/releasing.md](../../releasing.md). git-cliff: [monorepo usage](https://git-cliff.org/docs/usage/monorepos/); pinned execution with uv: [uv tools](https://docs.astral.sh/uv/concepts/tools/).

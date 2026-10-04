@@ -33,6 +33,9 @@ Run commands in this order. Every script is standard-library Python.
 - `claude plugin tag plugins/<name>` - Run on the merged commit.
 - `git tag -v <name>--v<version>` - Run right after tagging to verify the signature.
 - `python3 scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
+- `python3 scripts/add_component.py <plugin> skill|agent <name> --description "…"` - Run when you add a skill or agent to an existing plugin.
+- `python3 scripts/drive_plugin.py <plugin> [--prompt "…"] [--expect <regex>] [--source head]` - Run when you need to see a plugin work in a real session.
+- `/<project-skill>` - Run when a task matches a project skill listed in `docs/automation.md`.
 - `python3 scripts/check.py ci-tools` - Run on CI only.
 - `prek install` - Run once per clone to install the ruff and basedpyright pre-commit hooks (`uv tool install prek` first).
 - `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` - Run once to install the optional commit message check.
@@ -44,6 +47,8 @@ Run commands in this order. Every script is standard-library Python.
 - Review the `bump_version.py` result before committing.
 - Push after tagging only when I approve that exact push.
 - Read `docs/releasing.md` before releasing.
+- Work on short-lived `<plugin>/<topic>` branches, deleted on merge.
+- Release with `/release-plugin`; it stops at the open pull request, and `/github-ops:automatic-pr-lifecycle` handles reviews and the merge.
 
 ### Executable Scripts
 
@@ -72,6 +77,8 @@ Run commands in this order. Every script is standard-library Python.
 3. Read every changelog entry newer than 2.1.289 in full (`https://code.claude.com/docs/en/changelog`).
 4. When behavior changed, update the matching rule in `.claude/rules/` and the pins, with the date and version.
 5. Flag every conflict between the docs, the changelog and these files; follow the live source.
+
+Run this routine with the `/cc-currency` skill.
 
 The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that are newer than your training or contradict it. Trust them over memory, and re-verify them when the installed version is newer.
 
@@ -104,6 +111,7 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 - Edit a README or README template: read `docs/readme-guide.md`.
 - Bump, write changelog notes, tag, or release: read `docs/releasing.md`.
 - Change gates, tests, or CI: read `docs/testing.md`.
+- Use or change the Claude Code automation (settings, hooks, project skills, agent, workflows): read `docs/automation.md`.
 - Add a file, tool, template, or dependency: read `docs/sourcing-log.md` and `THIRD_PARTY_NOTICES.md`.
 - Change a rule or make a structural decision: read `docs/adr/README.md`.
   - Create a new ADR from `templates/adr/`.
@@ -131,14 +139,18 @@ scripts/                          stdlib Python run with `python3` (no dependenc
   release_notes.py                release workflow: tag check and notes from the changelog
   check_pr.py                     release discipline for pull requests
   check_commit_msg.py             Conventional Commits checker (CI and optional hook)
+  check_docs.py                   docs gate: pins, gate list, names, rule paths, links
   validate_adrs.py                ADR records: names, dates, status, sections, links
   test_install.py                 isolated install test (in place, cache copy, session)
+  drive_plugin.py                 one plugin in a real headless session, reply checked
+  add_component.py                skill or agent added to an existing plugin
+  claude_hooks.py                 Claude Code hooks registered in .claude/settings.json
   git-hooks/commit-msg            optional local commit-msg hook
-templates/                        ADR, changelog and README templates
-tests/                            gate tests with injected defects
+templates/                        ADR, changelog, README and license templates
+tests/                            gate, hook and script tests with injected defects
 docs/                             guides and ADRs
 .github/                          workflows, labels, labeler, issue forms, PR template, CODEOWNERS
-.claude/                          project skill `verify`; rules/ (always-loaded and path-scoped facts)
+.claude/                          settings.json (permissions, hooks); skills/, agents/, workflows/; rules/
 ```
 
 ## Definition of done
@@ -157,10 +169,13 @@ docs/                             guides and ADRs
 - Published on 2026-10-04: every gate in `python3 scripts/check.py --list` passes locally and in CI, `main` is protected by rulesets (signed commits, linear history, squash-only merges), labels are synced, and the marketplace installs like a user's install.
 - The full release flow ran end to end on pull request #2: `check_pr`, labeler, squash merge, signed tag `hello-example--v0.1.1` and its GitHub Release.
 - Open item in `docs/publishing-checklist.md`: checking the issue forms in the browser.
-- Next: the first real plugin (proposal, `new_plugin.py`, a pull request that follows `docs/releasing.md`), then removal of `hello-example` with a `renames` entry.
+- Claude Code automation added on 2026-10-04: see `docs/automation.md`.
+- Its commits stay local until I approve the push.
+- Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
 - Awaiting my decision:
   - refining the user-level Python rule;
   - a `uv cache prune` to repair cache entries removed by hand on 2026-10-03;
   - a rule that plugins declare every external tool they use and rely on no version-specific features;
-  - short-lived `<plugin>/<topic>` branches as the branch convention.
-- Deferred: a scheduled Claude Code release watcher, Dependabot, link checking, git-cliff or release-please, and a single release command (only after real releases).
+  - a `CLAUDE_CODE_OAUTH_TOKEN` so `drive_plugin.py` can run fully isolated (until then, `claude plugin eval` is the clean-room check).
+- Release watcher: the session-start notice and `/cc-currency`; scheduled routines were rejected because they run without permission prompts.
+- Deferred: Dependabot, external link checking, git-cliff or release-please.

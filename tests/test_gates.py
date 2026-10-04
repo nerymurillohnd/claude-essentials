@@ -583,6 +583,12 @@ class DocsGateTest(RepositoryFixture):
         self.append(self.root / "docs" / "testing.md", "\nSee [gone](gone.md).\n")
         self.assert_drift("broken link gone.md")
 
+    def test_missing_doc_reference_fails(self) -> None:
+        # Built at runtime so this test file itself names no missing document.
+        missing = "docs/" + "no-such-guide.md"
+        self.append(self.root / "scripts" / "repo.py", f"\n# See {missing}.\n")
+        self.assert_drift(f"names {missing}, which does not exist")
+
     def test_link_in_code_is_ignored(self) -> None:
         self.append(self.root / "docs" / "testing.md", "\nWrite `[x](gone.md)` like this.\n")
         assert self.docs_errors() == []
@@ -646,6 +652,37 @@ class ClaudeHooksTest(unittest.TestCase):
             "git commit --no-verify -m x",
         ):
             assert self.verdict(claude_hooks.bash_decision(command)) == "deny", command
+
+    def test_wrapped_pushes_ask(self) -> None:
+        for command in (
+            "bash -c 'git push origin main'",
+            "sh -lc 'gh pr merge 3'",
+            "echo x | xargs git push",
+            "nice -n 5 git push",
+            "time git push",
+        ):
+            assert self.verdict(claude_hooks.bash_decision(command)) == "ask", command
+
+    def test_message_mentioning_a_bypass_flag_passes(self) -> None:
+        for command in ("git commit -m 'docs: explain --no-verify'", "git log -n 3"):
+            assert claude_hooks.bash_decision(command) is None, command
+        for command in ("git commit -n -m x", "git -ccore.hooksPath=/dev/null commit"):
+            assert self.verdict(claude_hooks.bash_decision(command)) == "deny", command
+
+    def test_search_walking_into_a_forbidden_source_is_denied(self) -> None:
+        _ = self.write("CLAUDE.local.md", LOCAL_NOTES)
+        parent = Path.home() / "projects" / "marketplace"
+        cases: list[tuple[dict[str, repo.JSON], str | None]] = [
+            ({"path": str(parent)}, "deny"),
+            ({"path": str(Path.home() / "projects")}, "deny"),
+            ({"command": "grep -rn TODO ~/projects/marketplace"}, "deny"),
+            ({"command": "find ~/projects -name x"}, "deny"),
+            ({"command": "ls ~/projects/marketplace"}, None),
+            ({"path": str(Path.home() / "work")}, None),
+        ]
+        for tool_input, expected in cases:
+            answer = claude_hooks.sources_decision(tool_input, self.root)
+            assert self.verdict(answer) == expected, tool_input
 
     def test_github_writes_ask_and_reads_pass(self) -> None:
         for command in (

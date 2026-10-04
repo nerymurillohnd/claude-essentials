@@ -29,10 +29,16 @@ import check
 from check_repo import Report
 import repo
 
-# Directories that hold no documentation of the repository's current state.
-_SKIPPED_DIRS = frozenset(
-    {".git", "node_modules", "__pycache__", ".ruff_cache", ".venv", "worktrees", "results"}
-)
+# Directories that hold no documentation of the repository's current state; used only
+# when the root is not a git checkout (the gate tests' fixtures), since git ls-files
+# already leaves out ignored files such as worktrees and eval results.
+_SKIPPED_DIRS = frozenset({".git", "node_modules", "__pycache__", ".ruff_cache", ".venv"})
+_SKIPPED_PREFIXES = (".claude/worktrees/",)
+_EVAL_RESULTS_RE = re.compile(r"^plugins/[^/]+/evals/results/")
+# Text files whose mentions of docs/*.md must point at an existing document. Not
+# ruff.toml: it is a copy of the maintainer's global config and cites Ruff's own docs.
+_REFERENCE_SUFFIXES = frozenset({".md", ".py", ".yml", ".yaml", ".json"})
+_DOC_REFERENCE_RE = re.compile(r"(?<![\w./-])(docs/[\w./-]+\.md)\b")
 # Untracked private notes and templates full of placeholders are not checked for links.
 _UNCHECKED_LINK_FILES = frozenset({"CLAUDE.local.md"})
 _UNCHECKED_LINK_DIRS = frozenset({"templates"})
@@ -151,14 +157,37 @@ _RULE_GLOB_RE = re.compile(r'^\s+- "([^"]+)"$', re.MULTILINE)
 
 
 def repository_files(root: Path) -> list[Path]:
-    """Every file of the repository, without VCS, caches, worktrees or eval results."""
+    """Files git would commit (tracked or new, never ignored), so local runs match CI."""
+    if (root / ".git").exists():
+        listed = repo.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+            cwd=root,
+            check=False,
+        )
+        if listed.returncode == 0:
+            names = [name for name in listed.stdout.split("\0") if name]
+            return sorted(root / name for name in names if (root / name).is_file())
     return [
         path
         for path in sorted(root.rglob("*"))
         if path.is_file()
         and not _SKIPPED_DIRS.intersection(path.relative_to(root).parts[:-1])
-        and path.name != ".DS_Store"
+        and not _rel(root, path).startswith(_SKIPPED_PREFIXES)
+        and not _EVAL_RESULTS_RE.match(_rel(root, path))
+        and path.name not in {".DS_Store", "CLAUDE.local.md"}
     ]
+
+
+def check_doc_references(root: Path, files: list[Path], report: Report) -> None:
+    """Every docs/*.md a document, script or config names exists."""
+    for path in files:
+        if path.suffix not in _REFERENCE_SUFFIXES and path.name != ".gitignore":
+            continue
+        for reference in sorted(
+            set(_captures(_DOC_REFERENCE_RE, path.read_text(encoding="utf-8")))
+        ):
+            if "YYYY" not in reference and not (root / reference).is_file():
+                report.fail(_rel(root, path), f"names {reference}, which does not exist")
 
 
 def check_pins(root: Path, report: Report) -> None:
@@ -314,6 +343,7 @@ def run_checks(root: Path) -> Report:
     check_script_references(root, files, report)
     check_rule_paths(root, files, report)
     check_links(root, files, report)
+    check_doc_references(root, files, report)
     check_skill_names(root, report)
     return report
 

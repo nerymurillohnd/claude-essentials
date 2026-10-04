@@ -46,7 +46,7 @@ The session runs with the maintainer's own login, because an isolated `CLAUDE_CO
 
 Tests leave nothing behind: no directories, configurations, clones, caches or processes.
 
-- Everything a script or test creates lives in a temporary directory with a known prefix (`claude-essentials-install-`, `claude-essentials-drive-`, `new-plugin-`, `gate-fixture-`) and is removed when the script or test ends, including on failure.
+- Everything a script or test creates lives in a temporary directory with a known prefix (`claude-essentials-install-`, `claude-essentials-drive-`, `claude-essentials-review-`, `add-component-`, `new-plugin-`, `gate-fixture-`) and is removed when the script or test ends, including on failure.
 - The cleanup is verified, not assumed: `tests/test_gates.py` asserts each fixture directory is gone after the test; `scripts/new_plugin.py` stops if its scaffold directory survives; `scripts/test_install.py` fails if its directory survives, if a directory with its prefix remains, or if any new entry containing `claude` appears in the system temporary directory during the run.
 - `python3 scripts/check.py clean` removes Python and ruff caches in the repository and any orphaned directory with the prefixes above, then confirms none remain.
 - Tool caches (uv, prettier, ruff) are not test leftovers. Never delete them by hand; use the tool's own command (for uv, `uv cache prune` or `uv cache clean`).

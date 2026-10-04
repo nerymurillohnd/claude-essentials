@@ -30,6 +30,7 @@ Only plugins are versioned. The catalog has no `version` (neither top-level nor 
 
 - **Pull request** for `plugins/**`, `.claude-plugin/marketplace.json`, `.github/workflows/**`, `CODEOWNERS`, and every change from an external contributor: `check_pr.py` and the security review only run on pull requests.
 - **Direct push to `main`** only for docs, scripts, tests, rules, ADRs and the root README, only by the maintainer.
+- **Branches** for pull requests are short-lived `<plugin>/<topic>` (for example `hello-example/add-license`), deleted on merge. The `release-plugin` skill creates them and runs the whole flow below.
 
 ## Checklists
 

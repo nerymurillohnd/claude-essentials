@@ -39,6 +39,8 @@ prek install
 cp scripts/git-hooks/commit-msg .git/hooks/commit-msg
 ```
 
+If you open this repository in Claude Code and trust the folder, its project settings apply to your session: `.claude/settings.json` asks before every push, pull request, release or tag push, denies commits that skip signing or hooks, and registers hooks that run `python3 scripts/claude_hooks.py` on tool calls (guards for versions, generated README blocks and pushes; prettier on edited Markdown, JSON and YAML). Read [Claude Code automation](docs/automation.md) to see what each one does before you trust the folder.
+
 Never install plugins from this repository into your own Claude Code configuration to test them: `python3 scripts/check.py test-install` installs them in a throwaway configuration (see [testing](docs/testing.md)).
 
 ## Add a plugin

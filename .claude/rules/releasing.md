@@ -26,7 +26,10 @@ paths:
 - The release workflow checks that tag and manifest match and publishes the changelog section as the GitHub Release.
 - Use `uvx git-cliff@2.14.2` only for occasional drafts that are then reviewed.
 - release-please was rejected because its commits and tags are not signed with my key.
-- There will be no single release command until there are real releases.
+- Release with the `release-plugin` skill (ADR release-orchestration, 2026-10-04).
+- The skill stops at the open pull request; `/github-ops:automatic-pr-lifecycle` handles reviews and the merge.
+- Every push, pull request and tag push stops at an approval prompt.
+- Plugin work happens on short-lived `<plugin>/<topic>` branches, deleted on merge (approved 2026-10-04).
 - Every workflow, script and doc that consumes tags matches exactly `<name>--v<semver>`, never `v*` or `<name>-v*`.
 - A full release in a throwaway clone verified the tag signature: `git tag -v` reports a good ED25519 signature.
 - Release dates are UTC.
