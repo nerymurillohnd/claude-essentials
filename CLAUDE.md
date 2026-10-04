@@ -170,8 +170,8 @@ docs/                             guides and ADRs
 - The full release flow ran end to end on pull request #2: `check_pr`, labeler, squash merge, signed tag `hello-example--v0.1.1` and its GitHub Release.
 - Open item in `docs/publishing-checklist.md`: checking the issue forms in the browser.
 - Claude Code automation added on 2026-10-04: see `docs/automation.md`.
-- Its commits stay local until I approve the push.
-- The `docs` gate and the `.claude` validation in `validate` came with those commits and have passed only locally until CI runs them.
+- Its commits were pushed with the merge of PR #4 (`7314c58`, squash), which the maintainer approved on 2026-10-04; the commits from `8109002` to `7314c58` came after the handoff `2026-10-04-0852`.
+- The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `python3 scripts/check.py` passed all 10 gates locally on 2026-10-04.
 - Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
 - Awaiting my decision:
   - refining the user-level Python rule;
