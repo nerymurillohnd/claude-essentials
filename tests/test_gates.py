@@ -716,8 +716,18 @@ class ClaudeHooksTest(unittest.TestCase):
     def test_heredoc_message_text_is_not_a_command(self) -> None:
         message = "git commit -S -F - <<'EOF'\nfix: explain --no-verify and -n\nEOF"
         assert claude_hooks.bash_decision(message) is None
-        flagged = "git commit --no-verify -F - <<'EOF'\nfix: x\nEOF"
-        assert self.verdict(claude_hooks.bash_decision(flagged)) == "deny"
+        tag = "git tag -a v1 -F - <<'EOF'\nnotes mention --no-verify\nEOF"
+        assert claude_hooks.bash_decision(tag) is None
+
+    def test_heredoc_that_is_not_a_git_message_keeps_its_body(self) -> None:
+        for command in (
+            "git commit --no-verify -F - <<'EOF'\nfix: x\nEOF",
+            "git status # <<EOF\ngit -c commit.gpgsign=false commit -m y\nEOF",
+            "git commit -m x # <<EOF\ngit commit --no-verify -m y\nEOF",
+            'git commit -m "<<EOF"\ngit commit --no-verify -m y\nEOF',
+            "git -c alias.p='!sh' p <<'EOF'\ngit commit --no-verify -m y\nEOF",
+        ):
+            assert self.verdict(claude_hooks.bash_decision(command)) == "deny", command
 
     def test_search_walking_into_a_forbidden_source_is_denied(self) -> None:
         _ = self.write("CLAUDE.local.md", LOCAL_NOTES)

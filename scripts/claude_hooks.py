@@ -120,19 +120,56 @@ def _split(command: str) -> list[list[str]]:
 _HEREDOC_RE = re.compile(
     r"<<-?[ \t]*(['\"]?)(\w+)\1[^\n]*\n(?P<body>.*?)\n[ \t]*\2[ \t]*(?=\n|$)", re.DOTALL
 )
+_STDIN_MESSAGE_FLAGS = frozenset({"-F-", "--file=-"})
+
+
+def _strict_words(text: str) -> list[str] | None:
+    """Words of `text`, or None when its quotes do not balance."""
+    lexer = shlex.shlex(text, posix=True, punctuation_chars=";&|()")
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    try:
+        return list(lexer)
+    except ValueError:
+        return None
+
+
+def _reads_message_from_stdin(prefix: str) -> bool:
+    """True when `prefix` is one plain `git commit` or `git tag` that reads its message with `-F -`.
+
+    Anything unusual answers False, so the heredoc body stays and is parsed as before: unbalanced
+    quotes (the `<<` sits inside a string), a comment mark, a pipeline or list, another
+    subcommand, or a `-c` option that could define an alias.
+    """
+    words = _strict_words(prefix)
+    if not words or any(word in _SEPARATORS or word.startswith("#") for word in words):
+        return False
+    git = _program_index(words, "git")
+    if git is None:
+        return False
+    subcommand, options = _git_subcommand(words, git)
+    if subcommand not in {"commit", "tag"} or any(
+        option.startswith(("-c", "--config-env")) for option in options
+    ):
+        return False
+    return any(
+        word in _STDIN_MESSAGE_FLAGS
+        or (word in {"-F", "--file"} and words[index + 1 : index + 2] == ["-"])
+        for index, word in enumerate(words)
+    )
 
 
 def _without_git_heredocs(command: str) -> str:
-    """Drop heredoc bodies fed to git: a commit or tag message is text, never a command.
+    """Drop the heredoc body of a `git commit` or `git tag` that reads its message from stdin.
 
-    Bodies fed to any other program stay, because `bash <<EOF` runs them.
+    That body is a message, never a command. Every other command line keeps its body, so the
+    guard behaves there as it did before (it still does not treat newlines as separators).
     """
     kept: list[str] = []
     cursor = 0
     for match in _HEREDOC_RE.finditer(command):
         line_start = command.rfind("\n", 0, match.start()) + 1
-        before = _split(command[line_start : match.start()])
-        if before and Path(before[-1][0]).name == "git":
+        if _reads_message_from_stdin(command[line_start : match.start()]):
             kept.append(command[cursor : match.start("body")])
             cursor = match.end("body")
     kept.append(command[cursor:])
