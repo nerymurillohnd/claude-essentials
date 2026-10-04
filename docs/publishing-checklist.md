@@ -19,7 +19,7 @@ The repository was published on 2026-10-04 at https://github.com/nerymurillohnd/
 
 - [x] Ruleset `main: signed commits` on the default branch: signed commits, linear history, no force pushes, no deletion. No bypass.
 - [x] Ruleset `release tags` on `refs/tags/*--v*`: only admins create, update or delete them, and the tagged commit must be signed. Rulesets cannot require a signed tag object; `git tag -v` verifies it.
-- [ ] Required pull request reviews and status checks (`Gates and isolated install test`, `Commit convention and release discipline`) once there are other contributors; with a single maintainer they would block direct pushes the release policy allows.
+- [ ] Required pull request reviews and status checks (`Gates and isolated install test`, `Commit convention and release discipline`) once there are other contributors; with a single maintainer they would block direct pushes the release policy allows. On 2026-10-04 the contributors are the maintainer and Claude, who acts through the maintainer's account, and the GitHub API lists one collaborator, so the rule stays off.
 
 ## 4. Labels
 

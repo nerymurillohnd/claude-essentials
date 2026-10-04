@@ -147,7 +147,7 @@ scripts/                          stdlib Python run with `python3` (no dependenc
   claude_hooks.py                 Claude Code hooks registered in .claude/settings.json
   git-hooks/commit-msg            optional local commit-msg hook
 templates/                        ADR, changelog, README and license templates
-tests/                            gate, hook and script tests with injected defects
+tests/                            gate, hook and script tests with injected defects; fixtures/ holds the test-only plugin
 docs/                             guides and ADRs
 .github/                          workflows, labels, labeler, issue forms, PR template, CODEOWNERS
 .claude/                          settings.json (permissions, hooks); skills/, agents/, workflows/; rules/
@@ -173,7 +173,9 @@ docs/                             guides and ADRs
 - Its commits were pushed with the merge of PR #4 (`7314c58`, squash), which the maintainer approved on 2026-10-04; the commits from `8109002` to `7314c58` came after the handoff `2026-10-04-0852`.
 - The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `python3 scripts/check.py` passed all 10 gates locally on 2026-10-04.
 - `51e96f6` (2026-10-04) gave the bug report dropdowns a neutral first option; CI passed on `main`, and the forms still need the browser check.
-- Branch naming settled on 2026-10-04 in ADR branch-naming: the prefix is the commit scope, and `marketplace`, `scripts`, `ci` and `docs` are reserved plugin names.
+- Branch naming settled on 2026-10-04 in ADR branch-naming: the prefix is the commit scope, and `marketplace`, `scripts`, `ci` and `docs` are reserved plugin names. CI passed on its commit `7c49526` (`Validate`, run 37201134748, checked with `gh run list` on 2026-10-04).
+- The gate tests run on a fixture plugin outside the catalog (`tests/fixtures/plugins/sample-plugin/`), so removing `hello-example` cannot break them (2026-10-04).
+- The only GitHub collaborator is the maintainer, and Claude works through that account, so required reviews on `main` stay off (`docs/publishing-checklist.md`).
 - Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
 - Awaiting my decision:
   - refining the user-level Python rule;

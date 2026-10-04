@@ -30,7 +30,11 @@ import validate_adrs
 
 ROOT = repo.ROOT
 
-PLUGIN = "hello-example"
+# The plugin every gate test mutates: a fixture outside the catalog, copied into each
+# temporary repository, so the tests do not depend on which plugins the catalog lists.
+PLUGIN = "sample-plugin"
+PLUGIN_CATEGORY = "development"
+FIXTURE_PLUGIN = ROOT / "tests" / "fixtures" / "plugins" / PLUGIN
 # A CLAUDE.local.md in the format the clean-room hook reads.
 LOCAL_NOTES = """\
 - GitHub: `owner/old-repo`, `owner/kept-deprecated`.
@@ -50,6 +54,7 @@ class RepositoryFixture(unittest.TestCase):
         self._tmp = tempfile.TemporaryDirectory(prefix="gate-fixture-")
         self.root = Path(self._tmp.name) / "repo"
         _ = shutil.copytree(ROOT, self.root, ignore=IGNORED, symlinks=True)
+        self.install_fixture_plugin()
 
     @override
     def tearDown(self) -> None:
@@ -62,6 +67,42 @@ class RepositoryFixture(unittest.TestCase):
     @property
     def plugin(self) -> Path:
         return self.root / "plugins" / PLUGIN
+
+    @property
+    def marketplace(self) -> Path:
+        return self.root / ".claude-plugin" / "marketplace.json"
+
+    def install_fixture_plugin(self) -> None:
+        """Add the fixture plugin to the copy: directory, catalog entry, label and labeler rules."""
+        _ = shutil.copytree(FIXTURE_PLUGIN, self.plugin, symlinks=True)
+        entry: dict[str, repo.JSON] = {
+            "name": PLUGIN,
+            "source": f"./plugins/{PLUGIN}",
+            "description": "Fixture plugin used only by the gate tests.",
+            "category": PLUGIN_CATEGORY,
+            "tags": ["example"],
+        }
+        data = repo.as_dict(repo.load_json(self.marketplace)) or {}
+        data["plugins"] = [*(repo.as_list(data.get("plugins")) or []), entry]
+        _ = self.marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+
+        github = self.root / ".github"
+        labels = github / "labels.yml"
+        text = labels.read_text(encoding="utf-8").rstrip("\n")
+        label = f'- name: "plugin:{PLUGIN}"\n  color: "c5def5"\n  description: "Fixture plugin"\n'
+        _ = labels.write_text(f"{text}\n{label}", encoding="utf-8")
+
+        labeler = github / "labeler.yml"
+        text = labeler.read_text(encoding="utf-8").rstrip("\n") + "\n"
+        rule = (
+            f"  - changed-files:\n      - any-glob-to-any-file:\n          - plugins/{PLUGIN}/**\n"
+        )
+        category = f'"category:{PLUGIN_CATEGORY}":\n'
+        if category in text:
+            text = text.replace(category, category + rule, 1)
+        else:
+            text += f"\n{category}{rule}"
+        _ = labeler.write_text(f'{text}\n"plugin:{PLUGIN}":\n{rule}', encoding="utf-8")
 
     def errors(self) -> list[str]:
         return check_repo.run_checks(self.root).errors
@@ -167,20 +208,21 @@ class SelfContainmentGateTest(RepositoryFixture):
 
 
 class CatalogGateTest(RepositoryFixture):
-    @property
-    def marketplace(self) -> Path:
-        return self.root / ".claude-plugin" / "marketplace.json"
-
     def test_missing_disclaimer_fails(self) -> None:
         self.edit_json(self.marketplace, "description", "Community plugins for Claude Code.")
         self.assert_fails_with("not affiliated")
 
-    def test_version_in_entry_fails(self) -> None:
+    def set_fixture_entry_field(self, key: str, value: repo.JSON) -> None:
+        """Set one field on the fixture plugin's catalog entry."""
         data = repo.as_dict(repo.load_json(self.marketplace)) or {}
-        entries = repo.as_list(data.get("plugins")) or []
-        entry = repo.as_dict(entries[0]) or {}
-        entry["version"] = "0.1.0"
+        for raw in repo.as_list(data.get("plugins")) or []:
+            entry = repo.as_dict(raw) or {}
+            if entry.get("name") == PLUGIN:
+                entry[key] = value
         _ = self.marketplace.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    def test_version_in_entry_fails(self) -> None:
+        self.set_fixture_entry_field("version", "0.1.0")
         self.assert_fails_with('"version" belongs only in plugin.json')
 
     def test_catalog_version_fails(self) -> None:
@@ -218,10 +260,7 @@ class CatalogGateTest(RepositoryFixture):
         self.assert_fails_with("must be 1.40.1 (BASEDPYRIGHT_VERSION in check.py)")
 
     def test_unknown_category_fails(self) -> None:
-        data = repo.as_dict(repo.load_json(self.marketplace)) or {}
-        entry = repo.as_dict((repo.as_list(data.get("plugins")) or [])[0]) or {}
-        entry["category"] = "misc"
-        _ = self.marketplace.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        self.set_fixture_entry_field("category", "misc")
         errors = self.errors()
         assert any('"category" must be one of' in e for e in errors), errors
 
@@ -860,7 +899,7 @@ class DrivePluginTest(unittest.TestCase):
         assert outcome.errors == ["the session produced no result event"]
 
     def test_default_prompt_is_first_skill(self) -> None:
-        assert drive_plugin.default_prompt(ROOT / "plugins" / PLUGIN) == f"/{PLUGIN}:hello"
+        assert drive_plugin.default_prompt(FIXTURE_PLUGIN) == f"/{PLUGIN}:hello"
 
 
 if __name__ == "__main__":

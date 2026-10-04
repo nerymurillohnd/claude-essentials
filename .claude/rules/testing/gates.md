@@ -19,5 +19,7 @@ paths:
 - Pinned versions: prettier 3.9.9, actionlint 1.7.12, zizmor 1.30.1 (offline) and check-jsonschema 0.38.2 with its built-in schemas.
 - `ruff.toml` and `shellcheckrc` are copies of my strict global configurations, so CI applies the same rules as my machine: change the global file and the copy together. `-S style -a` (my `SHELLCHECK_OPTS`) has no rc equivalent and is not applied in CI.
 - Each test injects one defect and checks that the gate fails for that reason only; `python3 scripts/check.py tests` reports the count.
+- The tests mutate the fixture plugin `tests/fixtures/plugins/sample-plugin/`, which `RepositoryFixture.install_fixture_plugin` adds to each temporary copy with its catalog entry, label and labeler rules; they never depend on a catalog plugin, so adding or removing one cannot break them.
+- The fixture is never listed in the real catalog. Keep it a valid plugin: the `repo` gate must pass on it and Prettier checks its files.
 - `.pre-commit-config.yaml` runs ruff (`ruff-check --fix`, `ruff-format`) and basedpyright (`--warnings`) through prek on every commit. Hook `rev`s equal `RUFF_VERSION` and `BASEDPYRIGHT_VERSION` in `scripts/check.py` (ruff with a `v` prefix, basedpyright without); change them together after reading the release notes of every version in between.
 - Markdownlint, link checking and Dependabot were deferred.
