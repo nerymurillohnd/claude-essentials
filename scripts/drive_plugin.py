@@ -142,7 +142,9 @@ def read_stream(stdout: str, name: str) -> Outcome:
     return outcome
 
 
-def drive(plugin_path: Path, name: str, prompt: str, args: argparse.Namespace) -> Outcome:
+def drive(
+    plugin_path: Path, name: str, prompt: str, args: argparse.Namespace, workdir: Path
+) -> Outcome:
     """Run one headless session with only this plugin and check the reply."""
     command = [
         "claude",
@@ -161,8 +163,10 @@ def drive(plugin_path: Path, name: str, prompt: str, args: argparse.Namespace) -
         "--verbose",
         prompt,
     ]
-    # An empty stdin keeps `-p` from waiting for piped input.
-    result = repo.run(command, check=False, input_text="")
+    # An empty stdin keeps `-p` from waiting for piped input. An empty working
+    # directory outside the repository keeps the project CLAUDE.md and the git
+    # snapshot (with the maintainer's name) out of the session, as for a stranger.
+    result = repo.run(command, cwd=workdir, check=False, input_text="")
     outcome = read_stream(result.stdout, name)
     if "Not logged in" in outcome.reply and not os.environ.get("USER"):
         # Observed on macOS: the keychain login is found through USER, not LOGNAME.
@@ -202,7 +206,9 @@ def run_session(name: str, prompt: str, args: argparse.Namespace, errors: list[s
         if source == "head":
             target = installed_copy(tmp, name, errors)
         if target is not None:
-            outcome = drive(target, name, prompt, args)
+            workdir = tmp / "workspace"
+            workdir.mkdir()
+            outcome = drive(target, name, prompt, args, workdir)
             repo.emit(f"source: {source} ({target})")
             repo.emit(f"prompt: {prompt}")
             repo.emit(f"loaded: {', '.join(outcome.loaded)}")

@@ -40,7 +40,7 @@ Outside CI, the script fingerprints `settings.json`, the plugin records, the plu
 
 `python3 scripts/drive_plugin.py <plugin> [--prompt TEXT] [--source checkout|head] [--expect REGEX]` uses a plugin the way a user does: it sends a prompt (by default the plugin's first skill as a slash command) to a headless `claude -p` session with only that plugin loaded, and fails unless the plugin loaded alone, the session ended without error, every `--expect` regex matches the reply and the real configuration is unchanged. `--source head` drives the copy a user receives, installed from a bare clone of HEAD in a throwaway configuration. The project skill `run-marketplace` documents it.
 
-The session runs with the maintainer's own login, because an isolated `CLAUDE_CONFIG_DIR` has no credentials, under `--restricted` (no user or project settings), `--strict-mcp-config` (no claude.ai connectors) and `--no-session-persistence` (no transcript). Each run is a real model call (about \$0.01 with the default `haiku`), so it is not a CI gate; run it before a pull request that changes a plugin's behavior.
+The session runs with the maintainer's own login, because an isolated `CLAUDE_CONFIG_DIR` has no credentials, under `--restricted` (no user or project settings), `--strict-mcp-config` (no claude.ai connectors) and `--no-session-persistence` (no transcript), started in an empty temporary directory so neither the project `CLAUDE.md` nor the git snapshot reaches the model. It is a fast smoke test on the maintainer's login; `claude plugin eval` (below) is the clean-room check. Each run is a real model call (about \$0.01 with the default `haiku`), so it is not a CI gate; run it before a pull request that changes a plugin's behavior.
 
 ## Cleanup
 

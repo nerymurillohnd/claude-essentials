@@ -43,6 +43,8 @@ ZIZMOR_VERSION = "1.30.1"
 TEMP_PREFIXES = (
     "claude-essentials-install-",
     "claude-essentials-drive-",
+    "claude-essentials-review-",
+    "add-component-",
     "new-plugin-",
     "gate-fixture-",
 )

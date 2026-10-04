@@ -17,6 +17,7 @@ import tempfile
 from typing import override
 import unittest
 
+import add_component
 import bump_version
 import check_commit_msg
 import check_docs
@@ -737,6 +738,30 @@ class ClaudeHooksTest(unittest.TestCase):
         status = claude_hooks.session_status(ROOT)
         assert status.startswith("claude-essentials: "), status
         assert "path-scoped rules" in status
+
+
+class AddComponentTest(unittest.TestCase):
+    """The component scaffold names the copy and leaves a note the gate rejects."""
+
+    def test_rename_sets_frontmatter_and_heading(self) -> None:
+        text = add_component.rename("---\nname: example\n---\n\n# example\n\nTODO\n", "greet")
+        assert "name: greet\n" in text
+        assert "# greet\n" in text
+
+    def test_note_creates_added_section(self) -> None:
+        text = "# Changelog\n\n## [Unreleased]\n\n## [0.1.0] - 2026-10-04\n"
+        result = add_component.add_unreleased_note(text, "TODO: x")
+        assert "## [Unreleased]\n\n### Added\n\n- TODO: x\n\n## [0.1.0]" in result
+
+    def test_note_joins_existing_added_section(self) -> None:
+        text = "## [Unreleased]\n\n### Added\n\n- First.\n\n## [0.1.0] - 2026-10-04\n"
+        result = add_component.add_unreleased_note(text, "Second.")
+        assert "- First.\n- Second.\n\n## [0.1.0]" in result
+
+    def test_target_paths(self) -> None:
+        plugin = Path("plugins/p")
+        assert add_component.target_path(plugin, "skill", "x") == plugin / "skills/x/SKILL.md"
+        assert add_component.target_path(plugin, "agent", "x") == plugin / "agents/x.md"
 
 
 class DrivePluginTest(unittest.TestCase):
