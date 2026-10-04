@@ -13,7 +13,7 @@
 
 The goal is a catalog that third parties can trust: every plugin installs cleanly on any machine, says exactly what it runs, ships only reviewed code, and gets fixes to users through explicit, signed releases.
 
-The foundation is built locally. The only plugin is the example `hello-example`. Publication waits for my approval; the next step after it is the first real plugin.
+The repository is public at https://github.com/nerymurillohnd/claude-essentials. The only plugin is the example `hello-example`; the next step is the first real plugin.
 
 ## Commands
 
@@ -154,11 +154,14 @@ docs/                             guides and ADRs
 
 ## Current state
 
-- Foundation complete locally: every gate in `python3 scripts/check.py --list` passes, signed commits, no remote.
-- Next: my approval to publish (`docs/publishing-checklist.md`), then the first real plugin, then removal of `hello-example` with a `renames` entry.
+- Published on 2026-10-04: every gate in `python3 scripts/check.py --list` passes locally and in CI, `main` is protected by rulesets (signed commits, linear history, squash-only merges), labels are synced, and the marketplace installs like a user's install.
+- Open items in `docs/publishing-checklist.md`: moderation content reporting (no API), checking the issue forms in the browser, and whether to tag `hello-example--v0.1.0`.
+- Next: the first real plugin (proposal, `new_plugin.py`, a pull request that follows `docs/releasing.md`), then removal of `hello-example` with a `renames` entry.
 - Awaiting my decision:
   - refining the user-level Python rule;
   - a `uv cache prune` to repair cache entries removed by hand on 2026-10-03;
   - a rule that plugins declare every external tool they use and rely on no version-specific features;
-  - the LICENSE copyright holder.
+  - the LICENSE copyright holder;
+  - the public `owner.email` in `marketplace.json`;
+  - short-lived `<plugin>/<topic>` branches as the branch convention.
 - Deferred: a scheduled Claude Code release watcher, Dependabot, link checking, git-cliff or release-please, and a single release command (only after real releases).

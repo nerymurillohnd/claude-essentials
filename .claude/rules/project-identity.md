@@ -9,5 +9,5 @@
 - The sourcing order is a generator, then an official template, then an open standard, and hand-writing last.
 - ADRs are dated as `ADR_YYYY-MM-DD_<slug>.md`, with a validator, and are superseded instead of rewritten.
 - Plugins are for distribution: never derive a plugin's requirements or compatibility from my machine's PATH or binaries.
-- There is no remote and every commit is signed; you need my explicit approval before any push, remote or publication.
+- The repository is public at `nerymurillohnd/claude-essentials` (`origin`); every commit is signed, and you need my explicit approval before any push, tag push or change to GitHub settings.
 - The only plugin is `hello-example`, which is safe to remove.
