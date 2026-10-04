@@ -53,11 +53,6 @@ CATEGORY_DESCRIPTIONS: dict[str, str] = {
 # plugins (changelog review in CLAUDE.md: validator fixes up to 2.1.289).
 MIN_CLAUDE_CODE = "2.1.289"
 
-# Tag formats. Plugin tags use the official `claude plugin tag` format
-# `<name>--v<version>` (docs: plugins/cli-reference#plugin-tag). The
-# marketplace uses the same shape under the reserved name `marketplace`.
-MARKETPLACE_TAG_NAME = "marketplace"
-
 # Mods require Claude Code 2.1.287 or later (docs: plugins/mods/create).
 MOD_MIN_CLAUDE_CODE = (2, 1, 287)
 
@@ -97,7 +92,6 @@ _RESERVED_EXACT = frozenset(
         "claude-mods",
         "anthropic-skills",
         "claude-ai",
-        MARKETPLACE_TAG_NAME,
     }
 )
 _BRAND_WORDS = frozenset({"claude", "anthropic", "anthropics"})
@@ -183,6 +177,14 @@ def bump(version: str, level: str) -> str:
     if level == "patch":
         return f"{major}.{minor}.{patch + 1}"
     raise UnknownBumpLevelError(level)
+
+
+def bump_level(old: str, new: str) -> str | None:
+    """The level that turns `old` into `new` by one bump, or None if no single bump does."""
+    for level in ("major", "minor", "patch"):
+        if bump(old, level) == new:
+            return level
+    return None
 
 
 def plugin_tag(name: str, version: str) -> str:
@@ -354,6 +356,92 @@ def parse_changelog(text: str) -> Changelog:
     if valid != sorted(valid, reverse=True) or len(set(valid)) != len(valid):
         result.problems.append("releases must be listed newest first, without duplicates")
     return result
+
+
+# The catalog changelog has no versions: the marketplace is not versioned, so
+# its sections are dated `## YYYY-MM-DD` (UTC), newest first.
+_DATE_HEADING_RE = re.compile(r"^## (?P<date>\d{4}-\d{2}-\d{2})\s*$")
+
+
+@dataclass
+class DatedChangelog:
+    """A parsed catalog changelog: dated sections and the problems found in it."""
+
+    sections: list[Release] = field(default_factory=list)
+    problems: list[str] = field(default_factory=list)
+
+
+def _dated_line_problem(line: str) -> str | None:
+    if line.startswith("## "):
+        return f'unexpected heading "{line.strip()}", expected "## YYYY-MM-DD"'
+    section = _SECTION_HEADING_RE.match(line)
+    if section and section.group("kind") not in CHANGE_TYPES:
+        allowed = ", ".join(CHANGE_TYPES)
+        return f'unknown change type "### {section.group("kind")}" (allowed: {allowed})'
+    return None
+
+
+def _dated_section_problems(entry: Release) -> list[str]:
+    problems: list[str] = []
+    try:
+        _ = _dt.date.fromisoformat(entry.date)
+    except ValueError:
+        problems.append(f'"## {entry.date}" is not a valid date')
+    if not entry.body:
+        problems.append(f"## {entry.date} has no entries")
+    return problems
+
+
+def parse_dated_changelog(text: str) -> DatedChangelog:
+    """Parse the catalog changelog, whose sections are `## YYYY-MM-DD`."""
+    result = DatedChangelog()
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "# Changelog":
+        result.problems.append('first line must be "# Changelog"')
+    bodies: list[list[str]] = []
+    for line in lines:
+        heading = _DATE_HEADING_RE.match(line)
+        if heading:
+            result.sections.append(Release("", heading.group("date"), ""))
+            bodies.append([])
+            continue
+        problem = _dated_line_problem(line)
+        if problem:
+            result.problems.append(problem)
+        elif bodies:
+            bodies[-1].append(line)
+    for entry, body in zip(result.sections, bodies, strict=True):
+        entry.body = "\n".join(body).strip()
+        result.problems.extend(_dated_section_problems(entry))
+    dates = [entry.date for entry in result.sections]
+    if dates != sorted(dates, reverse=True) or len(set(dates)) != len(dates):
+        result.problems.append("dated sections must be listed newest first, without duplicates")
+    return result
+
+
+def add_dated_note(text: str, date: str, kind: str, note: str) -> str:
+    """Add `- note` under `### kind` in the `## date` section, creating either if missing."""
+    lines = text.rstrip("\n").splitlines()
+    heading = f"## {date}"
+    if heading not in lines:
+        first = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
+        lines[first:first] = [heading, "", f"### {kind}", "", f"- {note}", ""]
+    else:
+        start = lines.index(heading)
+        end = next(
+            (i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines)
+        )
+        kind_heading = f"### {kind}"
+        if kind_heading in lines[start:end]:
+            items = lines.index(kind_heading, start, end) + 2
+            while items < end and lines[items].startswith("- "):
+                items += 1
+            lines.insert(items, f"- {note}")
+        else:
+            while lines[end - 1].strip() == "":
+                end -= 1
+            lines[end:end] = ["", kind_heading, "", f"- {note}"]
+    return "\n".join(lines).rstrip("\n") + "\n"
 
 
 def has_section_content(body: str, kind: str) -> bool:

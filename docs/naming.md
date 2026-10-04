@@ -8,7 +8,6 @@
 | Never starts with `claude-`, `anthropic-`, `anthropics-` or `cc-plugin-`; never `claude`, `anthropic`, `anthropics`, `claude-code` or `claude-mods`; `official` never next to `claude` or `anthropic` | `claude plugin validate` rejects names that pass as Anthropic's own plugins                                                                                                                                                                   |
 | Never contains `claude` or `anthropic` as a word                                                                                                                                                      | The validator warns, which fails `--strict`                                                                                                                                                                                                   |
 | Never `anthropic-skills` or `claude-ai`                                                                                                                                                               | Skills in those namespaces stopped loading in Claude Code 2.1.282                                                                                                                                                                             |
-| Never `marketplace`                                                                                                                                                                                   | Reserved for marketplace tags `marketplace--v<version>`                                                                                                                                                                                       |
 | Describes what it does: `release-notes-writer`, not `helper`                                                                                                                                          | Users choose plugins from a list                                                                                                                                                                                                              |
 | Permanent once published                                                                                                                                                                              | Users install and enable plugins by `<name>@claude-essentials`; a rename breaks every install unless a `renames` entry migrates it ([host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace#rename-or-remove-a-plugin)) |
 
@@ -22,10 +21,9 @@ The directory name, the marketplace entry `name` and the manifest `name` are ide
 
 ## Tags
 
-| Release     | Tag                                                       | Created by                                           |
-| ----------- | --------------------------------------------------------- | ---------------------------------------------------- |
-| Plugin      | `<name>--v<version>`, for example `hello-example--v1.2.0` | `claude plugin tag`, after `scripts/bump_version.py` |
-| Marketplace | `marketplace--v<version>`                                 | `git tag -a`, after `scripts/bump_version.py`        |
+| Release | Tag                                                       | Created by                                           |
+| ------- | --------------------------------------------------------- | ---------------------------------------------------- |
+| Plugin  | `<name>--v<version>`, for example `hello-example--v1.2.0` | `claude plugin tag`, after `scripts/bump_version.py` |
 
 ## Labels
 

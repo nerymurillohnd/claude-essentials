@@ -485,8 +485,6 @@ def apply_blocks(text: str, blocks: dict[str, str], where: str) -> tuple[str, li
 
 def root_readme(plugins: list[Plugin]) -> str:
     """Render README.md from its template and the catalog."""
-    data = repo.as_dict(repo.load_json(repo.MARKETPLACE_FILE)) or {}
-    version = repo.as_str(data.get("version")) or "0.0.0"
     if plugins:
         rows = [
             [
@@ -510,7 +508,6 @@ def root_readme(plugins: list[Plugin]) -> str:
     )
     badges = " ".join(
         [
-            badge("marketplace", f"v{version}", "blue", "CHANGELOG.md"),
             badge("plugins", str(len(plugins)), "informational", "#plugins"),
             badge("Claude Code", f"≥ {repo.MIN_CLAUDE_CODE}", "orange", DOCS_URL),
             badge("license", "MIT", "green", "LICENSE"),

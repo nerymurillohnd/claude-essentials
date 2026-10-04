@@ -14,7 +14,8 @@ plugins/<name>/ and adapts it to the marketplace layout
   * removes the skills-directory root SKILL.md and its `"skills": ["./"]` entry;
   * removes the `$schema` URL `claude plugin init` writes, which returns HTTP 404;
   * fills plugin.json metadata, README.md and CHANGELOG.md from templates/;
-  * adds the marketplace entry, the `plugin:<name>` label and the labeler rules.
+  * adds the marketplace entry, the `plugin:<name>` label and the labeler rules;
+  * adds a dated note to the catalog CHANGELOG.md (the catalog has no version).
 
 The result deliberately keeps TODO placeholders, which `python3 scripts/check.py` rejects
 until the author replaces them with real content.
@@ -299,6 +300,15 @@ def _write_docs(spec: PluginSpec) -> None:
     _ = (spec.target / "CHANGELOG.md").write_text(changelog, encoding="utf-8")
 
 
+def add_catalog_note(spec: PluginSpec) -> None:
+    """Record the new plugin under today's date in the catalog changelog."""
+    path = repo.ROOT / "CHANGELOG.md"
+    today = dt.datetime.now(dt.UTC).date().isoformat()
+    note = f"`{spec.name}`: {spec.description}"
+    text = repo.add_dated_note(path.read_text(encoding="utf-8"), today, "Added", note)
+    _ = path.write_text(text, encoding="utf-8")
+
+
 def _finish(spec: PluginSpec) -> None:
     repo.format_files([spec.target])
     synced = repo.run([sys.executable, str(repo.ROOT / "scripts" / "sync_readmes.py")], check=False)
@@ -323,6 +333,7 @@ def main() -> int:
     _scaffold(spec)
     _write_docs(spec)
     add_marketplace_entry(spec)
+    add_catalog_note(spec)
     add_labels(spec)
     _finish(spec)
     return 0

@@ -4,7 +4,7 @@ on:
   push:
     tags:
       # Plugin tags come from `claude plugin tag`: <name>--v<version>.
-      # Marketplace tags use the reserved name: marketplace--v<version>.
+      # Only plugins are released; the catalog has no version.
       - "*--v[0-9]*"
 
 permissions: {}
@@ -38,12 +38,7 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           python3 scripts/release_notes.py verify "${TAG}"
-          name="${TAG%%--v*}"
-          if [[ "${name}" == "marketplace" ]]; then
-            claude plugin validate . --strict
-          else
-            claude plugin validate "plugins/${name}" --strict
-          fi
+          claude plugin validate "plugins/${TAG%%--v*}" --strict
 
       - name: Extract release notes from the changelog
         env:

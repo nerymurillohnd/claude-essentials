@@ -3,19 +3,23 @@
 
 Usage:
   python3 scripts/bump_version.py plugin <name> <major|minor|patch> [--dry-run]
-  python3 scripts/bump_version.py marketplace <major|minor|patch> [--dry-run]
+
+Run it in the same pull request as the change: every change inside
+plugins/<name>/ ships with its own release. The marketplace catalog has no
+version.
 
 It only prepares files; it never commits, tags or pushes:
 
   1. checks the changelog: `## [Unreleased]` has notes, and a MAJOR bump has a
      non-empty `### Migration` section;
   2. moves the `## [Unreleased]` notes into `## [<version>] - <date>` (UTC);
-  3. bumps `version` in plugin.json (or marketplace.json for the marketplace),
-     the only place a version lives, so the catalog needs no other change;
+  3. bumps `version` in plugin.json, the only place a version lives, so the
+     catalog needs no other change;
   4. regenerates the README content that shows the version;
   5. runs `claude plugin validate --strict` and scripts/check_repo.py.
 
-Then review the diff, commit, and tag by hand as docs/releasing.md describes.
+Then review the diff and commit it in the pull request; after the merge, tag
+by hand as docs/releasing.md describes.
 Releases are not bundled into a single command until the first real release
 shows which steps belong together
 (docs/adr/decisions/ADR_2026-10-03_release-automation.md).
@@ -126,9 +130,8 @@ def _apply(target: Target, level: str, *, dry_run: bool) -> int:
         if result.returncode != 0:
             repo.emit(result.stdout + result.stderr)
             return _fail(f"{' '.join(command)} failed; fix it before committing")
-    tag_name = repo.MARKETPLACE_TAG_NAME if target.label == "marketplace" else target.label
-    tag = repo.plugin_tag(tag_name, new_version)
-    next_steps = "Review `git diff`, then commit and tag (docs/releasing.md)."
+    tag = repo.plugin_tag(target.label, new_version)
+    next_steps = "Review `git diff` and commit in the pull request; tag after the merge."
     repo.emit(f"✔ files prepared for {tag}. {next_steps}")
     return 0
 
@@ -143,22 +146,15 @@ def main() -> int:
     _ = plugin_parser.add_argument("name")
     _ = plugin_parser.add_argument("level", choices=LEVELS)
     _ = plugin_parser.add_argument("--dry-run", action="store_true")
-    market_parser = sub.add_parser("marketplace", help="bump the marketplace catalog")
-    _ = market_parser.add_argument("level", choices=LEVELS)
-    _ = market_parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
-    command: str = args.command  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
     level: str = args.level  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
     dry_run: bool = args.dry_run  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
-    if command == "plugin":
-        name: str = args.name  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
-        plugin = repo.PLUGINS_DIR / name
-        manifest = plugin / ".claude-plugin" / "plugin.json"
-        if not manifest.is_file():
-            return _fail(f"unknown plugin {name}")
-        target = Target(name, plugin / "CHANGELOG.md", manifest, plugin)
-    else:
-        target = Target("marketplace", repo.ROOT / "CHANGELOG.md", repo.MARKETPLACE_FILE, repo.ROOT)
+    name: str = args.name  # pyright: ignore[reportAny]  # argparse Namespace attributes are Any
+    plugin = repo.PLUGINS_DIR / name
+    manifest = plugin / ".claude-plugin" / "plugin.json"
+    if not manifest.is_file():
+        return _fail(f"unknown plugin {name}")
+    target = Target(name, plugin / "CHANGELOG.md", manifest, plugin)
     return _apply(target, level, dry_run=dry_run)
 
 

@@ -1,12 +1,10 @@
 # Changelog
 
-Marketplace-level changes to Claude Essentials: plugins added, removed or deprecated, and changes to how the catalog is distributed. Each plugin keeps its own changelog in `plugins/<name>/CHANGELOG.md`.
+Changes to the Claude Essentials catalog: plugins added, deprecated, removed or renamed, and changes to how the catalog is distributed. Each plugin keeps its own versioned changelog in `plugins/<name>/CHANGELOG.md`.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the marketplace version follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The catalog has no version: users always receive the latest catalog, and only plugins are versioned ([Semantic Versioning](https://semver.org/spec/v2.0.0.html)). Entries are grouped by date (UTC), newest first, using the change types of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
-
-## [0.1.0] - 2026-10-03
+## 2026-10-03
 
 ### Added
 

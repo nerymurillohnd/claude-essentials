@@ -1,20 +1,49 @@
 # Releasing
 
-How plugin and marketplace versions, changelogs, tags, releases and labels work. Decisions: [ADR per-plugin-versioning](adr/decisions/ADR_2026-10-03_per-plugin-versioning.md), [ADR release-automation](adr/decisions/ADR_2026-10-03_release-automation.md), [ADR labels-and-pr-automation](adr/decisions/ADR_2026-10-03_labels-and-pr-automation.md).
+How plugin versions, changelogs, tags, releases and labels work, and which changes go through a pull request. Decisions: [ADR per-plugin-versioning](adr/decisions/ADR_2026-10-03_per-plugin-versioning.md), [ADR release-automation](adr/decisions/ADR_2026-10-03_release-automation.md), [ADR labels-and-pr-automation](adr/decisions/ADR_2026-10-03_labels-and-pr-automation.md).
 
-**Contents:** [Versions](#versions) · [Commit messages](#commit-messages) · [Changelogs](#changelogs) · [Release a plugin](#release-a-plugin) · [Release the marketplace](#release-the-marketplace) · [Deprecate or remove a plugin](#deprecate-or-remove-a-plugin) · [Labels](#labels)
+**Contents:** [Versions](#versions) · [When a change needs a release](#when-a-change-needs-a-release) · [Pull request or direct push](#pull-request-or-direct-push) · [Commit messages](#commit-messages) · [Changelogs](#changelogs) · [Release a plugin](#release-a-plugin) · [Deprecate or remove a plugin](#deprecate-or-remove-a-plugin) · [Labels](#labels)
 
 ## Versions
 
-Each plugin has its own [SemVer](https://semver.org/spec/v2.0.0.html) version in `plugins/<name>/.claude-plugin/plugin.json`, and only there. Claude Code reads `plugin.json` first, and users receive a new copy only when that version changes ([versions and updates](https://code.claude.com/docs/en/plugins/loading#versions-and-updates)). The marketplace has its own version in `.claude-plugin/marketplace.json`.
+Only plugins are versioned. Each plugin has its own [SemVer](https://semver.org/spec/v2.0.0.html) version `MAJOR.MINOR.PATCH` in `plugins/<name>/.claude-plugin/plugin.json`, and only there: never in its catalog entry, never with a `v` prefix, a pre-release or build suffix. New plugins start at `0.1.0`.
 
-| Bump  | When                                | Examples                                                                                                     |
-| ----- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| MAJOR | Users must change something         | Renamed or removed skill, agent or command; changed hook behavior; a new required setting; removed component |
-| MINOR | New, backward-compatible capability | New skill, agent or option with a default                                                                    |
-| PATCH | Fixes and documentation             | Bug fix, clearer instructions, README changes                                                                |
+Claude Code reads `plugin.json` first and caches each plugin by name and version, so users receive a new copy only when that version changes ([versions and updates](https://code.claude.com/docs/en/plugins/loading#versions-and-updates)).
+
+The catalog (`.claude-plugin/marketplace.json`) has no `version`, neither top-level nor `metadata.version`. Claude Code does not use it to deliver anything: users always receive the latest catalog from `main`. The catalog's history is the dated root `CHANGELOG.md`.
+
+| Bump  | When                                  | Examples                                                                                                     |
+| ----- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| MAJOR | Users must change something           | Renamed or removed skill, agent or command; changed hook behavior; a new required setting; removed component |
+| MINOR | New, backward-compatible capability   | New skill, agent or option with a default; a component marked deprecated                                     |
+| PATCH | Fixes and documentation of the plugin | Bug fix, clearer instructions, README changes, typo fixes                                                    |
 
 A MAJOR release needs a `### Migration` section stating what broke, who is affected and the exact steps to adapt.
+
+## When a change needs a release
+
+A change merged into `plugins/<name>/` without a new version would give users of the same version different files: those who installed earlier keep their cached copy, and those who install later get the new commit. So every change inside a plugin ships with its own release, in the same pull request.
+
+| Change                                                                                     | Release                                                        |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| Any file inside `plugins/<name>/`: skills, agents, hooks, MCP, README, CHANGELOG, manifest | Yes, in the same pull request, at the level of the table above |
+| A new plugin                                                                               | No: it starts at `0.1.0`; the scaffold adds the catalog note   |
+| A catalog entry (description, category, tags) or `renames` in `marketplace.json`           | No: add a dated note to the root `CHANGELOG.md`                |
+| Scripts, tests, CI, `docs/`, `.github/`, root README, rules, ADRs                          | No                                                             |
+
+A pull request may release several plugins, each with its own bump; it carries exactly one `semver:` label naming the highest bump among the plugins it releases.
+
+## Pull request or direct push
+
+| Change                                         | Path                                                                                           |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Anything under `plugins/**`                    | Pull request: `scripts/check_pr.py` checks the release and only runs on pull requests          |
+| `.claude-plugin/marketplace.json`              | Pull request: it is what users see when they refresh the catalog                               |
+| `.github/workflows/**`, `CODEOWNERS`           | Pull request: code owner approval and the workflow audits                                      |
+| Docs, scripts, tests, rules, ADRs, root README | Direct push to `main`, by the maintainer only, signed, after `python3 scripts/check.py` passes |
+| Any change from an external contributor        | Pull request                                                                                   |
+
+After a direct push, confirm that the Validate workflow passes on `main`.
 
 ## Commit messages
 
@@ -34,15 +63,18 @@ BREAKING CHANGE: <what breaks>
 
 ## Changelogs
 
-Each plugin has `CHANGELOG.md` in [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) format; the marketplace has the root `CHANGELOG.md`. Contributors add notes under `## [Unreleased]` with the change types `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security` and `Migration`. Notes are written for users: what changed for them, not how the code changed.
+Both changelogs use the change types of [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/): `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security` and `Migration`. Notes are written for users: what changed for them, not how the code changed.
+
+- **Plugin** (`plugins/<name>/CHANGELOG.md`): versioned sections `## [<version>] - <date>`, newest first. Write the notes under `## [Unreleased]`; `scripts/bump_version.py` moves them into the release section, so `[Unreleased]` is empty on `main`.
+- **Catalog** (root `CHANGELOG.md`): dated sections `## YYYY-MM-DD` (UTC), newest first: plugins added, deprecated, removed or renamed, and changes to the catalog entries or to how the catalog is distributed.
 
 ## Release a plugin
 
-A release is a short sequence of explicit steps. They are deliberately not bundled into one command: that will make sense after the first real releases show which steps belong together ([ADR release-automation](adr/decisions/ADR_2026-10-03_release-automation.md)).
+The release is prepared in the pull request that changes the plugin, and tagged after the merge. The steps are deliberately not bundled into one command until real releases show which belong together ([ADR release-automation](adr/decisions/ADR_2026-10-03_release-automation.md)).
 
-Requirements: a clean working tree on `main`, signing configured for commits and tags, Claude Code 2.1.289 or later.
+Requirements: signing configured for commits and tags, Claude Code 2.1.289 or later.
 
-1. **Notes.** Make sure `## [Unreleased]` in `plugins/<name>/CHANGELOG.md` describes every user-relevant change. To draft notes from history once there is enough of it, optionally run git-cliff without installing anything, and then rewrite the draft for users:
+1. **Notes.** Describe every user-relevant change under `## [Unreleased]` in `plugins/<name>/CHANGELOG.md`. To draft notes from history, optionally run git-cliff without installing anything, and then rewrite the draft for users:
 
    ```bash
    uvx git-cliff@2.14.2 --include-path "plugins/<name>/**" --tag-pattern "^<name>--v" --unreleased
@@ -50,7 +82,7 @@ Requirements: a clean working tree on `main`, signing configured for commits and
 
    The draft only lists commits; it never decides the bump and is never written to the changelog automatically.
 
-2. **Bump.** Preview, then prepare the files:
+2. **Bump, in the same branch.** Preview, then prepare the files:
 
    ```bash
    python3 scripts/bump_version.py plugin <name> <major|minor|patch> --dry-run
@@ -59,46 +91,35 @@ Requirements: a clean working tree on `main`, signing configured for commits and
 
    The script refuses an empty `[Unreleased]`, a MAJOR without Migration, and a changelog that disagrees with `plugin.json`. It moves the notes into `## [<version>] - <date>` (UTC), bumps `plugin.json`, regenerates the README content that shows the version, and runs `claude plugin validate --strict` and `scripts/check_repo.py`. It does not commit, tag or push.
 
-3. **Review and commit.** Read `git diff`, then commit (signed by your git configuration):
+3. **Commit and open the pull request** with the matching `semver:` label:
 
    ```bash
    git add plugins/<name> README.md
-   git commit -m "chore(<name>): release <version>"
+   git commit -m "fix(<name>): <subject>"
    ```
 
-4. **Tag.** `claude plugin tag` checks that `plugin.json` and the catalog agree and creates the annotated tag `<name>--v<version>`, signed when `tag.gpgsign` is on. Verify the signature:
+   `scripts/check_pr.py` fails the pull request when the plugin changed without a single-step bump, when the release section or label does not match the bump, or when a MAJOR has no Migration.
+
+4. **Tag the merged commit.** `claude plugin tag` checks that `plugin.json` and the catalog agree and creates the annotated tag `<name>--v<version>`, signed when `tag.gpgsign` is on:
 
    ```bash
+   git switch main && git pull --ff-only
    claude plugin tag plugins/<name>
    git tag -v <name>--v<version>
    ```
 
-5. **Publish, only when approved.** `git push origin main <name>--v<version>`. The push runs `.github/workflows/release.yml`, which checks the tag against `plugin.json` (`scripts/release_notes.py verify`), validates the plugin and publishes a GitHub Release whose notes are that version's changelog section (`scripts/release_notes.py notes`).
-
-When protected branches require pull requests, do steps 2 and 3 on a branch, open a pull request with the `semver:` label, merge it, then run step 4 on the merged commit.
-
-## Release the marketplace
-
-Same steps on the root `CHANGELOG.md` and `marketplace.json`:
-
-```bash
-python3 scripts/bump_version.py marketplace <major|minor|patch>
-git add CHANGELOG.md .claude-plugin/marketplace.json README.md
-git commit -m "chore(marketplace): release <version>"
-git tag -a marketplace--v<version> -m "marketplace <version>"
-git tag -v marketplace--v<version>
-```
-
-Release the marketplace when plugins are added, deprecated or removed, or when distribution changes.
+5. **Publish, only when approved.** `git push origin <name>--v<version>`. The push runs `.github/workflows/release.yml`, which checks the tag against `plugin.json` (`scripts/release_notes.py verify`), validates the plugin and publishes a GitHub Release whose notes are that version's changelog section (`scripts/release_notes.py notes`).
 
 ## Deprecate or remove a plugin
 
-This section covers a whole plugin. To remove a component inside a plugin (a skill, agent, hook or command), deprecate it under `### Deprecated` in a plugin minor, keep it for at least one further minor release and 30 days, and remove it in the plugin's next major with a `### Migration` section.
+To remove a component inside a plugin (a skill, agent, hook or command), deprecate it under `### Deprecated` in a plugin minor, keep it for at least one further minor release and 30 days, and remove it in the plugin's next major with a `### Migration` section.
 
-1. Deprecate in a MINOR release: add `### Deprecated` with the replacement and the planned removal, and state it in the README Overview.
+To remove a whole plugin:
+
+1. Deprecate it in a plugin MINOR release: add `### Deprecated` with the replacement and the planned removal, and state it in the README Overview. Add a dated `### Deprecated` note to the root `CHANGELOG.md`.
 2. Keep the plugin for at least one further minor release and 30 days.
-3. Remove it in a marketplace release: delete the entry and directory, add `"renames": { "<name>": null }` to `marketplace.json` (append-only), and note it in the root changelog. Never rename a published plugin unless a `renames` entry maps the old name to the new one ([rename or remove a plugin](https://code.claude.com/docs/en/plugins/host-marketplace#rename-or-remove-a-plugin)).
+3. Remove it in a pull request: delete the entry and the directory, add `"renames": { "<name>": null }` to `marketplace.json` (append-only), remove the `plugin:<name>` label and its labeler rules, regenerate the root README with `python3 scripts/sync_readmes.py`, and add a dated `### Removed` note to the root `CHANGELOG.md`. Never rename a published plugin unless a `renames` entry maps the old name to the new one ([rename or remove a plugin](https://code.claude.com/docs/en/plugins/host-marketplace#rename-or-remove-a-plugin)).
 
 ## Labels
 
-Labels are defined in `.github/labels.yml` and synced by the Labels workflow. Path labels (`plugin:`, `category:`, `type:docs`, `type:chore`, `security-review`) are applied by the labeler; issue forms apply `status:needs-triage` and a `type:`. Maintainers apply one `semver:` label to every pull request that changes a plugin; `scripts/check_pr.py` enforces it. Release-note categories in `.github/release.yml` follow the same taxonomy.
+Labels are defined in `.github/labels.yml` and synced by the Labels workflow. Path labels (`plugin:`, `category:`, `type:docs`, `type:chore`, `security-review`) are applied by the labeler; issue forms apply `status:needs-triage` and a `type:`. A pull request that releases plugins carries exactly one `semver:` label naming the highest bump among the plugins it releases, and no other pull request carries one; `scripts/check_pr.py` enforces both. Release-note categories in `.github/release.yml` follow the same taxonomy.

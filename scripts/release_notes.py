@@ -5,8 +5,8 @@ Usage:
   python3 scripts/release_notes.py verify <tag>   # the tag matches the manifest version
   python3 scripts/release_notes.py notes <tag>    # print that version's changelog section
 
-Tags use the official `claude plugin tag` format `<name>--v<version>`; the
-marketplace uses `marketplace--v<version>`.
+Tags use the official `claude plugin tag` format `<name>--v<version>`. Only
+plugins are released: the marketplace catalog has no version.
 """
 
 from __future__ import annotations
@@ -31,8 +31,6 @@ def _sources(tag: str) -> tuple[str, Path, Path] | str:
     if parts is None:
         return f'"{tag}" is not a <name>--v<version> tag'
     name, version = parts
-    if name == repo.MARKETPLACE_TAG_NAME:
-        return version, repo.MARKETPLACE_FILE, repo.ROOT / "CHANGELOG.md"
     plugin = repo.PLUGINS_DIR / name
     return version, plugin / ".claude-plugin" / "plugin.json", plugin / "CHANGELOG.md"
 

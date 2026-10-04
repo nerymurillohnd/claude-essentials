@@ -164,9 +164,9 @@ def _check_catalog_fields(data: dict[str, JSON], where: str, report: Report) -> 
     description = repo.as_str(data.get("description")) or ""
     if repo.DISCLAIMER not in description:
         report.fail(where, f'"description" must state the project is "{repo.DISCLAIMER}"')
-    version = repo.as_str(data.get("version")) or ""
-    if repo.parse_semver(version) is None:
-        report.fail(where, '"version" must be a SemVer version')
+    metadata = repo.as_dict(data.get("metadata")) or {}
+    if "version" in data or "version" in metadata:
+        report.fail(where, 'the catalog has no "version"; only plugins are versioned')
     owner = repo.as_dict(data.get("owner"))
     if owner is None or not repo.as_str(owner.get("name")):
         report.fail(where, '"owner.name" is required')
@@ -625,7 +625,6 @@ def check_release_workflow(root: Path, entries: dict[str, dict[str, JSON]], repo
         report.fail(where, "no on.push.tags patterns found")
         return
     samples = [repo.plugin_tag(name, "1.2.3") for name in entries]
-    samples.append(repo.plugin_tag(repo.MARKETPLACE_TAG_NAME, "1.2.3"))
     for sample in samples:
         if not any(fnmatch.fnmatchcase(sample, pattern) for pattern in patterns):
             report.fail(
@@ -681,22 +680,14 @@ def check_labels(root: Path, entries: dict[str, dict[str, JSON]], report: Report
 
 
 def check_root_changelog(root: Path, report: Report) -> None:
-    """The marketplace changelog is well formed and agrees with marketplace.json."""
+    """The catalog changelog is well formed, with dated sections newest first."""
     path = root / "CHANGELOG.md"
     where = _rel(root, path)
     if not path.is_file():
-        report.fail(where, "missing marketplace CHANGELOG.md")
+        report.fail(where, "missing catalog CHANGELOG.md")
         return
-    changelog = repo.parse_changelog(path.read_text(encoding="utf-8"))
-    for problem in changelog.problems:
+    for problem in repo.parse_dated_changelog(path.read_text(encoding="utf-8")).problems:
         report.fail(where, problem)
-    data = repo.as_dict(repo.load_json(root / ".claude-plugin" / "marketplace.json")) or {}
-    version = repo.as_str(data.get("version"))
-    if changelog.releases and changelog.releases[0].version != version:
-        report.fail(
-            where,
-            f'latest release {changelog.releases[0].version} != marketplace.json "{version}"',
-        )
 
 
 def run_checks(root: Path) -> Report:

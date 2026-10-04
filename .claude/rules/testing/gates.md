@@ -16,5 +16,5 @@ paths:
 - No repository dependency is used: standard-library scripts run with `python3`, and tools resolved on PATH locally and pinned in CI.
 - Pinned versions: prettier 3.9.9, actionlint 1.7.12, zizmor 1.30.1 (offline) and check-jsonschema with its built-in schemas.
 - `ruff.toml` and `shellcheckrc` are copies of my strict global configurations, so CI applies the same rules as my machine: change the global file and the copy together. `-S style -a` (my `SHELLCHECK_OPTS`) has no rc equivalent and is not applied in CI.
-- The 50 tests each inject one defect and check that the gate fails for that reason only.
+- Each test injects one defect and checks that the gate fails for that reason only; `python3 scripts/check.py tests` reports the count.
 - Markdownlint, link checking and Dependabot were deferred.

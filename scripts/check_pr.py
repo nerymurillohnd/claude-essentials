@@ -4,15 +4,19 @@
 Usage:
   python3 scripts/check_pr.py --base <sha> --head <sha> --title "<title>" --labels "a,b"
 
-Rules for every plugin whose files the pull request changes:
-  * a feature or fix PR adds notes under `## [Unreleased]` in that plugin's CHANGELOG.md
-    and must not change `version` (versions change only in release PRs);
-  * a release PR (prepared with scripts/bump_version.py) bumps `version` and adds the matching
-    dated CHANGELOG section;
-  * exactly one `semver:major|minor|patch` label is applied, `semver:major` requires a
-    non-empty `### Migration` section, and a breaking title (`!`) requires `semver:major`;
-  * the title is a Conventional Commit whose scope is the plugin name when exactly one
-    plugin changes.
+Every change inside plugins/<name>/ reaches users only with a new version, so it
+ships with its own release in the same pull request:
+  * each changed existing plugin's `version` moves by exactly one bump, prepared
+    with scripts/bump_version.py: the matching dated CHANGELOG section exists,
+    `## [Unreleased]` is empty, and a major release has a non-empty
+    `### Migration` section;
+  * exactly one `semver:major|minor|patch` label names the highest bump among
+    the released plugins, and a breaking title (`!`) needs `semver:major`;
+  * a new plugin starts at the version its scaffold wrote and needs no label;
+  * a change to .claude-plugin/marketplace.json comes with a note in the dated
+    catalog CHANGELOG.md (the catalog has no version);
+  * the title is a Conventional Commit whose scope is the plugin name when exactly
+    one plugin changes.
 """
 
 from __future__ import annotations
@@ -26,6 +30,8 @@ import repo
 from repo import JSON
 
 SEMVER_LABELS = ("semver:major", "semver:minor", "semver:patch")
+CATALOG_FILE = ".claude-plugin/marketplace.json"
+CATALOG_CHANGELOG = "CHANGELOG.md"
 # A path inside a plugin has at least two separators: plugins/<name>/<file>.
 _PLUGIN_PATH_SEPARATORS = 2
 
@@ -36,7 +42,8 @@ def changed_files(base: str, head: str) -> list[str]:
     return [line for line in output.splitlines() if line]
 
 
-def _changed_plugins(files: list[str]) -> list[str]:
+def changed_plugins(files: list[str]) -> list[str]:
+    """Names of the plugins whose files changed."""
     return sorted(
         {
             path.split("/")[1]
@@ -60,67 +67,83 @@ def _changelog_at(ref: str, plugin: str) -> repo.Changelog | None:
     return repo.parse_changelog(text) if text is not None else None
 
 
-def _label_and_title_problems(title: str, plugins: list[str], semver: list[str]) -> list[str]:
-    parsed, title_problems = check_commit_msg.parse(title)
-    problems = [f"title: {problem}" for problem in title_problems]
-    if plugins and len(semver) != 1:
-        found = semver or "none"
-        options = ", ".join(SEMVER_LABELS)
-        problems.append(
-            f"pull requests that change plugins need exactly one of {options} (found {found})"
-        )
+def title_problems(title: str, plugins: list[str], semver: list[str]) -> list[str]:
+    """Conventional Commit title, plugin scope and breaking-change label."""
+    parsed, problems = check_commit_msg.parse(title)
+    found = [f"title: {problem}" for problem in problems]
     if parsed is None:
-        return problems
+        return found
     if len(plugins) == 1 and parsed.scope != plugins[0]:
-        problems.append(f'title scope must be the plugin name: "{parsed.type}({plugins[0]}): …"')
+        found.append(f'title scope must be the plugin name: "{parsed.type}({plugins[0]}): …"')
     if parsed.breaking and "semver:major" not in semver:
-        problems.append("a breaking change (! or BREAKING CHANGE) needs the semver:major label")
-    return problems
+        found.append("a breaking change (! or BREAKING CHANGE) needs the semver:major label")
+    return found
 
 
-def _release_problems(plugin: str, head_log: repo.Changelog, head_version: str | None) -> list[str]:
+def release_problems(
+    plugin: str,
+    versions: tuple[str | None, str | None],
+    head_log: repo.Changelog,
+) -> list[str]:
+    """Problems of an existing plugin changed by the pull request without its release."""
+    base_version, head_version = versions
+    fix = f"run scripts/bump_version.py plugin {plugin} <level> in this pull request"
+    if base_version is None or head_version is None:
+        return [f"{plugin}: plugin.json has no version"]
+    if base_version == head_version:
+        return [f"{plugin}: every change inside plugins/{plugin}/ needs a new version; {fix}"]
+    level = repo.bump_level(base_version, head_version)
+    if level is None:
+        return [f"{plugin}: {base_version} → {head_version} is not a single SemVer bump; {fix}"]
     problems: list[str] = []
     released = head_log.releases[0] if head_log.releases else None
     if released is None or released.version != head_version:
-        changed = f'version changed to "{head_version}"'
-        fix = "use scripts/bump_version.py"
-        problems.append(f"{plugin}: {changed} without a matching release section; {fix}")
+        problems.append(f"{plugin}: no CHANGELOG section for {head_version}; {fix}")
     if head_log.unreleased:
-        problems.append(
-            f"{plugin}: a release must move every [Unreleased] note into the release section"
-        )
+        problems.append(f"{plugin}: move every [Unreleased] note into the release section; {fix}")
+    body = released.body if released else ""
+    if level == "major" and not repo.has_section_content(body, "Migration"):
+        problems.append(f"{plugin}: a major release needs a non-empty ### Migration section")
     return problems
 
 
-def _plugin_problems(plugin: str, base: str, head: str, semver: list[str]) -> list[str]:
-    head_log = _changelog_at(head, plugin)
-    base_log = _changelog_at(base, plugin)
-    if head_log is None or base_log is None:
-        # Removed plugin (renames are checked by check_repo) or new plugin (the
-        # scaffold writes its first release section).
+def label_problems(levels: list[str], semver: list[str]) -> list[str]:
+    """The single semver: label names the highest bump among the released plugins."""
+    found = ", ".join(semver) or "none"
+    if not levels:
+        if semver:
+            return [f"semver: labels apply only to plugin releases (found {found})"]
         return []
-    head_version = _version_at(head, plugin)
-    if _version_at(base, plugin) != head_version:
-        return _release_problems(plugin, head_log, head_version)
-    problems: list[str] = []
-    if head_log.unreleased == base_log.unreleased or not head_log.unreleased:
-        changelog = f"plugins/{plugin}/CHANGELOG.md"
-        problems.append(f"{plugin}: add a user-facing note under ## [Unreleased] in {changelog}")
-    if "semver:major" in semver and not repo.has_section_content(head_log.unreleased, "Migration"):
-        problems.append(
-            f"{plugin}: semver:major needs a non-empty ### Migration section under [Unreleased]"
-        )
-    return problems
+    highest = next(level for level in ("major", "minor", "patch") if level in levels)
+    if semver != [f"semver:{highest}"]:
+        return [f"the highest bump is {highest}: apply exactly semver:{highest} (found {found})"]
+    return []
+
+
+def catalog_problems(files: list[str]) -> list[str]:
+    """A catalog change comes with a note in the dated catalog changelog."""
+    if CATALOG_FILE in files and CATALOG_CHANGELOG not in files:
+        return [f"{CATALOG_FILE} changed: add a dated note to {CATALOG_CHANGELOG}"]
+    return []
 
 
 def check(base: str, head: str, title: str, labels: list[str]) -> list[str]:
     """Return every release-discipline problem of the pull request."""
-    plugins = _changed_plugins(changed_files(base, head))
+    files = changed_files(base, head)
+    plugins = changed_plugins(files)
     semver = [label for label in labels if label in SEMVER_LABELS]
-    problems = _label_and_title_problems(title, plugins, semver)
+    problems = title_problems(title, plugins, semver) + catalog_problems(files)
+    levels: list[str] = []
     for plugin in plugins:
-        problems.extend(_plugin_problems(plugin, base, head, semver))
-    return problems
+        versions = (_version_at(base, plugin), _version_at(head, plugin))
+        if versions[0] is None or versions[1] is None:
+            continue  # a new or removed plugin is not a release
+        head_log = _changelog_at(head, plugin) or repo.Changelog()
+        problems.extend(release_problems(plugin, versions, head_log))
+        level = repo.bump_level(versions[0], versions[1])
+        if level is not None:
+            levels.append(level)
+    return problems + label_problems(levels, semver)
 
 
 def main() -> int:

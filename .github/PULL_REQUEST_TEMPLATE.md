@@ -4,9 +4,9 @@ Describe the change and why users need it. Link the issue it resolves (for examp
 
 ## Type of change
 
-- [ ] Plugin change (fix, feature or breaking change to a plugin under `plugins/`)
+- [ ] Plugin change with its release (fix, feature or breaking change to plugins under `plugins/`)
 - [ ] New plugin (accepted proposal: #)
-- [ ] Plugin release prepared with `scripts/bump_version.py`
+- [ ] Catalog change (`marketplace.json` entry or `renames`)
 - [ ] Repository, tooling, CI or documentation only
 
 ## Checklist
@@ -14,9 +14,9 @@ Describe the change and why users need it. Link the issue it resolves (for examp
 Pull request title and commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), with the plugin name as scope for plugin changes, for example `fix(my-plugin): handle empty input`.
 
 - [ ] `python3 scripts/check.py` passes locally; `python3 scripts/check.py test-install` passes for plugin changes.
-- [ ] **Changelog:** each changed plugin has a user-facing note under `## [Unreleased]` in its `CHANGELOG.md` (not needed for release pull requests).
-- [ ] **Version:** `version` in `plugin.json` is unchanged, unless this is a release prepared with `scripts/bump_version.py`.
-- [ ] **Semver label:** exactly one of `semver:major`, `semver:minor`, `semver:patch` is applied for plugin changes.
+- [ ] **Release:** every changed plugin was bumped with `scripts/bump_version.py` in this pull request, and its notes moved into the new `CHANGELOG.md` section.
+- [ ] **Semver label:** exactly one `semver:` label, the highest bump among the released plugins (none for new plugins or non-plugin changes).
+- [ ] **Catalog:** a change to `marketplace.json` has a dated note in the root `CHANGELOG.md`.
 - [ ] **Breaking change:** the title uses `!`, the label is `semver:major`, and `### Migration` explains what broke, who is affected and the exact steps.
 - [ ] **Portability:** no absolute or home paths, user or machine names, secrets or personal data; paths use `${CLAUDE_PLUGIN_ROOT}` or `${CLAUDE_PLUGIN_DATA}`.
 - [ ] **Self-containment:** nothing references files outside the plugin's own directory.

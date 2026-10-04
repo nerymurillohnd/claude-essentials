@@ -1,6 +1,6 @@
 # Claude Essentials
 
-[![marketplace: v0.1.0](https://img.shields.io/badge/marketplace-v0.1.0-blue)](CHANGELOG.md) [![plugins: 1](https://img.shields.io/badge/plugins-1-informational)](#plugins) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![community: unaffiliated](https://img.shields.io/badge/community-unaffiliated-lightgrey)](#claude-essentials)
+[![plugins: 1](https://img.shields.io/badge/plugins-1-informational)](#plugins) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![community: unaffiliated](https://img.shields.io/badge/community-unaffiliated-lightgrey)](#claude-essentials)
 
 Community plugins for [Claude Code](https://code.claude.com/docs): workflows, agents, audits, code review, documentation, development practices, deep research and model behavior, distributed as a Claude Code plugin marketplace.
 

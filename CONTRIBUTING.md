@@ -53,22 +53,22 @@ Never install plugins from this repository into your own Claude Code configurati
 
 ## Change a plugin
 
-- Keep each pull request to one plugin or one repository concern.
-- Add a user-facing note under `## [Unreleased]` in the plugin's `CHANGELOG.md`, using the change types `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security` and, for breaking changes, `Migration`.
-- Do not change `version` in `plugin.json`: maintainers do that when they release (see [releasing](docs/releasing.md)).
+- Keep each pull request to one coherent concern; it may release several plugins.
+- Every change inside `plugins/<name>/`, even a README typo, ships with a new version in the same pull request, because users only receive a plugin when its version changes. A pull request may release several plugins, each with its own bump.
+- Write a user-facing note under `## [Unreleased]` in the plugin's `CHANGELOG.md`, using the change types `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, `Security` and, for breaking changes, `Migration`. Then run `python3 scripts/bump_version.py plugin <name> <major|minor|patch>` (see [releasing](docs/releasing.md)); never edit `version` by hand.
 - Regenerate README blocks with `python3 scripts/sync_readmes.py` after changing manifests or components; never edit content between `BEGIN GENERATED` and `END GENERATED` by hand.
 - For any change to plugin format, marketplace, skills, hooks, MCP or LSP servers, mods or distribution, re-read the relevant pages of the [official Claude Code documentation](https://code.claude.com/docs/llms.txt) and the [changelog](https://code.claude.com/docs/en/changelog), and mention in the pull request what you checked and when.
 
 ## Pull requests
 
 - Title and commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `<type>(<scope>): <subject>`, where the scope is the plugin name for plugin changes. Mark breaking changes with `!` or a `BREAKING CHANGE:` footer.
-- Apply exactly one `semver:major`, `semver:minor` or `semver:patch` label to pull requests that change a plugin. Other labels are applied automatically.
+- Apply exactly one `semver:major`, `semver:minor` or `semver:patch` label: the highest bump among the plugins the pull request releases. New plugins and pull requests that change no plugin carry no `semver:` label. Other labels are applied automatically.
 - Describe the plugin's purpose, required permissions and external services, and the manual verification you did.
 - Fill in the pull request checklist; CI runs `python3 scripts/check.py`, the install test and the release-discipline check.
 
 ## Review
 
-Maintainers may request changes for correctness, security, portability, licensing or unclear instructions. Plugins with hooks, MCP or LSP servers, executables or mods also go through the [security review](docs/security-review.md). A merged change reaches users with the plugin's next release.
+Maintainers may request changes for correctness, security, portability, licensing or unclear instructions. Plugins with hooks, MCP or LSP servers, executables or mods also go through the [security review](docs/security-review.md). A merged plugin change is released as soon as a maintainer tags the merged commit.
 
 ## Licensing
 

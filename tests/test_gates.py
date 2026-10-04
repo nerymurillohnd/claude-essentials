@@ -19,6 +19,7 @@ import unittest
 
 import bump_version
 import check_commit_msg
+import check_pr
 import check_repo
 import repo
 import validate_adrs
@@ -173,6 +174,18 @@ class CatalogGateTest(RepositoryFixture):
         _ = self.marketplace.write_text(json.dumps(data, indent=2), encoding="utf-8")
         self.assert_fails_with('"version" belongs only in plugin.json')
 
+    def test_catalog_version_fails(self) -> None:
+        self.edit_json(self.marketplace, "version", "1.0.0")
+        self.assert_fails_with('the catalog has no "version"')
+
+    def test_versioned_catalog_changelog_fails(self) -> None:
+        changelog = self.root / "CHANGELOG.md"
+        text = changelog.read_text(encoding="utf-8").replace(
+            "## 2026-10-03", "## [0.1.0] - 2026-10-03"
+        )
+        _ = changelog.write_text(text, encoding="utf-8")
+        self.assert_fails_with('expected "## YYYY-MM-DD"')
+
     def test_unknown_category_fails(self) -> None:
         data = repo.as_dict(repo.load_json(self.marketplace)) or {}
         entry = repo.as_dict((repo.as_list(data.get("plugins")) or [])[0]) or {}
@@ -316,9 +329,6 @@ class NameRulesTest(unittest.TestCase):
     def test_not_kebab_case(self) -> None:
         assert repo.plugin_name_problems("MyPlugin")
 
-    def test_reserved_marketplace_name(self) -> None:
-        assert repo.plugin_name_problems("marketplace")
-
 
 class ChangelogTest(unittest.TestCase):
     VALID: str = (
@@ -389,6 +399,85 @@ class CommitMessageTest(unittest.TestCase):
     def test_trailing_period_fails(self) -> None:
         _, problems = check_commit_msg.parse("docs: update readme.")
         assert "subject must not end with a period" in problems
+
+
+class DatedChangelogTest(unittest.TestCase):
+    VALID: str = (
+        "# Changelog\n\nIntro.\n\n## 2026-10-02\n\n### Added\n\n- `b`: B.\n\n"
+        "## 2026-10-01\n\n### Added\n\n- `a`: A.\n"
+    )
+
+    def test_valid(self) -> None:
+        assert repo.parse_dated_changelog(self.VALID).problems == []
+
+    def test_oldest_first_fails(self) -> None:
+        text = self.VALID.replace("2026-10-02", "2026-09-30")
+        problems = repo.parse_dated_changelog(text).problems
+        assert problems == ["dated sections must be listed newest first, without duplicates"]
+
+    def test_note_creates_new_date_on_top(self) -> None:
+        text = repo.add_dated_note(self.VALID, "2026-10-03", "Removed", "`a`: gone.")
+        parsed = repo.parse_dated_changelog(text)
+        assert parsed.problems == []
+        assert [s.date for s in parsed.sections] == ["2026-10-03", "2026-10-02", "2026-10-01"]
+        assert parsed.sections[0].body == "### Removed\n\n- `a`: gone."
+
+    def test_note_joins_existing_date_and_type(self) -> None:
+        text = repo.add_dated_note(self.VALID, "2026-10-02", "Added", "`c`: C.")
+        section = repo.parse_dated_changelog(text).sections[0]
+        assert section.body == "### Added\n\n- `b`: B.\n- `c`: C."
+
+    def test_note_adds_type_to_existing_date(self) -> None:
+        text = repo.add_dated_note(self.VALID, "2026-10-02", "Deprecated", "`b`: use c.")
+        parsed = repo.parse_dated_changelog(text)
+        assert parsed.problems == []
+        assert parsed.sections[0].body.endswith("### Deprecated\n\n- `b`: use c.")
+
+
+class ReleaseDisciplineTest(unittest.TestCase):
+    """check_pr: every change inside a plugin ships with its release."""
+
+    RELEASED: str = (
+        "# Changelog\n\n## [Unreleased]\n\n## [1.1.0] - 2026-10-03\n\n### Added\n\n- New.\n\n"
+        "## [1.0.0] - 2026-10-01\n\n### Added\n\n- First.\n"
+    )
+
+    def problems(self, versions: tuple[str, str], text: str = "") -> list[str]:
+        log = repo.parse_changelog(text or self.RELEASED)
+        return check_pr.release_problems(PLUGIN, versions, log)
+
+    def test_matching_release_passes(self) -> None:
+        assert self.problems(("1.0.0", "1.1.0")) == []
+
+    def test_change_without_bump_fails(self) -> None:
+        problems = self.problems(("1.0.0", "1.0.0"))
+        assert len(problems) == 1
+        assert "needs a new version" in problems[0]
+
+    def test_label_is_highest_bump_of_several_plugins(self) -> None:
+        assert check_pr.label_problems(["patch", "minor"], ["semver:minor"]) == []
+        problems = check_pr.label_problems(["patch", "minor"], ["semver:patch"])
+        assert len(problems) == 1
+        assert "apply exactly semver:minor" in problems[0]
+
+    def test_label_without_release_fails(self) -> None:
+        assert check_pr.label_problems([], []) == []
+        assert check_pr.label_problems([], ["semver:patch"])
+
+    def test_skipped_version_fails(self) -> None:
+        problems = self.problems(("1.0.0", "1.2.0"))
+        assert len(problems) == 1
+        assert "not a single SemVer bump" in problems[0]
+
+    def test_major_needs_migration(self) -> None:
+        text = self.RELEASED.replace("[1.1.0]", "[2.0.0]")
+        problems = self.problems(("1.0.0", "2.0.0"), text)
+        assert len(problems) == 1
+        assert "### Migration" in problems[0]
+
+    def test_catalog_change_needs_changelog_note(self) -> None:
+        assert check_pr.catalog_problems([check_pr.CATALOG_FILE])
+        assert check_pr.catalog_problems([check_pr.CATALOG_FILE, "CHANGELOG.md"]) == []
 
 
 class TagFormatTest(unittest.TestCase):

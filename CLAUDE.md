@@ -17,27 +17,41 @@ The foundation is built locally. The only plugin is the example `hello-example`.
 
 ## Commands
 
-Every operation is a standard-library Python script run with `python3 scripts/<script>.py`. In the order of the work:
+Run commands in this order. Every script is standard-library Python.
 
-| Step                                          | Command                                                                                                                  |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 1. List the gates                             | `python3 scripts/check.py --list`                                                                                        |
-| 2. Create a plugin                            | `python3 scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]`            |
-| 3. Refresh generated README content           | `python3 scripts/sync_readmes.py`                                                                                        |
-| 4. Validate with the official CLI             | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                                 |
-| 5. Run one gate                               | `python3 scripts/check.py <gate>`                                                                                        |
-| 6. Run every gate, exactly as CI does         | `python3 scripts/check.py`                                                                                               |
-| 7. Record a decision                          | Copy `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`, then `python3 scripts/validate_adrs.py` |
-| 8. Commit (signed, Conventional Commits)      | The project skill `verify` runs step 6 first                                                                             |
-| 9. Install every plugin in a throwaway config | `python3 scripts/check.py test-install` (after committing: it tests HEAD)                                                |
-| 10. Prepare a release                         | `python3 scripts/bump_version.py plugin <name> <level> [--dry-run]`, review, commit                                      |
-| 11. Tag and verify the signature              | `claude plugin tag plugins/<name>`, then `git tag -v <name>--v<version>`                                                 |
-| 12. Remove caches and orphaned test dirs      | `python3 scripts/check.py clean`                                                                                         |
+- `python3 scripts/check.py --list` - Run when you need the list of gates.
+- `python3 scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]` - Run when you create a plugin.
+- `python3 scripts/sync_readmes.py` - Run when generated README content needs a refresh.
+- `claude plugin validate . --strict` - Run when validating the repository with the official CLI.
+- `claude plugin validate plugins/<name> --strict` - Run when validating one plugin with the official CLI.
+- `python3 scripts/check.py <gate>` - Run when you need one gate.
+- `python3 scripts/check.py` - Run when you need every gate, exactly as CI does.
+- `python3 scripts/validate_adrs.py` - Run after copying `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`.
+- `verify` (project skill) - Run before every commit.
+- `python3 scripts/check.py test-install` - Run after committing, because it tests HEAD.
+- `python3 scripts/bump_version.py plugin <name> <level> [--dry-run]` - Run in the same PR when a plugin changes.
+- `claude plugin tag plugins/<name>` - Run on the merged commit.
+- `git tag -v <name>--v<version>` - Run right after tagging to verify the signature.
+- `python3 scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
+- `python3 scripts/check.py ci-tools` - Run on CI only.
+- `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` - Run once to install the optional commit message check.
 
-- Step 11 is followed by a push only when I approve that exact push (`docs/releasing.md`).
-- `python3 scripts/check.py ci-tools` installs the pinned tools; it runs only on CI.
-- `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` installs the optional commit message check.
-- A shebang and the executable bit always go together (ruff EXE001/EXE002): scripts with `#!/usr/bin/env python3` are mode 755, imported modules have no shebang and stay 644. Git versions the bit, and CI sees only what is in the index, so set it on disk and in git: `chmod +x <file>` and `git update-index --chmod=+x <file>`; check with `git ls-files -s` (`100755`). Details: `.claude/rules/repo-scripts.md`.
+### Commits and Tags
+
+- Sign every commit.
+- Use Conventional Commits.
+- Review the `bump_version.py` result before committing.
+- Push after tagging only when I approve that exact push.
+- Read `docs/releasing.md` before releasing.
+
+### Executable Scripts
+
+- `chmod +x <file>` - Run when a script has a shebang.
+- `git update-index --chmod=+x <file>` - Run together with `chmod`, so git records the bit.
+- `git ls-files -s` - Run to check the bit. Expect `100755`.
+- Give scripts with `#!/usr/bin/env python3` mode 755.
+- Give imported modules no shebang and mode 644.
+- Read `.claude/rules/repo-scripts.md` for details.
 
 ## Non-negotiable rules
 
@@ -60,41 +74,46 @@ Every operation is a standard-library Python script run with `python3 scripts/<s
 
 The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that are newer than your training or contradict it. Trust them over memory, and re-verify them when the installed version is newer.
 
-## Where knowledge lives
+## Where Knowledge Lives
 
-Always loaded: `.claude/rules/project-identity.md`, `.claude/rules/claude-code-version.md`, `.claude/rules/local-toolchain.md`.
+### Path-Scoped Rules
 
-Loaded when you read or edit matching paths:
+- A rule loads only when you read or edit its paths.
+- Read the rule before planning work in an area you have not touched.
 
-| Area                                         | Rule                                                                                                                   |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Catalog file                                 | `.claude/rules/marketplace-file.md`                                                                                    |
-| Plugin authoring and manifest                | `.claude/rules/plugins/authoring.md`, `.claude/rules/plugins/manifest.md`                                              |
-| Hooks, permissions, mods, security           | `.claude/rules/plugins/hooks-and-permissions.md`, `.claude/rules/plugins/mods.md`, `.claude/rules/plugins/security.md` |
-| READMEs and distribution                     | `.claude/rules/plugins/readmes.md`, `.claude/rules/distribution.md`                                                    |
-| Official CLI and schemas                     | `.claude/rules/claude-cli.md`, `.claude/rules/schemas.md`                                                              |
-| Repository scripts, gates, isolated installs | `.claude/rules/repo-scripts.md`, `.claude/rules/testing/gates.md`, `.claude/rules/testing/isolated-install.md`         |
-| CI, releases, tool pins                      | `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`                        |
-| ADRs and Claude Code features                | `.claude/rules/adrs.md`, `.claude/rules/claude-code-features.md`                                                       |
+#### Catalog and Plugins
 
-A rule loads only when you touch its paths. Before planning work in an area you have not touched yet, read its rule.
+- Catalog file: `.claude/rules/marketplace-file.md`
+- Plugin authoring and manifest: `.claude/rules/plugins/authoring.md`, `.claude/rules/plugins/manifest.md`
+- Hooks, permissions, mods, security: `.claude/rules/plugins/hooks-and-permissions.md`, `.claude/rules/plugins/mods.md`, `.claude/rules/plugins/security.md`
+- READMEs and distribution: `.claude/rules/plugins/readmes.md`, `.claude/rules/distribution.md`
 
-Guides to read before acting:
+#### Repository and Tooling
 
-| Before you                                                | Read                                                                 |
-| --------------------------------------------------------- | -------------------------------------------------------------------- |
-| Create or change a plugin                                 | `docs/authoring.md`, `docs/naming.md`                                |
-| Accept or review a plugin                                 | `docs/quality-bar.md`                                                |
-| Touch hooks, MCP or LSP servers, `bin/`, monitors or mods | `docs/security-review.md`                                            |
-| Edit a README or a README template                        | `docs/readme-guide.md`                                               |
-| Bump, write changelog notes, tag or release               | `docs/releasing.md`                                                  |
-| Change gates, tests or CI                                 | `docs/testing.md`                                                    |
-| Add a file, tool, template or dependency                  | `docs/sourcing-log.md`, `THIRD_PARTY_NOTICES.md`                     |
-| Change a rule or make a structural decision               | `docs/adr/README.md`, a new ADR from `templates/adr/`                |
-| Publish the repository                                    | `docs/publishing-checklist.md`, only after my approval               |
-| Answer contributors                                       | `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, `CODE_OF_CONDUCT.md` |
+- Official CLI and schemas: `.claude/rules/claude-cli.md`, `.claude/rules/schemas.md`
+- Repository scripts, gates, isolated installs: `.claude/rules/repo-scripts.md`, `.claude/rules/testing/gates.md`, `.claude/rules/testing/isolated-install.md`
+- CI, releases, tool pins: `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`
+- ADRs and Claude Code features: `.claude/rules/adrs.md`, `.claude/rules/claude-code-features.md`
 
-Decisions and their reasons are dated ADRs in `docs/adr/decisions/`. Read the ADR before changing anything it covers.
+### Guides to Read Before Acting
+
+- Create or change a plugin: read `docs/authoring.md` and `docs/naming.md`.
+- Accept or review a plugin: read `docs/quality-bar.md`.
+- Touch hooks, MCP or LSP servers, `bin/`, monitors, or mods: read `docs/security-review.md`.
+- Edit a README or README template: read `docs/readme-guide.md`.
+- Bump, write changelog notes, tag, or release: read `docs/releasing.md`.
+- Change gates, tests, or CI: read `docs/testing.md`.
+- Add a file, tool, template, or dependency: read `docs/sourcing-log.md` and `THIRD_PARTY_NOTICES.md`.
+- Change a rule or make a structural decision: read `docs/adr/README.md`.
+  - Create a new ADR from `templates/adr/`.
+- Publish the repository: read `docs/publishing-checklist.md`.
+  - Publish only after my approval.
+- Answer contributors: read `CONTRIBUTING.md`, `SECURITY.md`, `SUPPORT.md`, and `CODE_OF_CONDUCT.md`.
+
+### Decisions
+
+- Decisions live in dated ADRs in `docs/adr/decisions/`.
+- Read the ADR before changing anything it covers.
 
 ## Architecture
 
@@ -134,7 +153,7 @@ docs/                             guides and ADRs
 
 ## Current state
 
-- Foundation complete locally on 2026-10-03: 9 gates, 50 tests, signed commits, no remote.
+- Foundation complete locally: every gate in `python3 scripts/check.py --list` passes, signed commits, no remote.
 - Next: my approval to publish (`docs/publishing-checklist.md`), then the first real plugin, then removal of `hello-example` with a `renames` entry.
 - Awaiting my decision:
   - refining the user-level Python rule;

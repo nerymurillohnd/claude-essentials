@@ -57,10 +57,9 @@ claude plugin list --json
 
 ```bash
 python3 scripts/bump_version.py plugin hello-example patch --dry-run
-python3 scripts/bump_version.py marketplace patch --dry-run
 ```
 
-Confirm the previewed changelogs, then decide whether to tag `marketplace--v0.1.0` and `hello-example--v0.1.0` for the initial versions with `git tag -a` and `claude plugin tag plugins/hello-example`, and push the tags. The release workflow publishes the GitHub Releases.
+Confirm the previewed changelog, then decide whether to tag `hello-example--v0.1.0` for the initial version with `claude plugin tag plugins/hello-example` and push the tag. The release workflow publishes the GitHub Release. The catalog has no version and no tag.
 
 ## 8. After publishing
 

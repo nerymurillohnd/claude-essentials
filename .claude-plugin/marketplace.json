@@ -1,7 +1,6 @@
 {
   "name": "claude-essentials",
   "description": "Community plugins for Claude Code: workflows, agents, audits, code review, documentation, development practices, research and model behavior. Independent community project, not affiliated with or endorsed by Anthropic.",
-  "version": "0.1.0",
   "owner": {
     "name": "Nery Samuel Murillo",
     "email": "nerymurillohnd@gmail.com",

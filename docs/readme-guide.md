@@ -32,7 +32,7 @@ A section that does not apply is left out entirely, never written as "N/A". The 
 
 ## Conventions
 
-- **Badges:** generated static images from manifest data plus GitHub's workflow status badge. Root: marketplace version, plugin count, minimum Claude Code, license, CI, community status. Plugin: version, category, minimum Claude Code, license, CI, one badge per component type, and whether the plugin runs code.
+- **Badges:** generated static images from manifest data plus GitHub's workflow status badge. Root: plugin count, minimum Claude Code, license, CI, community status. Plugin: version, category, minimum Claude Code, license, CI, one badge per component type, and whether the plugin runs code.
 - **Hierarchy:** one `#` title, `##` sections in the order above, short paragraphs, tables for facts that compare (components, options, documents), prose for explanations.
 - **Code blocks:** always fenced with a language: `text` for slash commands typed in Claude Code, `bash` for shell commands, `json` for settings.
 - **Collapsible sections:** `<details>` only for advanced or rarely needed content, such as pinning or sparse clones.
