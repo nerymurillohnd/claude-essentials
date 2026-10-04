@@ -40,7 +40,12 @@ ZIZMOR_VERSION = "1.30.1"
 
 # Prefixes of every temporary directory the scripts and tests create, so
 # `clean` and the leftover check can find orphans (docs/testing.md#cleanup).
-TEMP_PREFIXES = ("claude-essentials-install-", "new-plugin-", "gate-fixture-")
+TEMP_PREFIXES = (
+    "claude-essentials-install-",
+    "claude-essentials-drive-",
+    "new-plugin-",
+    "gate-fixture-",
+)
 
 SCRIPTS = repo.ROOT / "scripts"
 

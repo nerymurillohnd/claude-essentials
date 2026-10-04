@@ -21,6 +21,7 @@ import bump_version
 import check_commit_msg
 import check_pr
 import check_repo
+import drive_plugin
 import repo
 import validate_adrs
 
@@ -513,6 +514,53 @@ class TagFormatTest(unittest.TestCase):
     def test_other_formats_rejected(self) -> None:
         for tag in ("v1.2.3", f"{PLUGIN}-v1.2.3", f"{PLUGIN}--v1.2"):
             assert repo.split_tag(tag) is None, tag
+
+
+class DrivePluginTest(unittest.TestCase):
+    """The plugin driver's stream parsing, without a model call."""
+
+    @staticmethod
+    def stream(*, plugins: list[str], mcp: int = 0, is_error: bool = False) -> str:
+        loaded = [
+            {"name": source.split("@")[0], "source": source}
+            for source in [*(f"{name}@inline" for name in plugins), "cc-plugin-telemetry@builtin"]
+        ]
+        init = {
+            "type": "system",
+            "subtype": "init",
+            "plugins": loaded,
+            "mcp_servers": [{"name": f"server-{i}"} for i in range(mcp)],
+        }
+        result = {"type": "result", "result": "Hello there", "is_error": is_error}
+        return "Warning: not JSON\n" + json.dumps(init) + "\n" + json.dumps(result) + "\n"
+
+    def test_clean_session_passes(self) -> None:
+        outcome = drive_plugin.read_stream(self.stream(plugins=[PLUGIN]), PLUGIN)
+        assert outcome.errors == []
+        assert outcome.reply == "Hello there"
+
+    def test_missing_plugin_fails(self) -> None:
+        outcome = drive_plugin.read_stream(self.stream(plugins=[]), PLUGIN)
+        assert outcome.errors == [f"{PLUGIN} did not load into the session"]
+
+    def test_foreign_plugin_fails(self) -> None:
+        outcome = drive_plugin.read_stream(self.stream(plugins=[PLUGIN, "other"]), PLUGIN)
+        assert outcome.errors == ["unexpected plugin loaded: other@inline"]
+
+    def test_leaked_mcp_server_fails(self) -> None:
+        outcome = drive_plugin.read_stream(self.stream(plugins=[PLUGIN], mcp=2), PLUGIN)
+        assert outcome.errors == ["MCP servers leaked into the session: 2"]
+
+    def test_error_result_fails(self) -> None:
+        outcome = drive_plugin.read_stream(self.stream(plugins=[PLUGIN], is_error=True), PLUGIN)
+        assert outcome.errors == ["the session ended with an error: Hello there"]
+
+    def test_no_result_fails(self) -> None:
+        outcome = drive_plugin.read_stream("", PLUGIN)
+        assert outcome.errors == ["the session produced no result event"]
+
+    def test_default_prompt_is_first_skill(self) -> None:
+        assert drive_plugin.default_prompt(ROOT / "plugins" / PLUGIN) == f"/{PLUGIN}:hello"
 
 
 if __name__ == "__main__":

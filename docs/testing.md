@@ -35,11 +35,17 @@ Every gate runs locally with `python3 scripts/check.py` and in CI with the same 
 
 Outside CI, the script fingerprints `settings.json`, the plugin records, the plugin cache and the skills directory of the real configuration before and after, and fails if any changed.
 
+## Drive a plugin
+
+`python3 scripts/drive_plugin.py <plugin> [--prompt TEXT] [--source checkout|head] [--expect REGEX]` uses a plugin the way a user does: it sends a prompt (by default the plugin's first skill as a slash command) to a headless `claude -p` session with only that plugin loaded, and fails unless the plugin loaded alone, the session ended without error, every `--expect` regex matches the reply and the real configuration is unchanged. `--source head` drives the copy a user receives, installed from a bare clone of HEAD in a throwaway configuration. The project skill `run-marketplace` documents it.
+
+The session runs with the maintainer's own login, because an isolated `CLAUDE_CONFIG_DIR` has no credentials, under `--restricted` (no user or project settings), `--strict-mcp-config` (no claude.ai connectors) and `--no-session-persistence` (no transcript). Each run is a real model call (about \$0.01 with the default `haiku`), so it is not a CI gate; run it before a pull request that changes a plugin's behavior.
+
 ## Cleanup
 
 Tests leave nothing behind: no directories, configurations, clones, caches or processes.
 
-- Everything a script or test creates lives in a temporary directory with a known prefix (`claude-essentials-install-`, `new-plugin-`, `gate-fixture-`) and is removed when the script or test ends, including on failure.
+- Everything a script or test creates lives in a temporary directory with a known prefix (`claude-essentials-install-`, `claude-essentials-drive-`, `new-plugin-`, `gate-fixture-`) and is removed when the script or test ends, including on failure.
 - The cleanup is verified, not assumed: `tests/test_gates.py` asserts each fixture directory is gone after the test; `scripts/new_plugin.py` stops if its scaffold directory survives; `scripts/test_install.py` fails if its directory survives, if a directory with its prefix remains, or if any new entry containing `claude` appears in the system temporary directory during the run.
 - `python3 scripts/check.py clean` removes Python and ruff caches in the repository and any orphaned directory with the prefixes above, then confirms none remain.
 - Tool caches (uv, prettier, ruff) are not test leftovers. Never delete them by hand; use the tool's own command (for uv, `uv cache prune` or `uv cache clean`).
