@@ -359,6 +359,11 @@ class NameRulesTest(unittest.TestCase):
     def test_brand_word(self) -> None:
         assert repo.plugin_name_problems("tools-for-claude")
 
+    def test_repository_area(self) -> None:
+        problems = repo.plugin_name_problems("docs")
+        assert problems == ['"docs" is a repository area (commit scope and branch prefix)']
+        assert repo.plugin_name_problems("docs-writer") == []
+
     def test_not_kebab_case(self) -> None:
         assert repo.plugin_name_problems("MyPlugin")
 

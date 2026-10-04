@@ -70,9 +70,11 @@ Both changelogs use the change types of [Keep a Changelog 1.1.0](https://keepach
 
 ## Release a plugin
 
+Users receive a plugin from `main`: Claude Code clones the marketplace's default branch and caches each plugin by its `version`, so the merge of a pull request with a bump is the release, and users get it on their next `claude plugin update` or auto-update ([host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace#release-a-new-version)). The tag and the GitHub Release come after it as the signed record and for dependency version ranges ([dependencies](https://code.claude.com/docs/en/plugins/dependencies#create-a-release-tag)); Claude Code never reads them to install. Keep `main` releasable at all times.
+
 The release is prepared in the pull request that changes the plugin, and tagged after the merge. The project skill `/release-plugin <plugin> <level> <topic>` runs the steps below in order and stops at an approval prompt before every push and pull request; reviews and the merge go through `/github-ops:automatic-pr-lifecycle`, and `/release-plugin <plugin> tag` finishes after the merge ([ADR release-orchestration](adr/decisions/ADR_2026-10-04_release-orchestration.md)). The steps also work by hand.
 
-0. **Branch.** Work on a short-lived `<plugin>/<topic>` branch from an up-to-date `main` (`git switch -c <plugin>/<topic>`); GitHub deletes it on merge, and `git fetch --prune` removes the local remote-tracking reference.
+0. **Branch.** Work on a short-lived `<plugin>/<topic>` branch from an up-to-date `main` (`git switch -c <plugin>/<topic>`); GitHub deletes it on merge, and `git fetch --prune` removes the local remote-tracking reference. Non-plugin pull requests use the commit scope as prefix: `marketplace/`, `scripts/`, `ci/` or `docs/` ([ADR branch-naming](adr/decisions/ADR_2026-10-04_branch-naming.md)).
 
 Requirements: signing configured for commits and tags, Claude Code 2.1.289 or later.
 

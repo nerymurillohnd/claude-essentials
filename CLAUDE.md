@@ -47,7 +47,7 @@ Run commands in this order. Every script is standard-library Python.
 - Review the `bump_version.py` result before committing.
 - Push after tagging only when I approve that exact push.
 - Read `docs/releasing.md` before releasing.
-- Work on short-lived `<plugin>/<topic>` branches, deleted on merge.
+- Work on short-lived branches named by commit scope, deleted on merge: `<plugin>/<topic>`, or `marketplace/`, `scripts/`, `ci/`, `docs/` plus `<topic>`.
 - Release with `/release-plugin`; it stops at the open pull request, and `/github-ops:automatic-pr-lifecycle` handles reviews and the merge.
 
 ### Executable Scripts
@@ -172,6 +172,8 @@ docs/                             guides and ADRs
 - Claude Code automation added on 2026-10-04: see `docs/automation.md`.
 - Its commits were pushed with the merge of PR #4 (`7314c58`, squash), which the maintainer approved on 2026-10-04; the commits from `8109002` to `7314c58` came after the handoff `2026-10-04-0852`.
 - The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `python3 scripts/check.py` passed all 10 gates locally on 2026-10-04.
+- `51e96f6` (2026-10-04) gave the bug report dropdowns a neutral first option; CI passed on `main`, and the forms still need the browser check.
+- Branch naming settled on 2026-10-04 in ADR branch-naming: the prefix is the commit scope, and `marketplace`, `scripts`, `ci` and `docs` are reserved plugin names.
 - Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
 - Awaiting my decision:
   - refining the user-level Python rule;

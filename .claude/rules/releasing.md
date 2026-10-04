@@ -31,7 +31,8 @@ paths:
 - Release with the `release-plugin` skill (ADR release-orchestration, 2026-10-04).
 - The skill stops at the open pull request; `/github-ops:automatic-pr-lifecycle` handles reviews and the merge.
 - Every push, pull request and tag push stops at an approval prompt.
-- Plugin work happens on short-lived `<plugin>/<topic>` branches, deleted on merge (approved 2026-10-04).
+- Branches are short-lived and deleted on merge: `<plugin>/<topic>` for plugin work, `marketplace/`, `scripts/`, `ci/` or `docs/` plus `<topic>` otherwise (ADR branch-naming, 2026-10-04).
+- The merge to `main` with a bump is the release users receive; the tag and GitHub Release are the signed record and serve dependency ranges, and Claude Code never reads them to install (docs: host-marketplace, dependencies; checked 2026-10-04 on 2.1.289).
 - Every workflow, script and doc that consumes tags matches exactly `<name>--v<semver>`, never `v*` or `<name>-v*`.
 - A full release in a throwaway clone verified the tag signature: `git tag -v` reports a good ED25519 signature.
 - Release dates are UTC.

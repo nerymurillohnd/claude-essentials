@@ -9,6 +9,7 @@ paths:
 # Plugin manifest
 
 - Forbidden prefixes: `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-`; also the exact names `claude`, `anthropic`, `anthropics`, `claude-code`, `claude-mods`, `anthropic-skills` and `claude-ai`; `scripts/repo.py` holds the enforced lists.
+- Our own reservation: the repository areas `marketplace`, `scripts`, `ci` and `docs` are never plugin names, because they are commit scopes and branch prefixes (ADR branch-naming, 2026-10-04).
 - Having `claude` or `anthropic` as a standalone word in the name gives a warning, which is a failure under `--strict`.
 - The `version` in `plugin.json` wins over the one in the catalog entry.
 - If the entry has the same version it passes; if it has a different one, `validate` warns and `claude plugin tag` refuses to tag.

@@ -78,3 +78,5 @@ Chosen option: **permission rules plus stdlib hooks, project skills, one review 
 ## More information
 
 Research: the official docs and changelog for Claude Code 2.1.285 to 2.1.289, read on 2026-10-04 (skills, sub-agents, hooks, permissions, settings, workflows, plugin CLI, plugin evals, code review, scheduled tasks, routines). The Claude Code version watcher stays a SessionStart notice plus `/cc-currency`; scheduled routines were not adopted because they run without permission prompts and can push `claude/` branches.
+
+The branch convention bullet is replaced by [ADR branch-naming](ADR_2026-10-04_branch-naming.md) (2026-10-04): the approval recorded here had no traceable source, and the convention now covers non-plugin branches too.

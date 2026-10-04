@@ -31,4 +31,4 @@ The directory name, the marketplace entry `name` and the manifest `name` are ide
 
 ## Commits and branches
 
-Commits and pull request titles follow Conventional Commits with the plugin name as scope: `feat(release-notes-writer): add changelog skill`. Branch names are free-form; `<type>/<plugin>-<topic>` is a good default.
+Commits and pull request titles follow Conventional Commits with the plugin name as scope: `feat(release-notes-writer): add changelog skill`. Branch names use the same scope as prefix: `<plugin>/<topic>` for plugin work, `marketplace/`, `scripts/`, `ci/` or `docs/` plus `<topic>` otherwise, short-lived and deleted on merge ([ADR branch-naming](adr/decisions/ADR_2026-10-04_branch-naming.md)). Those four areas are reserved and never plugin names.

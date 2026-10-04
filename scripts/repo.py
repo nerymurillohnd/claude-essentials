@@ -94,6 +94,9 @@ _RESERVED_EXACT = frozenset(
         "claude-ai",
     }
 )
+# Repository areas: commit scopes and branch prefixes for non-plugin work
+# (docs/releasing.md), so a plugin of the same name would be ambiguous.
+_REPOSITORY_AREAS = frozenset({"marketplace", "scripts", "ci", "docs"})
 _BRAND_WORDS = frozenset({"claude", "anthropic", "anthropics"})
 _KEBAB_HINT = "lowercase letters, digits, single hyphens, starting with a letter"
 _BRAND_HINT = "which reads as an Anthropic plugin"
@@ -148,6 +151,8 @@ def plugin_name_problems(name: str) -> list[str]:
     lowered = name.lower()
     if lowered in _RESERVED_EXACT:
         problems.append(f'"{name}" is a reserved name')
+    if lowered in _REPOSITORY_AREAS:
+        problems.append(f'"{name}" is a repository area (commit scope and branch prefix)')
     if lowered.startswith(_RESERVED_PREFIXES):
         problems.append(f'"{name}" starts with a prefix reserved for Anthropic plugins')
     words = set(re.split(r"[-_.]+", lowered))
