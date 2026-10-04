@@ -38,6 +38,7 @@ Tests leave nothing behind: no directories, configurations, clones, caches or pr
 - Everything a script or test creates lives in a temporary directory with a known prefix (`claude-essentials-install-`, `new-plugin-`, `gate-fixture-`) and is removed when the script or test ends, including on failure.
 - The cleanup is verified, not assumed: `tests/test_gates.py` asserts each fixture directory is gone after the test; `scripts/new_plugin.py` stops if its scaffold directory survives; `scripts/test_install.py` fails if its directory survives, if a directory with its prefix remains, or if any new entry containing `claude` appears in the system temporary directory during the run.
 - `uv run scripts/check.py clean` removes Python and ruff caches in the repository and any orphaned directory with the prefixes above, then confirms none remain.
+- Tool caches are not test leftovers: `uv run` keeps one environment per script in its cache by design. Never delete uv cache entries by hand (the uv docs call that unsafe); use `uv cache prune` or `uv cache clean`.
 - Never point a test at a real configuration or a permanent location. New scripts and tests follow the same rules and use the same prefixes, registered in `TEMP_PREFIXES` in `scripts/check.py`.
 
 ## Behavioral evaluation

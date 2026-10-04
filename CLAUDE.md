@@ -43,6 +43,7 @@ Project memory for Claude Code sessions in this repository. Read it first. The *
 .claude-plugin/marketplace.json   catalog: name, owner, version, entries (source ./plugins/<name>)
 plugins/<name>/                   one self-contained plugin per directory
 scripts/                          stdlib Python run with `uv run` (no dependency manifest)
+  check.py                        single entry point: every gate, test-install, clean, ci-tools
   repo.py                         shared constants, naming, SemVer, changelog parsing
   check_repo.py                   repository gates
   sync_readmes.py                 generated README content (--check in scripts/check.py)
@@ -63,20 +64,24 @@ docs/                             guides and ADRs
 
 ## Commands
 
-| Task                                       | Command                                                                                                             |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| Every gate (same as CI)                    | `uv run scripts/check.py`                                                                                           |
-| Install every plugin in a throwaway config | `uv run scripts/check.py test-install` (commit first: the cache-copy scenario tests HEAD)                           |
-| New plugin                                 | `uv run scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]`        |
-| Refresh generated README content           | `uv run scripts/sync_readmes.py`                                                                                    |
-| Prepare a version bump                     | `uv run scripts/bump_version.py plugin <name> <level> [--dry-run]`, then commit and tag by hand (docs/releasing.md) |
-| Official validation                        | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                            |
+| Task                                                   | Command                                                                                                                 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Every gate (same as CI)                                | `uv run scripts/check.py`                                                                                               |
+| Install every plugin in a throwaway config             | `uv run scripts/check.py test-install` (commit first: the cache-copy scenario tests HEAD)                               |
+| New plugin                                             | `uv run scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]`            |
+| Refresh generated README content                       | `uv run scripts/sync_readmes.py`                                                                                        |
+| Prepare a version bump                                 | `uv run scripts/bump_version.py plugin <name> <level> [--dry-run]`, then commit and tag by hand (docs/releasing.md)     |
+| Official validation                                    | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                                |
+| One gate, or list the gates                            | `uv run scripts/check.py <gate>` / `uv run scripts/check.py --list`                                                     |
+| Record a decision                                      | Copy `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`, then `uv run scripts/validate_adrs.py` |
+| Remove repository caches and orphaned test directories | `uv run scripts/check.py clean`                                                                                         |
 
 ## Definition of done
 
 - `uv run scripts/check.py` passes with raw output shown; `uv run scripts/check.py test-install` passes for plugin changes, with the real configuration unchanged.
 - Negative cases fail for the intended reason (gate tests in `tests/`).
-- Changelog notes, labels, ADRs and the sourcing log are updated where the change requires them; generated READMEs are current.
+- Changelog notes, labels and the sourcing log are updated where the change requires them; generated READMEs are current.
+- A changed decision gets a **new** dated ADR that links the old one, and the old one is marked `superseded`; accepted ADRs are never rewritten (docs/adr/README.md).
 - Commits are signed and follow Conventional Commits; nothing is pushed or published without explicit approval.
 - Remaining limitations, skipped checks and risks are reported explicitly, and **Current state** below is updated.
 
@@ -161,12 +166,21 @@ Verified against Claude Code **2.1.289** docs and changelog window 2.1.284–2.1
 
 git-cliff 2.14.2 (Apache-2.0), commitlint 21.2.3 (MIT), markdownlint-cli2 0.23.3 / action v24.2.0 (MIT), prettier 3.9.9 (MIT), actionlint 1.7.12 (MIT), zizmor 1.30.1 (MIT), lychee-action v2.9.0 (Apache-2.0), actions/labeler v7.0.0, actions/checkout v7.0.1, actions/setup-node v7.0.0, astral-sh/setup-uv v10.2.0, MADR 4.0.0, Contributor Covenant 3.0, Keep a Changelog 1.1.0, Conventional Commits 1.0.0, SemVer 2.0.0. release-please v17.11.2 supports `tag-separator` (could produce `<name>--v<version>`) but was rejected because its commits and tags are not signed with the maintainer's key.
 
+### Local toolchain facts (runtime-verified 2026-10-03, uv 0.12.22)
+
+- Processes started through zsh load `~/.zshenv`, interactive or not (the Bash tool is a non-interactive login zsh), so `python3` is `~/.local/bin/python3`, the uv-managed CPython 3.14.7, and `bash` is Homebrew bash 5.3. Without zsh (`env -i`, launchd, cron, apps started from the Dock, CI, third-party machines) `python3` is Xcode's 3.9.6 and `bash` is `/bin/bash` 3.2.57.
+- The repository scripts use Python 3.12 syntax; under Xcode's 3.9.6 they fail with `SyntaxError`. That is why everything is run with `uv run` and PEP 723 `requires-python`. `#!/usr/bin/env python3 -` does not run the script at all: `-` makes Python read the program from stdin.
+- `pip3` resolves only to Xcode's `/usr/bin/pip3`; never use pip.
+- `uv run` of a PEP 723 script keeps an environment in `~/.cache/uv/environments-v2/` by design. That cache belongs to uv: the uv docs say it is never safe to modify the cache directly; clean it only with `uv cache prune` or `uv cache clean`. Cached uv environments are not orphaned test files.
+- Plugin shell scripts may run under macOS `/bin/bash` 3.2 on users' machines.
+
 ## Claims to re-verify before relying on them
 
 - A candidate `.lsp.json` schema (verified on 2.1.281 by its author) states that one invalid LSP server drops every server in the same file, contradicting the docs, and that a `$schema` key in `.lsp.json` invalidates the file. Not verified here; test in an isolated config before relying on either.
 
 ## Current state / next steps
 
-- Foundation complete locally (2026-10-03): catalog, example plugin `hello-example`, gates, tests, scaffold, release tooling, CI, labels, templates, community files, docs and ADRs. Local repository with signed commits; **no remote**.
+- Foundation complete locally (2026-10-03): catalog, example plugin `hello-example`, gates (`uv run scripts/check.py`, 9 gates, 50 tests), scaffold, `bump_version.py` and `release_notes.py`, CI, labels, templates, community files, docs and dated ADRs in `docs/adr/decisions/`. Local repository with signed commits; **no remote**.
 - Next: maintainer approval to publish (docs/publishing-checklist.md), then the first real plugin, then removal of `hello-example`.
-- Deferred decisions: scheduled Claude Code release watcher, Dependabot for action pins, link checking, git-cliff or release-please.
+- Awaiting the maintainer: refining the user-level Python rule (python3 allowed only in processes started through zsh), a `uv cache prune` to repair cache entries removed by hand on 2026-10-03, a bash 3.2 compatibility rule for plugin shell scripts, removal of old session scratch files, and the LICENSE copyright holder.
+- Deferred decisions: scheduled Claude Code release watcher, Dependabot for action pins, link checking, git-cliff or release-please, a single release command (only after real releases).
