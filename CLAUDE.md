@@ -63,6 +63,7 @@ Run commands in this order. Every script is standard-library Python.
 - **Leave nothing behind.** Every test, scaffold or experiment removes what it creates and verifies the removal. Use the prefixes in `TEMP_PREFIXES` (`scripts/check.py`) and `docs/testing.md#cleanup`.
 - **No unagreed tooling.** Never introduce a tool or convention I did not agree to; ask first.
 - **Gates.** Never skip, suppress or weaken a gate; fix the root cause.
+- **Who changes this repository.** Only the maintainer and Claude develop and maintain it. No third party opens a pull request or modifies anything here; the repository allows pull requests from collaborators only. Third parties write issues, and we attend, resolve and update them. No pull request goes to a second collaborator: every pull request is ours, so it is reviewed and merged directly by us.
 - **Signatures and approval.** Sign every commit and tag. No remote, push, pull request, merge or publication without my explicit approval for that exact action.
 
 ## Before schema, component, release or distribution work
