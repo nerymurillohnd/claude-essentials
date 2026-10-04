@@ -139,10 +139,18 @@ def suite_problems(sources: dict[str, str]) -> list[str]:
 
 
 def defined_names(source: str) -> list[str]:
-    """Module-level functions, classes and constants, without dunder names."""
+    """Module-level functions, classes and constants, without dunder names.
+
+    A TestCase class is found by unittest through inheritance, never by name, so it is left out.
+    """
     names: list[str] = []
-    for node in ast.parse(source).body:
-        if isinstance(node, ast.FunctionDef | ast.ClassDef):
+    body = ast.parse(source).body
+    classes = {node.name: node for node in body if isinstance(node, ast.ClassDef)}
+    for node in body:
+        if isinstance(node, ast.ClassDef):
+            if not _is_test_case(node, classes, set()):
+                names.append(node.name)
+        elif isinstance(node, ast.FunctionDef):
             names.append(node.name)
         elif isinstance(node, ast.Assign):
             names.extend(t.id for t in node.targets if isinstance(t, ast.Name))
@@ -260,15 +268,20 @@ class SuiteIntegrityTest(unittest.TestCase):
 
 
 class ScriptIntegrityTest(unittest.TestCase):
-    """The scripts hold no orphan definition, and every extensionless script is gated."""
+    """Every Python file holds no orphan definition, and every extensionless script is gated."""
 
-    def test_no_script_definition_is_orphaned(self) -> None:
+    def test_no_python_definition_is_orphaned(self) -> None:
+        paths = [
+            *sorted(SCRIPTS.glob("*.py")),
+            *sorted(TESTS.glob("*.py")),
+            *(repo.ROOT / name for name in check.EXTENSIONLESS_SCRIPTS),
+        ]
         modules = {
-            f"scripts/{path.name}": path.read_text(encoding="utf-8")
-            for path in sorted(SCRIPTS.glob("*.py"))
+            str(path.relative_to(repo.ROOT)): path.read_text(encoding="utf-8") for path in paths
         }
-        assert modules, "no scripts found"
-        assert orphans(modules, read_text_files(tracked_files())) == []
+        assert modules, "no Python files found"
+        found = orphans(modules, read_text_files(tracked_files()))
+        assert found == [], found
 
     def test_orphan_is_found_and_a_use_clears_it(self) -> None:
         source = "def lonely() -> int:\n    return 1\n"
@@ -279,6 +292,13 @@ class ScriptIntegrityTest(unittest.TestCase):
         source = "LIMIT = 3\nSIZE: int = 4\n\n\nclass Thing:\n    pass\n"
         assert defined_names(source) == ["LIMIT", "SIZE", "Thing"]
         assert len(orphans({"m.py": source}, source)) == 3
+
+    def test_test_cases_are_not_orphans_but_plain_classes_are(self) -> None:
+        source = (
+            "import unittest\n\n\nclass FooTest(unittest.TestCase):\n    pass\n\n\n"
+            "class Plain:\n    pass\n"
+        )
+        assert defined_names(source) == ["Plain"]
 
     def test_extensionless_python_scripts_are_all_gated(self) -> None:
         found: list[str] = []
