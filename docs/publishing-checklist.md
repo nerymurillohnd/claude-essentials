@@ -16,7 +16,7 @@ git push -u origin main
 
 - [ ] Topics: `claude-code`, `plugin-marketplace`, `skills`, `mcp`, `agents`. Never use an official marketplace name, such as a reserved name from the marketplace reference, as a topic.
 - [ ] Features: Issues on; Wiki off; Discussions optional.
-- [ ] Pull requests: squash merging only, default commit message "Pull request title", delete head branches automatically.
+- [x] Pull requests: squash merging only (title and body of the pull request), delete head branches automatically (applied 2026-10-04).
 - [ ] Security: enable private vulnerability reporting, secret scanning and push protection.
 - [ ] Moderation: enable content reporting to repository maintainers (the Code of Conduct relies on it).
 - [ ] Actions: allow GitHub-owned actions plus `astral-sh/setup-uv`, `crazy-max/ghaction-github-labeler`; require SHA pinning if the setting is available; default `GITHUB_TOKEN` permissions read-only.
@@ -27,8 +27,8 @@ Ruleset for `main`:
 
 - [ ] Require a pull request with one approval and code owner review.
 - [ ] Require status checks: `Gates and isolated install test` and `Commit convention and release discipline`.
-- [x] Ruleset `main: signed commits` (applied 2026-10-04).
-- [ ] Require linear history; block force pushes and deletion.
+- [x] Ruleset `main: signed commits`: signed commits and linear history (applied 2026-10-04).
+- [ ] Block force pushes and deletion.
 - [x] Tag ruleset `release tags` for `refs/tags/*--v*`: only admins create, update or delete them, and the tagged commit must be signed (applied 2026-10-04). Rulesets cannot require a signed tag object; `git tag -v` verifies it.
 
 ## 4. Labels
