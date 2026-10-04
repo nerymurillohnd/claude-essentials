@@ -22,4 +22,3 @@ paths:
 - The tests mutate the fixture plugin `tests/fixtures/plugins/sample-plugin/`, which `RepositoryFixture.install_fixture_plugin` adds to each temporary copy with its catalog entry, label and labeler rules; they never depend on a catalog plugin, so adding or removing one cannot break them.
 - The fixture is never listed in the real catalog. Keep it a valid plugin: the `repo` gate must pass on it and Prettier checks its files.
 - `.pre-commit-config.yaml` runs ruff (`ruff-check --fix`, `ruff-format`) and basedpyright (`--warnings`) through prek on every commit. Hook `rev`s equal `RUFF_VERSION` and `BASEDPYRIGHT_VERSION` in `scripts/check.py` (ruff with a `v` prefix, basedpyright without); change them together after reading the release notes of every version in between.
-- Markdownlint, link checking and Dependabot were deferred.

@@ -52,16 +52,11 @@ Run commands in this order. Every script is standard-library Python.
 
 ### Executable Scripts
 
-- `chmod +x <file>` - Run when a script has a shebang.
-- `git update-index --chmod=+x <file>` - Run together with `chmod`, so git records the bit.
-- `git ls-files -s` - Run to check the bit. Expect `100755`.
-- Give scripts with `#!/usr/bin/env python3` mode 755.
-- Give imported modules no shebang and mode 644.
-- Read `.claude/rules/repo-scripts.md` for details.
+- A script with a shebang is mode 755 on disk and in git; an imported module has no shebang and mode 644. See `.claude/rules/repo-scripts.md`.
 
 ## Non-negotiable rules
 
-- **Plugins are for distribution.** Describe every capability from the point of view of the user who installs it. Never install, enable, symlink or pre-configure these plugins in my real Claude Code configuration. Never derive a plugin's requirements from my machine.
+- **Plugins are for distribution.** Describe every capability from the point of view of the user who installs it. Never install, enable, symlink or pre-configure these plugins in my real Claude Code configuration. Never derive a plugin's requirements or compatibility from my machine, its PATH or its binaries.
 - **Clean room.** Take Claude Code specifics only from the official docs (`https://code.claude.com/docs/llms.txt`), the changelog and runtime checks. Never copy or imitate another Claude Code or AI-assistant marketplace or plugin collection. Consult one only when I ask, only what I name, and only to observe. My earlier marketplace projects are forbidden sources, listed in the untracked `CLAUDE.local.md`. Check pasted material for other platforms' content before using it.
 - **Automate and source first.** Use a native tool or generator, then an official template, then an open standard; hand-write only what is ours. Record each choice in `docs/sourcing-log.md`.
 - **Portability.** No absolute or home paths, user or machine names, personal data or secrets in plugins. Use `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}`; never `../`.
@@ -72,13 +67,8 @@ Run commands in this order. Every script is standard-library Python.
 
 ## Before schema, component, release or distribution work
 
-1. Fetch `https://code.claude.com/docs/llms.txt` and read the current pages for the area you touch.
-2. Compare `claude --version` and the latest published version with 2.1.289.
-3. Read every changelog entry newer than 2.1.289 in full (`https://code.claude.com/docs/en/changelog`).
-4. When behavior changed, update the matching rule in `.claude/rules/` and the pins, with the date and version.
-5. Flag every conflict between the docs, the changelog and these files; follow the live source.
-
-Run this routine with the `/cc-currency` skill.
+- Run `/cc-currency`: it compares `claude --version` and the latest published version with 2.1.289, reads every newer changelog entry in full and updates the matching rules and pins with the date and version.
+- Flag every conflict between the docs, the changelog and these files; follow the live source.
 
 The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that are newer than your training or contradict it. Trust them over memory, and re-verify them when the installed version is newer.
 

@@ -75,12 +75,7 @@ paths:
 
 ## Gates
 
-- `python3 scripts/check.py` runs the same gates locally and in CI (`.claude/rules/testing/gates.md`). Two gates support the automation.
-- `validate` also runs `claude plugin validate .claude --strict`, so a broken skill or agent frontmatter fails.
-- `docs` (`scripts/check_docs.py`) fails in these cases:
-  - a copy of a pinned version, the gate list, a script or `check.py` target name, a rule's `paths`, a relative link or a `docs/*.md` reference no longer matches the repository;
-  - a project skill's `name` differs from its directory.
-- When a sentence that carries a pin is reworded, update `PIN_SITES` in `scripts/check_docs.py`.
+- `python3 scripts/check.py` runs the same gates locally and in CI; their behaviour is in `.claude/rules/testing/gates.md`. The `validate` and `docs` gates also cover this automation.
 
 ## Scripts
 
