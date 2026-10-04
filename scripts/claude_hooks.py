@@ -62,6 +62,7 @@ _TAG_PUSH_REASON = "Pushing a release tag publishes it: it needs the maintainer'
 _VERSION_REASON = "Change versions only with `python3 scripts/bump_version.py` (docs/releasing.md)."
 _GENERATED_REASON = "GENERATED blocks are written by `python3 scripts/sync_readmes.py`; run it."
 _SOURCE_REASON = "{source} is a forbidden source (CLAUDE.local.md); the repo is clean-room."
+_WRITTEN_FIELDS = frozenset({"content", "new_string", "old_string", "new_source"})
 _TRAVERSE_REASON = "A search under {root} would walk into {source} (CLAUDE.local.md); narrow it."
 # Shell commands that walk directory trees.
 _RECURSIVE_RE = re.compile(
@@ -280,7 +281,9 @@ def _search_roots(tool_input: dict[str, JSON]) -> list[Path]:
 def sources_decision(tool_input: dict[str, JSON], root: Path) -> dict[str, JSON] | None:
     """Deny any tool call that would read a forbidden source or walk into one (clean room)."""
     paths, slugs = forbidden_sources(root)
-    text = json.dumps(tool_input)
+    # Text a tool writes may mention a forbidden source; only what it reads counts.
+    read_fields = {k: v for k, v in tool_input.items() if k not in _WRITTEN_FIELDS}
+    text = json.dumps(read_fields)
     owner_repo = (
         f"{repo.as_str(tool_input.get('owner')) or ''}/{repo.as_str(tool_input.get('repo')) or ''}"
     )

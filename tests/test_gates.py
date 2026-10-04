@@ -759,6 +759,16 @@ class ClaudeHooksTest(unittest.TestCase):
             answer = claude_hooks.sources_decision(tool_input, self.root)
             assert self.verdict(answer) == expected, tool_input
 
+    def test_writing_about_a_forbidden_source_passes(self) -> None:
+        _ = self.write("CLAUDE.local.md", LOCAL_NOTES)
+        mention = "Never read ~/projects/marketplace/kept or owner/old-repo."
+        cases: list[dict[str, repo.JSON]] = [
+            {"file_path": str(self.root / "guide.md"), "content": mention},
+            {"file_path": str(self.root / "guide.md"), "old_string": "x", "new_string": mention},
+        ]
+        for tool_input in cases:
+            assert claude_hooks.sources_decision(tool_input, self.root) is None, tool_input
+
     def test_no_local_notes_means_no_denial(self) -> None:
         assert claude_hooks.sources_decision({"command": "ls"}, self.root) is None
 
