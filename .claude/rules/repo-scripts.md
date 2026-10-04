@@ -5,7 +5,6 @@ paths:
   - ".github/workflows/**"
   - "ruff.toml"
   - "pyrightconfig.json"
-  - "CONTRIBUTING.md"
 ---
 
 # Repository maintenance scripts

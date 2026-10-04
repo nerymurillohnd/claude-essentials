@@ -4,6 +4,7 @@ paths:
   - ".claude/skills/**"
   - ".claude/agents/**"
   - ".claude/workflows/**"
+  - ".claude/rules/automation.md"
   - "scripts/claude_hooks.py"
   - ".github/workflows/claude*.yml"
 ---
@@ -19,7 +20,7 @@ paths:
 - Project settings in `.claude/settings.json` apply to every session in a trusted folder.
 - `permissions.ask` runs before the tool. It asks before every `git push`, `git remote add` or `set-url`, pull request create, merge, edit, close, comment or review, release, repository or label change, workflow run, `claude plugin tag --push`, GitHub MCP write and Copilot review request, even in auto mode.
 - `permissions.deny` runs before the tool. It blocks commits with `--no-gpg-sign` or `--no-verify`, `git -c commit.gpgsign=false` or `tag.gpgsign=false`, and force pushes.
-- The `guard-bash` hook runs before every Bash call. It asks before pushes and GitHub writes the text rules miss (`git -C . push`, `bash -c '…'`, `xargs git push`). It denies signing and hook bypasses written as an exact option token or a `-c` config value, so a commit message that mentions a flag passes, also when it reaches `git` through a heredoc.
+- The `guard-bash` hook runs before every Bash call. It asks before pushes and GitHub writes the text rules miss (`git -C . push`, `bash -c '…'`, `xargs git push`). It denies signing and hook bypasses written as an exact option token or a `-c` config value, so a commit message that mentions a flag passes, also when `git commit` or `git tag` reads it from a heredoc with `-F -`; every other heredoc is parsed as written.
 - The `guard-edit` hook runs before Edit and Write. It denies hand edits of `version` in a plugin's `plugin.json` and of `BEGIN GENERATED` blocks.
 - The `guard-sources` hook runs before file, search, shell, web and GitHub tools. It denies reading or searching into the forbidden sources listed in the untracked `CLAUDE.local.md`.
 - The `format` hook runs after Edit and Write. It runs prettier on edited Markdown, JSON, YAML and workflow scripts and tells Claude to re-read the file.
@@ -90,7 +91,7 @@ paths:
 - Skills and workflows guide Claude; the gates, `scripts/check_pr.py` and the permission prompts enforce.
 - `scripts/drive_plugin.py` uses the maintainer's login, so the session sees the account email. For proof that holds for strangers, run `claude plugin eval plugins/<name> --no-publish`.
 - Hooks run `python3` on every tool call for anyone who trusts the folder (`CONTRIBUTING.md`).
-- A new `.claude/agents/` directory needs a new session; a new or edited `.claude/workflows/` file needs `/reload-skills` or a new session.
+- A new or edited `.claude/workflows/` file needs `/reload-skills` or a new session. The sub-agents docs say a newly created agents directory needs a new session (when `~/.claude/agents/` did not exist at session start); one created mid-session was also observed to load without a restart (`.claude/rules/claude-code-features.md`).
 
 ## Change the Automation
 

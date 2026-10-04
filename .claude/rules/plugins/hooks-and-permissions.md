@@ -6,6 +6,7 @@ paths:
   - "plugins/**/commands/**"
   - "plugins/**/.claude-plugin/plugin.json"
   - "scripts/repo.py"
+  - "scripts/new_plugin.py"
 ---
 
 # Hooks and permissions (recent changes)

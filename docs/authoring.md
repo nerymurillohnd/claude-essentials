@@ -95,4 +95,4 @@ python3 scripts/check.py                                        # every gate CI 
 python3 scripts/check.py test-install                                 # install in a throwaway config
 ```
 
-For plugins that shape Claude's behavior, `claude plugin eval` compares results with and without the plugin ([plugin evals](https://code.claude.com/docs/en/plugin-evals)); include results in your pull request when you have them.
+For plugins that shape Claude's behavior, `claude plugin eval` compares results with and without the plugin ([plugin evals](https://code.claude.com/docs/en/plugin-evals)); include results in the pull request when you have them.
