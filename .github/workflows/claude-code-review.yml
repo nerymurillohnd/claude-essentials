@@ -2,7 +2,7 @@ name: Claude Code Review
 
 # Reviews every push to a pull request: re-checks whether earlier findings were
 # fixed, then reviews the new state against this repository's rules and for
-# correctness, and posts inline comments plus one summary (docs/automation.md).
+# correctness, and posts inline comments plus one summary (.claude/rules/automation.md).
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
