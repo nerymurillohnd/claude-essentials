@@ -386,11 +386,29 @@ def check_plugin(root: Path, plugin: Path, entry: dict[str, JSON] | None, report
     check_readme(root, plugin, report, privileged=_is_privileged(plugin, manifest, mod=mod))
     version = repo.as_str(manifest.get("version")) or ""
     check_plugin_changelog(root, plugin, version, report)
+    check_plugin_license(root, plugin, report)
     if mod:
         check_mod(root, plugin, manifest, report)
     check_metadata(root, manifest_path, manifest, report)
     check_self_containment(root, plugin, manifest, report)
     check_portability(root, plugin, manifest, report)
+
+
+def check_plugin_license(root: Path, plugin: Path, report: Report) -> None:
+    """The plugin ships the MIT text of templates/license/LICENSE with a year and holder."""
+    path = plugin / "LICENSE"
+    where = _rel(root, path)
+    if not path.is_file():
+        report.fail(where, "missing plugin LICENSE (the plugin is copied without the repository)")
+        return
+    template = (root / "templates" / "license" / "LICENSE").read_text(encoding="utf-8")
+    pattern = (
+        re.escape(template)
+        .replace(re.escape("{{YEAR}}"), r"\d{4}")
+        .replace(re.escape("{{COPYRIGHT_HOLDER}}"), r"[^\s{][^\n{]*")
+    )
+    if not re.fullmatch(pattern, path.read_text(encoding="utf-8")):
+        report.fail(where, "must be templates/license/LICENSE with the year and holder filled in")
 
 
 def check_metadata(

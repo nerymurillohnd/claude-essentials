@@ -1,7 +1,7 @@
 {
   "name": "hello-example",
   "displayName": "Hello Example",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Example plugin that proves the Claude Essentials pipeline end to end; safe to remove.",
   "author": {
     "name": "Claude Essentials maintainers"

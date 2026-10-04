@@ -20,7 +20,8 @@ plugins/<name>/
 ├── .lsp.json                    LSP servers
 ├── bin/                         executables on the Bash tool's PATH
 ├── README.md                    generated blocks plus your explanations
-└── CHANGELOG.md                 Keep a Changelog, newest release first
+├── CHANGELOG.md                 Keep a Changelog, newest release first
+└── LICENSE                      MIT, holder = the plugin author (the copy users install carries it)
 ```
 
 Source: [Plugin manifest reference, standard layout](https://code.claude.com/docs/en/plugins/manifest-reference#standard-layout).

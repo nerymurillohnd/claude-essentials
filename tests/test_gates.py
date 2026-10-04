@@ -192,6 +192,16 @@ class CatalogGateTest(RepositoryFixture):
         _ = form.write_text(text, encoding="utf-8")
         self.assert_fails_with('label "type:defect" is not defined')
 
+    def test_missing_plugin_license_fails(self) -> None:
+        (self.plugin / "LICENSE").unlink()
+        self.assert_fails_with("missing plugin LICENSE")
+
+    def test_unfilled_plugin_license_fails(self) -> None:
+        template = (self.root / "templates" / "license" / "LICENSE").read_text(encoding="utf-8")
+        _ = (self.plugin / "LICENSE").write_text(template.replace("{{YEAR}}", "2026"), "utf-8")
+        errors = self.errors()
+        assert any("with the year and holder filled in" in e for e in errors), errors
+
     def test_hook_pin_drift_fails(self) -> None:
         config = self.root / ".pre-commit-config.yaml"
         text = config.read_text(encoding="utf-8").replace("rev: 1.40.1", "rev: 1.40.0")
@@ -217,8 +227,10 @@ class CatalogGateTest(RepositoryFixture):
         assert any("not a valid SemVer version" in e for e in errors), errors
 
     def test_changelog_version_mismatch_fails(self) -> None:
-        self.edit_json(self.plugin / ".claude-plugin" / "plugin.json", "version", "0.2.0")
-        self.assert_fails_with("latest release is 0.1.0")
+        manifest = self.plugin / ".claude-plugin" / "plugin.json"
+        released = repo.as_str((repo.as_dict(repo.load_json(manifest)) or {}).get("version"))
+        self.edit_json(manifest, "version", "99.0.0")
+        self.assert_fails_with(f'latest release is {released} but plugin.json says "99.0.0"')
 
     def test_missing_readme_section_fails(self) -> None:
         readme = self.plugin / "README.md"
