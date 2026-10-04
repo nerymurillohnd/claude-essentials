@@ -51,6 +51,10 @@ TEMP_PREFIXES = (
 
 SCRIPTS = repo.ROOT / "scripts"
 
+# Python scripts without a `.py` extension. ruff and basedpyright skip them when they scan a
+# directory, so the `python` gate passes each one by name; a test lists them from their shebang.
+EXTENSIONLESS_SCRIPTS = ("scripts/git-hooks/commit-msg",)
+
 
 def _script(name: str, *args: str) -> list[str]:
     return [sys.executable, str(SCRIPTS / name), *args]
@@ -130,9 +134,10 @@ GATES: dict[str, tuple[str, Callable[[], list[list[str]]]]] = {
     "python": (
         "ruff lint and format check, basedpyright with warnings as errors",
         lambda: [
-            ["ruff", "check", "."],
-            ["ruff", "format", "--check", "."],
+            ["ruff", "check", ".", *EXTENSIONLESS_SCRIPTS],
+            ["ruff", "format", "--check", ".", *EXTENSIONLESS_SCRIPTS],
             ["basedpyright", "--warnings"],
+            ["basedpyright", "--warnings", *EXTENSIONLESS_SCRIPTS],
         ],
     ),
     "workflows": (

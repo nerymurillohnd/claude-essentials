@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import shutil
+import sys
 import tempfile
 from typing import override
 import unittest
@@ -43,26 +44,29 @@ LOCAL_NOTES = """\
 IGNORED = shutil.ignore_patterns(".git", "__pycache__", ".venv", ".ruff_cache", ".DS_Store")
 
 
+def make_fixture_dir(case: unittest.TestCase) -> Path:
+    """A temporary directory for one test, removed when the test ends (docs/testing.md#cleanup)."""
+    tmp = tempfile.TemporaryDirectory(prefix="gate-fixture-")
+    location = Path(tmp.name)
+
+    def remove() -> None:
+        tmp.cleanup()
+        assert not location.exists(), f"fixture {location} was not removed"
+
+    case.addCleanup(remove)
+    return location
+
+
 class RepositoryFixture(unittest.TestCase):
     """A fresh copy of the repository for every test."""
 
     root: Path = ROOT
-    _tmp: tempfile.TemporaryDirectory[str] | None = None
 
     @override
     def setUp(self) -> None:
-        self._tmp = tempfile.TemporaryDirectory(prefix="gate-fixture-")
-        self.root = Path(self._tmp.name) / "repo"
+        self.root = make_fixture_dir(self) / "repo"
         _ = shutil.copytree(ROOT, self.root, ignore=IGNORED, symlinks=True)
         self.install_fixture_plugin()
-
-    @override
-    def tearDown(self) -> None:
-        if self._tmp is not None:
-            location = Path(self._tmp.name)
-            self._tmp.cleanup()
-            # Every fixture is removed; nothing may outlive a test (docs/testing.md#cleanup).
-            assert not location.exists(), f"fixture {location} was not removed"
 
     @property
     def plugin(self) -> Path:
@@ -393,10 +397,12 @@ class NameRulesTest(unittest.TestCase):
         assert repo.plugin_name_problems("release-notes-writer") == []
 
     def test_reserved_prefix(self) -> None:
-        assert repo.plugin_name_problems("claude-helper")
+        problems = repo.plugin_name_problems("claude-helper")
+        assert any("starts with a prefix reserved" in p for p in problems), problems
 
     def test_brand_word(self) -> None:
-        assert repo.plugin_name_problems("tools-for-claude")
+        problems = repo.plugin_name_problems("tools-for-claude")
+        assert any("as a word" in p for p in problems), problems
 
     def test_repository_area(self) -> None:
         problems = repo.plugin_name_problems("docs")
@@ -404,7 +410,8 @@ class NameRulesTest(unittest.TestCase):
         assert repo.plugin_name_problems("docs-writer") == []
 
     def test_not_kebab_case(self) -> None:
-        assert repo.plugin_name_problems("MyPlugin")
+        problems = repo.plugin_name_problems("MyPlugin")
+        assert any("is not kebab-case" in p for p in problems), problems
 
 
 class ChangelogTest(unittest.TestCase):
@@ -455,7 +462,10 @@ class CommitMessageTest(unittest.TestCase):
     def test_valid_with_scope(self) -> None:
         parsed, problems = check_commit_msg.parse("feat(hello-example): add greeting")
         assert problems == []
-        assert parsed is not None
+        expected = check_commit_msg.Parsed(
+            type="feat", scope="hello-example", breaking=False, subject="add greeting"
+        )
+        assert parsed == expected
 
     def test_breaking_footer(self) -> None:
         parsed, problems = check_commit_msg.parse(
@@ -463,11 +473,17 @@ class CommitMessageTest(unittest.TestCase):
         )
         assert problems == []
         assert parsed is not None
-        assert parsed.breaking
+        assert (parsed.type, parsed.scope, parsed.breaking) == ("fix", "x", True)
 
     def test_unknown_type_fails(self) -> None:
         _, problems = check_commit_msg.parse("feature: add thing")
-        assert problems
+        assert any("with type one of: feat, fix" in p for p in problems), problems
+
+    def test_header_over_the_limit_fails(self) -> None:
+        _, problems = check_commit_msg.parse("fix: " + "x" * 100)
+        assert any("the limit is 100" in p for p in problems), problems
+        _, problems = check_commit_msg.parse("fix: " + "x" * 95)
+        assert problems == []
 
     def test_missing_blank_line_fails(self) -> None:
         _, problems = check_commit_msg.parse("fix: thing\nbody right away")
@@ -539,7 +555,9 @@ class ReleaseDisciplineTest(unittest.TestCase):
 
     def test_label_without_release_fails(self) -> None:
         assert check_pr.label_problems([], []) == []
-        assert check_pr.label_problems([], ["semver:patch"])
+        problems = check_pr.label_problems([], ["semver:patch"])
+        assert len(problems) == 1
+        assert "apply only to plugin releases" in problems[0]
 
     def test_skipped_version_fails(self) -> None:
         problems = self.problems(("1.0.0", "1.2.0"))
@@ -553,7 +571,9 @@ class ReleaseDisciplineTest(unittest.TestCase):
         assert "### Migration" in problems[0]
 
     def test_catalog_change_needs_changelog_note(self) -> None:
-        assert check_pr.catalog_problems([check_pr.CATALOG_FILE])
+        problems = check_pr.catalog_problems([check_pr.CATALOG_FILE])
+        assert len(problems) == 1
+        assert "add a dated note to CHANGELOG.md" in problems[0]
         assert check_pr.catalog_problems([check_pr.CATALOG_FILE, "CHANGELOG.md"]) == []
 
 
@@ -652,19 +672,10 @@ class ClaudeHooksTest(unittest.TestCase):
     """The repository's Claude Code hooks decide for the reason they give, and only then."""
 
     root: Path = ROOT
-    _tmp: tempfile.TemporaryDirectory[str] | None = None
 
     @override
     def setUp(self) -> None:
-        self._tmp = tempfile.TemporaryDirectory(prefix="gate-fixture-")
-        self.root = Path(self._tmp.name)
-
-    @override
-    def tearDown(self) -> None:
-        if self._tmp is not None:
-            location = Path(self._tmp.name)
-            self._tmp.cleanup()
-            assert not location.exists(), f"fixture {location} was not removed"
+        self.root = make_fixture_dir(self)
 
     @staticmethod
     def verdict(answer: dict[str, repo.JSON] | None) -> str | None:
@@ -726,6 +737,9 @@ class ClaudeHooksTest(unittest.TestCase):
             "git commit -m x # <<EOF\ngit commit --no-verify -m y\nEOF",
             'git commit -m "<<EOF"\ngit commit --no-verify -m y\nEOF',
             "git -c alias.p='!sh' p <<'EOF'\ngit commit --no-verify -m y\nEOF",
+            "git commit -F - # <<EOF\ngit commit --no-verify -m y\nEOF",
+            # Conservative on purpose: any `-c` may define an alias, so the body stays visible.
+            "git -c user.name=x commit -F - <<'EOF'\ngit commit --no-verify -m y\nEOF",
         ):
             assert self.verdict(claude_hooks.bash_decision(command)) == "deny", command
 
@@ -800,10 +814,7 @@ class ClaudeHooksTest(unittest.TestCase):
         assert claude_hooks.edit_decision("Edit", outside, self.root) is None
 
     def test_forbidden_sources_are_denied_at_exact_boundaries(self) -> None:
-        _ = self.write(
-            "CLAUDE.local.md",
-            LOCAL_NOTES,
-        )
+        _ = self.write("CLAUDE.local.md", LOCAL_NOTES)
         forbidden_path = str(Path.home() / "projects" / "marketplace" / "kept" / "x.md")
         allowed_path = str(Path.home() / "work" / "kept" / "x.md")
         cases: list[tuple[dict[str, repo.JSON], str | None]] = [
@@ -841,7 +852,7 @@ class ClaudeHooksTest(unittest.TestCase):
         outside = Path(tempfile.gettempdir()) / "not-in-repo.md"
         assert claude_hooks.format_file(outside, self.root) is None
 
-    def test_session_status_names_the_branch(self) -> None:
+    def test_session_status_names_the_project_and_the_rule_loading(self) -> None:
         status = claude_hooks.session_status(ROOT)
         assert status.startswith("claude-essentials: "), status
         assert "path-scoped rules" in status
@@ -869,6 +880,35 @@ class AddComponentTest(unittest.TestCase):
         plugin = Path("plugins/p")
         assert add_component.target_path(plugin, "skill", "x") == plugin / "skills/x/SKILL.md"
         assert add_component.target_path(plugin, "agent", "x") == plugin / "agents/x.md"
+
+
+class ReleaseNotesTest(RepositoryFixture):
+    """release_notes.py verify, run as the release workflow runs it, on the fixture copy."""
+
+    def verify(self, tag: str) -> tuple[int, str]:
+        script = self.root / "scripts" / "release_notes.py"
+        result = repo.run([sys.executable, str(script), "verify", tag], check=False)
+        return result.returncode, result.stdout + result.stderr
+
+    def declared_version(self) -> str:
+        manifest = self.plugin / ".claude-plugin" / "plugin.json"
+        return repo.as_str((repo.as_dict(repo.load_json(manifest)) or {}).get("version")) or ""
+
+    def test_tag_matching_the_manifest_passes(self) -> None:
+        code, output = self.verify(repo.plugin_tag(PLUGIN, self.declared_version()))
+        assert code == 0, output
+        assert "matches" in output
+
+    def test_tag_disagreeing_with_the_manifest_fails(self) -> None:
+        self.edit_json(self.plugin / ".claude-plugin" / "plugin.json", "version", "99.0.0")
+        code, output = self.verify(repo.plugin_tag(PLUGIN, "1.2.3"))
+        assert code == 1, output
+        assert 'declares version "99.0.0"' in output
+
+    def test_malformed_tag_fails(self) -> None:
+        code, output = self.verify("v1.2.3")
+        assert code == 1, output
+        assert "is not a <name>--v<version> tag" in output
 
 
 class DrivePluginTest(unittest.TestCase):

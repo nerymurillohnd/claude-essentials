@@ -36,7 +36,6 @@ if TYPE_CHECKING:
 TEMPLATES = repo.ROOT / "templates" / "readme"
 BEGIN = "<!-- BEGIN GENERATED: {} -->"
 END = "<!-- END GENERATED: {} -->"
-ALWAYS_BLOCKS = ("header", "requirements", "installation", "components", "uninstall")
 INSTALL_SOURCE = repo.REPOSITORY_SLUG
 # Plugins are copied alone into the user's cache, so links out of a plugin
 # directory are absolute GitHub URLs, never "../" paths.

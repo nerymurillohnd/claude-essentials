@@ -14,7 +14,8 @@
 #   floor must live under a pyproject.toml or be checked with `--target-version`.
 #
 # Ownership contract with basedpyright (`typeCheckingMode = "recommended"` or `"all"`):
-# - basedpyright owns typing: annotations, deprecated typing aliases
+# - basedpyright owns typing: parameter annotations and `Any` (NOT return annotations,
+#   see the ANN entries below), deprecated typing aliases
 #   (`deprecateTypingAliases` is true in both modes), single-line implicit string
 #   concatenation, re-export semantics and overload docstrings.
 # - Ruff owns lint style, correctness, security, complexity, imports and formatting.
@@ -54,7 +55,15 @@ ignore = [
     # Source: DetachHead/basedpyright pyproject.toml [tool.ruff.lint] ("covered by
     # basedpyright"), cross-checked against basedpyright 1.40.1 configOptions.ts.
 
-    "ANN",     # flake8-annotations -> reportMissingParameterType, reportUnknown*, reportAny
+    # flake8-annotations: only the parameter and `Any` rules have a basedpyright owner.
+    # The return-annotation rules (ANN201, ANN202, ANN204, ANN205, ANN206) stay ON:
+    # basedpyright 1.40.2 has no missing-return-annotation rule and passes an
+    # unannotated function whose return type it can infer, in both "recommended" and
+    # "all" (probe 2026-10-04: 0 errors, 0 warnings; ANN201 flagged all 3 functions).
+    "ANN001",  # missing-type-function-argument -> reportMissingParameterType
+    "ANN002",  # missing-type-args -> reportMissingParameterType
+    "ANN003",  # missing-type-kwargs -> reportMissingParameterType
+    "ANN401",  # any-type -> reportAny
     "PLE0605", # invalid-all-format -> basedpyright validates __all__
     "RUF013",  # implicit-optional -> strictParameterNoneValue
     "RUF016",  # invalid-index-type -> type-aware indexing checks
