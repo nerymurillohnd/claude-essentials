@@ -186,6 +186,12 @@ class CatalogGateTest(RepositoryFixture):
         _ = changelog.write_text(text, encoding="utf-8")
         self.assert_fails_with('expected "## YYYY-MM-DD"')
 
+    def test_hook_pin_drift_fails(self) -> None:
+        config = self.root / ".pre-commit-config.yaml"
+        text = config.read_text(encoding="utf-8").replace("rev: 1.40.1", "rev: 1.40.0")
+        _ = config.write_text(text, encoding="utf-8")
+        self.assert_fails_with("must be 1.40.1 (BASEDPYRIGHT_VERSION in check.py)")
+
     def test_unknown_category_fails(self) -> None:
         data = repo.as_dict(repo.load_json(self.marketplace)) or {}
         entry = repo.as_dict((repo.as_list(data.get("plugins")) or [])[0]) or {}

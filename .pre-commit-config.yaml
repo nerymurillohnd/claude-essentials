@@ -1,0 +1,19 @@
+# Local pre-commit hooks, run by prek (https://github.com/j178/prek), a drop-in
+# replacement for pre-commit. Install once: `uv tool install prek` and `prek install`.
+# Pins match RUFF_VERSION and BASEDPYRIGHT_VERSION in scripts/check.py; change them together.
+repos:
+  # https://docs.astral.sh/ruff/integrations/#pre-commit
+  # With --fix, the lint hook runs before the formatter.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.10
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+      - id: ruff-format
+  # https://docs.basedpyright.com/latest/installation/prek-hook/
+  # --warnings matches the python gate: warnings fail like errors.
+  - repo: https://github.com/DetachHead/basedpyright-prek-mirror
+    rev: 1.40.1
+    hooks:
+      - id: basedpyright
+        args: [--warnings]

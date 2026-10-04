@@ -41,6 +41,7 @@ Chosen option: **official validator, standard-library Python gates run with `pyt
 - Scripts call other scripts with `sys.executable`.
 - There is no `pyproject.toml`, lockfile or inline script metadata. The minimum is Python 3.12, enforced by `ruff.toml` and `pyrightconfig.json`.
 - `ruff.toml` (`select = ["ALL"]`) and `shellcheckrc` (`enable=all`) are copies of the maintainer's strict global configurations, so every machine and CI apply the same rules.
+- Local pre-commit hooks (`.pre-commit-config.yaml`, run by prek, the runner basedpyright's docs recommend) run ruff and basedpyright on every commit, pinned to the CI versions; the `repo` gate checks the pins. They are a fast local check, not a replacement for the gates.
 - `python3 scripts/check.py ci-tools` installs the pinned versions on CI runners (`uv tool install`, `uvx zizmor`); locally each tool is resolved by name on PATH.
 
 | Gate                     | Tool                                                                                                                            |

@@ -27,8 +27,9 @@ Ruleset for `main`:
 
 - [ ] Require a pull request with one approval and code owner review.
 - [ ] Require status checks: `Gates and isolated install test` and `Commit convention and release discipline`.
-- [ ] Require signed commits and linear history; block force pushes and deletion.
-- [ ] Tag ruleset for `*--v*`: restrict creation to maintainers and require signed tags.
+- [x] Ruleset `main: signed commits` (applied 2026-10-04).
+- [ ] Require linear history; block force pushes and deletion.
+- [x] Tag ruleset `release tags` for `refs/tags/*--v*`: only admins create, update or delete them, and the tagged commit must be signed (applied 2026-10-04). Rulesets cannot require a signed tag object; `git tag -v` verifies it.
 
 ## 4. Labels
 

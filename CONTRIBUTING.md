@@ -29,9 +29,13 @@ The repository has no dependency manifest and nothing to install inside it. You 
 | [ruff](https://docs.astral.sh/ruff/), [basedpyright](https://docs.basedpyright.com/)                            | Python lint, format and type checks                                          |
 | [actionlint](https://github.com/rhysd/actionlint), [check-jsonschema](https://check-jsonschema.readthedocs.io/) | Workflow and GitHub file checks                                              |
 
-`python3 scripts/check.py` runs every gate that CI runs; `python3 scripts/check.py --list` lists them. Optionally install the commit message hook in your clone:
+`python3 scripts/check.py` runs every gate that CI runs; `python3 scripts/check.py --list` lists them.
+
+Install the local hooks once in your clone. [prek](https://github.com/j178/prek), a drop-in replacement for pre-commit, runs ruff (lint with `--fix`, then format) and basedpyright on the Python files of every commit, at the versions CI pins (`.pre-commit-config.yaml`). Optionally add the commit message check:
 
 ```bash
+uv tool install prek
+prek install
 cp scripts/git-hooks/commit-msg .git/hooks/commit-msg
 ```
 

@@ -4,18 +4,22 @@ Every gate runs locally with `python3 scripts/check.py` and in CI with the same 
 
 ## Targets
 
-| Target                                  | What it proves                                                                                                               |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `python3 scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace and each plugin                                                    |
-| `python3 scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, mods, labels and the release tag pattern |
-| `python3 scripts/check.py adrs`         | Every ADR record has a dated name, valid frontmatter, required sections, no placeholders and working links                   |
-| `python3 scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                  |
-| `python3 scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                        |
-| `python3 scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML                                                                               |
-| `python3 scripts/check.py python`       | ruff and basedpyright with warnings as errors                                                                                |
-| `python3 scripts/check.py workflows`    | actionlint and the zizmor security audit                                                                                     |
-| `python3 scripts/check.py schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                        |
-| `python3 scripts/check.py test-install` | Every plugin installs and loads like a user's install                                                                        |
+| Target                                  | What it proves                                                                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `python3 scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace and each plugin                                                                         |
+| `python3 scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, mods, labels, the release tag pattern and the local hook pins |
+| `python3 scripts/check.py adrs`         | Every ADR record has a dated name, valid frontmatter, required sections, no placeholders and working links                                        |
+| `python3 scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                                       |
+| `python3 scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                                             |
+| `python3 scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML                                                                                                    |
+| `python3 scripts/check.py python`       | ruff and basedpyright with warnings as errors                                                                                                     |
+| `python3 scripts/check.py workflows`    | actionlint and the zizmor security audit                                                                                                          |
+| `python3 scripts/check.py schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                                             |
+| `python3 scripts/check.py test-install` | Every plugin installs and loads like a user's install                                                                                             |
+
+## Local hooks
+
+`.pre-commit-config.yaml` runs ruff (`ruff-check --fix`, then `ruff-format`) and basedpyright (`--warnings`) on the Python files of every commit, through [prek](https://github.com/j178/prek): `uv tool install prek`, then `prek install` once per clone; `prek run --all-files` checks the whole tree. The hooks follow the official [ruff](https://docs.astral.sh/ruff/integrations/#pre-commit) and [basedpyright](https://docs.basedpyright.com/latest/installation/prek-hook/) instructions. Their `rev` pins must equal `RUFF_VERSION` and `BASEDPYRIGHT_VERSION` in `scripts/check.py`; the `repo` gate fails otherwise. Before raising a pin, read the release notes of every version in between. The hooks are a fast local check; `python3 scripts/check.py` remains the authority.
 
 ## Gate tests
 

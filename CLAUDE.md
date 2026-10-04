@@ -34,6 +34,7 @@ Run commands in this order. Every script is standard-library Python.
 - `git tag -v <name>--v<version>` - Run right after tagging to verify the signature.
 - `python3 scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
 - `python3 scripts/check.py ci-tools` - Run on CI only.
+- `prek install` - Run once per clone to install the ruff and basedpyright pre-commit hooks (`uv tool install prek` first).
 - `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` - Run once to install the optional commit message check.
 
 ### Commits and Tags

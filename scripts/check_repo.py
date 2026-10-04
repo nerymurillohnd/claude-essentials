@@ -613,6 +613,35 @@ def _yaml_tag_patterns(workflow: Path) -> list[str]:
     return patterns
 
 
+# Local hooks pinned in .pre-commit-config.yaml and the CI pin in scripts/check.py
+# that each must match: hook repository → pin constant.
+_HOOK_PINS = {
+    "https://github.com/astral-sh/ruff-pre-commit": ("RUFF_VERSION", "v"),
+    "https://github.com/DetachHead/basedpyright-prek-mirror": ("BASEDPYRIGHT_VERSION", ""),
+}
+
+
+def check_hook_pins(root: Path, report: Report) -> None:
+    """The local pre-commit hooks run the same tool versions as CI."""
+    config = root / ".pre-commit-config.yaml"
+    where = _rel(root, config)
+    if not config.is_file():
+        report.fail(where, "missing local hook configuration")
+        return
+    pattern = re.compile(r"^\s*- repo: (\S+)\n\s*rev: (\S+)$", re.MULTILINE)
+    hooks = {
+        str(match.group(1)): str(match.group(2))
+        for match in pattern.finditer(config.read_text(encoding="utf-8"))
+    }
+    pins = (root / "scripts" / "check.py").read_text(encoding="utf-8")
+    for url, (constant, prefix) in _HOOK_PINS.items():
+        pin = re.search(rf'^{constant} = "([^"]+)"$', pins, re.MULTILINE)
+        expected = f"{prefix}{pin.group(1)}" if pin else None
+        if hooks.get(url) != expected:
+            found = hooks.get(url, "missing")
+            report.fail(where, f"{url} rev {found} must be {expected} ({constant} in check.py)")
+
+
 def check_release_workflow(root: Path, entries: dict[str, dict[str, JSON]], report: Report) -> None:
     """The release workflow fires on every official tag and nothing else."""
     workflow = root / ".github" / "workflows" / "release.yml"
@@ -708,6 +737,7 @@ def run_checks(root: Path) -> Report:
     check_release_workflow(root, entries, report)
     check_labels(root, entries, report)
     check_root_changelog(root, report)
+    check_hook_pins(root, report)
     return report
 
 

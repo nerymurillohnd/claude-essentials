@@ -16,7 +16,7 @@ paths:
 - Since 2.1.280 other spellings of reserved names are refused, and a marketplace with an imitating name stops loading.
 - `claude-essentials` passes `validate --strict` and the `marketplace add` name check.
 - The file lives at `.claude-plugin/marketplace.json`; relative sources resolve from the marketplace root, start with `./` and never contain `..`.
-- Other optional fields: `description` (validate warns if missing), `version` or `metadata.version`, and `forceRemoveDeletedPlugins`.
+- Other optional fields: `description` (validate warns if missing), `version` or `metadata.version` (never set here: the catalog is not versioned), and `forceRemoveDeletedPlugins`.
 - `strict` defaults to `true`, and Claude Code ignores the free-form entry `metadata`.
 - `displayName` exists only on plugin entries and in `plugin.json`; users see the marketplace by its `name`.
 - Impersonating names (for example `official-claude-plugins`, `claude-plugins-v2`) and any non-ASCII name are also refused.
