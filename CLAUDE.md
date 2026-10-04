@@ -47,7 +47,8 @@ scripts/                          stdlib Python run with `uv run` (no dependency
   check_repo.py                   repository gates
   sync_readmes.py                 generated README content (--check in scripts/check.py)
   new_plugin.py                   scaffold wrapping `claude plugin init` in a throwaway config
-  release.py                      plugin and marketplace releases, CI verify and notes
+  bump_version.py                 version bump from the hand-written changelog (no commit, no tag)
+  release_notes.py                release workflow: tag check and notes from the changelog
   check_pr.py                     release discipline for pull requests
   check_commit_msg.py             Conventional Commits checker (CI and optional hook)
   test_install.py                 isolated install test (in place, cache copy, session)
@@ -61,14 +62,14 @@ docs/                             guides and ADRs
 
 ## Commands
 
-| Task                                       | Command                                                                                                         |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Every gate (same as CI)                    | `uv run scripts/check.py`                                                                                       |
-| Install every plugin in a throwaway config | `uv run scripts/check.py test-install` (commit first: the cache-copy scenario tests HEAD)                       |
-| New plugin                                 | `uv run scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]`    |
-| Refresh generated README content           | `uv run scripts/sync_readmes.py`                                                                                |
-| Release preview / release                  | `uv run scripts/release.py plugin <name> <level> --dry-run` / `uv run scripts/release.py plugin <name> <level>` |
-| Official validation                        | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                        |
+| Task                                       | Command                                                                                                             |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Every gate (same as CI)                    | `uv run scripts/check.py`                                                                                           |
+| Install every plugin in a throwaway config | `uv run scripts/check.py test-install` (commit first: the cache-copy scenario tests HEAD)                           |
+| New plugin                                 | `uv run scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]`        |
+| Refresh generated README content           | `uv run scripts/sync_readmes.py`                                                                                    |
+| Prepare a version bump                     | `uv run scripts/bump_version.py plugin <name> <level> [--dry-run]`, then commit and tag by hand (docs/releasing.md) |
+| Official validation                        | `claude plugin validate . --strict` and `claude plugin validate plugins/<name> --strict`                            |
 
 ## Definition of done
 
@@ -80,7 +81,7 @@ docs/                             guides and ADRs
 
 ## Decisions
 
-Recorded as ADRs in [docs/adr/](docs/adr/README.md). Summary: owner `nerymurillohnd`, MIT, in-repo plugins only, SemVer in `plugin.json` only with official `<name>--v<version>` tags, hand-written changelogs with a stdlib release script and CI publication, zero repository dependencies, strict review for code that runs on users' machines (mods only when nothing else can do the job), isolated install tests, labels as code, generated README content, Claude Code 2.1.289 pinned, hand-written Claude Code JSON Schemas not adopted.
+Recorded as ADRs in [docs/adr/](docs/adr/README.md). Summary: owner `nerymurillohnd`, MIT, in-repo plugins only, SemVer in `plugin.json` only with official `<name>--v<version>` tags, editorial changelogs with a stdlib bump script (no commit or tag), manual signed commits and `claude plugin tag`, CI publication, no single release command until real releases justify one, `uvx git-cliff@2.14.2` only for occasional reviewed drafts, zero repository dependencies, strict review for code that runs on users' machines (mods only when nothing else can do the job), isolated install tests, labels as code, generated README content, Claude Code 2.1.289 pinned, hand-written Claude Code JSON Schemas not adopted.
 
 ## Verified facts (not from training knowledge)
 
@@ -114,7 +115,7 @@ Verified against Claude Code **2.1.289** docs and changelog window 2.1.284–2.1
 ### Official CLI tooling (prefer over hand-rolled scripts)
 
 - `claude plugin validate <path> [--strict] [--json]`: the authoritative validator. Exit 0 pass, 1 fail, 2 validator error. From a marketplace directory it does **not** open the plugins' skill/agent/command/hook/MCP files, so **validate each plugin directory separately as well**. Since 2.1.281 it also checks MCP entries; since 2.1.283 it checks `outputStyles`, `lspServers`, `monitors`, `themes` paths.
-- `claude plugin tag [path] [--dry-run] [--push] [-m]`: creates the annotated tag **`<name>--v<version>`** (official format; runtime-verified output `hello--v0.1.0` via `git tag -a <tag> -m "<name> <version>"`, pushed as `refs/tags/<tag>`) after checking that `plugin.json` and the marketplace entry agree. Refuses dirty trees and existing tags. Every workflow, script and doc that consumes plugin tags must match exactly `<name>--v<semver>` (double hyphen, lowercase `v`), never `v*` or `<name>-v*`. With `tag.gpgsign=true` the annotated tag is signed (runtime-verified 2026-10-03 in a full release of a throwaway clone: `git tag -v` reports a good ED25519 signature); `scripts/release.py` checks it with `git tag -v` on every release. Release dates are UTC.
+- `claude plugin tag [path] [--dry-run] [--push] [-m]`: creates the annotated tag **`<name>--v<version>`** (official format; runtime-verified output `hello--v0.1.0` via `git tag -a <tag> -m "<name> <version>"`, pushed as `refs/tags/<tag>`) after checking that `plugin.json` and the marketplace entry agree. Refuses dirty trees and existing tags. Every workflow, script and doc that consumes plugin tags must match exactly `<name>--v<semver>` (double hyphen, lowercase `v`), never `v*` or `<name>-v*`. With `tag.gpgsign=true` the annotated tag is signed (runtime-verified 2026-10-03 in a full release of a throwaway clone: `git tag -v` reports a good ED25519 signature); verify it with `git tag -v` after tagging (docs/releasing.md). Release dates are UTC.
 - `claude plugin init <name> --with skills agents hooks mcp lsp output-style channel`: scaffolds **only** under `<config dir>/skills/<name>/` (no destination flag). It honors `CLAUDE_CONFIG_DIR`, so run it with an isolated temporary `HOME` and `CLAUDE_CONFIG_DIR` and move the output into `plugins/<name>/`. Its output includes a root `SKILL.md` plus `"skills": ["./"]`, a pattern for skills-directory plugins that must be adapted for marketplace plugins.
 - `claude plugin eval` exists (≥ 2.1.269) for behavioral eval suites; may report "early access" depending on account.
 - `--plugin-dir <path>` loads a plugin for one session without installing it. Pointing it at a marketplace root does not load plugins from `marketplace.json`.

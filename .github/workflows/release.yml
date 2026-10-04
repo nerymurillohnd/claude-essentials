@@ -43,7 +43,7 @@ jobs:
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          uv run scripts/release.py verify "$TAG"
+          uv run scripts/release_notes.py verify "$TAG"
           name="${TAG%%--v*}"
           if [ "$name" = "marketplace" ]; then
             claude plugin validate . --strict
@@ -54,7 +54,7 @@ jobs:
       - name: Extract release notes from the changelog
         env:
           TAG: ${{ github.ref_name }}
-        run: uv run scripts/release.py notes "$TAG" > "$RUNNER_TEMP/notes.md"
+        run: uv run scripts/release_notes.py notes "$TAG" > "$RUNNER_TEMP/notes.md"
 
       - name: Publish the release
         env:

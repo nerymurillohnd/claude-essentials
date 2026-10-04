@@ -22,10 +22,10 @@ The directory name, the marketplace entry `name` and the manifest `name` are ide
 
 ## Tags
 
-| Release     | Tag                                                       | Created by                                   |
-| ----------- | --------------------------------------------------------- | -------------------------------------------- |
-| Plugin      | `<name>--v<version>`, for example `hello-example--v1.2.0` | `claude plugin tag` via `scripts/release.py` |
-| Marketplace | `marketplace--v<version>`                                 | `scripts/release.py marketplace`             |
+| Release     | Tag                                                       | Created by                                           |
+| ----------- | --------------------------------------------------------- | ---------------------------------------------------- |
+| Plugin      | `<name>--v<version>`, for example `hello-example--v1.2.0` | `claude plugin tag`, after `scripts/bump_version.py` |
+| Marketplace | `marketplace--v<version>`                                 | `git tag -a`, after `scripts/bump_version.py`        |
 
 ## Labels
 

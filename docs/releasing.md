@@ -38,27 +38,58 @@ Each plugin has `CHANGELOG.md` in [Keep a Changelog 1.1.0](https://keepachangelo
 
 ## Release a plugin
 
+A release is a short sequence of explicit steps. They are deliberately not bundled into one command: that will make sense after the first real releases show which steps belong together ([ADR 0007](adr/0007-release-automation.md)).
+
 Requirements: a clean working tree on `main`, signing configured for commits and tags, Claude Code 2.1.289 or later.
 
-```bash
-uv run scripts/release.py plugin <name> minor --dry-run   # preview the new changelog
-uv run scripts/release.py plugin <name> minor      # bump, commit, tag
-git push origin main <name>--v<version>            # only when approved
-```
+1. **Notes.** Make sure `## [Unreleased]` in `plugins/<name>/CHANGELOG.md` describes every user-relevant change. To draft notes from history once there is enough of it, optionally run git-cliff without installing anything, and then rewrite the draft for users:
 
-The script refuses an empty `[Unreleased]`, a MAJOR without Migration, and a changelog that disagrees with `plugin.json`. It moves the notes into `## [<version>] - <date>`, bumps `plugin.json`, runs `claude plugin validate --strict` and `scripts/check_repo.py`, commits `chore(<name>): release <version>`, and runs `claude plugin tag`, which checks manifest and catalog agree and creates the signed annotated tag `<name>--v<version>`. It then verifies the tag signature.
+   ```bash
+   uvx git-cliff@2.14.2 --include-path "plugins/<name>/**" --tag-pattern "^<name>--v" --unreleased
+   ```
 
-When protected branches require pull requests, run the release on a branch, open a pull request with the `semver:` label, merge it, and tag the merged commit with `claude plugin tag plugins/<name>`.
+   The draft only lists commits; it never decides the bump and is never written to the changelog automatically.
 
-Pushing the tag runs `.github/workflows/release.yml`: it checks the tag against `plugin.json`, validates the plugin, and publishes a GitHub Release whose notes are that version's changelog section.
+2. **Bump.** Preview, then prepare the files:
+
+   ```bash
+   uv run scripts/bump_version.py plugin <name> <major|minor|patch> --dry-run
+   uv run scripts/bump_version.py plugin <name> <major|minor|patch>
+   ```
+
+   The script refuses an empty `[Unreleased]`, a MAJOR without Migration, and a changelog that disagrees with `plugin.json`. It moves the notes into `## [<version>] - <date>` (UTC), bumps `plugin.json`, regenerates the README content that shows the version, and runs `claude plugin validate --strict` and `scripts/check_repo.py`. It does not commit, tag or push.
+
+3. **Review and commit.** Read `git diff`, then commit (signed by your git configuration):
+
+   ```bash
+   git add plugins/<name> README.md
+   git commit -m "chore(<name>): release <version>"
+   ```
+
+4. **Tag.** `claude plugin tag` checks that `plugin.json` and the catalog agree and creates the annotated tag `<name>--v<version>`, signed when `tag.gpgsign` is on. Verify the signature:
+
+   ```bash
+   claude plugin tag plugins/<name>
+   git tag -v <name>--v<version>
+   ```
+
+5. **Publish, only when approved.** `git push origin main <name>--v<version>`. The push runs `.github/workflows/release.yml`, which checks the tag against `plugin.json` (`scripts/release_notes.py verify`), validates the plugin and publishes a GitHub Release whose notes are that version's changelog section (`scripts/release_notes.py notes`).
+
+When protected branches require pull requests, do steps 2 and 3 on a branch, open a pull request with the `semver:` label, merge it, then run step 4 on the merged commit.
 
 ## Release the marketplace
 
+Same steps on the root `CHANGELOG.md` and `marketplace.json`:
+
 ```bash
-uv run scripts/release.py marketplace minor
+uv run scripts/bump_version.py marketplace <major|minor|patch>
+git add CHANGELOG.md .claude-plugin/marketplace.json README.md
+git commit -m "chore(marketplace): release <version>"
+git tag -a marketplace--v<version> -m "marketplace <version>"
+git tag -v marketplace--v<version>
 ```
 
-Same flow on the root `CHANGELOG.md` and `marketplace.json`, with the tag `marketplace--v<version>`. Release the marketplace when plugins are added, deprecated or removed, or when distribution changes.
+Release the marketplace when plugins are added, deprecated or removed, or when distribution changes.
 
 ## Deprecate or remove a plugin
 

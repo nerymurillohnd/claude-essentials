@@ -5,63 +5,75 @@ decision-makers:
   - "Nery Samuel Murillo (maintainer)"
 ---
 
-# Release automation: hand-written changelogs, local release script, CI publication
+# Release process: editorial changelogs, a bump script, manual signed tags, CI publication
 
 ## Purpose
 
-Decide how a plugin or marketplace release is prepared, tagged and published.
+Decide how a plugin or marketplace release is prepared, tagged and published, and how much of it is automated now.
 
 ## Scope
 
-`scripts/release.py`, `.github/workflows/release.yml`, plugin and marketplace changelogs.
+`scripts/bump_version.py`, `scripts/release_notes.py`, `.github/workflows/release.yml`, plugin and marketplace changelogs.
 
 ## Context and problem statement
 
-Releases need a version bump, a dated changelog section, a signed commit, a tag and a GitHub Release. Every commit and tag in this repository must be signed with the maintainer's key, and the repository has no dependency manifest.
+Releases need user-facing notes, a version bump, a dated changelog section, a signed commit, a signed tag and a GitHub Release. Every commit and tag must be signed with the maintainer's key, and the repository has no dependency manifest. The catalog has no real plugin and no plugin tag yet, so it is unknown which release steps deserve to be combined.
 
 ## Decision drivers
 
-- Signed commits and tags with the maintainer's key.
-- User-facing notes written for people, including migration steps.
-- Use official tooling where it exists; no new dependencies without need.
+- Changelogs describe changes that matter to users, not commit subjects.
+- Signed commits and tags with the maintainer's key, in the official `<name>--v<version>` format.
+- Automate only what is understood; no single "release" command before real releases show which steps belong together.
 
 ## Considered options
 
-- Hand-written changelogs, a stdlib Python release script, `claude plugin tag`, CI publication
+- Editorial changelogs, a stdlib bump script, manual commit and `claude plugin tag`, CI publication
+- One script that bumps, commits and tags
 - release-please (bot release pull requests, per-component tags)
-- git-cliff generating changelogs from commits
+- git-cliff generating the changelogs from commits
 
 ## Decision outcome
 
-Chosen option: **hand-written changelogs, a stdlib Python release script, `claude plugin tag`, CI publication**. Contributors add notes under `## [Unreleased]`. A maintainer runs `uv run scripts/release.py plugin <name> <major|minor|patch>`, which moves the notes into a dated section, bumps `plugin.json`, validates, commits (signed) and calls `claude plugin tag` (signed annotated `<name>--v<version>`). Pushing the tag runs the release workflow, which verifies the tag against the manifest, validates the plugin and publishes the changelog section as the GitHub Release.
+Chosen option: **editorial changelogs, a stdlib bump script, manual commit and `claude plugin tag`, CI publication**.
+
+- Each plugin keeps a hand-written `CHANGELOG.md`; contributors add notes under `## [Unreleased]`.
+- `uv run scripts/bump_version.py plugin <name> <level>` checks the notes (a MAJOR needs `### Migration`), moves them into a dated section, bumps `plugin.json` (the only place the version lives, so the catalog needs nothing else), regenerates the README content that shows the version and validates. It never commits, tags or pushes.
+- The maintainer reviews the diff, commits, and runs `claude plugin tag`, which creates the signed annotated tag after checking manifest and catalog agree.
+- Pushing the tag runs the release workflow: `scripts/release_notes.py verify` checks tag and manifest, the plugin is validated, and `scripts/release_notes.py notes` publishes that version's changelog section as the GitHub Release.
+- `uvx git-cliff@2.14.2 --include-path "plugins/<name>/**"` may be used occasionally to draft notes from history without adding a dependency; the draft is reviewed and rewritten, and never decides the bump or writes the changelog.
 
 ### Consequences
 
-- Good, because commits and tags carry the maintainer's signature and the official tag format.
-- Good, because notes are written for users, not derived from commit subjects.
-- Bad, because releases need a maintainer at a terminal.
+- Good, because notes are written for users and every commit and tag carries the maintainer's signature.
+- Good, because nothing is automated before its value is known.
+- Bad, because a release takes a few manual commands, documented in [docs/releasing.md](../releasing.md).
 
 ### Confirmation
 
-Unit tests cover changelog rewriting and the Migration requirement; the release workflow refuses tags that do not match the manifest. Revisit git-cliff or release-please when there are several plugins with frequent releases.
+Unit tests cover changelog rewriting and the Migration requirement; `scripts/check_pr.py` rejects version changes without a matching changelog section; the release workflow refuses tags that do not match the manifest. Revisit after the first real releases: combining the steps into one command, or adopting git-cliff or release-please, needs a new ADR.
 
 ## Pros and cons of the options
 
-### Local release script
+### Bump script plus manual commit and tag
 
-- Good, because it has zero dependencies and honors signing.
-- Bad, because it is code this repository maintains.
+- Good, because each step is visible and reviewable, with zero dependencies.
+- Bad, because the maintainer runs several commands per release.
+
+### One script that bumps, commits and tags
+
+- Good, because a release is one command.
+- Bad, because it fixes a workflow before any real release has tested it.
 
 ### release-please
 
 - Good, because it is fully automated and supports `tag-separator` for the official format.
 - Bad, because its commits and tags are made by a bot through the API, not signed with the maintainer's key.
 
-### git-cliff
+### git-cliff as the changelog source
 
-- Good, because it generates changelogs from Conventional Commits.
-- Bad, because with no plugins and no history it adds configuration and a second source of notes without solving a current problem.
+- Good, because it generates changelogs from Conventional Commits and filters by path for per-plugin versions.
+- Bad, because with no plugins and no history it adds configuration and a second source of notes, and commit subjects are not user-facing notes.
 
 ## More information
 
-See [docs/releasing.md](../releasing.md) for the procedure.
+Procedure: [docs/releasing.md](../releasing.md). git-cliff: [monorepo usage](https://git-cliff.org/docs/usage/monorepos/); pinned execution with uv: [uv tools](https://docs.astral.sh/uv/concepts/tools/).

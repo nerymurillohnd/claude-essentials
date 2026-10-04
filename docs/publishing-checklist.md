@@ -56,8 +56,8 @@ claude plugin list --json
 ## 7. First release dry run
 
 ```bash
-uv run scripts/release.py plugin hello-example patch --dry-run
-uv run scripts/release.py marketplace patch --dry-run
+uv run scripts/bump_version.py plugin hello-example patch --dry-run
+uv run scripts/bump_version.py marketplace patch --dry-run
 ```
 
 Confirm the previewed changelogs, then decide whether to tag `marketplace--v0.1.0` and `hello-example--v0.1.0` for the initial versions with `git tag -a` and `claude plugin tag plugins/hello-example`, and push the tags. The release workflow publishes the GitHub Releases.

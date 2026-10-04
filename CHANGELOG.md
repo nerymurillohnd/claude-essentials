@@ -12,4 +12,4 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Marketplace catalog `claude-essentials` with its category taxonomy and the non-affiliation disclaimer.
 - `hello-example`, an example plugin that proves the pipeline end to end and will be removed once real plugins cover it.
-- Repository gates, the plugin scaffold, the release script, the isolated install test, CI workflows, labels and contribution templates.
+- Repository gates, the plugin scaffold, the version bump script, the isolated install test, CI workflows, labels and contribution templates.

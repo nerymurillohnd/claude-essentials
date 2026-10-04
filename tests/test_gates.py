@@ -17,9 +17,9 @@ import unittest
 from pathlib import Path
 from typing import override
 
+import bump_version
 import check_commit_msg
 import check_repo
-import release
 import repo
 
 ROOT = repo.ROOT
@@ -302,7 +302,7 @@ class ChangelogTest(unittest.TestCase):
         text = self.VALID.replace(
             "## [Unreleased]\n", "## [Unreleased]\n\n### Fixed\n\n- A bug.\n"
         )
-        result = release.rewrite_changelog(text, "1.0.1", "2026-10-03")
+        result = bump_version.rewrite_changelog(text, "1.0.1", "2026-10-03")
         parsed = repo.parse_changelog(result)
         self.assertEqual(parsed.problems, [])
         self.assertEqual(parsed.unreleased, "")
@@ -319,7 +319,7 @@ class ChangelogTest(unittest.TestCase):
                 ),
                 encoding="utf-8",
             )
-            outcome = release.prepare(path, "1.0.0", "major")
+            outcome = bump_version.prepare(path, "1.0.0", "major")
             self.assertIsInstance(outcome, str)
             self.assertIn("Migration", str(outcome))
 

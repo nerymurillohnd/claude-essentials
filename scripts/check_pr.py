@@ -10,7 +10,7 @@ Usage:
 Rules for every plugin whose files the pull request changes:
   * a feature or fix PR adds notes under `## [Unreleased]` in that plugin's CHANGELOG.md
     and must not change `version` (versions change only in release PRs);
-  * a release PR (made by scripts/release.py) bumps `version` and adds the matching
+  * a release PR (prepared with scripts/bump_version.py) bumps `version` and adds the matching
     dated CHANGELOG section;
   * exactly one `semver:major|minor|patch` label is applied, `semver:major` requires a
     non-empty `### Migration` section, and a breaking title (`!`) requires `semver:major`;
@@ -92,7 +92,7 @@ def check(base: str, head: str, title: str, labels: list[str]) -> list[str]:
             released = head_log.releases[0] if head_log.releases else None
             if released is None or released.version != head_version:
                 problems.append(
-                    f'{plugin}: version changed to "{head_version}" without a matching CHANGELOG release section; use scripts/release.py'
+                    f'{plugin}: version changed to "{head_version}" without a matching CHANGELOG release section; use scripts/bump_version.py'
                 )
             if head_log.unreleased:
                 problems.append(

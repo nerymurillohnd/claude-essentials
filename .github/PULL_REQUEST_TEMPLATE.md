@@ -6,7 +6,7 @@ Describe the change and why users need it. Link the issue it resolves (for examp
 
 - [ ] Plugin change (fix, feature or breaking change to a plugin under `plugins/`)
 - [ ] New plugin (accepted proposal: #)
-- [ ] Plugin release made with `scripts/release.py`
+- [ ] Plugin release prepared with `scripts/bump_version.py`
 - [ ] Repository, tooling, CI or documentation only
 
 ## Checklist
@@ -15,7 +15,7 @@ Pull request title and commits follow [Conventional Commits](https://www.convent
 
 - [ ] `uv run scripts/check.py` passes locally; `uv run scripts/check.py test-install` passes for plugin changes.
 - [ ] **Changelog:** each changed plugin has a user-facing note under `## [Unreleased]` in its `CHANGELOG.md` (not needed for release pull requests).
-- [ ] **Version:** `version` in `plugin.json` is unchanged, unless this is a release made with `scripts/release.py`.
+- [ ] **Version:** `version` in `plugin.json` is unchanged, unless this is a release prepared with `scripts/bump_version.py`.
 - [ ] **Semver label:** exactly one of `semver:major`, `semver:minor`, `semver:patch` is applied for plugin changes.
 - [ ] **Breaking change:** the title uses `!`, the label is `semver:major`, and `### Migration` explains what broke, who is affected and the exact steps.
 - [ ] **Portability:** no absolute or home paths, user or machine names, secrets or personal data; paths use `${CLAUDE_PLUGIN_ROOT}` or `${CLAUDE_PLUGIN_DATA}`.
