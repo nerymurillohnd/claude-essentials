@@ -23,3 +23,7 @@ paths:
 - Use `uvx git-cliff@2.14.2` only for occasional drafts that are then reviewed.
 - release-please was rejected because its commits and tags are not signed with my key.
 - There will be no single release command until there are real releases.
+- Every workflow, script and doc that consumes tags matches exactly `<name>--v<semver>`, never `v*` or `<name>-v*`.
+- A full release in a throwaway clone verified the tag signature: `git tag -v` reports a good ED25519 signature.
+- Release dates are UTC.
+- If `version` is set and not bumped, users never receive the new commits.

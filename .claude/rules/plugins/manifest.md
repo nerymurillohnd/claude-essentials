@@ -19,3 +19,12 @@ paths:
 - These variables do not reach the Bash tool's environment: they are substituted inline in the Markdown.
 - `${user_config.KEY}` is rejected in shell hooks, monitors and `headersHelper`; there you use exec form or `CLAUDE_PLUGIN_OPTION_<KEY>`.
 - Symlinks to elsewhere in the marketplace are dereferenced and those pointing outside it are skipped.
+- Only `name` is required, and only the manifest goes inside `.claude-plugin/`; every component lives at the plugin root.
+- Putting `official` next to `claude` or `anthropic` in a name is a validate error.
+- Component paths must start with `./`, resolve inside the plugin root and exist.
+- Standard layout: `skills/<name>/SKILL.md`, `commands/` (legacy, prefer skills), `agents/*.md`, `hooks/hooks.json` (with a top-level `"hooks"` wrapper), `.mcp.json`, `.lsp.json`, `output-styles/`.
+- `bin/` goes on the Bash tool PATH.
+- Put instructions in a skill, never in a plugin `CLAUDE.md`.
+- `${CLAUDE_PROJECT_DIR}` is also available; never write state under `${CLAUDE_PLUGIN_ROOT}`.
+- In shell-form hooks, quote the variable (`"${CLAUDE_PLUGIN_ROOT}"/scripts/x.sh`), or validate warns; prefer exec form with `args`.
+- Files outside the plugin directory are not copied on install, and symlinks inside the plugin are preserved.

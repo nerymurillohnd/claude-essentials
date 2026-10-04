@@ -18,3 +18,8 @@ paths:
 - A published plugin is never renamed; if it is unavoidable, use `renames`.
 - `/plugin install <plugin> --marketplace <repo>` installs in one step since 2.1.275.
 - `marketplace add --sparse` clones only the given paths, with fixes for git < 2.39 in 2.1.284.
+- Users add the marketplace with `/plugin marketplace add nerymurillohnd/claude-essentials` and install with `claude plugin install <plugin>@claude-essentials`.
+- Users update with `claude plugin update <plugin>@claude-essentials` or `/plugin marketplace update claude-essentials`.
+- Teams pre-configure the marketplace with `extraKnownMarketplaces` plus `enabledPlugins` keyed `<plugin>@claude-essentials`.
+- README install instructions always include the auto-update step.
+- Use `displayName` for labels, and add `renames: { "<name>": null }` when removing a plugin.
