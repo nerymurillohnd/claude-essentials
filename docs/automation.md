@@ -2,7 +2,7 @@
 
 How Claude Code is set up to maintain this repository: what runs on its own, what you start, and what each piece guarantees. Decisions: [ADR claude-code-automation](adr/decisions/ADR_2026-10-04_claude-code-automation.md), [ADR release-orchestration](adr/decisions/ADR_2026-10-04_release-orchestration.md). Everything here maintains the repository; none of it is shipped to plugin users.
 
-**Contents:** [What runs on its own](#what-runs-on-its-own) · [Skills](#skills) · [Agent](#agent) · [Workflows](#workflows) · [Gates](#gates) · [Scripts](#scripts) · [Limits](#limits) · [Change the automation](#change-the-automation)
+**Contents:** [What runs on its own](#what-runs-on-its-own) · [Skills](#skills) · [On GitHub](#on-github) · [Agent](#agent) · [Workflows](#workflows) · [Gates](#gates) · [Scripts](#scripts) · [Limits](#limits) · [Change the automation](#change-the-automation)
 
 ## What runs on its own
 
@@ -38,6 +38,13 @@ Type `/<name>` or ask in plain words; `release-plugin` runs only when you type i
 | `/cc-currency`                                | Compare the repository with the current Claude Code release and update rules and the pin                                                   |
 | `/verify`                                     | Run every gate                                                                                                                             |
 | `plugin-versioning`                           | Loaded by Claude when it touches `plugins/` or the catalog: bump level, PR or direct push, branch names                                    |
+
+## On GitHub
+
+The Claude GitHub App runs two workflows ([ADR claude-github-action](adr/decisions/ADR_2026-10-04_claude-github-action.md)), authenticated with the `CLAUDE_CODE_OAUTH_TOKEN` repository secret and billed to the maintainer's Claude subscription:
+
+- `claude-code-review.yml` reviews every push to a non-draft pull request. Each run re-checks whether Claude's earlier findings are fixed, reviews the current head for correctness and this repository's rules (CLAUDE.md, quality bar, security review, releasing, portability), posts new findings inline and posts one summary with a verdict and a fixed/open table. CI runs the gates; `/review-pr` additionally runs them on a checkout. The action skips (with a green check) a pull request whose copy of the workflow differs from `main`, so a change to these workflows is reviewed only locally.
+- `claude.yml` answers `@claude` in an issue, a pull request comment or a review. Only users with write access can trigger it, so a third party's issue runs nothing until a maintainer comments `@claude <request>`. Claude may then push a `claude/` branch with the app's token; asking is the approval.
 
 ## Agent
 
