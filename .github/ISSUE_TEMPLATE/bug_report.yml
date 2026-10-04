@@ -37,6 +37,7 @@ body:
     attributes:
       label: Where do you run Claude Code?
       options:
+        - Choose one
         - Terminal (CLI)
         - VS Code extension
         - JetBrains plugin
@@ -50,6 +51,7 @@ body:
     attributes:
       label: Operating system
       options:
+        - Choose one
         - macOS
         - Linux
         - Windows
