@@ -9,6 +9,8 @@ paths:
   - ".github/workflows/release.yml"
   - "docs/releasing.md"
   - "templates/changelog/**"
+  - ".claude/skills/release-plugin/**"
+  - ".claude/skills/plugin-versioning/**"
 ---
 
 # Versioning, tags and releases
@@ -21,7 +23,7 @@ paths:
 - A component inside a plugin is deprecated in a plugin minor, kept for at least one more minor and 30 days, and removed in the plugin's next major.
 - A whole plugin is deprecated the same way, then removed from the catalog in a pull request with a `renames` entry and a dated root changelog note (`docs/releasing.md`).
 - Every change inside `plugins/<name>/` ships with a single-step bump of that plugin in the same pull request; a pull request may release several plugins and carries exactly one `semver:` label naming the highest bump among the plugins it releases. New plugins start at `0.1.0` and need no label.
-- `plugins/**`, `marketplace.json`, workflows and `CODEOWNERS` change only through pull requests; docs, scripts, tests, rules and ADRs may be pushed directly by me after `python3 scripts/check.py` passes.
+- `plugins/**`, `marketplace.json`, workflows and `CODEOWNERS` change only through pull requests; docs, scripts, tests, rules, ADRs and the root README may be pushed directly by me after `python3 scripts/check.py` passes.
 - `bump_version.py` moves `[Unreleased]` into a section dated in UTC and never commits or tags; the commit is part of the pull request, and `claude plugin tag` runs on the merged commit.
 - The release workflow checks that tag and manifest match and publishes the changelog section as the GitHub Release.
 - Use `uvx git-cliff@2.14.2` only for occasional drafts that are then reviewed.

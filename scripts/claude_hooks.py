@@ -149,7 +149,7 @@ def _program_index(words: list[str], name: str) -> int | None:
 
 
 def _bypasses_signing(words: list[str], start: int, subcommand: str | None) -> bool:
-    """True when git options or config switch signing or hooks off; message text never counts."""
+    """True when an exact option token or a `-c` value switches signing or hooks off."""
     rest = words[start + 1 :]
     for index, word in enumerate(rest):
         value = rest[index + 1] if word in {"-c", "--config-env"} and index + 1 < len(rest) else ""
@@ -307,7 +307,7 @@ def sources_decision(tool_input: dict[str, JSON], root: Path) -> dict[str, JSON]
 
 
 def format_file(path: Path, root: Path) -> dict[str, JSON] | None:
-    """Run prettier on an edited Markdown, JSON or YAML file inside the repository."""
+    """Run prettier on an edited Markdown, JSON, YAML or JavaScript file inside the repository."""
     prettier = shutil.which("prettier")
     try:
         _ = path.resolve().relative_to(root.resolve())

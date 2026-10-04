@@ -4,6 +4,8 @@ paths:
   - "plugins/**/skills/**"
   - "plugins/**/agents/**"
   - "plugins/**/commands/**"
+  - "plugins/**/.claude-plugin/plugin.json"
+  - "scripts/repo.py"
 ---
 
 # Hooks and permissions (recent changes)

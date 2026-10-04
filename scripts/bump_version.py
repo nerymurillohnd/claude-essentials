@@ -19,10 +19,9 @@ It only prepares files; it never commits, tags or pushes:
   5. runs `claude plugin validate --strict` and scripts/check_repo.py.
 
 Then review the diff and commit it in the pull request; after the merge, tag
-by hand as docs/releasing.md describes.
-Releases are not bundled into a single command until the first real release
-shows which steps belong together
-(docs/adr/decisions/ADR_2026-10-03_release-automation.md).
+as docs/releasing.md describes. The project skill `/release-plugin` runs this
+script as one step of the release
+(docs/adr/decisions/ADR_2026-10-04_release-orchestration.md).
 """
 
 from __future__ import annotations

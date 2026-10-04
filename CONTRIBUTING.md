@@ -39,7 +39,7 @@ prek install
 cp scripts/git-hooks/commit-msg .git/hooks/commit-msg
 ```
 
-If you open this repository in Claude Code and trust the folder, its project settings apply to your session: `.claude/settings.json` asks before every push, pull request, release or tag push, denies commits that skip signing or hooks, and registers hooks that run `python3 scripts/claude_hooks.py` on tool calls (guards for versions, generated README blocks and pushes; prettier on edited Markdown, JSON and YAML). Read [Claude Code automation](docs/automation.md) to see what each one does before you trust the folder.
+If you open this repository in Claude Code and trust the folder, its project settings apply to your session: `.claude/settings.json` asks before every push, pull request, release or tag push, denies commits that skip signing or hooks, and registers hooks that run `python3 scripts/claude_hooks.py` on tool calls (guards for versions, generated README blocks, pushes and GitHub writes; a guard for the forbidden sources listed in an untracked `CLAUDE.local.md`, which does nothing without that file; prettier on edited Markdown, JSON, YAML and JavaScript; and a session-start status that runs `git status` and `claude --version`). Read [Claude Code automation](docs/automation.md) to see what each one does before you trust the folder.
 
 Never install plugins from this repository into your own Claude Code configuration to test them: `python3 scripts/check.py test-install` installs them in a throwaway configuration (see [testing](docs/testing.md)).
 
@@ -54,8 +54,8 @@ Never install plugins from this repository into your own Claude Code configurati
    ```
 
 3. Replace every `TODO` with real content. `python3 scripts/check.py` fails until none is left.
-4. Run `python3 scripts/check.py` and `python3 scripts/check.py test-install` until both pass.
-5. Commit with `feat(<name>): add <name> plugin` and open a pull request.
+4. Run `python3 scripts/check.py` until it passes.
+5. Commit with `feat(<name>): add <name> plugin`, run `python3 scripts/check.py test-install` (it tests the committed `HEAD`) until it passes, and open a pull request.
 
 ## Change a plugin
 
@@ -70,7 +70,7 @@ Never install plugins from this repository into your own Claude Code configurati
 - Title and commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/): `<type>(<scope>): <subject>`, where the scope is the plugin name for plugin changes. Mark breaking changes with `!` or a `BREAKING CHANGE:` footer.
 - Apply exactly one `semver:major`, `semver:minor` or `semver:patch` label: the highest bump among the plugins the pull request releases. New plugins and pull requests that change no plugin carry no `semver:` label. Other labels are applied automatically.
 - Describe the plugin's purpose, required permissions and external services, and the manual verification you did.
-- Fill in the pull request checklist; CI runs `python3 scripts/check.py`, the install test and the release-discipline check.
+- Fill in the pull request checklist; CI runs `python3 scripts/check.py`, the install test, the release-discipline check and the Conventional Commits check on every commit.
 
 ## Review
 

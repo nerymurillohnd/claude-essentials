@@ -6,6 +6,8 @@ paths:
   - "plugins/**/bin/**"
   - "plugins/**/monitors/**"
   - ".github/workflows/**"
+  - ".github/labeler.yml"
+  - ".github/CODEOWNERS"
   - "SECURITY.md"
   - "docs/security-review.md"
 ---

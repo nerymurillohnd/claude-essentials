@@ -21,20 +21,20 @@ Run commands in this order. Every script is standard-library Python.
 
 - `python3 scripts/check.py --list` - Run when you need the list of gates.
 - `python3 scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]` - Run when you create a plugin.
+- `python3 scripts/add_component.py <plugin> skill|agent <name> --description "…"` - Run when you add a skill or agent to an existing plugin.
 - `python3 scripts/sync_readmes.py` - Run when generated README content needs a refresh.
 - `claude plugin validate . --strict` - Run when validating the repository with the official CLI.
 - `claude plugin validate plugins/<name> --strict` - Run when validating one plugin with the official CLI.
 - `python3 scripts/check.py <gate>` - Run when you need one gate.
 - `python3 scripts/check.py` - Run when you need every gate, exactly as CI does.
 - `python3 scripts/validate_adrs.py` - Run after copying `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`.
+- `python3 scripts/drive_plugin.py <plugin> [--prompt "…"] [--expect <regex>] [--source head]` - Run when you need to see a plugin work in a real session.
 - `verify` (project skill) - Run before every commit.
 - `python3 scripts/check.py test-install` - Run after committing, because it tests HEAD.
 - `python3 scripts/bump_version.py plugin <name> <level> [--dry-run]` - Run in the same PR when a plugin changes.
 - `claude plugin tag plugins/<name>` - Run on the merged commit.
 - `git tag -v <name>--v<version>` - Run right after tagging to verify the signature.
 - `python3 scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
-- `python3 scripts/add_component.py <plugin> skill|agent <name> --description "…"` - Run when you add a skill or agent to an existing plugin.
-- `python3 scripts/drive_plugin.py <plugin> [--prompt "…"] [--expect <regex>] [--source head]` - Run when you need to see a plugin work in a real session.
 - `/<project-skill>` - Run when a task matches a project skill listed in `docs/automation.md`.
 - `python3 scripts/check.py ci-tools` - Run on CI only.
 - `prek install` - Run once per clone to install the ruff and basedpyright pre-commit hooks (`uv tool install prek` first).
@@ -166,11 +166,12 @@ docs/                             guides and ADRs
 
 ## Current state
 
-- Published on 2026-10-04: every gate in `python3 scripts/check.py --list` passes locally and in CI, `main` is protected by rulesets (signed commits, linear history, squash-only merges), labels are synced, and the marketplace installs like a user's install.
+- Published on 2026-10-04: every gate that existed at publication passed locally and in CI, `main` is protected by rulesets (signed commits, linear history, squash-only merges), labels are synced, and the marketplace installs like a user's install.
 - The full release flow ran end to end on pull request #2: `check_pr`, labeler, squash merge, signed tag `hello-example--v0.1.1` and its GitHub Release.
 - Open item in `docs/publishing-checklist.md`: checking the issue forms in the browser.
 - Claude Code automation added on 2026-10-04: see `docs/automation.md`.
 - Its commits stay local until I approve the push.
+- The `docs` gate and the `.claude` validation in `validate` came with those commits and have passed only locally until CI runs them.
 - Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
 - Awaiting my decision:
   - refining the user-level Python rule;

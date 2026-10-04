@@ -3,11 +3,12 @@ paths:
   - "plugins/**"
   - "scripts/new_plugin.py"
   - "scripts/check_repo.py"
+  - "scripts/repo.py"
 ---
 
 # Plugin manifest
 
-- Forbidden prefixes: `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-`; also the exact names `claude`, `anthropic`, `anthropics`, `claude-code` and `claude-mods`.
+- Forbidden prefixes: `claude-`, `anthropic-`, `anthropics-` and `cc-plugin-`; also the exact names `claude`, `anthropic`, `anthropics`, `claude-code`, `claude-mods`, `anthropic-skills` and `claude-ai`; `scripts/repo.py` holds the enforced lists.
 - Having `claude` or `anthropic` as a standalone word in the name gives a warning, which is a failure under `--strict`.
 - The `version` in `plugin.json` wins over the one in the catalog entry.
 - If the entry has the same version it passes; if it has a different one, `validate` warns and `claude plugin tag` refuses to tag.

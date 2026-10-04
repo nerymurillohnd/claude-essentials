@@ -59,7 +59,7 @@ BREAKING CHANGE: <what breaks>
 
 - Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
 - Scope: the plugin name for plugin changes; `marketplace`, `scripts`, `ci` or `docs` otherwise.
-- `!` or a `BREAKING CHANGE:` footer marks a breaking change and requires the `semver:major` label.
+- `!` or a `BREAKING CHANGE:` footer marks a breaking change. A `!` in the pull request title requires the `semver:major` label; only the title is checked against the label.
 
 ## Changelogs
 
@@ -100,7 +100,7 @@ Requirements: signing configured for commits and tags, Claude Code 2.1.289 or la
    git commit -m "fix(<name>): <subject>"
    ```
 
-   `scripts/check_pr.py` fails the pull request when the plugin changed without a single-step bump, when the release section or label does not match the bump, or when a MAJOR has no Migration.
+   `scripts/check_pr.py` fails the pull request when the plugin changed without a single-step bump, when the release section or label does not match the bump, when `## [Unreleased]` is not empty, when a MAJOR has no Migration, when the title is not a Conventional Commit or its scope is not the plugin name while exactly one plugin changed, or when `.claude-plugin/marketplace.json` changed without a note in the root `CHANGELOG.md`.
 
 4. **Tag the merged commit.** `claude plugin tag` checks that `plugin.json` and the catalog agree and creates the annotated tag `<name>--v<version>`, signed when `tag.gpgsign` is on:
 

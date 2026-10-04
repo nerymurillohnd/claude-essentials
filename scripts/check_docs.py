@@ -108,6 +108,16 @@ PIN_SITES: tuple[PinSite, ...] = (
         ("PRETTIER_VERSION", "ACTIONLINT_VERSION", "ZIZMOR_VERSION"),
     ),
     PinSite(
+        ".claude/rules/testing/gates.md",
+        r"check-jsonschema (\S+) with its built-in schemas",
+        ("CHECK_JSONSCHEMA_VERSION",),
+    ),
+    PinSite(
+        ".claude/rules/tooling-versions.md",
+        r"check-jsonschema (\S+) \(Apache-2\.0\)",
+        ("CHECK_JSONSCHEMA_VERSION",),
+    ),
+    PinSite(
         ".claude/rules/tooling-versions.md",
         r"ruff-pre-commit v(\S+), DetachHead/basedpyright-prek-mirror (\S+) \(",
         ("RUFF_VERSION", "BASEDPYRIGHT_VERSION"),

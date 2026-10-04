@@ -14,4 +14,4 @@ paths:
 - `check_pr.py` also requires a dated root `CHANGELOG.md` note when `marketplace.json` changes.
 - Labels are defined as code with crazy-max (which deletes the ones not in the file), and `actions/labeler` applies them by path.
 - The label prefixes are `type:`, `semver:`, `status:`, `priority:`, `category:` and `plugin:<name>`, plus `security-review`.
-- Pinned action versions: checkout v7.0.1, setup-uv v10.2.0, setup-node v7.0.0 and labeler v7.0.0.
+- Pinned action versions: checkout v7.0.1, setup-uv v10.2.0, setup-node v7.0.0, labeler v7.0.0 and crazy-max/ghaction-github-labeler v6.0.0.

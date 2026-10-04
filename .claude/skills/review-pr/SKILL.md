@@ -8,6 +8,6 @@ agent: plugin-reviewer
 
 Review this target in the claude-essentials repository: $ARGUMENTS
 
-If the target is empty, review the current branch against `main`, including uncommitted changes.
+If the target is empty, review the current branch against `main`.
 
 Follow your procedure exactly: temporary worktree, gates, the rules for every changed path, verified findings with `file:line` evidence, cleanup confirmed, and the report table. Do not edit, commit, push, comment on GitHub or approve.
