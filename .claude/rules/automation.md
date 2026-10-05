@@ -26,7 +26,7 @@ paths:
 - The `format` hook runs after Edit and Write. It runs prettier on edited Markdown, JSON, YAML and workflow scripts and tells Claude to re-read the file.
 - The `session-status` hook runs at session start, resume, clear and compaction. It prints the branch, changed files, a notice when Claude Code is newer than the pin, and a reminder to read files with the Read tool.
 - `worktree.baseRef: head` makes new worktrees start from the local `HEAD`, so unpushed commits are present.
-- The `verify` skill: Claude Code tells Claude to run it before each commit, and it runs `python3 scripts/check.py`. The instruction applies when the skill loads from a project, personal, enterprise, additional-directory or `.claude/commands/` location, Claude may invoke it (no `disable-model-invocation: true`) and `includeGitInstructions` is not off. Docs-only and tests-only changes are excepted, and plugin skills do not count.
+- The `verify` skill: Claude Code tells Claude to run it before each commit, and it runs `scripts/check.py`. The instruction applies when the skill loads from a project, personal, enterprise, additional-directory or `.claude/commands/` location, Claude may invoke it (no `disable-model-invocation: true`) and `includeGitInstructions` is not off. Docs-only and tests-only changes are excepted, and plugin skills do not count.
 - Approving a prompt with "don't ask again" saves an allow rule in the local settings. It never overrides a project `ask` rule, so the next push asks again.
 
 ## Skills
@@ -62,7 +62,7 @@ paths:
 - For a plugin with hooks or MCP servers, `/code-review ultra` (cloud research preview; Pro and Max accounts get three one-time free runs, then it bills as usage credits, about $5 to $25 per review; on Bedrock, Agent Platform, Foundry and Zero Data Retention organizations it runs a local review instead) is an optional extra pass before the merge.
 - `plugin-reviewer` (`.claude/agents/plugin-reviewer.md`) reviews a pull request or branch without editing anything.
   - It checks out the head in a temporary worktree (prefix `claude-essentials-review-`).
-  - It runs `python3 scripts/check.py` and `scripts/check_pr.py` there and reads the rules for each changed path.
+  - It runs `scripts/check.py` and `scripts/check_pr.py` there and reads the rules for each changed path.
   - It returns a verdict and a findings table with `file:line` evidence.
   - `/review-pr` runs it in the background; ask for it by name in any session.
 
@@ -76,7 +76,7 @@ paths:
 
 ## Gates
 
-- `python3 scripts/check.py` runs the same gates locally and in CI; their behaviour is in `.claude/rules/testing/gates.md`. The `validate` and `docs` gates also cover this automation.
+- `scripts/check.py` runs the same gates locally and in CI; their behaviour is in `.claude/rules/testing/gates.md`. The `validate` and `docs` gates also cover this automation.
 
 ## Scripts
 
@@ -90,12 +90,12 @@ paths:
 - Hooks parse shell commands on a best-effort basis. A command built at runtime (a variable holding `push`, a relative `cd` into a forbidden folder) can slip past them. The permission prompts and the review are the remaining layers.
 - Skills and workflows guide Claude; the gates, `scripts/check_pr.py` and the permission prompts enforce.
 - `scripts/drive_plugin.py` uses the maintainer's login, so the session sees the account email. For proof that holds for strangers, run `claude plugin eval plugins/<name> --no-publish`.
-- Hooks run `python3` on every tool call for anyone who trusts the folder (`CONTRIBUTING.md`).
+- Hooks run `scripts/claude_hooks.py` by path (exec form; its shebang finds `python3`) on every tool call for anyone who trusts the folder (`CONTRIBUTING.md`).
 - A new or edited `.claude/workflows/` file needs `/reload-skills` or a new session. The sub-agents docs say a newly created agents directory needs a new session (when `~/.claude/agents/` did not exist at session start); one created mid-session was also observed to load without a restart (`.claude/rules/claude-code-features.md`).
 
 ## Change the Automation
 
-- Edit the file, run `python3 scripts/check.py`, and record a changed decision in a new ADR.
+- Edit the file, run `scripts/check.py`, and record a changed decision in a new ADR.
 - Settings and hooks: `.claude/settings.json` and `scripts/claude_hooks.py` with its tests.
 - Skills: write them with the `skills-best-practices` skill when available and read back what loads. A `$0` in prose is an argument placeholder; escape it as `\$0`.
 - Workflows: load `/workflow-authoring` first; keep `export const meta` a plain literal.

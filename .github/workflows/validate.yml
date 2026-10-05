@@ -29,22 +29,23 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
-          version: "0.12.22"
           enable-cache: false
 
       - name: Set up Node.js for Prettier
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "24"
+          node-version: lts/*
           package-manager-cache: false
 
-      - name: Install the pinned tools
+      - name: Install the latest tools
+        env:
+          GH_TOKEN: ${{ github.token }} # gh downloads the latest actionlint release
         run: |
           echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
-          python3 scripts/check.py ci-tools
+          scripts/check.py ci-tools
 
       - name: Run every gate
-        run: python3 scripts/check.py
+        run: scripts/check.py
 
       - name: Install every plugin in an isolated config
-        run: python3 scripts/check.py test-install
+        run: scripts/check.py test-install

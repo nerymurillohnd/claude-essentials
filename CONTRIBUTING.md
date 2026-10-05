@@ -17,7 +17,7 @@ Search existing issues first. Be kind and follow the [Code of Conduct](CODE_OF_C
 
 ## If you clone this repository
 
-If you open this repository in Claude Code and trust the folder, its project settings apply to your session: `.claude/settings.json` asks before every push, pull request, release or tag push, denies commits that skip signing or hooks, and registers hooks that run `python3 scripts/claude_hooks.py` on tool calls (guards for versions, generated README blocks, pushes and GitHub writes; a guard for the forbidden sources listed in an untracked `CLAUDE.local.md`, which does nothing without that file; prettier on edited Markdown, JSON, YAML and JavaScript; and a session-start status that runs `git status` and `claude --version`). Read [Claude Code automation](.claude/rules/automation.md) to see what each one does before you trust the folder.
+If you open this repository in Claude Code and trust the folder, its project settings apply to your session: `.claude/settings.json` asks before every push, pull request, release or tag push, denies commits that skip signing or hooks, and registers hooks that run `scripts/claude_hooks.py` on tool calls (guards for versions, generated README blocks, pushes and GitHub writes; a guard for the forbidden sources listed in an untracked `CLAUDE.local.md`, which does nothing without that file; prettier on edited Markdown, JSON, YAML and JavaScript; and a session-start status that runs `git status` and `claude --version`). Read [Claude Code automation](.claude/rules/automation.md) to see what each one does before you trust the folder.
 
 ## Licensing
 

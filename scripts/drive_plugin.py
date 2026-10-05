@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Drive a plugin in a real headless Claude Code session, as a user would.
 
-Run: python3 scripts/drive_plugin.py <plugin> [--prompt TEXT] [--source checkout|head]
+Run: scripts/drive_plugin.py <plugin> [--prompt TEXT] [--source checkout|head]
                                      [--expect REGEX ...] [--model MODEL] [--budget USD]
 
 `test_install.py` proves that every plugin installs and loads; this script uses

@@ -20,4 +20,5 @@ paths:
 - Review plugin instructions assuming they run under auto mode.
 - Plugin hooks must be robust and fast, and must never spawn daemons.
 - Avoid both `anthropic-skills` and `claude-ai` as names.
-- The `init --with hooks` scaffold runs `bun "${CLAUDE_PLUGIN_ROOT}/hooks-handlers/on-session-start.ts"`; never ship it unchanged, because hooks may only use interpreters the plugin declares as requirements.
+- The `init --with hooks` scaffold runs `bun "${CLAUDE_PLUGIN_ROOT}/hooks-handlers/on-session-start.ts"`; never ship it unchanged, because hooks may only use interpreters the plugin declares as requirements, and a plugin script is never run with an interpreter in front.
+- A plugin script starts with `#!/usr/bin/env <interpreter>` (no version such as `python3.12`, no absolute interpreter path, no options), is mode 755 in git, and hooks, monitors, MCP and LSP servers run it by path: `"${CLAUDE_PLUGIN_ROOT}/scripts/x.sh"`. The docs run plugin scripts by path and require them to be executable (plugins/components#hooks, hooks-guide); installs keep the bit since 2.1.86. A sourced or imported file has neither shebang nor mode 755. The `repo` gate checks all of it (ADR unpinned-tooling-and-shebang-interpreters).

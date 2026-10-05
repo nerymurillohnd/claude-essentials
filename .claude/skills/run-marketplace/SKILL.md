@@ -15,7 +15,7 @@ Every run is a real model call billed to the maintainer's plan (about \$0.01 wit
 Smoke-test a plugin from the working tree (uncommitted changes included). The default prompt is the plugin's first skill as a slash command:
 
 ```bash
-python3 scripts/drive_plugin.py <plugin> --expect '<what the first skill says>'
+scripts/drive_plugin.py <plugin> --expect '<what the first skill says>'
 ```
 
 Exit 0 means the plugin loaded alone, the session ended without error, every `--expect` regex matched the reply and the real configuration is unchanged. The output shows the source, prompt, loaded plugins, reply and cost; each problem is a `✘` line and exit 1.
@@ -23,7 +23,7 @@ Exit 0 means the plugin loaded alone, the session ended without error, every `--
 Test the copy a user receives (HEAD cloned bare, installed through a `git-subdir` marketplace in a throwaway config); commit first:
 
 ```bash
-python3 scripts/drive_plugin.py <plugin> --source head --prompt "/<plugin>:<skill> <input>" --expect '<what the reply must contain>'
+scripts/drive_plugin.py <plugin> --source head --prompt "/<plugin>:<skill> <input>" --expect '<what the reply must contain>'
 ```
 
 | Option                | Use                                                                                       |
@@ -42,13 +42,13 @@ For a change, write expectations for what the change adds, not only that the plu
 Installing, listing and loading every plugin in place, from a cache copy and per session, without driving any:
 
 ```bash
-python3 scripts/check.py test-install
+scripts/check.py test-install
 ```
 
 ## Test
 
 ```bash
-python3 scripts/check.py
+scripts/check.py
 ```
 
 ## Gotchas
@@ -61,7 +61,7 @@ python3 scripts/check.py
 - **No transcript is written** (`--no-session-persistence`): the session cannot be resumed or inspected afterwards; the reply printed by the driver is the record.
 - **`timeout` does not exist on macOS.** Bound a run with `--budget`, not with a shell timeout.
 - **Built-in plugins (`cc-plugin-*@builtin`) always load** next to the target; the driver ignores them and fails on any other plugin.
-- **Temporary files use the prefix `claude-essentials-drive-`**, listed in `TEMP_PREFIXES` of `scripts/check.py`; `python3 scripts/check.py clean` removes orphans.
+- **Temporary files use the prefix `claude-essentials-drive-`**, listed in `TEMP_PREFIXES` of `scripts/check.py`; `scripts/check.py clean` removes orphans.
 
 ## Troubleshooting
 

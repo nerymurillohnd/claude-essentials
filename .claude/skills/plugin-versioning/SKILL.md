@@ -5,7 +5,7 @@ description: Decides whether a change needs a plugin release, which bump level, 
 
 # Plugin versioning and release flow
 
-`docs/releasing.md` and `.claude/rules/releasing.md` are the full procedure and win over this skill if they ever differ. `scripts/check_pr.py` enforces every pull request rule below, and `python3 scripts/check.py` every repository rule.
+`docs/releasing.md` and `.claude/rules/releasing.md` are the full procedure and win over this skill if they ever differ. `scripts/check_pr.py` enforces every pull request rule below, and `scripts/check.py` every repository rule.
 
 ## When to bump
 
@@ -35,12 +35,12 @@ Only plugins are versioned. The catalog has no `version` (neither top-level nor 
 
 ## Checklists
 
-Every commit is signed and follows Conventional Commits; run the project skill `verify` (`python3 scripts/check.py`) before each commit.
+Every commit is signed and follows Conventional Commits; run the project skill `verify` (`scripts/check.py`) before each commit.
 
 Direct push:
 
 ```
-- [ ] python3 scripts/check.py passes; fix every failure
+- [ ] scripts/check.py passes; fix every failure
 - [ ] Changed scripts: shebang ⇔ mode 755, checked with git ls-files -s (100755)
 - [ ] Signed commit; push to main only after the maintainer approves that push, then confirm the Validate workflow passes on main
 ```
@@ -49,9 +49,9 @@ Plugin pull request:
 
 ```
 - [ ] For each changed plugin: user-facing notes under ## [Unreleased] in plugins/<name>/CHANGELOG.md (### Migration for a MAJOR)
-- [ ] python3 scripts/bump_version.py plugin <name> <major|minor|patch> --dry-run, then without --dry-run
+- [ ] scripts/bump_version.py plugin <name> <major|minor|patch> --dry-run, then without --dry-run
 - [ ] Review git diff: [Unreleased] is empty, the new section matches plugin.json
-- [ ] python3 scripts/check.py and python3 scripts/check.py test-install (after committing: it tests HEAD)
+- [ ] scripts/check.py and scripts/check.py test-install (after committing: it tests HEAD)
 - [ ] Exactly one semver: label: the highest bump among the released plugins (none for a new plugin or a non-plugin change)
 - [ ] Title scope is the plugin name when one plugin changes, for example fix(<name>): <subject>; a ! title needs semver:major
 - [ ] After the merge, for each released plugin: claude plugin tag plugins/<name>, then git tag -v <name>--v<version>

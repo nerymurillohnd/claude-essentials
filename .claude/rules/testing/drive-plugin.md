@@ -6,7 +6,7 @@ paths:
 
 # Driving a plugin
 
-- `python3 scripts/drive_plugin.py <plugin> [--prompt TEXT] [--source checkout|head] [--expect REGEX] [--model MODEL] [--budget USD] [--tools LIST] [--permission-mode MODE]` uses a plugin the way a user does.
+- `scripts/drive_plugin.py <plugin> [--prompt TEXT] [--source checkout|head] [--expect REGEX] [--model MODEL] [--budget USD] [--tools LIST] [--permission-mode MODE]` uses a plugin the way a user does.
 - It sends a prompt (by default the plugin's first skill as a slash command) to a headless `claude -p` session with only that plugin loaded.
 - It fails unless the plugin loaded alone, the session ended without error, every `--expect` regex matches the reply and the real configuration is unchanged.
 - `--source head` drives the copy a user receives, installed from a bare clone of HEAD in a throwaway configuration.

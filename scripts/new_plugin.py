@@ -2,7 +2,7 @@
 """Scaffold a new compliant plugin under plugins/<name>/.
 
 Usage:
-  python3 scripts/new_plugin.py <name> --category <category> --description "<text>" \
+  scripts/new_plugin.py <name> --category <category> --description "<text>" \
       --author "<name>" [--display-name "<label>"] [--tags a,b] [--with skills agents ...]
 
 It builds on the official generator instead of hand-written files: it runs
@@ -17,7 +17,7 @@ plugins/<name>/ and adapts it to the marketplace layout
   * adds the marketplace entry, the `plugin:<name>` label and the labeler rules;
   * adds a dated note to the catalog CHANGELOG.md (the catalog has no version).
 
-The result deliberately keeps TODO placeholders, which `python3 scripts/check.py` rejects
+The result deliberately keeps TODO placeholders, which `scripts/check.py` rejects
 until the author replaces them with real content.
 """
 
@@ -318,7 +318,7 @@ def add_catalog_note(spec: PluginSpec) -> None:
 
 def _finish(spec: PluginSpec) -> None:
     repo.format_files([spec.target])
-    synced = repo.run([sys.executable, str(repo.ROOT / "scripts" / "sync_readmes.py")], check=False)
+    synced = repo.run([str(repo.ROOT / "scripts" / "sync_readmes.py")], check=False)
     repo.emit(synced.stdout.strip() or synced.stderr.strip())
     validation = repo.run(
         ["claude", "plugin", "validate", str(spec.target), "--strict"], check=False
@@ -327,7 +327,7 @@ def _finish(spec: PluginSpec) -> None:
     steps = [
         f"Created plugins/{spec.name}. Next steps:",
         "  1. Replace every TODO (skills, agents, README) with real content.",
-        "  2. Run `python3 scripts/check.py` until it passes.",
+        "  2. Run `scripts/check.py` until it passes.",
         f"  3. Commit with `feat({spec.name}): add {spec.name} plugin` and open a pull request.",
     ]
     repo.emit("\n" + "\n".join(steps))

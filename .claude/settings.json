@@ -50,11 +50,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": [
-              "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
-              "session-status"
-            ],
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
+            "args": ["session-status"],
             "timeout": 30
           }
         ]
@@ -66,11 +63,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": [
-              "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
-              "guard-bash"
-            ],
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
+            "args": ["guard-bash"],
             "timeout": 10
           }
         ]
@@ -80,11 +74,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": [
-              "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
-              "guard-edit"
-            ],
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
+            "args": ["guard-edit"],
             "timeout": 10
           }
         ]
@@ -94,11 +85,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": [
-              "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
-              "guard-sources"
-            ],
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
+            "args": ["guard-sources"],
             "timeout": 10
           }
         ]
@@ -110,8 +98,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3",
-            "args": ["${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py", "format"],
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/claude_hooks.py",
+            "args": ["format"],
             "timeout": 30
           }
         ]

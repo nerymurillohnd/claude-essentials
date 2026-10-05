@@ -2,8 +2,8 @@
 """Generate the README content that must never drift from the plugins.
 
 Usage:
-  python3 scripts/sync_readmes.py          # rewrite generated content
-  python3 scripts/sync_readmes.py --check  # fail when anything is stale (scripts/check.py)
+  scripts/sync_readmes.py          # rewrite generated content
+  scripts/sync_readmes.py --check  # fail when anything is stale (scripts/check.py)
 
 * README.md (root) is rendered entirely from templates/readme/root.md plus the
   catalog in .claude-plugin/marketplace.json. Edit the template, never README.md.
@@ -623,7 +623,7 @@ def main() -> int:
     targets, problems = _expected_files(load_plugins())
     stale = _stale_files(targets, write=not check_only)
     if check_only:
-        fix = "run `python3 scripts/sync_readmes.py`"
+        fix = "run `scripts/sync_readmes.py`"
         problems.extend(f"{path}: generated content is stale; {fix}" for path in stale)
     for problem in problems:
         repo.emit(f"✘ {problem}")

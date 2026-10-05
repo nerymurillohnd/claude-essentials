@@ -2,12 +2,12 @@
 """Add a skill or an agent to an existing plugin with the official generator.
 
 Usage:
-  python3 scripts/add_component.py <plugin> skill|agent <name> --description "<text>"
+  scripts/add_component.py <plugin> skill|agent <name> --description "<text>"
 
 Like new_plugin.py, it runs `claude plugin init --with skills|agents` in a throwaway
 HOME and CLAUDE_CONFIG_DIR, then copies the generated example into
 plugins/<plugin>/ under the new name. It adds a TODO note under `## [Unreleased]`
-in the plugin changelog and regenerates the README, so `python3 scripts/check.py`
+in the plugin changelog and regenerates the README, so `scripts/check.py`
 fails until the author writes the component and the user-facing note; the release
 is then a minor bump (docs/releasing.md).
 
@@ -117,15 +117,15 @@ def main() -> int:
         add_unreleased_note(changelog.read_text(encoding="utf-8"), note), encoding="utf-8"
     )
     repo.format_files([target, changelog])
-    synced = repo.run([sys.executable, str(repo.ROOT / "scripts" / "sync_readmes.py")], check=False)
+    synced = repo.run([str(repo.ROOT / "scripts" / "sync_readmes.py")], check=False)
     repo.emit(synced.stdout.strip() or synced.stderr.strip())
     validation = repo.run(["claude", "plugin", "validate", str(plugin), "--strict"], check=False)
     repo.emit(validation.stdout.strip())
     steps = [
         f"Added {target.relative_to(repo.ROOT)}. Next steps:",
         "  1. Replace the TODOs in the component and the CHANGELOG note with real content.",
-        f"  2. python3 scripts/bump_version.py plugin {plugin_name} minor",
-        "  3. python3 scripts/check.py, then a pull request (the run-marketplace skill drives it).",
+        f"  2. scripts/bump_version.py plugin {plugin_name} minor",
+        "  3. scripts/check.py, then a pull request (the run-marketplace skill drives it).",
     ]
     repo.emit("\n" + "\n".join(steps))
     return 0

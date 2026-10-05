@@ -2,9 +2,9 @@
 """Check that commit messages or a pull request title follow Conventional Commits 1.0.0.
 
 Usage:
-  python3 scripts/check_commit_msg.py --file .git/COMMIT_EDITMSG   # git commit-msg hook
-  python3 scripts/check_commit_msg.py --message "feat(my-plugin): add x"
-  python3 scripts/check_commit_msg.py --range BASE..HEAD           # every commit in a range
+  scripts/check_commit_msg.py --file .git/COMMIT_EDITMSG   # git commit-msg hook
+  scripts/check_commit_msg.py --message "feat(my-plugin): add x"
+  scripts/check_commit_msg.py --range BASE..HEAD           # every commit in a range
 
 The scope, when present, is a plugin name or a repository area (docs/releasing.md).
 A breaking change is marked with `!` before the colon or a `BREAKING CHANGE:` footer.

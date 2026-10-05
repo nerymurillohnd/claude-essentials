@@ -13,4 +13,4 @@ paths:
 - One exception: when a newer ADR replaces only part of an accepted ADR, append a dated pointer note under its `## More information` and keep its `status` `accepted`.
 - Never edit the decision, options or consequences of an accepted ADR, and never use a pointer note to change them.
 - Cite the approval a note records only when it has a traceable source: the session and the date.
-- Check records with `python3 scripts/validate_adrs.py`, which also runs in `python3 scripts/check.py`.
+- Check records with `scripts/validate_adrs.py`, which also runs in `scripts/check.py`.

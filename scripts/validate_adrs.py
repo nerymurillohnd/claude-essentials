@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validate the architecture decision records in docs/adr/decisions/.
 
-Run: python3 scripts/validate_adrs.py [--root PATH]
+Run: scripts/validate_adrs.py [--root PATH]
 
 Rules (docs/adr/README.md):
   * file name `ADR_YYYY-MM-DD_<slug>.md` with a real date and a kebab-case slug;

@@ -17,26 +17,26 @@ The repository is public at https://github.com/nerymurillohnd/claude-essentials.
 
 ## Commands
 
-Run commands in this order. Every script is standard-library Python.
+Run commands in this order. Every script is standard-library Python, run by path: its shebang chooses the interpreter, and no tool or Python version is pinned.
 
-- `python3 scripts/check.py --list` - Run when you need the list of gates.
-- `python3 scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]` - Run when you create a plugin.
-- `python3 scripts/add_component.py <plugin> skill|agent <name> --description "…"` - Run when you add a skill or agent to an existing plugin.
-- `python3 scripts/sync_readmes.py` - Run when generated README content needs a refresh.
+- `scripts/check.py --list` - Run when you need the list of gates.
+- `scripts/new_plugin.py <name> --category <c> --description "…" --author "…" [--with skills agents …]` - Run when you create a plugin.
+- `scripts/add_component.py <plugin> skill|agent <name> --description "…"` - Run when you add a skill or agent to an existing plugin.
+- `scripts/sync_readmes.py` - Run when generated README content needs a refresh.
 - `claude plugin validate . --strict` - Run when validating the repository with the official CLI.
 - `claude plugin validate plugins/<name> --strict` - Run when validating one plugin with the official CLI.
-- `python3 scripts/check.py <gate>` - Run when you need one gate.
-- `python3 scripts/check.py` - Run when you need every gate, exactly as CI does.
-- `python3 scripts/validate_adrs.py` - Run after copying `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`.
-- `python3 scripts/drive_plugin.py <plugin> [--prompt "…"] [--expect <regex>] [--source head]` - Run when you need to see a plugin work in a real session.
+- `scripts/check.py <gate>` - Run when you need one gate.
+- `scripts/check.py` - Run when you need every gate, exactly as CI does.
+- `scripts/validate_adrs.py` - Run after copying `templates/adr/ADR_YYYY-MM-DD_decision-slug.md` into `docs/adr/decisions/`.
+- `scripts/drive_plugin.py <plugin> [--prompt "…"] [--expect <regex>] [--source head]` - Run when you need to see a plugin work in a real session.
 - `verify` (project skill) - Run before every commit, including the docs-only and tests-only ones that Claude Code does not prompt for.
-- `python3 scripts/check.py test-install` - Run after committing, because it tests HEAD.
-- `python3 scripts/bump_version.py plugin <name> <level> [--dry-run]` - Run in the same PR when a plugin changes.
+- `scripts/check.py test-install` - Run after committing, because it tests HEAD.
+- `scripts/bump_version.py plugin <name> <level> [--dry-run]` - Run in the same PR when a plugin changes.
 - `claude plugin tag plugins/<name>` - Run on the merged commit.
 - `git tag -v <name>--v<version>` - Run right after tagging to verify the signature.
-- `python3 scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
+- `scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
 - `/<project-skill>` - Run when a task matches a project skill listed in `.claude/rules/automation.md`.
-- `python3 scripts/check.py ci-tools` - Run on CI only.
+- `scripts/check.py ci-tools` - Run on CI only.
 - `prek install` - Run once per clone to install the ruff and basedpyright pre-commit hooks (`uv tool install prek` first).
 - `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` - Run once to install the optional commit message check.
 
@@ -91,7 +91,7 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 
 - Official CLI and schemas: `.claude/rules/claude-cli.md`, `.claude/rules/schemas.md`
 - Repository scripts, gates, isolated installs: `.claude/rules/repo-scripts.md`, `.claude/rules/testing/gates.md`, `.claude/rules/testing/isolated-install.md`
-- CI, releases, tool pins: `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`
+- CI, releases, tools and pinned Actions: `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`
 - ADRs and Claude Code features: `.claude/rules/adrs.md`, `.claude/rules/claude-code-features.md`
 - Claude Code automation (settings, hooks, project skills, agent, workflows): `.claude/rules/automation.md`
 
@@ -118,7 +118,7 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 ```text
 .claude-plugin/marketplace.json   catalog: name, owner, entries (source ./plugins/<name>); no version
 plugins/<name>/                   one self-contained plugin per directory
-scripts/                          stdlib Python run with `python3` (no dependency manifest)
+scripts/                          stdlib Python run by path, shebang picks the interpreter (no manifest, no pins)
   check.py                        single entry point: every gate, test-install, clean, ci-tools
   repo.py                         shared constants, naming, SemVer, changelog parsing
   check_repo.py                   repository gates
@@ -128,7 +128,7 @@ scripts/                          stdlib Python run with `python3` (no dependenc
   release_notes.py                release workflow: tag check and notes from the changelog
   check_pr.py                     release discipline for pull requests
   check_commit_msg.py             Conventional Commits checker (CI and optional hook)
-  check_docs.py                   docs gate: pins, gate list, names, rule paths, links
+  check_docs.py                   docs gate: Claude Code minimum, gate list, names, rule paths, links
   validate_adrs.py                ADR records: names, dates, status, sections, links
   test_install.py                 isolated install test (in place, cache copy, session)
   drive_plugin.py                 one plugin in a real headless session, reply checked
@@ -144,8 +144,8 @@ docs/                             guides and ADRs
 
 ## Definition of done
 
-- `python3 scripts/check.py` passes, with raw output shown.
-- For plugin changes, `python3 scripts/check.py test-install` passes and my real configuration is unchanged.
+- `scripts/check.py` passes, with raw output shown.
+- For plugin changes, `scripts/check.py test-install` passes and my real configuration is unchanged.
 - Negative cases fail for the intended reason (`tests/`).
 - Changelog notes, labels and the sourcing log are updated where needed; generated READMEs are current.
 - A changed decision gets a new dated ADR; the old one becomes `superseded`, or keeps `accepted` with a dated pointer note when the new one replaces only part of it (`.claude/rules/adrs.md`).
@@ -160,7 +160,7 @@ docs/                             guides and ADRs
 - Open item: confirm in the browser that `/issues/new/choose` lists the two issue forms and the three contact links (the API reported the contact links; the forms are only visible signed in).
 - Claude Code automation added on 2026-10-04: see `.claude/rules/automation.md`.
 - The Claude GitHub workflows arrived with the squash merge of PR #4 (`7314c58`). The automation commits `44fc258` to `60f7a5a` were already on `origin/main` before it; how they were pushed is not recorded here. They came after the handoff `2026-10-04-0852`.
-- The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `python3 scripts/check.py` passed all 10 gates locally on 2026-10-04.
+- The `docs` gate and the `.claude` validation in `validate` came with those commits; CI passed them on PR #4 (`Gates and isolated install test`, run 37197025456), and `scripts/check.py` passed all 10 gates locally on 2026-10-04.
 - `51e96f6` (2026-10-04) gave the bug report dropdowns a neutral first option; CI passed on `main`, and the forms still need the browser check.
 - Branch naming settled on 2026-10-04 in ADR branch-naming: the prefix is the commit scope, and `marketplace`, `scripts`, `ci` and `docs` are reserved plugin names. CI passed on its commit `7c49526` (`Validate`, run 37201134748, checked with `gh run list` on 2026-10-04).
 - The gate tests run on a fixture plugin outside the catalog (`tests/fixtures/plugins/sample-plugin/`), so removing `hello-example` cannot break them (PR #6, 2026-10-04).
@@ -169,8 +169,9 @@ docs/                             guides and ADRs
 - Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
 - Awaiting my decision:
   - refining the user-level Python rule;
-  - a `uv cache prune` to repair cache entries removed by hand on 2026-10-03;
   - a rule that plugins declare every external tool they use and rely on no version-specific features;
   - a `CLAUDE_CODE_OAUTH_TOKEN` so `drive_plugin.py` can run fully isolated (until then, `claude plugin eval` is the clean-room check).
+- The uv cache was cleared with `uv cache clean` and `uv cache prune` on 2026-10-05, which settles the cache entries removed by hand on 2026-10-03.
+- Unpinned tooling (ADR unpinned-tooling-and-shebang-interpreters, 2026-10-05), on branch `scripts/unpinned-tooling`, not yet pushed: no tool or Python version is pinned, scripts run by path, prek runs local hooks with the installed tools, CI installs the latest releases, and the `repo` gate checks plugin scripts (unversioned `#!/usr/bin/env` shebang, mode 755, run by path). `ruff.toml` is again an exact copy of `~/.config/ruff/ruff.toml`. CI has not run it yet: the first run is the proof that `ci-tools` installs the latest tools.
 - Release watcher: the session-start notice and `/cc-currency`; scheduled routines were rejected because they run without permission prompts.
 - Deferred: Dependabot, external link checking, git-cliff or release-please.

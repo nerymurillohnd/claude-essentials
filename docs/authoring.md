@@ -6,7 +6,7 @@ How to build a plugin for Claude Essentials. Every Claude Code fact here links t
 
 ## Layout
 
-Create plugins with `python3 scripts/new_plugin.py`; it runs the official `claude plugin init` in a throwaway configuration and adapts the result. Each plugin lives in `plugins/<name>/`:
+Create plugins with `scripts/new_plugin.py`; it runs the official `claude plugin init` in a throwaway configuration and adapts the result. Each plugin lives in `plugins/<name>/`:
 
 ```text
 plugins/<name>/
@@ -49,8 +49,9 @@ Claude Code copies each plugin installed from a git, URL or other remote marketp
 
 - Reference bundled files as `${CLAUDE_PLUGIN_ROOT}/...` and persistent state as `${CLAUDE_PLUGIN_DATA}/...` ([environment variables](https://code.claude.com/docs/en/plugins/manifest-reference#environment-variables)). `${CLAUDE_PLUGIN_ROOT}` changes on every update, so never write state there.
 - In shell-form hook commands, quote the variable: `"${CLAUDE_PLUGIN_ROOT}"/scripts/check.sh`, or use exec form with `args`.
+- Run a bundled script by its path, never with an interpreter in front (`bash …`, `python3 …`): its shebang chooses the interpreter on the user's machine. Start it with `#!/usr/bin/env <interpreter>`, without a version or an absolute interpreter path, and make it executable (`chmod +x`, mode 755 in git), as the [hooks docs](https://code.claude.com/docs/en/plugins/components#hooks) require. `scripts/check.py` enforces it.
 - The variables are not set in the Bash tool's environment; in skills and agents, write the `${...}` reference in the Markdown body so Claude Code substitutes it.
-- Never use `../`, absolute or home paths, user or machine names, personal emails or secrets. `python3 scripts/check.py` rejects them.
+- Never use `../`, absolute or home paths, user or machine names, personal emails or secrets. `scripts/check.py` rejects them.
 - Links from a plugin README to other repository files are absolute GitHub URLs; `scripts/sync_readmes.py` generates them.
 
 ## Manifest
@@ -85,14 +86,14 @@ Mods additionally need `metadata.minClaudeCodeVersion` of at least 2.1.287 and t
 
 ## Documentation
 
-The README template has author sections (Overview, What it does, the tools under Prerequisites, Usage, FAQ, the explanation under Permissions) and generated blocks. Write the author sections; run `python3 scripts/sync_readmes.py` for the rest. Details in the [README guide](readme-guide.md).
+The README template has author sections (Overview, What it does, the tools under Prerequisites, Usage, FAQ, the explanation under Permissions) and generated blocks. Write the author sections; run `scripts/sync_readmes.py` for the rest. Details in the [README guide](readme-guide.md).
 
 ## Check your work
 
 ```bash
 claude plugin validate plugins/<name> --strict   # official validator
-python3 scripts/check.py                                        # every gate CI runs
-python3 scripts/check.py test-install                                 # install in a throwaway config
+scripts/check.py                                        # every gate CI runs
+scripts/check.py test-install                                 # install in a throwaway config
 ```
 
 For plugins that shape Claude's behavior, `claude plugin eval` compares results with and without the plugin ([plugin evals](https://code.claude.com/docs/en/plugin-evals)); include results in the pull request when you have them.
