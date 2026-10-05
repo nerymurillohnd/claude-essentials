@@ -92,7 +92,8 @@ class RepositoryFixture(unittest.TestCase):
             "tags": ["example"],
         }
         data = repo.as_dict(repo.load_json(self.marketplace)) or {}
-        data["plugins"] = [*(repo.as_list(data.get("plugins")) or []), entry]
+        entries = [*(repo.as_list(data.get("plugins")) or []), entry]
+        data["plugins"] = sorted(entries, key=lambda e: str((repo.as_dict(e) or {}).get("name")))
         _ = self.marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
         github = self.root / ".github"
@@ -380,6 +381,12 @@ class CatalogGateTest(RepositoryFixture):
     def test_version_in_entry_fails(self) -> None:
         self.set_fixture_entry_field("version", "0.1.0")
         self.assert_fails_with('"version" belongs only in plugin.json')
+
+    def test_unsorted_entries_fail(self) -> None:
+        data = repo.as_dict(repo.load_json(self.marketplace)) or {}
+        data["plugins"] = list(reversed(repo.as_list(data.get("plugins")) or []))
+        _ = self.marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        self.assert_fails_with("plugin entries must be sorted by name")
 
     def test_catalog_version_fails(self) -> None:
         self.edit_json(self.marketplace, "version", "1.0.0")
