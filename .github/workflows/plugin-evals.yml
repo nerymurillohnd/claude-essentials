@@ -1,0 +1,121 @@
+name: Plugin evals
+
+# Runs the eval suites of the plugins a pull request changes, when the maintainer applies
+# the run-evals label (ADR plugin-evals-in-ci). Informative: scores never fail the job
+# (--threshold 0); a case that fails to load or a run that cannot start does. Each run is a
+# real model call on the maintainer's account, capped by MAX_COST_USD per plugin.
+on:
+  pull_request:
+    types: [labeled]
+
+permissions: {}
+
+concurrency:
+  group: plugin-evals-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    name: Plugin eval suites
+    if: github.event.label.name == 'run-evals'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      AGENT_MODEL: claude-sonnet-5-5
+      JUDGE_MODEL: claude-haiku-4-5-20251001
+      RUNS: "1"
+      MAX_COST_USD: "10"
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: lts/*
+          package-manager-cache: false
+
+      - name: Install Claude Code, the sandbox tools and the plugins' listed packages
+        run: |
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+          scripts/check.py ci-eval-tools
+
+      - name: Authenticate with Claude Code
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          echo "${CLAUDE_CODE_OAUTH_TOKEN}" | claude login --token-stdin
+          claude whoami
+
+      - name: Run the eval suite of each changed plugin
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          claude --version
+          changed="$(git diff --name-only "${BASE_SHA}...HEAD" -- plugins)"
+          plugins="$(awk -F/ 'NF > 1 && !seen[$2]++ { print $2 }' <<< "${changed}")"
+          status=0
+          for name in ${plugins}; do
+            dir="plugins/${name}"
+            if [[ ! -d "${dir}/evals" ]]; then
+              echo "${name}: no eval suite"
+              continue
+            fi
+            grants=(Write Edit "Bash(npx *)" "Bash(npm *)" "Bash(curl *)")
+            if [[ -f "${dir}/.mcp.json" ]]; then
+              servers="$(jq -r '(.mcpServers // .) | keys[]' "${dir}/.mcp.json")"
+              for server in ${servers}; do
+                grants+=("mcp__plugin_${name}_${server}__*")
+              done
+            fi
+            if [[ -f "${dir}/evals/ci-allow-tools.txt" ]]; then
+              while IFS= read -r grant; do
+                [[ -n "${grant}" && "${grant}" != \#* ]] && grants+=("${grant}")
+              done < "${dir}/evals/ci-allow-tools.txt"
+            fi
+            result="${RUNNER_TEMP}/evals-${name}.json"
+            echo "::group::${name}"
+            claude plugin eval "${dir}" \
+              --trust-plugin --scaffold --allow-real-servers --no-publish \
+              --runs "${RUNS}" -j 4 \
+              --model "${AGENT_MODEL}" --judge-model "${JUDGE_MODEL}" \
+              --max-cost-usd "${MAX_COST_USD}" --threshold 0 \
+              --json "${result}" \
+              --allow-tools "${grants[@]}" || status=$?
+            echo "::endgroup::"
+            if [[ ! -f "${result}" ]]; then
+              echo "::error::${name}: no result document"
+              status=1
+              continue
+            fi
+            summary="$(jq '{claudeVersion, partial, partialReason, costUsd, durationSeconds, aggregates,
+              cases: [.cases[] | {name, score: .aggregates.score, delta: .aggregates.delta,
+                errors: [.arms[][]? | .error | select(. != null)]}]}' "${result}")"
+            printf '%s\n' "${summary}"
+            {
+              echo "### ${name}"
+              echo
+              echo "Models: ${AGENT_MODEL} (agent), ${JUDGE_MODEL} (judge); runs per arm: ${RUNS}; cost ceiling: \$${MAX_COST_USD}."
+              echo
+              echo '```json'
+              printf '%s\n' "${summary}"
+              echo '```'
+            } >> "${GITHUB_STEP_SUMMARY}"
+            # A suite whose sessions never ran is not a result: fail on partial runs,
+            # no runs at all, or every run ending with an error.
+            partial="$(jq -r '.partial' "${result}")"
+            runs="$(jq '[.cases[].arms[][]?] | length' "${result}")"
+            errored="$(jq '[.cases[].arms[][]? | select(.error != null)] | length' "${result}")"
+            if [[ "${partial}" == "true" || "${runs}" == "0" || "${errored}" == "${runs}" ]]; then
+              echo "::error::${name}: partial=${partial}, runs=${runs}, errored=${errored}"
+              status=1
+            fi
+          done
+          exit "${status}"

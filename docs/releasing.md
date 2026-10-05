@@ -109,7 +109,7 @@ After the merge a maintainer tags the merged commit and publishes the GitHub Rel
 
 To remove a component inside a plugin (a skill, agent, hook or command), deprecate it under `### Deprecated` in a plugin minor, keep it for at least one further minor release and 30 days, and remove it in the plugin's next major with a `### Migration` section.
 
-To remove a whole plugin (exception: a confirmed vulnerability that cannot be fixed quickly removes it at once, as `SECURITY.md` promises, so skip steps 1 and 2):
+To remove a whole plugin (exceptions: a confirmed vulnerability that cannot be fixed quickly removes it at once, as `SECURITY.md` promises, and the example plugin `hello-example` is removed at once by [ADR remove-example-plugin-without-deprecation](adr/decisions/ADR_2026-10-05_remove-example-plugin-without-deprecation.md); both skip steps 1 and 2):
 
 1. Deprecate it in a plugin MINOR release: add `### Deprecated` with the replacement and the planned removal, and state it in the README Overview. Add a dated `### Deprecated` note to the root `CHANGELOG.md`.
 2. Keep the plugin for at least one further minor release and 30 days.

@@ -32,12 +32,12 @@
           - plugins/*/monitors/**
           - .github/workflows/**
 
-"plugin:hello-example":
-  - changed-files:
-      - any-glob-to-any-file:
-          - plugins/hello-example/**
-
 "category:development":
   - changed-files:
       - any-glob-to-any-file:
-          - plugins/hello-example/**
+          - plugins/svelte-development/**
+
+"plugin:svelte-development":
+  - changed-files:
+      - any-glob-to-any-file:
+          - plugins/svelte-development/**

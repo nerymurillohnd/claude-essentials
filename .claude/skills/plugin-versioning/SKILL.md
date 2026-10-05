@@ -11,12 +11,12 @@ description: Decides whether a change needs a plugin release, which bump level, 
 
 Claude Code caches each plugin by name and version and delivers a new copy only when `version` in `plugin.json` changes. A plugin change merged without a bump gives users of the same version different files, so:
 
-| Change                                                                                           | Release                                                              |
-| ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |
-| Any file inside `plugins/<name>/` (skills, agents, hooks, MCP, README, CHANGELOG, `plugin.json`) | Bump that plugin in the same pull request                            |
-| New plugin                                                                                       | No bump: it starts at `0.1.0`; `new_plugin.py` adds the catalog note |
-| `marketplace.json` entry (description, category, tags) or `renames`                              | No bump: add a dated note to the root `CHANGELOG.md`                 |
-| Scripts, tests, CI, `docs/`, `.github/`, root README, rules, ADRs                                | No bump                                                              |
+| Change | Release |
+| --- | --- |
+| Any file inside `plugins/<name>/` (skills, agents, hooks, MCP, README, CHANGELOG, `plugin.json`) | Bump that plugin in the same pull request |
+| New plugin | No bump: it starts at `0.1.0`; `new_plugin.py` adds the catalog note |
+| `marketplace.json` entry (description, category, tags) or `renames` | No bump: add a dated note to the root `CHANGELOG.md` |
+| Scripts, tests, CI, `docs/`, `.github/`, root README, rules, ADRs | No bump |
 
 Only plugins are versioned. The catalog has no `version` (neither top-level nor `metadata.version`) and no tags.
 

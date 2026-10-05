@@ -1,0 +1,8 @@
+# Skill content is read by the model, not rendered for people: it keeps compact
+# tables instead of Prettier's padded ones (ADR skills-excluded-from-prettier).
+# Prettier also reads .gitignore.
+**/skills/**
+
+# Instruction files loaded into every session: compact for the same reason.
+CLAUDE.md
+CLAUDE.local.md
