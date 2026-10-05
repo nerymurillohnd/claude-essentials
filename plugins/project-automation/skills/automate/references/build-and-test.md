@@ -2,7 +2,7 @@
 
 Where each kind of automation goes, the checks that prove it is well formed, and the positive and negative tests that prove it works. Read the section for each item in phase 4. The shapes here are orientation only: confirm every field on the live page linked in each section before writing it, because fields are added and changed between releases.
 
-**Contents:** [Checks for every item](#checks-for-every-item) · [CLAUDE.md and rules](#claudemd-and-rules) · [Skills](#skills) · [Subagents](#subagents) · [Hooks](#hooks) · [Permission rules and settings](#permission-rules-and-settings) · [Output styles](#output-styles) · [Scheduled and recurring work](#scheduled-and-recurring-work) · [Dynamic workflows](#dynamic-workflows) · [GitHub Actions](#github-actions) · [Headless behaviour tests](#headless-behaviour-tests)
+**Contents:** [Checks for every item](#checks-for-every-item) · [CLAUDE.md and rules](#claudemd-and-rules) · [Skills](#skills) · [Subagents](#subagents) · [Hooks](#hooks) · [Permission rules and settings](#permission-rules-and-settings) · [Plugins](#plugins) · [Output styles](#output-styles) · [Scheduled and recurring work](#scheduled-and-recurring-work) · [Dynamic workflows](#dynamic-workflows) · [GitHub Actions](#github-actions) · [Headless behaviour tests](#headless-behaviour-tests)
 
 ## Checks for every item
 
@@ -68,6 +68,22 @@ Where each kind of automation goes, the checks that prove it is well formed, and
 - **Positive test:** attempt the allowed action and confirm it runs without a prompt; attempt the denied action and confirm Claude Code refuses it.
 - **Negative test:** attempt a near miss (the sibling file, a similar command) and confirm it gets the intended treatment, not the rule's.
 - Docs: https://code.claude.com/docs/en/permissions and https://code.claude.com/docs/en/settings
+
+## Plugins
+
+Only when the user approved packaging automation as a plugin; publishing it is the user's action.
+
+- A marketplace is a git repository with `.claude-plugin/marketplace.json` (`name`, `owner`, `plugins` required); a plugin entry's relative `source` starts with `./` from the marketplace root. Pushing the file publishes it: anyone who can clone the repository can install.
+- Only the plugin directory is copied into each user's plugin cache. Nothing a plugin needs may live above its root; reference bundled files with the plugin-root placeholder and keep state in the plugin-data placeholder, never in the plugin root, which changes on every update.
+- Those placeholders are substituted in skill, agent and hook text, and exported to hook processes, but they are not in the Bash tool's environment: a skill writes them literally in its Markdown so Claude Code substitutes the path.
+- Versions: set `version` in `plugin.json` only and change it on every release, or omit it everywhere so users track commits. With a version set and not bumped, users never receive new commits. Claude Code does not check SemVer.
+- Tags (`<plugin>--v<version>`, created by `claude plugin tag`) are needed only when other plugins declare a version range on this one.
+- Never rename a published plugin; change `displayName`. Removal or rename goes through the catalog's `renames` map.
+- A top-level `bin/` keeps the plugin out of claude.ai and Cowork.
+- **Checks:** `claude plugin validate --strict` on the marketplace root and on every plugin directory (a marketplace run does not open the plugins' skill, agent or hook files).
+- **Positive test:** load it with `claude --plugin-dir <plugin>` and run one skill.
+- **Negative test:** add the marketplace in a throwaway configuration and install it, which surfaces reserved names, bad sources and missing directories that validation does not.
+- Docs: https://code.claude.com/docs/en/plugins/publish, https://code.claude.com/docs/en/plugins/host-marketplace, https://code.claude.com/docs/en/plugins/loading
 
 ## Output styles
 
