@@ -92,7 +92,8 @@ class RepositoryFixture(unittest.TestCase):
             "tags": ["example"],
         }
         data = repo.as_dict(repo.load_json(self.marketplace)) or {}
-        data["plugins"] = [*(repo.as_list(data.get("plugins")) or []), entry]
+        entries = [*(repo.as_list(data.get("plugins")) or []), entry]
+        data["plugins"] = sorted(entries, key=lambda e: str((repo.as_dict(e) or {}).get("name")))
         _ = self.marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
 
         github = self.root / ".github"
@@ -272,6 +273,21 @@ class RuffConfigTest(unittest.TestCase):
         assert "✘ ci-tools runs only on GitHub Actions" in output, output
         assert not (home / ".config").exists(), "the ruff config was written outside CI"
 
+    def test_ci_eval_tools_refuses_outside_github_actions(self) -> None:
+        result, output = emitted(lambda: check.ci_eval_tools({}))
+        assert result == 1
+        assert "✘ ci-eval-tools runs only on GitHub Actions" in output, output
+
+    def test_eval_packages_read_every_plugin_listing(self) -> None:
+        root = make_fixture_dir(self)
+        first = root / "plugins" / "one" / "evals"
+        second = root / "plugins" / "two" / "evals"
+        first.mkdir(parents=True)
+        second.mkdir(parents=True)
+        _ = (first / "ci-packages.txt").write_text("# servers\nalpha\n\nbeta\n", encoding="utf-8")
+        _ = (second / "ci-packages.txt").write_text("beta\ngamma\n", encoding="utf-8")
+        assert check.eval_packages(root) == ["alpha", "beta", "gamma"]
+
     def test_unused_config_is_reported(self) -> None:
         unused = make_fixture_dir(self) / "ruff" / "ruff.toml"
         result, output = emitted(lambda: check.ruff_uses(unused))
@@ -380,6 +396,12 @@ class CatalogGateTest(RepositoryFixture):
     def test_version_in_entry_fails(self) -> None:
         self.set_fixture_entry_field("version", "0.1.0")
         self.assert_fails_with('"version" belongs only in plugin.json')
+
+    def test_unsorted_entries_fail(self) -> None:
+        data = repo.as_dict(repo.load_json(self.marketplace)) or {}
+        data["plugins"] = list(reversed(repo.as_list(data.get("plugins")) or []))
+        _ = self.marketplace.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        self.assert_fails_with("plugin entries must be sorted by name")
 
     def test_catalog_version_fails(self) -> None:
         self.edit_json(self.marketplace, "version", "1.0.0")

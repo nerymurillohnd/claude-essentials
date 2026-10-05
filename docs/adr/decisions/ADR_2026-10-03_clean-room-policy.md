@@ -58,3 +58,5 @@ Reviewers check sources in pull requests; the pull request template asks for the
 ## More information
 
 Official sources: [Claude Code docs index](https://code.claude.com/docs/llms.txt) and [changelog](https://code.claude.com/docs/en/changelog).
+
+2026-10-05: [ADR derived-third-party-content](ADR_2026-10-05_derived-third-party-content.md) allows one exception: a plugin may derive from a project's own official AI content for its own technology when the maintainer names it, under the conditions that ADR lists. Everything else in this record still applies.

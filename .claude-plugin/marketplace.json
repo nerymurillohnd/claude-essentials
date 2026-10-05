@@ -8,11 +8,14 @@
   },
   "plugins": [
     {
-      "name": "hello-example",
-      "source": "./plugins/hello-example",
-      "description": "Example plugin that proves the Claude Essentials pipeline end to end; safe to remove.",
+      "name": "svelte-development",
+      "source": "./plugins/svelte-development",
+      "description": "Svelte 5 and SvelteKit 3 development: current best practices, docs lookup and autofixer, code navigation, an editor and an auditor agent, and the Svelte MCP and language servers, built on the Svelte team's AI tools.",
       "category": "development",
-      "tags": ["example", "getting-started"]
+      "tags": ["svelte", "sveltekit", "astro", "tailwindcss", "mcp", "lsp"]
     }
-  ]
+  ],
+  "renames": {
+    "hello-example": null
+  }
 }
