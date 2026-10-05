@@ -15,3 +15,4 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `automation-scout` agent: read-only inventory of the existing Claude Code setup, its defects and the recurring manual work in scripts, docs and git history.
 - `feature-researcher` agent: checks the live Claude Code documentation and changelog for the installed version, with sources and quotes.
 - `automation-verifier` agent: re-runs every acceptance test independently and tries inputs the author did not.
+- Eval suite in `evals/` for `claude plugin eval`: compares the skill with a no-plugin baseline on a sample repository and checks that unrelated requests do not load it.
