@@ -83,14 +83,32 @@ jobs:
               --json "${result}" \
               --allow-tools "${grants[@]}" || status=$?
             echo "::endgroup::"
+            if [[ ! -f "${result}" ]]; then
+              echo "::error::${name}: no result document"
+              status=1
+              continue
+            fi
+            summary="$(jq '{claudeVersion, partial, partialReason, costUsd, durationSeconds, aggregates,
+              cases: [.cases[] | {name, score: .aggregates.score, delta: .aggregates.delta,
+                errors: [.arms[][]? | .error | select(. != null)]}]}' "${result}")"
+            printf '%s\n' "${summary}"
             {
               echo "### ${name}"
               echo
               echo "Models: ${AGENT_MODEL} (agent), ${JUDGE_MODEL} (judge); runs per arm: ${RUNS}; cost ceiling: \$${MAX_COST_USD}."
               echo
               echo '```json'
-              jq '{partial, costUsd, cases: [.cases[] | {name, aggregates}]}' "${result}" || echo "no result document"
+              printf '%s\n' "${summary}"
               echo '```'
             } >> "${GITHUB_STEP_SUMMARY}"
+            # A suite whose sessions never ran is not a result: fail on partial runs,
+            # no runs at all, or every run ending with an error.
+            partial="$(jq -r '.partial' "${result}")"
+            runs="$(jq '[.cases[].arms[][]?] | length' "${result}")"
+            errored="$(jq '[.cases[].arms[][]? | select(.error != null)] | length' "${result}")"
+            if [[ "${partial}" == "true" || "${runs}" == "0" || "${errored}" == "${runs}" ]]; then
+              echo "::error::${name}: partial=${partial}, runs=${runs}, errored=${errored}"
+              status=1
+            fi
           done
           exit "${status}"
