@@ -2,5 +2,5 @@
 type: tool_used
 tool: Agent
 input_match: "svelte-code-auditor"
-arm: with-only
+arm: both
 ---

@@ -2,5 +2,5 @@
 type: tool_used
 tool: Bash
 input_match: "CHANGELOG"
-arm: with-only
+arm: both
 ---

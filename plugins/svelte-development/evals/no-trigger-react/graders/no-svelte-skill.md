@@ -4,5 +4,5 @@ tool: Skill
 input_match: "svelte-"
 min: 0
 max: 0
-arm: with-only
+arm: both
 ---

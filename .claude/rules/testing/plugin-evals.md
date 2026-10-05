@@ -19,7 +19,7 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 
 - Cover four questions for every plugin: each skill loads when a task needs it and never for unrelated tasks (`tool_used` on `Skill` with `min: 0, max: 0` for negatives); each agent stays inside its role (a read-only agent changes no file even with `Write` and `Edit` available); the plugin's guidance is followed, not skipped (`tool_order`, `tool_used` on its MCP tools); and a task from the newest release is solved only by following the plugin (pin a version newer than the references' "Verified against" line so the changelog check is due).
 - Prompts read like a user's request and never name the skill, the agent or the expected method.
-- Give each case one grader on the result (a `regex` over the produced file, or an `llm` rubric for a short answer) and one on the path (`tool_used`, `tool_order`). Mark path graders on plugin-only tools or skills `arm: with-only`.
+- Give each case one grader on the result (a `regex` over the produced file, or an `llm` rubric for a short answer) and one on the path (`tool_used`, `tool_order`). Mark path graders on plugin-only tools or skills `arm: both`: the baseline arm then scores 0 on them, so the delta measures what the plugin adds. `arm: with-only` turns a grader into an unscored indicator, and a case whose graders are all `with-only` scores 0 in both arms (observed in the first CI run, 2026-10-05).
 - Declare in `allowed_tools` every tool the case may use, including the ones it must not use (the test is that it does not), and give the competing tools too, so choosing the right one is a real choice.
 - Tighten regexes against false positives: `\son:[a-z]` for the Svelte `on:` directive (plain `on:` also matches `transition:`); exact error positions rather than a word the answer would mention anyway.
 - Quote frontmatter values that contain `{`, `:` or `[` (YAML reads `{ … }` as a map). After Prettier rewrites the frontmatter, re-parse every pattern to confirm it is unchanged.
@@ -30,7 +30,7 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 - One `scaffold.sh` per case directory, named in `case.yaml` (`context.scaffold_script`); shared helpers live in a non-case directory such as `evals/shared/`.
 - `#!/usr/bin/env bash`, mode 755, `set -euo pipefail`, braced variables, `[[ ]]`: `shellcheck -o all` clean.
 - Resolve paths from the script's own location (`case_dir="$(cd "$(dirname "$0")" && pwd)"`, then `dirname`), never with `../` (the `repo` gate rejects it) and never with an absolute or home path: plugins are distributed.
-- A scaffold runs outside the agent's sandbox with a minimal environment and a 120-second limit, only with `--scaffold`. Do real setup there (copy fixtures, drop `.example` suffixes, `npm install`, `npx svelte-kit sync`) and real state changes (for example pinning a version in `package.json`); never a note that only claims a change.
+- A scaffold runs outside the agent's sandbox with a minimal environment and a 120-second limit, only with `--scaffold`. Do real setup there (copy fixtures, drop `.example` suffixes, `npm install --include=dev --ignore-scripts`, then `npx --no-install svelte-kit sync`; a CI runner's npm may omit devDependencies, and the scaffold must fail loudly when a binary it needs is missing) and real state changes (for example pinning a version in `package.json`); never a note that only claims a change.
 - Test any non-trivial scaffold edit on a scratch copy before a paid run.
 
 ## Running
