@@ -166,7 +166,8 @@ docs/                             guides and ADRs
 - The gate tests run on a fixture plugin outside the catalog (`tests/fixtures/plugins/sample-plugin/`), so removing `hello-example` cannot break them (PR #6, 2026-10-04).
 - The automatic Claude review ran on PR #6 and posted nothing: the action loads the repository's `.claude/settings.json`, whose `permissions.ask` list denied `gh pr comment`. PR #7 (`f5884f8`) passes `--setting-sources user`; the first pull request after it shows whether the review now posts (details in `.claude/rules/ci-github.md`).
 - The only GitHub collaborator is the maintainer, and Claude works through that account, so required reviews on `main` stay off (`.claude/rules/ci-github.md`).
-- 2026-10-05: `project-automation` 0.1.0 built on branch `project-automation/initial`, removing `hello-example` with `renames: {"hello-example": null}`; awaiting the maintainer's approval to push and open the pull request.
+- 2026-10-05: `project-automation` 0.1.0 is in pull request #11 (branch `project-automation/initial`), which also retires `hello-example` with `renames: {"hello-example": null}`. After the merge, the maintainer runs `/release-plugin project-automation tag`.
+- 2026-10-05: branch `scripts/drive-plugin-tools` (`ba64a7b`, not pushed) fixes `drive_plugin.py`, whose default `--tools default,Bash,WebFetch` left sessions without the Skill, Read and Agent tools.
 - Awaiting my decision:
   - refining the user-level Python rule;
   - a `uv cache prune` to repair cache entries removed by hand on 2026-10-03;
