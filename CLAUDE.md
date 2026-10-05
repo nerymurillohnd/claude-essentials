@@ -13,7 +13,7 @@
 
 The goal is a catalog that third parties can trust: every plugin installs cleanly on any machine, says exactly what it runs, ships only reviewed code, and gets fixes to users through explicit, signed releases.
 
-The repository is public at https://github.com/nerymurillohnd/claude-essentials. The only plugin is the example `hello-example`; the next step is the first real plugin.
+The repository is public at https://github.com/nerymurillohnd/claude-essentials. The catalog holds `svelte-development`; the example `hello-example` was removed with a `renames` entry (ADR remove-example-plugin-without-deprecation).
 
 ## Commands
 
@@ -57,7 +57,7 @@ Run commands in this order. Every script is standard-library Python, run by path
 ## Non-negotiable rules
 
 - **Plugins are for distribution.** Describe every capability from the point of view of the user who installs it. Never install, enable, symlink or pre-configure these plugins in my real Claude Code configuration. Never derive a plugin's requirements or compatibility from my machine, its PATH or its binaries.
-- **Clean room.** Take Claude Code specifics only from the official docs (`https://code.claude.com/docs/llms.txt`), the changelog and runtime checks. Never copy or imitate another Claude Code or AI-assistant marketplace or plugin collection. Consult one only when I ask, only what I name, and only to observe. My earlier marketplace projects are forbidden sources, listed in the untracked `CLAUDE.local.md`. Check pasted material for other platforms' content before using it.
+- **Clean room.** Take Claude Code specifics only from the official docs (`https://code.claude.com/docs/llms.txt`), the changelog and runtime checks. Never copy or imitate another Claude Code or AI-assistant marketplace or plugin collection. Consult one only when I ask, only what I name, and only to observe. One exception: a plugin may derive from a project's own official AI content when I name it (ADR derived-third-party-content, `.claude/rules/plugins/derived-content.md`). My earlier marketplace projects are forbidden sources, listed in the untracked `CLAUDE.local.md`. Check pasted material for other platforms' content before using it.
 - **Automate and source first.** Use a native tool or generator, then an official template, then an open standard; hand-write only what is ours. Record each choice in `docs/sourcing-log.md`.
 - **Portability.** No absolute or home paths, user or machine names, personal data or secrets in plugins. Use `${CLAUDE_PLUGIN_ROOT}` and `${CLAUDE_PLUGIN_DATA}`; never `../`.
 - **Leave nothing behind.** Every test, scaffold or experiment removes what it creates and verifies the removal. Use the prefixes in `TEMP_PREFIXES` (`scripts/check.py`) and `docs/testing.md#cleanup`.
@@ -85,12 +85,15 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 - Catalog file: `.claude/rules/marketplace-file.md`
 - Plugin authoring and manifest: `.claude/rules/plugins/authoring.md`, `.claude/rules/plugins/manifest.md`
 - Hooks, permissions, mods, security: `.claude/rules/plugins/hooks-and-permissions.md`, `.claude/rules/plugins/mods.md`, `.claude/rules/plugins/security.md`
+- LSP and MCP servers (every LSP server sets `"workspaceFolder": "${CLAUDE_PROJECT_DIR}"`, one extension per server, no compound keys): `.claude/rules/plugins/lsp-servers.md`
+- Plugins derived from upstream AI content: `.claude/rules/plugins/derived-content.md`
 - READMEs and distribution: `.claude/rules/plugins/readmes.md`, `.claude/rules/distribution.md`
 
 #### Repository and Tooling
 
 - Official CLI and schemas: `.claude/rules/claude-cli.md`, `.claude/rules/schemas.md`
 - Repository scripts, gates, isolated installs: `.claude/rules/repo-scripts.md`, `.claude/rules/testing/gates.md`, `.claude/rules/testing/isolated-install.md`
+- Plugin evals (design, scaffolds, flags, cost, evidence; never run without the maintainer's approval): `.claude/rules/testing/plugin-evals.md`
 - CI, releases, tools and pinned Actions: `.claude/rules/ci-github.md`, `.claude/rules/releasing.md`, `.claude/rules/tooling-versions.md`
 - ADRs and Claude Code features: `.claude/rules/adrs.md`, `.claude/rules/claude-code-features.md`
 - Claude Code automation (settings, hooks, project skills, agent, workflows): `.claude/rules/automation.md`
@@ -166,7 +169,8 @@ docs/                             guides and ADRs
 - The gate tests run on a fixture plugin outside the catalog (`tests/fixtures/plugins/sample-plugin/`), so removing `hello-example` cannot break them (PR #6, 2026-10-04).
 - The automatic Claude review ran on PR #6 and posted nothing: the action loads the repository's `.claude/settings.json`, whose `permissions.ask` list denied `gh pr comment`. PR #7 (`f5884f8`) passes `--setting-sources user`; the first pull request after it shows whether the review now posts (details in `.claude/rules/ci-github.md`).
 - The only GitHub collaborator is the maintainer, and Claude works through that account, so required reviews on `main` stay off (`.claude/rules/ci-github.md`).
-- Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
+- On branch `svelte-development/initial` (2026-10-05, not yet committed or pushed): the `svelte-development` plugin (derived from `sveltejs/ai-tools`, ADR derived-third-party-content), the removal of `hello-example` (ADR remove-example-plugin-without-deprecation), `.prettierignore` for `**/skills/**` and the CLAUDE files (ADR skills-excluded-from-prettier), the sorted-fixture gate test, and the rules `plugins/derived-content.md` and `plugins/lsp-servers.md`.
+- `svelte-development` uses the Svelte team's remote MCP server (maintainer decision: it reconnects on its own, unlike a stdio server) and `svelteserver` for `.svelte` only; TypeScript code intelligence will be its own plugin. Evidence for every reference is in the research directory `2026-10-05-svelte-development` of the live-docs-research plugin data.
 - Awaiting my decision:
   - refining the user-level Python rule;
   - a rule that plugins declare every external tool they use and rely on no version-specific features;

@@ -80,3 +80,5 @@ Chosen option: **version only plugins, in `plugin.json`, releasing every plugin 
 ## More information
 
 Docs: [Versions and updates](https://code.claude.com/docs/en/plugins/loading#versions-and-updates), [Release a new version](https://code.claude.com/docs/en/plugins/host-marketplace#release-a-new-version), [Hold users on one version](https://code.claude.com/docs/en/plugins/host-marketplace#hold-users-on-one-version), [Marketplace top-level fields](https://code.claude.com/docs/en/plugins/marketplace-reference#top-level-fields), [plugin tag](https://code.claude.com/docs/en/plugins/cli-reference#plugin-tag). Procedure: [docs/releasing.md](../../releasing.md).
+
+2026-10-05: [ADR remove-example-plugin-without-deprecation](ADR_2026-10-05_remove-example-plugin-without-deprecation.md) removes `hello-example` without the deprecation period. The rule still applies to every other plugin.

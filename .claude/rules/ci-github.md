@@ -37,4 +37,4 @@ paths:
 - The remote labels equal `.github/labels.yml`; `gh workflow run labels.yml` syncs them and the GitHub defaults are gone.
 - Community standards report 100 %: README, Code of Conduct, Contributing, License, Security policy and pull request template.
 - Verify the published marketplace like a user only in a throwaway configuration, never in the maintainer's own: `export HOME="$(mktemp -d)" CLAUDE_CONFIG_DIR="$HOME/.claude"`, then `claude plugin marketplace add nerymurillohnd/claude-essentials`, `claude plugin install <plugin>@claude-essentials` and `claude plugin list --json`.
-- `hello-example` 0.1.0 stays untagged; its first tag is `hello-example--v0.1.1`.
+- `hello-example` 0.1.0 stayed untagged; its only tag is `hello-example--v0.1.1`, kept after the plugin's removal.

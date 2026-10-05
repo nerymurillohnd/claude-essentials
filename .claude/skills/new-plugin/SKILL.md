@@ -30,4 +30,3 @@ Plugins are for the people who install them: write every component from their po
 - `new_plugin.py` leaves TODO placeholders on purpose; the `repo` gate rejects them until they are real content.
 - The scaffold's `--with hooks` generates a Bun handler; never ship it: hooks may use only interpreters the plugin declares as requirements.
 - Never install or enable the plugin in the maintainer's own configuration; `drive_plugin.py` and `test-install` use session-only or throwaway configurations.
-- While `hello-example` is still in the catalog, the first real plugin's pull request also removes it: delete its entry and directory, add `"renames": {"hello-example": null}` and a dated catalog note.
