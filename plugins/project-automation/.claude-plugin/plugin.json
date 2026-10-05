@@ -1,0 +1,23 @@
+{
+  "name": "project-automation",
+  "displayName": "Project Automation",
+  "version": "0.1.0",
+  "description": "Audits a repository and builds evidence-backed Claude Code automation for it: skills, subagents, hooks, rules and settings, each verified working before it is handed over.",
+  "author": {
+    "name": "Claude Essentials maintainers"
+  },
+  "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/project-automation",
+  "repository": "https://github.com/nerymurillohnd/claude-essentials",
+  "license": "MIT",
+  "keywords": [
+    "workflows",
+    "automation",
+    "setup",
+    "hooks",
+    "skills",
+    "subagents"
+  ],
+  "metadata": {
+    "minClaudeCodeVersion": "2.1.289"
+  }
+}

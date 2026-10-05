@@ -8,11 +8,14 @@
   },
   "plugins": [
     {
-      "name": "hello-example",
-      "source": "./plugins/hello-example",
-      "description": "Example plugin that proves the Claude Essentials pipeline end to end; safe to remove.",
-      "category": "development",
-      "tags": ["example", "getting-started"]
+      "name": "project-automation",
+      "source": "./plugins/project-automation",
+      "description": "Audits a repository and builds evidence-backed Claude Code automation for it: skills, subagents, hooks, rules and settings, each verified working before it is handed over.",
+      "category": "workflows",
+      "tags": ["automation", "setup", "hooks", "skills", "subagents"]
     }
-  ]
+  ],
+  "renames": {
+    "hello-example": null
+  }
 }

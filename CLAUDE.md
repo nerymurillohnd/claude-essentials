@@ -13,7 +13,7 @@
 
 The goal is a catalog that third parties can trust: every plugin installs cleanly on any machine, says exactly what it runs, ships only reviewed code, and gets fixes to users through explicit, signed releases.
 
-The repository is public at https://github.com/nerymurillohnd/claude-essentials. The only plugin is the example `hello-example`; the next step is the first real plugin.
+The repository is public at https://github.com/nerymurillohnd/claude-essentials. The first real plugin is `project-automation`; the example `hello-example` is retired with a `renames` entry.
 
 ## Commands
 
@@ -166,7 +166,7 @@ docs/                             guides and ADRs
 - The gate tests run on a fixture plugin outside the catalog (`tests/fixtures/plugins/sample-plugin/`), so removing `hello-example` cannot break them (PR #6, 2026-10-04).
 - The automatic Claude review ran on PR #6 and posted nothing: the action loads the repository's `.claude/settings.json`, whose `permissions.ask` list denied `gh pr comment`. PR #7 (`f5884f8`) passes `--setting-sources user`; the first pull request after it shows whether the review now posts (details in `.claude/rules/ci-github.md`).
 - The only GitHub collaborator is the maintainer, and Claude works through that account, so required reviews on `main` stay off (`.claude/rules/ci-github.md`).
-- Next: the first real plugin with `/new-plugin`, then removal of `hello-example` with a `renames` entry in the same pull request.
+- 2026-10-05: `project-automation` 0.1.0 built on branch `project-automation/initial`, removing `hello-example` with `renames: {"hello-example": null}`; awaiting the maintainer's approval to push and open the pull request.
 - Awaiting my decision:
   - refining the user-level Python rule;
   - a `uv cache prune` to repair cache entries removed by hand on 2026-10-03;

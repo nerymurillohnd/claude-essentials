@@ -4,6 +4,16 @@ Changes to the Claude Essentials catalog: plugins added, deprecated, removed or 
 
 The catalog has no version: users always receive the latest catalog, and only plugins are versioned ([Semantic Versioning](https://semver.org/spec/v2.0.0.html)). Entries are grouped by date (UTC), newest first, using the change types of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 2026-10-05
+
+### Added
+
+- `project-automation`: Audits a repository and builds evidence-backed Claude Code automation for it: skills, subagents, hooks, rules and settings, each verified working before it is handed over.
+
+### Removed
+
+- `hello-example`, the example plugin: `project-automation` now exercises the whole pipeline. The catalog's `renames` entry maps it to `null`, so users who installed it see `Removed from the "claude-essentials" marketplace` instead of a not-found error. Uninstall it with `claude plugin uninstall hello-example@claude-essentials`.
+
 ## 2026-10-03
 
 ### Added

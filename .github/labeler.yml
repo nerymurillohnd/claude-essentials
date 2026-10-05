@@ -33,12 +33,12 @@
           - plugins/*/monitors/**
           - .github/workflows/**
 
-"plugin:hello-example":
+"plugin:project-automation":
   - changed-files:
       - any-glob-to-any-file:
-          - plugins/hello-example/**
+          - plugins/project-automation/**
 
-"category:development":
+"category:workflows":
   - changed-files:
       - any-glob-to-any-file:
-          - plugins/hello-example/**
+          - plugins/project-automation/**

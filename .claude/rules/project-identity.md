@@ -8,4 +8,4 @@
 - Clean-room policy: anything specific to Claude Code comes only from the official documentation and the changelog. Another marketplace or plugin collection is consulted only at my request, only what I name, and only to observe, never to copy.
 - The sourcing order is a generator, then an official template, then an open standard, and hand-writing last.
 - The repository is public at `nerymurillohnd/claude-essentials` (`origin`); every commit is signed, and you need my explicit approval before any push, tag push or change to GitHub settings.
-- The only plugin is `hello-example`, which is safe to remove.
+- The first real plugin is `project-automation`; the example `hello-example` was retired in the same pull request with a `renames` entry mapping it to `null`.

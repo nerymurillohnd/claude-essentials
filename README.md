@@ -28,20 +28,20 @@ Each plugin's README lists its requirements, components and the exact commands t
 
 ## Plugins
 
-| Plugin                                           | Install as      | Category                   | Version | Description                                                                           |
-| ------------------------------------------------ | --------------- | -------------------------- | ------- | ------------------------------------------------------------------------------------- |
-| [Hello Example](plugins/hello-example/README.md) | `hello-example` | [development](#categories) | 0.1.1   | Example plugin that proves the Claude Essentials pipeline end to end; safe to remove. |
+| Plugin                                                     | Install as           | Category                 | Version | Description                                                                                                                                                                 |
+| ---------------------------------------------------------- | -------------------- | ------------------------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Project Automation](plugins/project-automation/README.md) | `project-automation` | [workflows](#categories) | 0.1.0   | Audits a repository and builds evidence-backed Claude Code automation for it: skills, subagents, hooks, rules and settings, each verified working before it is handed over. |
 
 ## Categories
 
 | Category         | Covers                                                 | Plugins |
 | ---------------- | ------------------------------------------------------ | ------- |
-| `workflows`      | Multi-step processes Claude carries out end to end     | 0       |
+| `workflows`      | Multi-step processes Claude carries out end to end     | 1       |
 | `agents`         | Specialized subagents Claude delegates focused work to | 0       |
 | `audits`         | Systematic checks of code, configuration or content    | 0       |
 | `code-review`    | Reviewing changes and pull requests                    | 0       |
 | `documentation`  | Writing and maintaining documentation                  | 0       |
-| `development`    | Day-to-day software development                        | 1       |
+| `development`    | Day-to-day software development                        | 0       |
 | `best-practices` | Conventions, standards and quality guidance            | 0       |
 | `research`       | Deep web and source research                           | 0       |
 | `model-behavior` | Output styles, guardrails and operating rules          | 0       |
