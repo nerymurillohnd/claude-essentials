@@ -23,6 +23,8 @@ The prompt gives you the installed Claude Code version, an optional focus, and s
 
 Use WebSearch only to locate an official page the index does not make obvious. Other websites, blogs and forum posts are not sources; mention one only as a lead you then confirmed on an official page.
 
+Take every quote from the raw page text: `curl -sL <page>.md` piped to `grep -n` or `sed -n`, when Bash can reach the docs host. A WebFetch result passes through a summarizing model and has returned a different, older copy of a page than the site serves, so treat it as a lead and confirm the line in the raw text before you report a fact, and above all before you report that something does not exist. Give the line number with each quote. If only WebFetch is available, say so in Gaps.
+
 If the web tools are unavailable or every fetch fails, say so at the top of your report and stop: an unverified answer presented as research is worse than none.
 
 ## Steps
