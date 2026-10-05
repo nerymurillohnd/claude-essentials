@@ -80,7 +80,7 @@ Only when the user approved packaging automation as a plugin; publishing it is t
 - Tags (`<plugin>--v<version>`, created by `claude plugin tag`) are needed only when other plugins declare a version range on this one.
 - Never rename a published plugin; change `displayName`. Removal or rename goes through the catalog's `renames` map.
 - A top-level `bin/` keeps the plugin out of claude.ai and Cowork.
-- **Checks:** `claude plugin validate --strict` on the marketplace root and on every plugin directory (a marketplace run does not open the plugins' skill, agent or hook files).
+- **Checks:** `claude plugin validate --strict` on the marketplace root and on every plugin directory (a marketplace run does not open the plugins' skill, agent or hook files). `--strict` fails on a missing `version`, so drop it if the plugin deliberately omits `version` to track commits.
 - **Positive test:** load it with `claude --plugin-dir <plugin>` and run one skill.
 - **Negative test:** add the marketplace in a throwaway configuration and install it, which surfaces reserved names, bad sources and missing directories that validation does not.
 - Docs: https://code.claude.com/docs/en/plugins/publish, https://code.claude.com/docs/en/plugins/host-marketplace, https://code.claude.com/docs/en/plugins/loading
