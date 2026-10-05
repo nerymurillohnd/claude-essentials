@@ -20,6 +20,8 @@ This plugin gives Claude a disciplined method for that job. It inventories the r
 
 It is for developers and teams who use Claude Code in a repository and want it set up properly, or want an existing setup audited and fixed.
 
+The plugin ships its own eval suite in `evals/`, which runs the same request with and without the plugin on a sample repository. On 2026-10-05, with Claude Code 2.1.289 and Claude Sonnet, two runs per arm scored 1.00 with the plugin and 0.63 without it; the misses without it were the missing `verify` skill and, in one run, the unworkable deny exception. Unrelated requests did not load the skill. Re-run it with `claude plugin eval project-automation@claude-essentials --no-publish --scaffold --allow-tools Bash "WebFetch(domain:code.claude.com)"`; each run is a billed model call.
+
 ## Requirements
 
 <!-- BEGIN GENERATED: requirements -->
