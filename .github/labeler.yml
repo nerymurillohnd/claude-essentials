@@ -19,7 +19,6 @@
           - .editorconfig
           - .gitignore
           - pyrightconfig.json
-          - ruff.toml
           - shellcheckrc
           - .pre-commit-config.yaml
 

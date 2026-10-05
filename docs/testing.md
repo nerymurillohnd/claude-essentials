@@ -31,6 +31,8 @@ The repository has no dependency manifest and nothing to install inside it. Thes
 | [ruff](https://docs.astral.sh/ruff/), [basedpyright](https://docs.basedpyright.com/)                                                               | Python lint, format and type checks                                                   |
 | [actionlint](https://github.com/rhysd/actionlint), [zizmor](https://docs.zizmor.sh/), [check-jsonschema](https://check-jsonschema.readthedocs.io/) | Workflow and GitHub file checks                                                       |
 
+ruff has no configuration in the repository: it reads your global `~/.config/ruff/ruff.toml`, and CI writes the same file from the `RUFF_CONFIG` Actions variable ([ADR ruff-config-from-actions-variable](adr/decisions/ADR_2026-10-05_ruff-config-from-actions-variable.md)).
+
 `scripts/check.py` runs every gate that CI runs; `scripts/check.py --list` lists them. Install the local hooks once per clone, and optionally the commit message check:
 
 ```bash

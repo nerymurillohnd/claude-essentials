@@ -40,6 +40,7 @@ jobs:
       - name: Install the latest tools
         env:
           GH_TOKEN: ${{ github.token }} # gh downloads the latest actionlint release
+          RUFF_CONFIG: ${{ vars.RUFF_CONFIG }} # the maintainer's global ruff configuration
         run: |
           echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
           scripts/check.py ci-tools

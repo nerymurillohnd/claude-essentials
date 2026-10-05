@@ -18,6 +18,7 @@ release of each tool.
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -222,6 +223,42 @@ def clean() -> int:
     return 0
 
 
+# The maintainer's global ruff configuration, stored in the RUFF_CONFIG Actions variable
+# (`gh variable set RUFF_CONFIG < ~/.config/ruff/ruff.toml`): the repository has no ruff.toml,
+# so ruff falls back to this user-level file on CI exactly as on the maintainer's machine.
+RUFF_CONFIG_VARIABLE = "RUFF_CONFIG"
+
+
+def ruff_user_config(env: dict[str, str]) -> Path:
+    """Where ruff looks for its user-level configuration on Linux and macOS."""
+    base = env.get("XDG_CONFIG_HOME") or str(Path(env.get("HOME") or Path.home()) / ".config")
+    return Path(base) / "ruff" / "ruff.toml"
+
+
+def write_ruff_config(env: dict[str, str]) -> Path | None:
+    """Write the RUFF_CONFIG variable to ruff's user-level configuration file."""
+    config = env.get(RUFF_CONFIG_VARIABLE, "")
+    if not config.strip():
+        command = f"gh variable set {RUFF_CONFIG_VARIABLE} < ~/.config/ruff/ruff.toml"
+        repo.emit(f"✘ {RUFF_CONFIG_VARIABLE} is empty; set it with `{command}`")
+        return None
+    target = ruff_user_config(env)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    _ = target.write_text(config.rstrip("\n") + "\n", encoding="utf-8")
+    return target
+
+
+def ruff_uses(target: Path) -> bool:
+    """True when ruff resolves `target` as the configuration for the repository's scripts."""
+    result = repo.run(["ruff", "check", "--show-settings", str(SCRIPTS / "check.py")], check=False)
+    expected = f'Settings path: "{target}"'
+    if expected in result.stdout:
+        repo.emit(f"ruff uses {target}")
+        return True
+    repo.emit(f"✘ ruff does not use {target}; check that the repository has no ruff config")
+    return False
+
+
 def ci_tools() -> int:
     """Install the latest release of every tool on a CI runner; never on a contributor's machine."""
     (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)
@@ -234,7 +271,10 @@ def ci_tools() -> int:
         ["bash", "-c", ACTIONLINT_INSTALL],
         ["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"],
     ]
-    return 0 if run_commands(commands) else 1
+    if not run_commands(commands):
+        return 1
+    target = write_ruff_config(dict(os.environ))
+    return 0 if target is not None and ruff_uses(target) else 1
 
 
 def main() -> int:

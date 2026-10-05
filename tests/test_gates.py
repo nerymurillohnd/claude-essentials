@@ -10,11 +10,13 @@ Run: scripts/check.py tests
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 from pathlib import Path
 import shutil
 import tempfile
-from typing import override
+from typing import TYPE_CHECKING, override
 import unittest
 
 import add_component
@@ -28,6 +30,9 @@ import claude_hooks
 import drive_plugin
 import repo
 import validate_adrs
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ROOT = repo.ROOT
 
@@ -218,12 +223,52 @@ class SelfContainmentGateTest(RepositoryFixture):
         assert any(repo.readme_heading("Permissions") in e for e in errors), errors
 
 
+def emitted(action: Callable[[], object]) -> tuple[object, str]:
+    """Run `action` and return its result with the lines it emitted."""
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        result = action()
+    return result, output.getvalue()
+
+
 class CheckRunnerTest(unittest.TestCase):
     def test_missing_tool_fails_the_gate(self) -> None:
-        assert check.run_commands([["claude-essentials-no-such-tool"]]) is False
+        result, output = emitted(lambda: check.run_commands([["claude-essentials-no-such-tool"]]))
+        assert result is False
+        assert "✘ claude-essentials-no-such-tool is not on PATH" in output, output
 
     def test_passing_command_passes(self) -> None:
         assert check.run_commands([["true"]]) is True
+
+
+class RuffConfigTest(unittest.TestCase):
+    def test_empty_variable_fails(self) -> None:
+        home = make_fixture_dir(self)
+        result, output = emitted(
+            lambda: check.write_ruff_config({"HOME": str(home), "RUFF_CONFIG": " \n"})
+        )
+        assert result is None
+        assert "✘ RUFF_CONFIG is empty" in output, output
+        assert not (home / ".config").exists()
+
+    def test_variable_is_written_to_the_xdg_config_dir(self) -> None:
+        base = make_fixture_dir(self)
+        env = {"XDG_CONFIG_HOME": str(base), "RUFF_CONFIG": 'line-length = 100\n\nselect = ["ALL"]'}
+        target = check.write_ruff_config(env)
+        assert target is not None, "a non-empty variable was not written"
+        assert target == base / "ruff" / "ruff.toml"
+        assert target.read_text(encoding="utf-8") == 'line-length = 100\n\nselect = ["ALL"]\n'
+
+    def test_home_config_is_the_fallback(self) -> None:
+        home = make_fixture_dir(self)
+        expected = home / ".config" / "ruff" / "ruff.toml"
+        assert check.ruff_user_config({"HOME": str(home)}) == expected
+
+    def test_unused_config_is_reported(self) -> None:
+        unused = make_fixture_dir(self) / "ruff" / "ruff.toml"
+        result, output = emitted(lambda: check.ruff_uses(unused))
+        assert result is False
+        assert f"✘ ruff does not use {unused}" in output, output
 
 
 class PluginScriptGateTest(RepositoryFixture):

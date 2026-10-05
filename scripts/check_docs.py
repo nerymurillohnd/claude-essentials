@@ -35,8 +35,7 @@ import repo
 _SKIPPED_DIRS = frozenset({".git", "node_modules", "__pycache__", ".ruff_cache", ".venv"})
 _SKIPPED_PREFIXES = (".claude/worktrees/",)
 _EVAL_RESULTS_RE = re.compile(r"^plugins/[^/]+/evals/results/")
-# Text files whose mentions of docs/*.md must point at an existing document. Not
-# ruff.toml: it is a copy of the maintainer's global config and cites Ruff's own docs.
+# Text files whose mentions of docs/*.md must point at an existing document.
 _REFERENCE_SUFFIXES = frozenset({".md", ".py", ".yml", ".yaml", ".json"})
 _DOC_REFERENCE_RE = re.compile(r"(?<![\w./-])(docs/[\w./-]+\.md)\b")
 # Untracked private notes and templates full of placeholders are not checked for links.

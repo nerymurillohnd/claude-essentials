@@ -3,7 +3,6 @@ paths:
   - "scripts/**"
   - "tests/**"
   - ".pre-commit-config.yaml"
-  - "ruff.toml"
   - "pyrightconfig.json"
 ---
 
