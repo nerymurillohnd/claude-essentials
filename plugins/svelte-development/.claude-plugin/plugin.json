@@ -1,0 +1,24 @@
+{
+  "name": "svelte-development",
+  "displayName": "Svelte Development",
+  "version": "0.1.0",
+  "description": "Svelte 5 and SvelteKit 3 development: current best practices, docs lookup and autofixer, code navigation, an editor and an auditor agent, and the Svelte MCP and language servers, built on the Svelte team's AI tools.",
+  "author": {
+    "name": "Claude Essentials maintainers"
+  },
+  "homepage": "https://github.com/nerymurillohnd/claude-essentials/tree/main/plugins/svelte-development",
+  "repository": "https://github.com/nerymurillohnd/claude-essentials",
+  "license": "MIT",
+  "keywords": [
+    "development",
+    "svelte",
+    "sveltekit",
+    "astro",
+    "tailwindcss",
+    "mcp",
+    "lsp"
+  ],
+  "metadata": {
+    "minClaudeCodeVersion": "2.1.289"
+  }
+}

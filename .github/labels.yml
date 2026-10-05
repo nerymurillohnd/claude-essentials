@@ -88,6 +88,6 @@
 - name: "category:model-behavior"
   color: "1d76db"
   description: "Output styles, guardrails and operating rules"
-- name: "plugin:hello-example"
+- name: "plugin:svelte-development"
   color: "c5def5"
-  description: "Hello Example plugin"
+  description: "Svelte Development plugin"
