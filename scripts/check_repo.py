@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Repository gates that `claude plugin validate` does not cover.
 
-Run: python3 scripts/check_repo.py [--root PATH]
+Run: scripts/check_repo.py [--root PATH]
 
 Exit 0 when every gate passes, 1 when any gate fails. Each failure names the
 file and the rule, so the fix is obvious. Rules and their reasons are in
@@ -16,6 +16,7 @@ import fnmatch
 import os
 from pathlib import Path
 import re
+import shlex
 import socket
 import sys
 from typing import TYPE_CHECKING
@@ -90,6 +91,38 @@ _PORTABLE_ALTERNATIVE = "use ${CLAUDE_PLUGIN_ROOT} or a documented setting"
 _EMAIL_ALTERNATIVE = 'use plugin.json "author.email" or an example.com address'
 # User and host names shorter than this match too many ordinary words.
 _MIN_MARKER_LENGTH = 4
+# Plugin scripts choose their interpreter with an unversioned shebang and run by path
+# (docs/adr/decisions/ADR_2026-10-05_unpinned-tooling-and-shebang-interpreters.md).
+_SHEBANG_READ_LIMIT = 256
+_SHEBANG_FORM = "#!/usr/bin/env <interpreter>, with no absolute interpreter path and no options"
+_SHEBANG_RE = re.compile(r"#!/usr/bin/env (?P<interpreter>[A-Za-z][\w.-]*)")
+# A version in the interpreter name, such as python3.12 or node-22.
+_VERSIONED_INTERPRETER_RE = re.compile(r"[.-]\d")
+_PATH_CHOOSES = "the user's PATH chooses the version"
+_RUN_BY_PATH = "run it by path so its shebang chooses the interpreter"
+_PLUGIN_ROOT = "${CLAUDE_PLUGIN_ROOT}"
+# Interpreters that must not be put in front of a plugin script.
+_INTERPRETERS = frozenset(
+    {
+        "sh",
+        "bash",
+        "zsh",
+        "dash",
+        "ksh",
+        "fish",
+        "python",
+        "python3",
+        "node",
+        "bun",
+        "deno",
+        "ruby",
+        "perl",
+        "php",
+        "lua",
+        "pwsh",
+        "powershell",
+    }
+)
 
 _README_HEADINGS = tuple(
     repo.readme_heading(title)
@@ -387,6 +420,7 @@ def check_plugin(root: Path, plugin: Path, entry: dict[str, JSON] | None, report
         check_mod(root, plugin, manifest, report)
     check_metadata(root, manifest_path, manifest, report)
     check_self_containment(root, plugin, manifest, report)
+    check_plugin_scripts(root, plugin, manifest, report)
     check_portability(root, plugin, manifest, report)
 
 
@@ -524,12 +558,16 @@ def _check_parent_escapes(root: Path, plugin: Path, report: Report) -> None:
 
 
 def _command_structures(plugin: Path, manifest: dict[str, JSON]) -> list[JSON]:
+    """Every hooks, MCP, LSP and monitor structure that can hold a `command`."""
     structures: list[JSON] = [repo.load_json(f) for f in _hook_files(plugin, manifest)]
-    mcp_file = plugin / ".mcp.json"
-    if mcp_file.is_file():
-        structures.append(repo.load_json(mcp_file))
-    structures.append(manifest.get("hooks"))
-    structures.append(manifest.get("mcpServers"))
+    structures.extend(
+        repo.load_json(plugin / name)
+        for name in (".mcp.json", ".lsp.json", "monitors/monitors.json")
+        if (plugin / name).is_file()
+    )
+    structures.extend(manifest.get(key) for key in ("hooks", "mcpServers", "lspServers"))
+    experimental = repo.as_dict(manifest.get("experimental")) or {}
+    structures.append(experimental.get("monitors"))
     return structures
 
 
@@ -554,6 +592,76 @@ def check_self_containment(
                 report.fail(
                     _rel(root, plugin),
                     f'command path "{token}" in "{command}" must start with {_PLUGIN_VARIABLES}',
+                )
+
+
+def _shebang(path: Path) -> str | None:
+    """The first line of a file when it starts with `#!`."""
+    with path.open("rb") as handle:
+        first = handle.readline(_SHEBANG_READ_LIMIT)
+    if not first.startswith(b"#!"):
+        return None
+    return first.decode("utf-8", errors="replace").rstrip("\r\n")
+
+
+def _shebang_problems(path: Path) -> list[str]:
+    shebang = _shebang(path)
+    executable = path.stat().st_mode & 0o111 != 0
+    if shebang is None:
+        return ["is executable but has no shebang"] if executable else []
+    problems = [] if executable else ["has a shebang but is not executable (mode 755)"]
+    match = _SHEBANG_RE.fullmatch(shebang)
+    if match is None:
+        problems.append(f'shebang "{shebang}" must be "{_SHEBANG_FORM}"')
+    elif _VERSIONED_INTERPRETER_RE.search(match.group("interpreter")):
+        problems.append(f'shebang "{shebang}" names a versioned interpreter; {_PATH_CHOOSES}')
+    return problems
+
+
+def _command_entries(value: JSON) -> list[tuple[str, list[str]]]:
+    """Every object with a string `command`, paired with its string `args`."""
+    found: list[tuple[str, list[str]]] = []
+    if isinstance(value, dict):
+        command = value.get("command")
+        if isinstance(command, str):
+            args = [arg for arg in repo.as_list(value.get("args")) or [] if isinstance(arg, str)]
+            found.append((command, args))
+        for child in value.values():
+            found.extend(_command_entries(child))
+    elif isinstance(value, list):
+        for child in value:
+            found.extend(_command_entries(child))
+    return found
+
+
+def _interpreter_in_front(command: str, args: list[str]) -> str | None:
+    """The interpreter a command puts in front of a plugin script, if any."""
+    try:
+        words = shlex.split(command)
+    except ValueError:
+        words = command.split()
+    words.extend(args)
+    interpreter = Path(words[0]).name if words else ""
+    if interpreter in _INTERPRETERS and any(_PLUGIN_ROOT in word for word in words[1:]):
+        return interpreter
+    return None
+
+
+def check_plugin_scripts(
+    root: Path, plugin: Path, manifest: dict[str, JSON], report: Report
+) -> None:
+    """Plugin scripts choose their interpreter with an unversioned shebang and run by path."""
+    for path in sorted(plugin.rglob("*")):
+        if path.is_file() and not path.is_symlink() and path.name != ".DS_Store":
+            for problem in _shebang_problems(path):
+                report.fail(_rel(root, path), problem)
+    for structure in _command_structures(plugin, manifest):
+        for command, args in _command_entries(structure):
+            interpreter = _interpreter_in_front(command, args)
+            if interpreter:
+                report.fail(
+                    _rel(root, plugin),
+                    f'"{command}" runs a plugin script through {interpreter}; {_RUN_BY_PATH}',
                 )
 
 
@@ -648,33 +756,20 @@ def _yaml_tag_patterns(workflow: Path) -> list[str]:
     return patterns
 
 
-# Local hooks pinned in .pre-commit-config.yaml and the CI pin in scripts/check.py
-# that each must match: hook repository → pin constant.
-_HOOK_PINS = {
-    "https://github.com/astral-sh/ruff-pre-commit": ("RUFF_VERSION", "v"),
-    "https://github.com/DetachHead/basedpyright-prek-mirror": ("BASEDPYRIGHT_VERSION", ""),
-}
-
-
-def check_hook_pins(root: Path, report: Report) -> None:
-    """The local pre-commit hooks run the same tool versions as CI."""
+def check_local_hooks(root: Path, report: Report) -> None:
+    """The pre-commit hooks run the installed tools: every hook repository is `local`."""
     config = root / ".pre-commit-config.yaml"
     where = _rel(root, config)
     if not config.is_file():
         report.fail(where, "missing local hook configuration")
         return
-    pattern = re.compile(r"^\s*- repo: (\S+)\n\s*rev: (\S+)$", re.MULTILINE)
-    hooks = {
-        str(match.group(1)): str(match.group(2))
-        for match in pattern.finditer(config.read_text(encoding="utf-8"))
-    }
-    pins = (root / "scripts" / "check.py").read_text(encoding="utf-8")
-    for url, (constant, prefix) in _HOOK_PINS.items():
-        pin = re.search(rf'^{constant} = "([^"]+)"$', pins, re.MULTILINE)
-        expected = f"{prefix}{pin.group(1)}" if pin else None
-        if hooks.get(url) != expected:
-            found = hooks.get(url, "missing")
-            report.fail(where, f"{url} rev {found} must be {expected} ({constant} in check.py)")
+    text = config.read_text(encoding="utf-8")
+    for match in re.finditer(r"^\s*- repo: (\S+)$", text, re.MULTILINE):
+        repository = str(match.group(1))
+        if repository != "local":
+            report.fail(where, f"repo {repository} must be local: hooks run the installed tools")
+    if re.search(r"^\s*rev:", text, re.MULTILINE):
+        report.fail(where, "rev pins a hook version; hooks run the installed tools")
 
 
 def check_release_workflow(root: Path, entries: dict[str, dict[str, JSON]], report: Report) -> None:
@@ -781,7 +876,7 @@ def run_checks(root: Path) -> Report:
     check_release_workflow(root, entries, report)
     check_labels(root, entries, report)
     check_root_changelog(root, report)
-    check_hook_pins(root, report)
+    check_local_hooks(root, report)
     return report
 
 

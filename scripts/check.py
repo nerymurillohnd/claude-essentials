@@ -2,22 +2,23 @@
 """Single entry point for every gate. CI runs exactly these commands.
 
 Usage:
-  python3 scripts/check.py                  # every gate (same as CI)
-  python3 scripts/check.py <gate> [...]     # selected gates, in the given order
-  python3 scripts/check.py test-install     # isolated install test (tests committed HEAD)
-  python3 scripts/check.py clean            # remove caches and orphaned test directories
-  python3 scripts/check.py ci-tools         # CI only: install the pinned tool versions
-  python3 scripts/check.py --list           # list the gates
+  scripts/check.py                  # every gate (same as CI)
+  scripts/check.py <gate> [...]     # selected gates, in the given order
+  scripts/check.py test-install     # isolated install test (tests committed HEAD)
+  scripts/check.py clean            # remove caches and orphaned test directories
+  scripts/check.py ci-tools         # CI only: install the latest tool releases
+  scripts/check.py --list           # list the gates
 
-The repository has no dependency manifest
-(docs/adr/decisions/ADR_2026-10-03_validation-stack.md): tools are
-resolved by name on PATH locally and installed at the pinned versions below on
-CI runners.
+The repository has no dependency manifest and pins no tool version
+(docs/adr/decisions/ADR_2026-10-05_unpinned-tooling-and-shebang-interpreters.md):
+every gate runs the tool found by name on PATH, and CI runners install the latest
+release of each tool.
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -29,14 +30,17 @@ import repo
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-CLAUDE_CODE_VERSION = repo.MIN_CLAUDE_CODE
-PRETTIER_VERSION = "3.9.9"
-ACTIONLINT_VERSION = "1.7.12"
-ACTIONLINT_SCRIPT_SHA = "914e7df21a07ef503a81201c76d2b11c789d3fca"
-RUFF_VERSION = "0.16.10"
-BASEDPYRIGHT_VERSION = "1.40.1"
-CHECK_JSONSCHEMA_VERSION = "0.38.2"
-ZIZMOR_VERSION = "1.30.1"
+# The latest actionlint release for CI runners, verified against the checksums file the
+# release publishes (the download script picks a version written into the script itself).
+ACTIONLINT_INSTALL = """\
+set -euo pipefail
+assets=$(mktemp -d)
+trap 'rm -rf "${assets}"' EXIT
+gh release download --repo rhysd/actionlint --dir "${assets}" \\
+  --pattern 'actionlint_*_linux_amd64.tar.gz' --pattern 'actionlint_*_checksums.txt'
+(cd "${assets}" && sha256sum --check --ignore-missing actionlint_*_checksums.txt)
+tar -xzf "${assets}"/actionlint_*_linux_amd64.tar.gz -C "${HOME}/.local/bin" actionlint
+"""
 
 # Prefixes of every temporary directory the scripts and tests create, so
 # `clean` and the leftover check can find orphans (docs/testing.md#cleanup).
@@ -57,7 +61,7 @@ EXTENSIONLESS_SCRIPTS = ("scripts/git-hooks/commit-msg",)
 
 
 def _script(name: str, *args: str) -> list[str]:
-    return [sys.executable, str(SCRIPTS / name), *args]
+    return [str(SCRIPTS / name), *args]
 
 
 def _validate() -> list[list[str]]:
@@ -108,7 +112,7 @@ GATES: dict[str, tuple[str, Callable[[], list[list[str]]]]] = {
         lambda: [_script("sync_readmes.py", "--check")],
     ),
     "docs": (
-        "Docs match the code: pins, gate list, script names, rule paths, links",
+        "Docs match the code: Claude Code minimum, gate list, script names, rule paths, links",
         lambda: [_script("check_docs.py")],
     ),
     "tests": (
@@ -145,8 +149,7 @@ GATES: dict[str, tuple[str, Callable[[], list[list[str]]]]] = {
         lambda: [
             ["actionlint"],
             [
-                "uvx",
-                f"zizmor@{ZIZMOR_VERSION}",
+                "zizmor",
                 "--offline",
                 "--collect=workflows",
                 ".github/workflows",
@@ -164,7 +167,11 @@ def run_commands(commands: list[list[str]]) -> bool:
     """Run commands in order, echoing each one and its output; stop at the first failure."""
     for command in commands:
         repo.emit(f"$ {' '.join(command)}")
-        result = repo.run(command, check=False)
+        try:
+            result = repo.run(command, check=False)
+        except FileNotFoundError:
+            repo.emit(f"✘ {command[0]} is not on PATH; install it (docs/testing.md, Set up)")
+            return False
         output = (result.stdout + result.stderr).rstrip()
         if output:
             repo.emit(output)
@@ -216,34 +223,58 @@ def clean() -> int:
     return 0
 
 
+# The maintainer's global ruff configuration, stored in the RUFF_CONFIG Actions variable
+# (`gh variable set RUFF_CONFIG < ~/.config/ruff/ruff.toml`): the repository has no ruff.toml,
+# so ruff falls back to this user-level file on CI exactly as on the maintainer's machine.
+RUFF_CONFIG_VARIABLE = "RUFF_CONFIG"
+
+
+def ruff_user_config(env: dict[str, str]) -> Path:
+    """Where ruff looks for its user-level configuration on Linux and macOS."""
+    base = env.get("XDG_CONFIG_HOME") or str(Path(env.get("HOME") or Path.home()) / ".config")
+    return Path(base) / "ruff" / "ruff.toml"
+
+
+def write_ruff_config(env: dict[str, str]) -> Path | None:
+    """Write the RUFF_CONFIG variable to ruff's user-level configuration file."""
+    config = env.get(RUFF_CONFIG_VARIABLE, "")
+    if not config.strip():
+        command = f"gh variable set {RUFF_CONFIG_VARIABLE} < ~/.config/ruff/ruff.toml"
+        repo.emit(f"✘ {RUFF_CONFIG_VARIABLE} is empty; set it with `{command}`")
+        return None
+    target = ruff_user_config(env)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    _ = target.write_text(config.rstrip("\n") + "\n", encoding="utf-8")
+    return target
+
+
+def ruff_uses(target: Path) -> bool:
+    """True when ruff resolves `target` as the configuration for the repository's scripts."""
+    result = repo.run(["ruff", "check", "--show-settings", str(SCRIPTS / "check.py")], check=False)
+    expected = f'Settings path: "{target}"'
+    if expected in result.stdout:
+        repo.emit(f"ruff uses {target}")
+        return True
+    repo.emit(f"✘ ruff does not use {target}; check that the repository has no ruff config")
+    return False
+
+
 def ci_tools() -> int:
-    """Install the pinned tools on a CI runner. Never run it on a contributor's machine."""
-    local_bin = Path.home() / ".local" / "bin"
-    actionlint_script = f"https://raw.githubusercontent.com/rhysd/actionlint/{ACTIONLINT_SCRIPT_SHA}/scripts/download-actionlint.bash"
+    """Install the latest release of every tool on a CI runner; never on a contributor's machine."""
+    (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)
     commands = [
-        [
-            "npm",
-            "install",
-            "--global",
-            "--no-fund",
-            "--no-audit",
-            f"prettier@{PRETTIER_VERSION}",
-        ],
-        ["uv", "tool", "install", f"ruff=={RUFF_VERSION}"],
-        ["uv", "tool", "install", f"basedpyright=={BASEDPYRIGHT_VERSION}"],
-        ["uv", "tool", "install", f"check-jsonschema=={CHECK_JSONSCHEMA_VERSION}"],
-        [
-            "bash",
-            "-c",
-            f'curl -fsSL "{actionlint_script}" | bash -s -- "{ACTIONLINT_VERSION}" "{local_bin}"',
-        ],
-        [
-            "bash",
-            "-c",
-            f'curl -fsSL https://claude.ai/install.sh | bash -s "{CLAUDE_CODE_VERSION}"',
-        ],
+        ["npm", "install", "--global", "--no-fund", "--no-audit", "prettier"],
+        ["uv", "tool", "install", "ruff"],
+        ["uv", "tool", "install", "basedpyright"],
+        ["uv", "tool", "install", "check-jsonschema"],
+        ["uv", "tool", "install", "zizmor"],
+        ["bash", "-c", ACTIONLINT_INSTALL],
+        ["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"],
     ]
-    return 0 if run_commands(commands) else 1
+    if not run_commands(commands):
+        return 1
+    target = write_ruff_config(dict(os.environ))
+    return 0 if target is not None and ruff_uses(target) else 1
 
 
 def main() -> int:

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Documentation drift gate: what the docs say about the repository matches the repository.
 
-Run: python3 scripts/check_docs.py [--root PATH]
+Run: scripts/check_docs.py [--root PATH]
 
 Checks, each against the single source of truth in the code:
-  * every copy of a pinned version (Claude Code and tools) equals its constant in
-    scripts/check.py (PIN_SITES lists where copies live);
+  * every copy of the minimum Claude Code version equals repo.MIN_CLAUDE_CODE
+    (PIN_SITES lists where copies live);
   * the gate count and list in the rules and docs/testing.md equal check.GATES;
   * every `scripts/<name>.py` a document names exists, and every
-    `python3 scripts/check.py <target>` names a real gate or command;
+    `scripts/check.py <target>` names a real gate or command;
   * every path-scoped rule in .claude/rules matches at least one file;
   * every relative Markdown link resolves;
   * every project skill's `name` equals its directory.
@@ -35,8 +35,7 @@ import repo
 _SKIPPED_DIRS = frozenset({".git", "node_modules", "__pycache__", ".ruff_cache", ".venv"})
 _SKIPPED_PREFIXES = (".claude/worktrees/",)
 _EVAL_RESULTS_RE = re.compile(r"^plugins/[^/]+/evals/results/")
-# Text files whose mentions of docs/*.md must point at an existing document. Not
-# ruff.toml: it is a copy of the maintainer's global config and cites Ruff's own docs.
+# Text files whose mentions of docs/*.md must point at an existing document.
 _REFERENCE_SUFFIXES = frozenset({".md", ".py", ".yml", ".yaml", ".json"})
 _DOC_REFERENCE_RE = re.compile(r"(?<![\w./-])(docs/[\w./-]+\.md)\b")
 # Untracked private notes and templates full of placeholders are not checked for links.
@@ -54,7 +53,7 @@ _NUMBER_WORDS = {
 
 @dataclass(frozen=True)
 class PinSite:
-    """A place in the docs that repeats pinned versions, in capture-group order."""
+    """A place in the docs that repeats a version constant of repo.py, in capture-group order."""
 
     path: str
     pattern: str
@@ -63,85 +62,40 @@ class PinSite:
 
 PIN_SITES: tuple[PinSite, ...] = (
     PinSite(
-        ".github/workflows/release.yml",
-        r'CLAUDE_CODE_VERSION: "([^"]+)"',
-        ("CLAUDE_CODE_VERSION",),
-    ),
-    PinSite(
         ".claude/rules/claude-code-version.md",
         r"verified on Claude Code (\d+\.\d+\.\d+) on",
-        ("CLAUDE_CODE_VERSION",),
+        ("MIN_CLAUDE_CODE",),
     ),
     PinSite(
         ".claude/rules/claude-code-version.md",
         r"pinned at (\d+\.\d+\.\d+), in",
-        ("CLAUDE_CODE_VERSION",),
+        ("MIN_CLAUDE_CODE",),
     ),
     PinSite(
         ".claude/rules/claude-code-version.md",
         r"every changelog entry newer than (\d+\.\d+\.\d+)\.",
-        ("CLAUDE_CODE_VERSION",),
+        ("MIN_CLAUDE_CODE",),
     ),
     PinSite(
         "CLAUDE.md",
         r"verified on Claude Code (\d+\.\d+\.\d+) that",
-        ("CLAUDE_CODE_VERSION",),
+        ("MIN_CLAUDE_CODE",),
     ),
     PinSite(
         "docs/releasing.md",
         r"Claude Code (\d+\.\d+\.\d+) or later",
-        ("CLAUDE_CODE_VERSION",),
+        ("MIN_CLAUDE_CODE",),
     ),
     PinSite(
         ".github/ISSUE_TEMPLATE/bug_report.yml",
         r"label: Claude Code version\n(?:.*\n)*?\s+placeholder: (\d+\.\d+\.\d+)",
-        ("CLAUDE_CODE_VERSION",),
-    ),
-    PinSite(
-        ".claude/rules/testing/gates.md",
-        r"prettier (\S+), actionlint (\S+), zizmor (\S+) \(offline\)",
-        ("PRETTIER_VERSION", "ACTIONLINT_VERSION", "ZIZMOR_VERSION"),
-    ),
-    PinSite(
-        ".claude/rules/testing/gates.md",
-        r"check-jsonschema (\S+) with its built-in schemas",
-        ("CHECK_JSONSCHEMA_VERSION",),
-    ),
-    PinSite(
-        ".claude/rules/tooling-versions.md",
-        r"check-jsonschema (\S+) \(Apache-2\.0\)",
-        ("CHECK_JSONSCHEMA_VERSION",),
-    ),
-    PinSite(
-        ".claude/rules/tooling-versions.md",
-        r"ruff-pre-commit v(\S+), DetachHead/basedpyright-prek-mirror (\S+) \(",
-        ("RUFF_VERSION", "BASEDPYRIGHT_VERSION"),
-    ),
-    PinSite(
-        ".claude/rules/tooling-versions.md",
-        r"prettier (\S+) \(MIT\), actionlint (\S+) \(MIT\), zizmor (\S+) \(MIT\)",
-        ("PRETTIER_VERSION", "ACTIONLINT_VERSION", "ZIZMOR_VERSION"),
-    ),
-    PinSite(
-        "docs/sourcing-log.md",
-        r"actionlint (\S+), zizmor (\S+) ",
-        ("ACTIONLINT_VERSION", "ZIZMOR_VERSION"),
-    ),
-    PinSite(
-        "docs/sourcing-log.md",
-        r"Prettier (\S+), ruff (\S+), basedpyright (\S+) ",
-        ("PRETTIER_VERSION", "RUFF_VERSION", "BASEDPYRIGHT_VERSION"),
-    ),
-    PinSite(
-        "docs/sourcing-log.md",
-        r"check-jsonschema (\S+) built-in",
-        ("CHECK_JSONSCHEMA_VERSION",),
+        ("MIN_CLAUDE_CODE",),
     ),
 )
 
 _SCRIPT_RE = re.compile(r"\bscripts/([\w/-]+\.py)\b")
 # Only commands written as code count; prose such as "check.py and" is not a target.
-_CHECK_TARGET_RE = re.compile(r"`python3 scripts/check\.py ((?:--)?[a-z][\w-]*)[^`\n]*`")
+_CHECK_TARGET_RE = re.compile(r"`scripts/check\.py ((?:--)?[a-z][\w-]*)[^`\n]*`")
 _LINK_RE = re.compile(r"\]\(([^)\s]+)\)")
 _FENCE_RE = re.compile(r"^(```|~~~).*?^\1", re.MULTILINE | re.DOTALL)
 _CODE_SPAN_RE = re.compile(r"`[^`\n]*`")
@@ -157,7 +111,7 @@ def _captures(pattern: re.Pattern[str], text: str) -> list[str]:
     return [str(match.group(1)) for match in pattern.finditer(text)]
 
 
-_TARGET_ROW_RE = re.compile(r"^\| `python3 scripts/check\.py ([\w-]+)`", re.MULTILINE)
+_TARGET_ROW_RE = re.compile(r"^\| `scripts/check\.py ([\w-]+)`", re.MULTILINE)
 _RULE_GLOB_RE = re.compile(r'^\s+- "([^"]+)"$', re.MULTILINE)
 
 
@@ -196,7 +150,7 @@ def check_doc_references(root: Path, files: list[Path], report: Report) -> None:
 
 
 def check_pins(root: Path, report: Report) -> None:
-    """Every copy of a pinned version equals its constant in scripts/check.py."""
+    """Every copy of a version constant equals its value in scripts/repo.py."""
     for site in PIN_SITES:
         path = root / site.path
         if not path.is_file():
@@ -210,10 +164,10 @@ def check_pins(root: Path, report: Report) -> None:
             )
         for match in matches:
             for group, constant in enumerate(site.constants, start=1):
-                expected = str(getattr(check, constant))  # pyright: ignore[reportAny]  # module constants are read by name
+                expected = str(getattr(repo, constant))  # pyright: ignore[reportAny]  # module constants are read by name
                 found = match.group(group)
                 if found != expected:
-                    report.fail(site.path, f"{found} must be {expected} ({constant} in check.py)")
+                    report.fail(site.path, f"{found} must be {expected} ({constant} in repo.py)")
 
 
 def _count(text: str) -> int | None:
@@ -227,7 +181,7 @@ def check_gate_list(root: Path, report: Report) -> None:
     rule = root / ".claude" / "rules" / "testing" / "gates.md"
     where = _rel(root, rule)
     text = rule.read_text(encoding="utf-8") if rule.is_file() else ""
-    count = re.search(r"`python3 scripts/check\.py`: (\w+) gates", text)
+    count = re.search(r"`scripts/check\.py`: (\w+) gates", text)
     if count is None or _count(count.group(1)) != len(gates):
         found = count.group(1) if count else "no count"
         report.fail(where, f"gate count is {found}, check.py has {len(gates)}")
@@ -257,7 +211,7 @@ def check_script_references(root: Path, files: list[Path], report: Report) -> No
                 report.fail(_rel(root, path), f"names scripts/{name}, which does not exist")
         for target in sorted(set(_captures(_CHECK_TARGET_RE, text))):
             if target not in valid_targets:
-                report.fail(_rel(root, path), f'"python3 scripts/check.py {target}" is no target')
+                report.fail(_rel(root, path), f'"scripts/check.py {target}" is no target')
 
 
 def glob_regex(pattern: str) -> re.Pattern[str]:

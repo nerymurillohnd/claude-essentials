@@ -2,7 +2,7 @@
 """Release-discipline gate for a pull request (docs/releasing.md).
 
 Usage:
-  python3 scripts/check_pr.py --base <sha> --head <sha> --title "<title>" --labels "a,b"
+  scripts/check_pr.py --base <sha> --head <sha> --title "<title>" --labels "a,b"
 
 Every change inside plugins/<name>/ reaches users only with a new version, so it
 ships with its own release in the same pull request:

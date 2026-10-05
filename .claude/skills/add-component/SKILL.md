@@ -15,10 +15,10 @@ arguments: [plugin, kind, name]
 - [ ] 5 Release    /release-plugin $plugin minor <topic>
 ```
 
-1. **Scaffold.** `git switch -c $plugin/add-$name`, then `python3 scripts/add_component.py $plugin $kind $name --description "<one-line description>"`. It runs `claude plugin init` in a throwaway config, copies the generated example under the new name, adds a TODO note under `## [Unreleased]` and regenerates the README.
+1. **Scaffold.** `git switch -c $plugin/add-$name`, then `scripts/add_component.py $plugin $kind $name --description "<one-line description>"`. It runs `claude plugin init` in a throwaway config, copies the generated example under the new name, adds a TODO note under `## [Unreleased]` and regenerates the README.
 2. **Write.** Fill the component from the installing user's point of view (`docs/authoring.md`, `docs/quality-bar.md`); write skills with the `skills-best-practices` skill when it is available. Replace the CHANGELOG TODO with a user-facing note.
-3. **Validate.** `claude plugin validate plugins/$plugin --strict`, then `python3 scripts/check.py`.
-4. **Drive.** `python3 scripts/drive_plugin.py $plugin --prompt "/$plugin:$name …" --expect '<what it does>'` for a skill; for an agent, a prompt that should delegate to it.
+3. **Validate.** `claude plugin validate plugins/$plugin --strict`, then `scripts/check.py`.
+4. **Drive.** `scripts/drive_plugin.py $plugin --prompt "/$plugin:$name …" --expect '<what it does>'` for a skill; for an agent, a prompt that should delegate to it.
 5. **Release.** A new compatible component is a MINOR release: ask the maintainer to run `/release-plugin $plugin minor add-$name` (only the maintainer can start it), which bumps, commits and opens the pull request.
 
 ## Gotchas

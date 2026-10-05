@@ -5,21 +5,23 @@ defect, and asserts that the gate fails for that reason and no other. The
 positive baseline proves the unmodified copy passes, so a failure in a
 negative test can only come from the injected defect.
 
-Run: python3 scripts/check.py tests
+Run: scripts/check.py tests
 """
 
 from __future__ import annotations
 
+import contextlib
+import io
 import json
 from pathlib import Path
 import shutil
-import sys
 import tempfile
-from typing import override
+from typing import TYPE_CHECKING, override
 import unittest
 
 import add_component
 import bump_version
+import check
 import check_commit_msg
 import check_docs
 import check_pr
@@ -28,6 +30,9 @@ import claude_hooks
 import drive_plugin
 import repo
 import validate_adrs
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 ROOT = repo.ROOT
 
@@ -218,6 +223,138 @@ class SelfContainmentGateTest(RepositoryFixture):
         assert any(repo.readme_heading("Permissions") in e for e in errors), errors
 
 
+def emitted(action: Callable[[], object]) -> tuple[object, str]:
+    """Run `action` and return its result with the lines it emitted."""
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        result = action()
+    return result, output.getvalue()
+
+
+class CheckRunnerTest(unittest.TestCase):
+    def test_missing_tool_fails_the_gate(self) -> None:
+        result, output = emitted(lambda: check.run_commands([["claude-essentials-no-such-tool"]]))
+        assert result is False
+        assert "✘ claude-essentials-no-such-tool is not on PATH" in output, output
+
+    def test_passing_command_passes(self) -> None:
+        assert check.run_commands([["true"]]) is True
+
+
+class RuffConfigTest(unittest.TestCase):
+    def test_empty_variable_fails(self) -> None:
+        home = make_fixture_dir(self)
+        result, output = emitted(
+            lambda: check.write_ruff_config({"HOME": str(home), "RUFF_CONFIG": " \n"})
+        )
+        assert result is None
+        assert "✘ RUFF_CONFIG is empty" in output, output
+        assert not (home / ".config").exists()
+
+    def test_variable_is_written_to_the_xdg_config_dir(self) -> None:
+        base = make_fixture_dir(self)
+        env = {"XDG_CONFIG_HOME": str(base), "RUFF_CONFIG": 'line-length = 100\n\nselect = ["ALL"]'}
+        target = check.write_ruff_config(env)
+        assert target is not None, "a non-empty variable was not written"
+        assert target == base / "ruff" / "ruff.toml"
+        assert target.read_text(encoding="utf-8") == 'line-length = 100\n\nselect = ["ALL"]\n'
+
+    def test_home_config_is_the_fallback(self) -> None:
+        home = make_fixture_dir(self)
+        expected = home / ".config" / "ruff" / "ruff.toml"
+        assert check.ruff_user_config({"HOME": str(home)}) == expected
+
+    def test_unused_config_is_reported(self) -> None:
+        unused = make_fixture_dir(self) / "ruff" / "ruff.toml"
+        result, output = emitted(lambda: check.ruff_uses(unused))
+        assert result is False
+        assert f"✘ ruff does not use {unused}" in output, output
+
+
+class PluginScriptGateTest(RepositoryFixture):
+    def write_script(self, text: str, mode: int) -> None:
+        scripts = self.plugin / "scripts"
+        scripts.mkdir(exist_ok=True)
+        script = scripts / "run.sh"
+        _ = script.write_text(text, encoding="utf-8")
+        script.chmod(mode)
+
+    def write_config(self, name: str, data: repo.JSON) -> None:
+        path = self.plugin / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        _ = path.write_text(json.dumps(data), encoding="utf-8")
+
+    def assert_interpreter_in_front(self, interpreter: str) -> None:
+        errors = self.errors()
+        assert any(f"runs a plugin script through {interpreter}" in e for e in errors), errors
+
+    def test_shebang_without_executable_bit_fails(self) -> None:
+        self.write_script("#!/usr/bin/env sh\nexit 0\n", 0o644)
+        self.assert_fails_with("has a shebang but is not executable")
+
+    def test_executable_without_shebang_fails(self) -> None:
+        self.write_script("exit 0\n", 0o755)
+        self.assert_fails_with("is executable but has no shebang")
+
+    def test_absolute_interpreter_shebang_fails(self) -> None:
+        self.write_script("#!/bin/bash\nexit 0\n", 0o755)
+        self.assert_fails_with('must be "#!/usr/bin/env <interpreter>')
+
+    def test_shebang_with_options_fails(self) -> None:
+        self.write_script("#!/usr/bin/env -S uv run --script\nexit 0\n", 0o755)
+        self.assert_fails_with('must be "#!/usr/bin/env <interpreter>')
+
+    def test_versioned_interpreter_shebang_fails(self) -> None:
+        self.write_script("#!/usr/bin/env python3.12\nraise SystemExit(0)\n", 0o755)
+        self.assert_fails_with("names a versioned interpreter")
+
+    def test_unversioned_executable_script_passes(self) -> None:
+        self.write_script("#!/usr/bin/env sh\nexit 0\n", 0o755)
+        assert self.errors() == []
+
+    def test_shell_form_hook_with_interpreter_fails(self) -> None:
+        command = 'bash "${CLAUDE_PLUGIN_ROOT}/scripts/run.sh"'
+        hook: repo.JSON = {"hooks": [{"type": "command", "command": command}]}
+        self.write_config("hooks/hooks.json", {"hooks": {"PostToolUse": [hook]}})
+        self.assert_interpreter_in_front("bash")
+
+    def test_exec_form_hook_with_interpreter_fails(self) -> None:
+        hook: repo.JSON = {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/x.py"],
+        }
+        self.write_config("hooks/hooks.json", {"hooks": {"Stop": [{"hooks": [hook]}]}})
+        self.assert_interpreter_in_front("python3")
+
+    def test_mcp_server_with_interpreter_fails(self) -> None:
+        server: repo.JSON = {"command": "node", "args": ["${CLAUDE_PLUGIN_ROOT}/server.js"]}
+        self.write_config(".mcp.json", {"mcpServers": {"local": server}})
+        self.assert_interpreter_in_front("node")
+
+    def test_lsp_server_with_interpreter_fails(self) -> None:
+        server: repo.JSON = {"command": "sh", "args": ["${CLAUDE_PLUGIN_ROOT}/lsp.sh"]}
+        self.write_config(".lsp.json", {"shell": server})
+        self.assert_interpreter_in_front("sh")
+
+    def test_monitor_with_interpreter_fails(self) -> None:
+        monitor: repo.JSON = {"name": "watch", "command": 'zsh "${CLAUDE_PLUGIN_ROOT}/watch.sh"'}
+        self.write_config("monitors/monitors.json", [monitor])
+        self.assert_interpreter_in_front("zsh")
+
+    def test_script_by_path_and_user_tools_pass(self) -> None:
+        self.write_script("#!/usr/bin/env sh\nexit 0\n", 0o755)
+        command = '"${CLAUDE_PLUGIN_ROOT}/scripts/run.sh"'
+        hook: repo.JSON = {"hooks": [{"type": "command", "command": command}]}
+        self.write_config("hooks/hooks.json", {"hooks": {"PostToolUse": [hook]}})
+        self.write_config(".mcp.json", {"mcpServers": {"tool": {"command": "npx", "args": ["x"]}}})
+        errors = self.errors()
+        assert not any("plugin script" in e or "shebang" in e for e in errors), errors
+        # Hooks and MCP servers make the plugin privileged, so only Permissions is missing.
+        assert errors, "the privileged plugin passed without a Permissions section"
+        assert all(repo.readme_heading("Permissions") in e for e in errors), errors
+
+
 class CatalogGateTest(RepositoryFixture):
     def test_missing_disclaimer_fails(self) -> None:
         self.edit_json(self.marketplace, "description", "Community plugins for Claude Code.")
@@ -264,11 +401,14 @@ class CatalogGateTest(RepositoryFixture):
         errors = self.errors()
         assert any("with the year and holder filled in" in e for e in errors), errors
 
-    def test_hook_pin_drift_fails(self) -> None:
-        config = self.root / ".pre-commit-config.yaml"
-        text = config.read_text(encoding="utf-8").replace("rev: 1.40.1", "rev: 1.40.0")
-        _ = config.write_text(text, encoding="utf-8")
-        self.assert_fails_with("must be 1.40.1 (BASEDPYRIGHT_VERSION in check.py)")
+    def test_remote_hook_repository_fails(self) -> None:
+        remote = "  - repo: https://github.com/astral-sh/ruff-pre-commit\n    hooks: []\n"
+        self.append(self.root / ".pre-commit-config.yaml", remote)
+        self.assert_fails_with("must be local: hooks run the installed tools")
+
+    def test_hook_rev_fails(self) -> None:
+        self.append(self.root / ".pre-commit-config.yaml", "    rev: v1.0.0\n")
+        self.assert_fails_with("rev pins a hook version")
 
     def test_unknown_category_fails(self) -> None:
         self.set_fixture_entry_field("category", "misc")
@@ -631,13 +771,13 @@ class DocsGateTest(RepositoryFixture):
     def test_unmodified_repository_passes(self) -> None:
         assert self.docs_errors() == []
 
-    def test_claude_code_pin_drift_fails(self) -> None:
-        self.replace(".github/workflows/release.yml", repo.MIN_CLAUDE_CODE, "2.1.200")
+    def test_claude_code_minimum_drift_fails(self) -> None:
+        self.replace(
+            ".github/ISSUE_TEMPLATE/bug_report.yml",
+            f"placeholder: {repo.MIN_CLAUDE_CODE}",
+            "placeholder: 2.1.200",
+        )
         self.assert_drift("2.1.200 must be")
-
-    def test_tool_pin_drift_fails(self) -> None:
-        self.replace(".claude/rules/testing/gates.md", "prettier 3.", "prettier 2.")
-        self.assert_drift("(PRETTIER_VERSION in check.py)")
 
     def test_moved_pin_sentence_fails(self) -> None:
         self.replace("docs/releasing.md", " or later", " and newer")
@@ -648,7 +788,7 @@ class DocsGateTest(RepositoryFixture):
         self.assert_drift("gate count is 9")
 
     def test_missing_target_row_fails(self) -> None:
-        self.replace("docs/testing.md", "| `python3 scripts/check.py docs`", "| `docs`")
+        self.replace("docs/testing.md", "| `scripts/check.py docs`", "| `docs`")
         self.assert_drift('no row for gate "docs"')
 
     def test_unknown_script_fails(self) -> None:
@@ -656,8 +796,8 @@ class DocsGateTest(RepositoryFixture):
         self.assert_drift("scripts/no_such.py, which does not exist")
 
     def test_unknown_check_target_fails(self) -> None:
-        self.append(self.root / "docs" / "testing.md", "\nRun `python3 scripts/check.py lint`.\n")
-        self.assert_drift('"python3 scripts/check.py lint" is no target')
+        self.append(self.root / "docs" / "testing.md", "\nRun `scripts/check.py lint`.\n")
+        self.assert_drift('"scripts/check.py lint" is no target')
 
     def test_rule_matching_nothing_fails(self) -> None:
         rule = self.root / ".claude" / "rules" / "orphan.md"
@@ -908,7 +1048,7 @@ class ReleaseNotesTest(RepositoryFixture):
 
     def verify(self, tag: str) -> tuple[int, str]:
         script = self.root / "scripts" / "release_notes.py"
-        result = repo.run([sys.executable, str(script), "verify", tag], check=False)
+        result = repo.run([str(script), "verify", tag], check=False)
         return result.returncode, result.stdout + result.stderr
 
     def declared_version(self) -> str:

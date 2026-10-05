@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Install every plugin the way a third-party user would, in a throwaway config.
 
-Run: python3 scripts/test_install.py
+Run: scripts/test_install.py
 
 Nothing touches the real Claude Code configuration: each scenario runs with a
 temporary HOME and CLAUDE_CONFIG_DIR, and outside CI the script snapshots the
@@ -57,6 +57,7 @@ def snapshot() -> dict[str, str]:
 
 
 def isolated_env(tmp: Path) -> dict[str, str]:
+    """An environment whose HOME and Claude Code configuration live under `tmp`."""
     home = tmp / "home"
     config = home / ".claude"
     config.mkdir(parents=True)
@@ -67,11 +68,13 @@ def isolated_env(tmp: Path) -> dict[str, str]:
 
 
 def claude(args: list[str], env: dict[str, str]) -> tuple[int, str]:
+    """Run the Claude Code CLI and return its exit code and combined output."""
     result = repo.run(["claude", *args], env=env, check=False)
     return result.returncode, (result.stdout + result.stderr).strip()
 
 
 def plugin_names() -> list[str]:
+    """The plugin names the catalog lists, in catalog order."""
     data = repo.as_dict(repo.load_json(repo.MARKETPLACE_FILE)) or {}
     names: list[str] = []
     for raw in repo.as_list(data.get("plugins")) or []:
@@ -136,6 +139,7 @@ def check_installed(
 
 
 def scenario_directory(tmp: Path, names: list[str], errors: list[str]) -> None:
+    """Install every plugin from the repository directory, which loads in place."""
     env = isolated_env(tmp / "directory")
     code, output = claude(["plugin", "marketplace", "add", str(repo.ROOT)], env)
     repo.emit(output)
@@ -154,6 +158,7 @@ def scenario_directory(tmp: Path, names: list[str], errors: list[str]) -> None:
 
 
 def scenario_cache_copy(tmp: Path, names: list[str], errors: list[str]) -> None:
+    """Install every plugin from a bare clone of HEAD, copied to the cache as a user's is."""
     bare = tmp / "repo.git"
     _ = repo.run(["git", "clone", "--quiet", "--bare", str(repo.ROOT), str(bare)])
     marketplace = tmp / "copy-marketplace"
@@ -194,6 +199,7 @@ def scenario_cache_copy(tmp: Path, names: list[str], errors: list[str]) -> None:
 
 
 def scenario_session(tmp: Path, names: list[str], errors: list[str]) -> None:
+    """Load every plugin in a session with --plugin-dir and check it reports no errors or notes."""
     env = isolated_env(tmp / "session")
     code, output = claude(["--plugin-dir", str(repo.PLUGINS_DIR), "plugin", "list", "--json"], env)
     if code != 0:
@@ -213,6 +219,7 @@ def scenario_session(tmp: Path, names: list[str], errors: list[str]) -> None:
 
 
 def main() -> int:
+    """Run the three install scenarios and check the real configuration is unchanged."""
     in_ci = bool(os.environ.get("CI"))
     before = None if in_ci else snapshot()
     names = plugin_names()

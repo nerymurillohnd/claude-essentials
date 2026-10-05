@@ -5,7 +5,7 @@ and a script function nothing uses all pass every gate without checking anything
 the sources with `ast` and fail for each of them. Each rule also has a negative test on a
 synthetic source, so a rule that stops detecting its defect fails here too.
 
-Run: python3 scripts/check.py tests
+Run: scripts/check.py tests
 """
 
 from __future__ import annotations

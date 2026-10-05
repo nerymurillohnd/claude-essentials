@@ -1,6 +1,6 @@
 # Quality bar
 
-What a plugin must meet to be accepted and to stay in the catalog. Items marked **gate** are enforced by `python3 scripts/check.py` or CI; the rest are checked in review.
+What a plugin must meet to be accepted and to stay in the catalog. Items marked **gate** are enforced by `scripts/check.py` or CI; the rest are checked in review.
 
 ## Purpose and fit
 
@@ -12,7 +12,7 @@ What a plugin must meet to be accepted and to stay in the catalog. Items marked 
 ## Correctness
 
 - [ ] `claude plugin validate --strict` passes for the plugin and the marketplace. **gate**
-- [ ] Installs and loads in a clean configuration, in place and from a cache copy. **gate** (`python3 scripts/check.py test-install`)
+- [ ] Installs and loads in a clean configuration, in place and from a cache copy. **gate** (`scripts/check.py test-install`)
 - [ ] Skills trigger on the requests they describe and not on unrelated ones; the author tested this in real sessions.
 - [ ] Hooks and servers handle missing tools, empty input and errors without blocking the user's work.
 
@@ -21,6 +21,7 @@ What a plugin must meet to be accepted and to stay in the catalog. Items marked 
 - [ ] No absolute, home or temporary paths; no user or machine names; no personal emails; no secrets. **gate**
 - [ ] Nothing references files outside the plugin directory; no `../`; symlinks stay inside. **gate**
 - [ ] Bundled files are referenced with `${CLAUDE_PLUGIN_ROOT}`, state with `${CLAUDE_PLUGIN_DATA}`. **gate** for hook and MCP commands
+- [ ] Every bundled script has an unversioned `#!/usr/bin/env` shebang, is executable, and runs by path with no interpreter in front. **gate**
 - [ ] Works on macOS and Linux; Windows behavior is stated in the README when it differs.
 
 ## Security

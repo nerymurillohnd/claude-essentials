@@ -2,7 +2,7 @@
 """Prepare a version bump from the hand-written changelog (docs/releasing.md).
 
 Usage:
-  python3 scripts/bump_version.py plugin <name> <major|minor|patch> [--dry-run]
+  scripts/bump_version.py plugin <name> <major|minor|patch> [--dry-run]
 
 Run it in the same pull request as the change: every change inside
 plugins/<name>/ ships with its own release. The marketplace catalog has no
@@ -121,9 +121,9 @@ def _apply(target: Target, level: str, *, dry_run: bool) -> int:
     _ = target.changelog.write_text(changelog_text, encoding="utf-8")
     set_version(target.manifest, new_version)
     for command in (
-        [sys.executable, str(repo.ROOT / "scripts" / "sync_readmes.py")],
+        [str(repo.ROOT / "scripts" / "sync_readmes.py")],
         ["claude", "plugin", "validate", str(target.validate), "--strict"],
-        [sys.executable, str(repo.ROOT / "scripts" / "check_repo.py")],
+        [str(repo.ROOT / "scripts" / "check_repo.py")],
     ):
         result = repo.run(command, check=False)
         if result.returncode != 0:

@@ -2,11 +2,11 @@
 """Claude Code hooks of this repository, registered in .claude/settings.json.
 
 Run by Claude Code with the hook's JSON event on stdin:
-  python3 scripts/claude_hooks.py guard-bash       PreToolUse Bash
-  python3 scripts/claude_hooks.py guard-edit       PreToolUse Edit|Write
-  python3 scripts/claude_hooks.py guard-sources    PreToolUse file, shell, web and GitHub tools
-  python3 scripts/claude_hooks.py format           PostToolUse Edit|Write
-  python3 scripts/claude_hooks.py session-status   SessionStart
+  scripts/claude_hooks.py guard-bash       PreToolUse Bash
+  scripts/claude_hooks.py guard-edit       PreToolUse Edit|Write
+  scripts/claude_hooks.py guard-sources    PreToolUse file, shell, web and GitHub tools
+  scripts/claude_hooks.py format           PostToolUse Edit|Write
+  scripts/claude_hooks.py session-status   SessionStart
 
 The permission rules in .claude/settings.json are the hard boundary; these hooks
 back them up where text rules cannot see (a push written as `git -C . push`),
@@ -59,8 +59,8 @@ _SIGNING_REASON = "Commits and tags are always signed and hooks always run: fix 
 _PUSH_REASON = "A push leaves this machine: it needs the maintainer's approval for this push."
 _GH_REASON = "`gh {group} {action}` changes GitHub: it needs the maintainer's approval."
 _TAG_PUSH_REASON = "Pushing a release tag publishes it: it needs the maintainer's approval."
-_VERSION_REASON = "Change versions only with `python3 scripts/bump_version.py` (docs/releasing.md)."
-_GENERATED_REASON = "GENERATED blocks are written by `python3 scripts/sync_readmes.py`; run it."
+_VERSION_REASON = "Change versions only with `scripts/bump_version.py` (docs/releasing.md)."
+_GENERATED_REASON = "GENERATED blocks are written by `scripts/sync_readmes.py`; run it."
 _SOURCE_REASON = "{source} is a forbidden source (CLAUDE.local.md); the repo is clean-room."
 _WRITTEN_FIELDS = frozenset({"content", "new_string", "old_string", "new_source"})
 _TRAVERSE_REASON = "A search under {root} would walk into {source} (CLAUDE.local.md); narrow it."

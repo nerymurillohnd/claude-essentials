@@ -2,8 +2,8 @@
 """Release workflow helpers (.github/workflows/release.yml).
 
 Usage:
-  python3 scripts/release_notes.py verify <tag>   # the tag matches the manifest version
-  python3 scripts/release_notes.py notes <tag>    # print that version's changelog section
+  scripts/release_notes.py verify <tag>   # the tag matches the manifest version
+  scripts/release_notes.py notes <tag>    # print that version's changelog section
 
 Tags use the official `claude plugin tag` format `<name>--v<version>`. Only
 plugins are released: the marketplace catalog has no version.

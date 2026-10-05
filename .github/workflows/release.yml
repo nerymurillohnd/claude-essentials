@@ -27,23 +27,21 @@ jobs:
           persist-credentials: false
 
       - name: Install Claude Code
-        env:
-          CLAUDE_CODE_VERSION: "2.1.289"
         run: |
-          curl -fsSL https://claude.ai/install.sh | bash -s "${CLAUDE_CODE_VERSION}"
+          curl -fsSL https://claude.ai/install.sh | bash
           echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
 
       - name: Check the tag against the manifest and validate
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          python3 scripts/release_notes.py verify "${TAG}"
+          scripts/release_notes.py verify "${TAG}"
           claude plugin validate "plugins/${TAG%%--v*}" --strict
 
       - name: Extract release notes from the changelog
         env:
           TAG: ${{ github.ref_name }}
-        run: python3 scripts/release_notes.py notes "${TAG}" > "${RUNNER_TEMP}/notes.md"
+        run: scripts/release_notes.py notes "${TAG}" > "${RUNNER_TEMP}/notes.md"
 
       - name: Publish the release
         env:

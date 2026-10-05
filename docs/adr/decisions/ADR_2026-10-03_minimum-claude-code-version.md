@@ -57,3 +57,5 @@ Chosen option: **pin 2.1.289**. CI installs exactly this version with the offici
 ## More information
 
 Docs: [Claude Code changelog](https://code.claude.com/docs/en/changelog).
+
+Pointer note (2026-10-05): [ADR unpinned-tooling-and-shebang-interpreters](ADR_2026-10-05_unpinned-tooling-and-shebang-interpreters.md) replaces the part of this record in which CI installs exactly the pinned version: CI now installs the latest Claude Code. `repo.MIN_CLAUDE_CODE` remains the minimum new plugins declare. Approved by the maintainer in the Claude Code session of 2026-10-05.

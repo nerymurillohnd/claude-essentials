@@ -9,7 +9,7 @@ How the root README and plugin READMEs are built. Decision: [ADR generated-readm
 | `README.md`                | `templates/readme/root.md`   | Rendered entirely by `scripts/sync_readmes.py`; edit the template, never `README.md`        |
 | `plugins/<name>/README.md` | `templates/readme/plugin.md` | Created by the scaffold; authors write their sections, the script rewrites generated blocks |
 
-Run `python3 scripts/sync_readmes.py` after changing a manifest, the catalog or a component. `python3 scripts/check.py` runs it with `--check` and fails on stale content.
+Run `scripts/sync_readmes.py` after changing a manifest, the catalog or a component. `scripts/check.py` runs it with `--check` and fails on stale content.
 
 ## Plugin README structure
 
@@ -63,6 +63,6 @@ Answer only what is true of the published version; leave out a question you cann
 - **Hierarchy:** one `#` title, `##` sections in the order above, short paragraphs, tables for facts that compare (components, options, documents), prose for explanations.
 - **Code blocks:** always fenced with a language: `text` for slash commands typed in Claude Code, `bash` for shell commands, `json` for settings.
 - **Collapsible sections:** `<details>` only for advanced or rarely needed content, such as pinning or sparse clones.
-- **Placeholders:** `{{name}}` is filled by scripts; `TODO:` marks text the author must write. `python3 scripts/check.py` fails while either remains in a plugin.
+- **Placeholders:** `{{name}}` is filled by scripts; `TODO:` marks text the author must write. `scripts/check.py` fails while either remains in a plugin.
 - **Generated blocks:** the content between `<!-- BEGIN GENERATED: <block> -->` and `<!-- END GENERATED: <block> -->` is overwritten; change the source instead.
 - **Tone:** say what the plugin does for the user and what it runs on their machine. No marketing language, no claims the plugin cannot back up.

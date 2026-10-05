@@ -16,7 +16,7 @@ def main() -> int:
     # git runs a hook from the root of the working tree (`git help githooks`),
     # so the checker path is relative to the current directory.
     checker = Path.cwd() / "scripts" / "check_commit_msg.py"
-    return subprocess.call([sys.executable, str(checker), "--file", sys.argv[1]])
+    return subprocess.call([str(checker), "--file", sys.argv[1]])
 
 
 if __name__ == "__main__":

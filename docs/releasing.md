@@ -35,12 +35,12 @@ A pull request may release several plugins, each with its own bump; it carries e
 
 ## Pull request or direct push
 
-| Change                                         | Path                                                                                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Anything under `plugins/**`                    | Pull request: `scripts/check_pr.py` checks the release and only runs on pull requests                        |
-| `.claude-plugin/marketplace.json`              | Pull request: it is what users see when they refresh the catalog                                             |
-| `.github/workflows/**`, `CODEOWNERS`           | Pull request: code owner approval and the workflow audits                                                    |
-| Docs, scripts, tests, rules, ADRs, root README | Direct push to `main`, signed, after `python3 scripts/check.py` passes and the maintainer approves that push |
+| Change                                         | Path                                                                                                 |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Anything under `plugins/**`                    | Pull request: `scripts/check_pr.py` checks the release and only runs on pull requests                |
+| `.claude-plugin/marketplace.json`              | Pull request: it is what users see when they refresh the catalog                                     |
+| `.github/workflows/**`, `CODEOWNERS`           | Pull request: code owner approval and the workflow audits                                            |
+| Docs, scripts, tests, rules, ADRs, root README | Direct push to `main`, signed, after `scripts/check.py` passes and the maintainer approves that push |
 
 After a direct push, confirm that the Validate workflow passes on `main`.
 
@@ -88,8 +88,8 @@ Requirements: signing configured for commits and tags, Claude Code 2.1.289 or la
 2. **Bump, in the same branch.** Preview, then prepare the files:
 
    ```bash
-   python3 scripts/bump_version.py plugin <name> <major|minor|patch> --dry-run
-   python3 scripts/bump_version.py plugin <name> <major|minor|patch>
+   scripts/bump_version.py plugin <name> <major|minor|patch> --dry-run
+   scripts/bump_version.py plugin <name> <major|minor|patch>
    ```
 
    The script refuses an empty `[Unreleased]`, a MAJOR without Migration, and a changelog that disagrees with `plugin.json`. It moves the notes into `## [<version>] - <date>` (UTC), bumps `plugin.json`, regenerates the README content that shows the version, and runs `claude plugin validate --strict` and `scripts/check_repo.py`. It does not commit, tag or push.
@@ -113,7 +113,7 @@ To remove a whole plugin (exception: a confirmed vulnerability that cannot be fi
 
 1. Deprecate it in a plugin MINOR release: add `### Deprecated` with the replacement and the planned removal, and state it in the README Overview. Add a dated `### Deprecated` note to the root `CHANGELOG.md`.
 2. Keep the plugin for at least one further minor release and 30 days.
-3. Remove it in a pull request: delete the entry and the directory, add `"renames": { "<name>": null }` to `marketplace.json` (append-only), remove the `plugin:<name>` label and its labeler rules, regenerate the root README with `python3 scripts/sync_readmes.py`, and add a dated `### Removed` note to the root `CHANGELOG.md`. Never rename a published plugin unless a `renames` entry maps the old name to the new one ([rename or remove a plugin](https://code.claude.com/docs/en/plugins/host-marketplace#rename-or-remove-a-plugin)).
+3. Remove it in a pull request: delete the entry and the directory, add `"renames": { "<name>": null }` to `marketplace.json` (append-only), remove the `plugin:<name>` label and its labeler rules, regenerate the root README with `scripts/sync_readmes.py`, and add a dated `### Removed` note to the root `CHANGELOG.md`. Never rename a published plugin unless a `renames` entry maps the old name to the new one ([rename or remove a plugin](https://code.claude.com/docs/en/plugins/host-marketplace#rename-or-remove-a-plugin)).
 
 ## Labels
 

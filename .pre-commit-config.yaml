@@ -1,19 +1,26 @@
 # Local pre-commit hooks, run by prek (https://github.com/j178/prek), a drop-in
 # replacement for pre-commit. Install once: `uv tool install prek` and `prek install`.
-# Pins match RUFF_VERSION and BASEDPYRIGHT_VERSION in scripts/check.py; change them together.
+# Every hook is local with `language: system`: it runs the ruff and basedpyright found
+# on PATH, so no version is pinned here (https://prek.j178.dev/local-hooks/).
 repos:
-  # https://docs.astral.sh/ruff/integrations/#pre-commit
-  # With --fix, the lint hook runs before the formatter.
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.10
+  - repo: local
     hooks:
+      # With --fix, the lint hook runs before the formatter.
       - id: ruff-check
-        args: [--fix]
+        name: ruff check
+        language: system
+        entry: ruff check --force-exclude --fix
+        types_or: [python, pyi]
       - id: ruff-format
-  # https://docs.basedpyright.com/latest/installation/prek-hook/
-  # --warnings matches the python gate: warnings fail like errors.
-  - repo: https://github.com/DetachHead/basedpyright-prek-mirror
-    rev: 1.40.1
-    hooks:
+        name: ruff format
+        language: system
+        entry: ruff format --force-exclude
+        types_or: [python, pyi]
+      # --warnings matches the python gate: warnings fail like errors. basedpyright
+      # checks the whole project from pyrightconfig.json, not the staged files alone.
       - id: basedpyright
-        args: [--warnings]
+        name: basedpyright
+        language: system
+        entry: basedpyright --warnings
+        types_or: [python, pyi]
+        pass_filenames: false
