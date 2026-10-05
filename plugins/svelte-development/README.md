@@ -24,7 +24,7 @@ It builds on the Svelte team's own AI tools ([sveltejs/ai-tools](https://github.
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | You ask for a new component or route               | Fetches the current Svelte and SvelteKit sections, writes runes and SvelteKit 3 code, runs the autofixer and the language server until both are clean | Code that compiles and type-checks against Svelte 5.57 and SvelteKit 3             |
 | You upgrade a SvelteKit 2 project                  | Explains the breaking changes, runs or reviews `sv migrate sveltekit-3`, and fixes what the codemod leaves in `MIGRATION_TASKS.md`                    | A project on SvelteKit 3 with `#lib`, `$app/state` and the config in `vite.config` |
-| You ask for a review                               | The read-only auditor checks legacy syntax, runes misuse, Kit 3 leftovers, server/client leaks, CSRF and origin settings                              | A findings table with file, line, severity, evidence and fix                       |
+| You ask for a review                               | The auditor, which has no file-editing tools, checks legacy syntax, runes misuse, Kit 3 leftovers, server/client leaks, CSRF and origin settings      | A findings table with file, line, severity, evidence and fix                       |
 | You rename or delete a prop, function or component | Finds every reference through the language server before editing, then checks the project                                                             | No missed usages, and proof from `sv check`                                        |
 
 ## 📋 Prerequisites
@@ -124,7 +124,7 @@ The [auditor](agents/svelte-code-auditor.md) runs `sv check` and the autofixer, 
 - **MCP server `svelte`** is the Svelte team's remote server at `https://mcp.svelte.dev/mcp`, over HTTPS. `list-sections` and `get-documentation` return the current documentation. `svelte-autofixer` and `playground-link` receive the code you or Claude pass them: that code is sent to the Svelte team's server, which states that it does not log, store or inspect it ([remote setup](https://svelte.dev/docs/ai/remote-setup)). The server records usage events (tool name, session and client). If you do not want code to leave your machine, disable the server in `/mcp` and ask Claude to use the local `svelte-mcp` command line, which runs the autofixer on your machine.
 - **LSP server `svelte` (`svelteserver`)** runs locally over stdio for `.svelte` files and reads your project's files and `node_modules` to resolve types. It sends nothing over the network.
 - **Network from the skills and agents**: when the MCP server is unavailable, or to check what changed between versions, they run `curl -sS` against `svelte.dev`, `raw.githubusercontent.com` (the `sveltejs`, `withastro` and `tailwindlabs` repositories) and `api.github.com` (unauthenticated, 60 requests per hour), and `npm view` against the npm registry. Every command goes through your normal permission prompts.
-- **Files**: the [auditor](agents/svelte-code-auditor.md) has no file-editing tools and changes no source file; the commands it may run regenerate only SvelteKit's `.svelte-kit` folder. The [component editor](agents/svelte-component-editor.md) edits only what the task asks for. Both may run `npx svelte-kit sync`, which rewrites SvelteKit's generated `.svelte-kit` files.
+- **Files**: the [auditor](agents/svelte-code-auditor.md) has no Edit or Write tool. It does have Bash, limited by its instructions rather than technically, to run the project's checks; every command still goes through your permission prompts, and the checks it is told to run regenerate only SvelteKit's `.svelte-kit` folder. The [component editor](agents/svelte-component-editor.md) edits only what the task asks for. Both run `svelte-check` and `svelte-kit sync` with `npx --no-install`, so they never download a package your project does not already have.
 - Nothing is pre-approved. To skip prompts for the read-only documentation tools, you can add allow rules to your own settings, for example `mcp__plugin_svelte-development_svelte__list-sections`, `mcp__plugin_svelte-development_svelte__get-documentation` and `Bash(curl -sS https://svelte.dev/docs/*)`.
 
 <!-- BEGIN GENERATED: runtime -->
@@ -143,7 +143,7 @@ What this plugin runs on your machine, generated from its configuration files:
 <details>
 <summary>Does installing this plugin modify my project?</summary>
 
-No. Installing adds the plugin to your Claude Code configuration only. Your project changes only when you ask: the component editor edits the files a task names, and `npx svelte-kit sync`, which either agent may run, regenerates the `.svelte-kit` folder. The skills never write files, and the auditor changes no source file.
+No. Installing adds the plugin to your Claude Code configuration only. Your project changes only when you ask: the component editor edits the files a task names, and `npx --no-install svelte-kit sync`, which either agent may run, regenerates the `.svelte-kit` folder. The skills never write files, and the auditor changes no source file.
 
 </details>
 

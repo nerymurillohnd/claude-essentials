@@ -75,7 +75,7 @@ There is no rename operation: a rename is steps 2 to 4, including the props pass
 
 Diagnostics after an edit are pushed once, for the files the server has open, and the LSP tool cannot request them again. For the whole project, run the project's checker from its root:
 
-- The project's `check` script if it has one (`npm run check`); otherwise `npx svelte-kit sync` and then `npx svelte-check --tsconfig ./tsconfig.json`, which runs the `svelte-check` the project already has. `npx sv check` forwards to the same tool but downloads `sv` when the project does not depend on it, so ask before running it. Without `svelte-kit sync`, the generated `./$types` and `$app/types` are missing and the check reports false errors.
+- The project's `check` script if it has one (`npm run check`); otherwise `npx --no-install svelte-kit sync` and then `npx --no-install svelte-check --tsconfig ./tsconfig.json`, which runs the `svelte-check` the project already has. `npx sv check` forwards to the same tool but downloads `sv` when the project does not depend on it, so ask before running it. Without `svelte-kit sync`, the generated `./$types` and `$app/types` are missing and the check reports false errors.
 - Inside Claude Code, svelte-check prints its machine format by default (`START`, `ERROR "<file>" <line>:<col> "<message>"`, `COMPLETED … ERRORS … WARNINGS`), because it detects the `CLAUDECODE` environment variable. Parse those lines; pass `--output human` only for the user.
 - Useful flags: `--threshold error`, `--fail-on-warnings`, `--compiler-warnings <code>:ignore|error`, `--diagnostic-sources "svelte,ts"`, `--tsgo` (TypeScript 7, experimental).
 

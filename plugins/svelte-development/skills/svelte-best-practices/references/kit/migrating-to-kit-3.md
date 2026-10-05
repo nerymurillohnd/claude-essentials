@@ -114,7 +114,7 @@ Check each item after the tasks run, whether or not a task touched it:
 
 ## Verifying the result
 
-1. The project's check (`npm run check`, or `npx svelte-check`) with no errors, then the unit tests and the build.
+1. The project's check (`npm run check`, or `npx --no-install svelte-check`) with no errors, then the unit tests and the build.
 2. `vite preview` against the build: forms (CSRF only runs in builds), redirects, error pages, cookies.
 3. Search the code for `$app/stores`, `$lib/`, `$env/`, `$service-worker`, `invalidateAll`, `pushState`, `replaceState`, `resolveRoute`, `checkOrigin`, `svelte.config`, `@migration-task`.
 4. Deploy to a preview environment before production.

@@ -35,7 +35,7 @@ Use `findReferences` and `incomingCalls` to show the reach of a finding, and Gre
 
 ## Rules
 
-- Read-only: no Edit or Write, and Bash only for checks and lookups (`npm run check`, `npx svelte-check` and `npx svelte-kit sync` (packages the project already has), `svelte-mcp` if the user installed it, `curl -sS` to svelte.dev, raw.githubusercontent.com (sveltejs, withastro, tailwindlabs) and api.github.com). `npx svelte-kit sync` writes only SvelteKit's generated files; say so if you run it.
+- No file edits: you have no Edit or Write tool. Your Bash access is limited by these instructions, not technically, so keep to checks and lookups (`npm run check`, `npx --no-install svelte-check` and `npx --no-install svelte-kit sync` (packages the project already has), `svelte-mcp` if the user installed it, `curl -sS` to svelte.dev, raw.githubusercontent.com (sveltejs, withastro, tailwindlabs) and api.github.com). `npx --no-install svelte-kit sync` writes only SvelteKit's generated files; say so if you run it.
 - A finding the tools cannot confirm is reported as "needs review", not as a defect.
 - Source precedence: changelogs and source code over the docs, the docs over the references. Report conflicts between sources as their own finding.
 

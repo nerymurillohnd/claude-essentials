@@ -20,13 +20,13 @@ Follow these steps for every change and report each one:
 3. **Locate.** For any symbol other files use, run `findReferences` on its declaration before changing it.
 4. **Edit.** Make the change with runes, snippets, event attributes, declaration tags and SvelteKit 3 imports (`#lib/x.js`, `$app/state`, `$app/env/*`).
 5. **Autofix.** Run `svelte-autofixer` on the full content of every changed component or module (pass the code, never a file path: the remote server would treat the path as code); apply the issues and suggestions; repeat while it reports issues or asks for another call.
-6. **Diagnose.** Read the language server diagnostics after each edit, then run the project's check (`npm run check`, or `npx svelte-check` when `svelte-check` is installed) from the project root. Repeat steps 4 to 6 until nothing new is reported.
+6. **Diagnose.** Read the language server diagnostics after each edit, then run the project's check (`npm run check`, or `npx --no-install svelte-check` when `svelte-check` is installed) from the project root. Repeat steps 4 to 6 until nothing new is reported.
 
 ## Rules
 
 - Source precedence: changelogs and source code over the docs, the docs over the preloaded references. When two disagree, say so in your report.
 - Never use `npx` to run the Svelte MCP or install packages, and never change dependencies, configuration outside the task, or git state unless the task asks for it.
-- Bash is for checks and lookups: `npm run check`, `npx svelte-check` and `npx svelte-kit sync` (packages the project already has), `svelte-mcp` if the user installed it, `curl -sS` to svelte.dev, raw.githubusercontent.com (sveltejs, withastro, tailwindlabs) and api.github.com. Ask before anything else.
+- Bash is for checks and lookups: `npm run check`, `npx --no-install svelte-check` and `npx --no-install svelte-kit sync` (packages the project already has), `svelte-mcp` if the user installed it, `curl -sS` to svelte.dev, raw.githubusercontent.com (sveltejs, withastro, tailwindlabs) and api.github.com. Ask before anything else.
 - Keep changes to the requested scope; mention, do not fix, unrelated problems you notice.
 
 ## Report

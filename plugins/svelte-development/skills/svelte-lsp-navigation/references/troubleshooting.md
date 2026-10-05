@@ -35,7 +35,7 @@ Claude Code returns an error for each LSP call on a file whose server it cannot 
 
 ## False errors about generated types
 
-`Cannot find module './$types'` or `Cannot find type definition file for '$app/types'` means SvelteKit's generated files are missing. Run `npx svelte-kit sync` (or the project's `check` script, which runs it) before trusting diagnostics. Since SvelteKit 3 the generated tsconfig lives in `node_modules/$app/tsconfig`, so dependencies must be installed.
+`Cannot find module './$types'` or `Cannot find type definition file for '$app/types'` means SvelteKit's generated files are missing. Run `npx --no-install svelte-kit sync` (or the project's `check` script, which runs it) before trusting diagnostics. Since SvelteKit 3 the generated tsconfig lives in `node_modules/$app/tsconfig`, so dependencies must be installed.
 
 ## Known open issues
 
