@@ -37,6 +37,7 @@ Run commands in this order. Every script is standard-library Python, run by path
 - `scripts/check.py clean` - Run when you need to remove caches and orphaned test dirs.
 - `/<project-skill>` - Run when a task matches a project skill listed in `.claude/rules/automation.md`.
 - `scripts/check.py ci-tools` - Run on CI only.
+- `scripts/check.py ci-eval-tools` - Run on CI only, by the plugin-evals workflow.
 - `prek install` - Run once per clone to install the ruff and basedpyright pre-commit hooks (`uv tool install prek` first).
 - `cp scripts/git-hooks/commit-msg .git/hooks/commit-msg` - Run once to install the optional commit message check.
 
@@ -122,7 +123,7 @@ The rules in `.claude/rules/` hold facts verified on Claude Code 2.1.289 that ar
 .claude-plugin/marketplace.json   catalog: name, owner, entries (source ./plugins/<name>); no version
 plugins/<name>/                   one self-contained plugin per directory
 scripts/                          stdlib Python run by path, shebang picks the interpreter (no manifest, no pins)
-  check.py                        single entry point: every gate, test-install, clean, ci-tools
+  check.py                        single entry point: every gate, test-install, clean, ci-tools, ci-eval-tools
   repo.py                         shared constants, naming, SemVer, changelog parsing
   check_repo.py                   repository gates
   sync_readmes.py                 generated README content

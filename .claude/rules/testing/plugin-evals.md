@@ -41,7 +41,7 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 - `--allow-tools` grants what `allowed_tools` asks for: `Write`, `Edit`, `Bash(...)`, `"mcp__plugin_<plugin>_<server>__*"`. Bash runs in a sandbox whose network reaches only domains granted as `WebFetch(domain:<host>)`. Read the "not granted" lines before trusting a score.
 - Write `--json` to the session scratchpad, never into the repository. The run also writes `evals/results/`, which is gitignored but holds the maintainer's paths; the `repo` gate scans the working tree, so delete it after the run.
 - Isolation: each run has a temporary home, working directory and configuration; only an allowlist of environment variables (including `PATH`) reaches it. A plugin server binary must be on the user's `PATH`; to test without installing it on the maintainer's machine, run the suite against a scratch copy of the plugin whose `.lsp.json` `command` is the binary's absolute path, and say so in the evidence.
-- Scores with real MCP servers are advisory unless the run is in an isolated environment such as a CI runner (docs, "Trust the plugin directory").
+- Scores with real MCP servers are advisory unless the run is in an isolated environment such as a CI runner (docs, "Trust the plugin directory"). Full runs go to CI: apply the `run-evals` label to the pull request (ADR plugin-evals-in-ci); local runs are pilots. A plugin lists the npm packages its runs need in `evals/ci-packages.txt` and extra `--allow-tools` grants in `evals/ci-allow-tools.txt`.
 
 ## Evidence
 

@@ -273,6 +273,21 @@ class RuffConfigTest(unittest.TestCase):
         assert "✘ ci-tools runs only on GitHub Actions" in output, output
         assert not (home / ".config").exists(), "the ruff config was written outside CI"
 
+    def test_ci_eval_tools_refuses_outside_github_actions(self) -> None:
+        result, output = emitted(lambda: check.ci_eval_tools({}))
+        assert result == 1
+        assert "✘ ci-eval-tools runs only on GitHub Actions" in output, output
+
+    def test_eval_packages_read_every_plugin_listing(self) -> None:
+        root = make_fixture_dir(self)
+        first = root / "plugins" / "one" / "evals"
+        second = root / "plugins" / "two" / "evals"
+        first.mkdir(parents=True)
+        second.mkdir(parents=True)
+        _ = (first / "ci-packages.txt").write_text("# servers\nalpha\n\nbeta\n", encoding="utf-8")
+        _ = (second / "ci-packages.txt").write_text("beta\ngamma\n", encoding="utf-8")
+        assert check.eval_packages(root) == ["alpha", "beta", "gamma"]
+
     def test_unused_config_is_reported(self) -> None:
         unused = make_fixture_dir(self) / "ruff" / "ruff.toml"
         result, output = emitted(lambda: check.ruff_uses(unused))

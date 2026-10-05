@@ -7,6 +7,7 @@ Usage:
   scripts/check.py test-install     # isolated install test (tests committed HEAD)
   scripts/check.py clean            # remove caches and orphaned test directories
   scripts/check.py ci-tools         # CI only: install the latest tool releases
+  scripts/check.py ci-eval-tools    # CI only: install what plugin eval runs need
   scripts/check.py --list           # list the gates
 
 The repository has no dependency manifest and pins no tool version
@@ -283,13 +284,47 @@ def ci_tools(env: dict[str, str]) -> int:
     return 0 if target is not None and ruff_uses(target) else 1
 
 
+def eval_packages(root: Path) -> list[str]:
+    """List the npm packages in every `plugins/*/evals/ci-packages.txt`, first occurrence kept."""
+    packages: list[str] = []
+    for listing in sorted(root.glob("plugins/*/evals/ci-packages.txt")):
+        for line in listing.read_text(encoding="utf-8").splitlines():
+            name = line.strip()
+            if name and not name.startswith("#") and name not in packages:
+                packages.append(name)
+    return packages
+
+
+def ci_eval_tools(env: dict[str, str]) -> int:
+    """Install what eval runs need on a CI runner: Claude Code, sandbox tools, listed packages."""
+    # Like ci-tools, it installs global tools, so it runs only on a GitHub Actions runner.
+    if env.get("GITHUB_ACTIONS") != "true":
+        repo.emit("✘ ci-eval-tools runs only on GitHub Actions (GITHUB_ACTIONS=true);")
+        repo.emit("  it would install global tools on this machine")
+        return 1
+    (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)
+    # `claude plugin eval` runs granted shell commands in a sandbox that needs bubblewrap
+    # and socat on Linux (https://code.claude.com/docs/en/plugin-evals, "Grant tools").
+    commands = [
+        ["sudo", "apt-get", "update", "-q"],
+        ["sudo", "apt-get", "install", "-y", "-q", "bubblewrap", "socat"],
+        ["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"],
+    ]
+    packages = eval_packages(repo.ROOT)
+    if packages:
+        commands.append(["npm", "install", "--global", "--no-fund", "--no-audit", *packages])
+    return 0 if run_commands(commands) else 1
+
+
 def main() -> int:
     """Run the selected gates or command."""
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     _ = parser.add_argument(
-        "targets", nargs="*", help="gates or a command: test-install, clean, ci-tools"
+        "targets",
+        nargs="*",
+        help="gates or a command: test-install, clean, ci-tools, ci-eval-tools",
     )
     _ = parser.add_argument("--list", action="store_true", help="list the gates")
     args = parser.parse_args()
@@ -306,6 +341,8 @@ def main() -> int:
         return clean()
     if targets == ["ci-tools"]:
         return ci_tools(dict(os.environ))
+    if targets == ["ci-eval-tools"]:
+        return ci_eval_tools(dict(os.environ))
     unknown = [t for t in targets if t not in GATES]
     if unknown:
         parser.error(f"unknown target(s): {', '.join(unknown)}; use --list")

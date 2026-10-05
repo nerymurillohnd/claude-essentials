@@ -1,0 +1,2 @@
+# npm packages the CI eval run installs globally (scripts/check.py ci-eval-tools).
+svelte-language-server

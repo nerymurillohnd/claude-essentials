@@ -42,7 +42,7 @@ _DOC_REFERENCE_RE = re.compile(r"(?<![\w./-])(docs/[\w./-]+\.md)\b")
 _UNCHECKED_LINK_FILES = frozenset({"CLAUDE.local.md"})
 _UNCHECKED_LINK_DIRS = frozenset({"templates"})
 # Targets of check.py that are commands rather than gates.
-_COMMANDS = frozenset({"test-install", "clean", "ci-tools", "--list"})
+_COMMANDS = frozenset({"test-install", "clean", "ci-tools", "ci-eval-tools", "--list"})
 _NUMBER_WORDS = {
     "nine": 9,
     "ten": 10,

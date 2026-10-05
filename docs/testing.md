@@ -71,4 +71,4 @@ Tests leave nothing behind: no directories, configurations, clones, caches or pr
 
 ## Behavioral evaluation
 
-`claude plugin eval` runs eval cases with and without a plugin and scores the difference ([plugin evals](https://code.claude.com/docs/en/plugin-evals)). It calls models and needs authentication, so it is not a CI gate; authors run it for plugins that shape Claude's behavior and attach the results to the pull request.
+`claude plugin eval` runs eval cases with and without a plugin and scores the difference ([plugin evals](https://code.claude.com/docs/en/plugin-evals)). It calls models and needs authentication, so it is not a blocking gate. Applying the `run-evals` label to a pull request runs the suite of each changed plugin on a CI runner (`.github/workflows/plugin-evals.yml`, [ADR plugin-evals-in-ci](adr/decisions/ADR_2026-10-05_plugin-evals-in-ci.md)); the job never fails on scores, only on load or run errors. Authors attach the results to the pull request.
