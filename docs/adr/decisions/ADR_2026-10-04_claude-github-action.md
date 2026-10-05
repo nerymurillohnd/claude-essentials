@@ -54,3 +54,5 @@ zizmor, actionlint and the GitHub workflow schema check both files in `python3 s
 ## More information
 
 Pull request #3 is closed in favour of the pull request that adds these hardened files.
+
+- 2026-10-05: [ADR remove-claude-mention-workflow](ADR_2026-10-05_remove-claude-mention-workflow.md) removes `claude.yml`; the review workflow part of this record still applies.

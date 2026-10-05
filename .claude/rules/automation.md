@@ -45,16 +45,13 @@ paths:
 
 ## On GitHub
 
-- The Claude GitHub App runs two workflows (ADR claude-github-action). They authenticate with the `CLAUDE_CODE_OAUTH_TOKEN` repository secret and are billed to the maintainer's Claude subscription.
+- The Claude GitHub App runs one workflow (ADR claude-github-action; `claude.yml` was removed by ADR remove-claude-mention-workflow, so `@claude` mentions run nothing). It authenticates with the `CLAUDE_CODE_OAUTH_TOKEN` repository secret and is billed to the maintainer's Claude subscription.
 - `.github/workflows/claude-code-review.yml` reviews every push to a non-draft pull request.
   - Each run re-checks whether Claude's earlier findings are fixed.
   - It reviews the current head for correctness and this repository's rules (CLAUDE.md, quality bar, security review, releasing, portability).
   - It posts new findings inline and one summary with a verdict and a fixed/open table.
   - CI runs the gates; `/review-pr` additionally runs them on a checkout.
   - The action skips, with a green check, a pull request whose copy of the workflow differs from `main`, so a change to these workflows is reviewed only locally (observed 2026-10-04; the action's docs do not state it).
-- `.github/workflows/claude.yml` answers `@claude` in an issue, a pull request comment or a review.
-  - Only users with write access can trigger it, so a third party's issue runs nothing until a maintainer comments `@claude <request>`.
-  - Claude may then push a branch prefixed `claude/` with the app's token; asking is the approval.
 
 ## Review and Agent
 
