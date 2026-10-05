@@ -101,6 +101,41 @@ _BRAND_WORDS = frozenset({"claude", "anthropic", "anthropics"})
 _KEBAB_HINT = "lowercase letters, digits, single hyphens, starting with a letter"
 _BRAND_HINT = "which reads as an Anthropic plugin"
 
+# Plugin README sections, in order, with their emoji (docs/readme-guide.md).
+# The one source for templates/readme/plugin.md, the generated Contents line
+# and the repo gate. Each emoji is a single code point: a variation selector
+# would stay in GitHub's heading anchor.
+README_SECTIONS: tuple[tuple[str, str], ...] = (
+    ("📖", "Overview"),
+    ("🎯", "What it does"),
+    ("📋", "Prerequisites"),
+    ("⚡", "Installation"),
+    ("🚀", "Usage"),
+    ("🧩", "Components"),
+    ("🔧", "Configuration"),
+    ("🔐", "Permissions"),
+    ("❓", "FAQ"),
+    ("🔄", "Update and uninstall"),
+    ("📚", "Documentation"),
+    ("📄", "License"),
+)
+# Present only when the plugin declares userConfig or runs code.
+CONDITIONAL_README_SECTIONS = frozenset({"Configuration", "Permissions"})
+FAQ_FIRST_QUESTION = "Does installing this plugin modify my project?"
+FAQ_MIN_QUESTIONS = 3
+FAQ_MAX_QUESTIONS = 5
+
+
+def readme_heading(title: str) -> str:
+    """The `## <emoji> <title>` heading of a plugin README section."""
+    emoji = {name: mark for mark, name in README_SECTIONS}[title]
+    return f"## {emoji} {title}"
+
+
+def readme_anchor(title: str) -> str:
+    """GitHub's anchor for a README section heading: the emoji leaves a leading hyphen."""
+    return "#-" + title.lower().replace(" ", "-")
+
 
 # --------------------------------------------------------------------------
 # Output and errors. The scripts are command-line tools: their report is

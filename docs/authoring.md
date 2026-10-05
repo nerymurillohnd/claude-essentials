@@ -85,7 +85,7 @@ Mods additionally need `metadata.minClaudeCodeVersion` of at least 2.1.287 and t
 
 ## Documentation
 
-The README template has author sections (Overview, Usage, the explanation under Permissions) and generated blocks. Write the author sections; run `python3 scripts/sync_readmes.py` for the rest. Details in the [README guide](readme-guide.md).
+The README template has author sections (Overview, What it does, the tools under Prerequisites, Usage, FAQ, the explanation under Permissions) and generated blocks. Write the author sections; run `python3 scripts/sync_readmes.py` for the rest. Details in the [README guide](readme-guide.md).
 
 ## Check your work
 

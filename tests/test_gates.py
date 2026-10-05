@@ -111,6 +111,13 @@ class RepositoryFixture(unittest.TestCase):
     def errors(self) -> list[str]:
         return check_repo.run_checks(self.root).errors
 
+    def edit_readme(self, old: str, new: str) -> None:
+        """Replace the one occurrence of `old` in the fixture plugin's README."""
+        readme = self.plugin / "README.md"
+        text = readme.read_text(encoding="utf-8")
+        assert text.count(old) == 1, old
+        _ = readme.write_text(text.replace(old, new), encoding="utf-8")
+
     def assert_fails_with(self, fragment: str) -> None:
         errors = self.errors()
         assert errors, "the gate passed although a defect was injected"
@@ -208,7 +215,7 @@ class SelfContainmentGateTest(RepositoryFixture):
         errors = self.errors()
         assert not any("command path" in e for e in errors), errors
         # A hook makes the plugin privileged, so its README must document Permissions.
-        assert any("## Permissions" in e for e in errors), errors
+        assert any(repo.readme_heading("Permissions") in e for e in errors), errors
 
 
 class CatalogGateTest(RepositoryFixture):
@@ -285,12 +292,26 @@ class CatalogGateTest(RepositoryFixture):
         self.assert_fails_with(f'latest release is {released} but plugin.json says "99.0.0"')
 
     def test_missing_readme_section_fails(self) -> None:
-        readme = self.plugin / "README.md"
-        _ = readme.write_text(
-            readme.read_text(encoding="utf-8").replace("## Usage", "## How to use"),
-            encoding="utf-8",
+        usage = repo.readme_heading("Usage")
+        self.edit_readme(usage, "## How to use")
+        self.assert_fails_with(f'missing "{usage}" section')
+
+    def test_faq_with_too_few_questions_fails(self) -> None:
+        self.edit_readme("<summary>Does it need network access?</summary>", "")
+        self.assert_fails_with("needs 3 to 5 questions, found 2")
+
+    def test_faq_with_too_many_questions_fails(self) -> None:
+        extra = "".join(
+            f"<details>\n<summary>Question {n}?</summary>\n\nAnswer.\n\n</details>\n\n"
+            for n in range(3)
         )
-        self.assert_fails_with('missing "## Usage" section')
+        update = repo.readme_heading("Update and uninstall")
+        self.edit_readme(update, extra + update)
+        self.assert_fails_with("needs 3 to 5 questions, found 6")
+
+    def test_faq_without_the_fixed_first_question_fails(self) -> None:
+        self.edit_readme(repo.FAQ_FIRST_QUESTION, "Is this plugin useful?")
+        self.assert_fails_with(f'must open with "{repo.FAQ_FIRST_QUESTION}"')
 
     def test_missing_plugin_label_fails(self) -> None:
         labels = self.root / ".github" / "labels.yml"

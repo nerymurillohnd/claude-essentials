@@ -15,7 +15,7 @@ The directory name, the marketplace entry `name` and the manifest `name` are ide
 
 ## Components
 
-- Skill directories and `name` fields: kebab-case, specific, no `claude` or `anthropic`. Users type `/<plugin>:<skill>`.
+- Skill directories and `name` fields: kebab-case and specific. Users type `/<plugin>:<skill>`. Unlike plugin names, skill names may contain `claude` or `anthropic`: Claude Code reserves only `synced` and `anthropic-skills` for skills ([skills](https://code.claude.com/docs/en/skills)). A skill that is also uploaded to claude.ai or the Claude API cannot contain either word ([Agent Skills](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview)).
 - Agents: kebab-case file names; referred to as `<plugin>:<agent>`.
 - MCP servers: short kebab-case keys; tools appear as `mcp__plugin_<plugin>_<server>__<tool>`.
 

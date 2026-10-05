@@ -58,3 +58,5 @@ Chosen option: **rendered root README and generated blocks in plugin READMEs**. 
 ## More information
 
 Authoring rules for READMEs: [docs/readme-guide.md](../../readme-guide.md).
+
+2026-10-05: [ADR plugin-readme-sections](ADR_2026-10-05_plugin-readme-sections.md) replaces the plugin README section list and the content of the requirements, installation and uninstall blocks; the rest of this record stands.

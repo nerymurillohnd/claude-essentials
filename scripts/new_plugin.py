@@ -43,13 +43,13 @@ INIT_COMPONENTS = ("skills", "agents", "hooks", "mcp", "lsp", "output-style", "c
 PRIVILEGED_COMPONENTS = frozenset({"hooks", "mcp", "lsp", "channel"})
 LABEL_COLOR = "c5def5"
 CHANGED_FILES_RULE = "  - changed-files:\n      - any-glob-to-any-file:\n"
-CONFIGURATION_SECTION = """## Configuration
+CONFIGURATION_SECTION = f"""{repo.readme_heading("Configuration")}
 
 <!-- BEGIN GENERATED: configuration -->
 <!-- END GENERATED: configuration -->
 
 """
-PERMISSIONS_SECTION = """## Permissions
+PERMISSIONS_SECTION = f"""{repo.readme_heading("Permissions")}
 
 TODO: explain why the plugin needs each item in the table below and what it does with the
 installing user's files, network and accounts. See docs/security-review.md.

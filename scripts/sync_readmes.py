@@ -69,7 +69,11 @@ DOCUMENTATION_ROWS = [
     ],
     [f"[Claude Code plugins]({PLUGINS_DOCS_URL})", "Installing, updating and removing plugins"],
 ]
-BLOCK_HEADINGS = {"configuration": "## Configuration", "runtime": "## Permissions"}
+SETUP_URL = "https://code.claude.com/docs/en/setup"
+BLOCK_HEADINGS = {
+    "configuration": repo.readme_heading("Configuration"),
+    "runtime": repo.readme_heading("Permissions"),
+}
 
 
 class PrettierFailedError(SystemExit):
@@ -243,22 +247,31 @@ def is_privileged(plugin: Plugin) -> bool:
 
 def _instruction_rows(plugin: Plugin) -> list[list[str]]:
     rows: list[list[str]] = []
+
+    def link(label: str, path: Path) -> str:
+        # Relative to the plugin root, so it works on GitHub and in the installed copy.
+        return f"[`{label}`]({path.relative_to(plugin.path).as_posix()})"
+
     for skill in sorted((plugin.path / "skills").glob("*/SKILL.md")):
         fields = frontmatter(skill)
         name = fields.get("name") or skill.parent.name
-        rows.append(["Skill", f"`/{plugin.name}:{name}`", fields.get("description", "")])
+        rows.append(["Skill", link(f"/{plugin.name}:{name}", skill), fields.get("description", "")])
     for agent in sorted((plugin.path / "agents").rglob("*.md")):
         fields = frontmatter(agent)
         name = fields.get("name") or agent.stem
-        rows.append(["Agent", f"`{plugin.name}:{name}`", fields.get("description", "")])
+        rows.append(["Agent", link(f"{plugin.name}:{name}", agent), fields.get("description", "")])
     rows.extend(
-        ["Command", f"`/{plugin.name}:{command.stem}`", frontmatter(command).get("description", "")]
+        [
+            "Command",
+            link(f"/{plugin.name}:{command.stem}", command),
+            frontmatter(command).get("description", ""),
+        ]
         for command in sorted((plugin.path / "commands").glob("*.md"))
     )
     for style in sorted((plugin.path / "output-styles").glob("*.md")):
         fields = frontmatter(style)
         name = fields.get("name") or style.stem
-        rows.append(["Output style", f"`{name}`", fields.get("description", "")])
+        rows.append(["Output style", link(name, style), fields.get("description", "")])
     return rows
 
 
@@ -304,7 +317,7 @@ def component_badges(plugin: Plugin) -> list[str]:
             kind.lower() + ("" if kind.endswith("s") else "s"),
             str(count),
             "blueviolet",
-            "#components",
+            repo.readme_anchor("Components"),
         )
         for kind, count in counts.items()
     ]
@@ -377,13 +390,9 @@ def config_rows(plugin: Plugin) -> list[list[str]]:
 
 
 def _header(plugin: Plugin, *, privileged: bool, has_config: bool) -> str:
-    sections = ["Overview", "Requirements", "Installation", "Usage", "Components"]
-    if has_config:
-        sections.append("Configuration")
-    if privileged:
-        sections.append("Permissions")
-    sections += ["Uninstall", "Documentation", "License"]
-    nav = " · ".join(f"[{title}](#{title.lower()})" for title in sections)
+    present = {"Configuration": has_config, "Permissions": privileged}
+    sections = [title for _, title in repo.README_SECTIONS if present.get(title, True)]
+    nav = " · ".join(f"[{title}]({repo.readme_anchor(title)})" for title in sections)
     badges = " ".join(
         [
             badge("version", plugin.version, "blue", "CHANGELOG.md"),
@@ -396,7 +405,7 @@ def _header(plugin: Plugin, *, privileged: bool, has_config: bool) -> str:
                 "runs code",
                 "yes, reviewed" if privileged else "no",
                 "yellow" if privileged else "brightgreen",
-                "#permissions" if privileged else "#components",
+                repo.readme_anchor("Permissions" if privileged else "Components"),
             ),
         ]
     )
@@ -404,23 +413,67 @@ def _header(plugin: Plugin, *, privileged: bool, has_config: bool) -> str:
     return "\n\n".join([badges, description, PART_OF, f"**Contents:** {nav}"])
 
 
+def _prerequisites(plugin: Plugin) -> str:
+    rows = [["Claude Code", plugin.min_claude_code, "`claude --version`"]]
+    setup = (
+        f"Not installed, or older than the minimum? Follow the [setup guide]({SETUP_URL}), "
+        "or run `claude update` to update an existing install."
+    )
+    return "\n\n".join([table(["Requirement", "Minimum", "Check"], rows), setup])
+
+
 def _installation(plugin: Plugin) -> str:
     install_id = f"{plugin.name}@{repo.MARKETPLACE_NAME}"
+    shortcut = f"/plugin install {plugin.name} --marketplace {INSTALL_SOURCE}"
     session = f"/plugin marketplace add {INSTALL_SOURCE}\n/plugin install {install_id}"
     shell = f"claude plugin marketplace add {INSTALL_SOURCE}\nclaude plugin install {install_id}"
-    marketplaces = "under `/plugin` → **Marketplaces**"
-    updates = (
-        "Background auto-update is off for community marketplaces. "
-        f"Get fixes with `claude plugin update {install_id}`, or turn on "
-        f"**Enable auto-update** for `{repo.MARKETPLACE_NAME}` {marketplaces}."
+    one_step = (
+        "Inside a Claude Code session, in one command. It asks you to confirm "
+        f"adding the `{repo.MARKETPLACE_NAME}` marketplace, then opens the plugin's "
+        "details, where you install it:"
     )
     return "\n\n".join(
         [
-            "Inside a Claude Code session:",
+            one_step,
+            f"```text\n{shortcut}\n```",
+            "Or in two steps; skip the first line if you already added the marketplace:",
             f"```text\n{session}\n```",
             "From your shell:",
             f"```bash\n{shell}\n```",
-            updates,
+        ]
+    )
+
+
+def _update_and_uninstall(plugin: Plugin) -> str:
+    install_id = f"{plugin.name}@{repo.MARKETPLACE_NAME}"
+    update = (
+        "**Update.** Background auto-update is off for community marketplaces. From your shell:"
+    )
+    in_session = (
+        "Or in a session: `/plugin` → **Installed** → the plugin → **Update now**. "
+        "The new version loads in your next session; in a session that is already "
+        "open, run `/reload-plugins`. To update automatically, turn on "
+        f"**Enable auto-update** for `{repo.MARKETPLACE_NAME}` under `/plugin` → "
+        "**Marketplaces**."
+    )
+    shell_remove = (
+        f"```bash\nclaude plugin disable {install_id}\nclaude plugin uninstall {install_id}\n```"
+    )
+    data = (
+        "Uninstalling from the last scope also deletes the plugin's stored options and its "
+        "data directory; add `--keep-data` to the shell command to keep the data."
+    )
+    return "\n\n".join(
+        [
+            update,
+            f"```bash\nclaude plugin update {install_id}\n```",
+            in_session,
+            "**Check the installed version** with `/plugin list`.",
+            "**Disable or uninstall.** In a session:",
+            f"```text\n/plugin disable {install_id}\n/plugin uninstall {install_id}\n```",
+            "From your shell:",
+            shell_remove,
+            data,
         ]
     )
 
@@ -433,12 +486,12 @@ def plugin_blocks(plugin: Plugin) -> dict[str, str]:
     install_id = f"{plugin.name}@{repo.MARKETPLACE_NAME}"
     blocks = {
         "header": _header(plugin, privileged=privileged, has_config=bool(configuration)),
-        "requirements": f"- Claude Code {plugin.min_claude_code} or later.",
+        "requirements": _prerequisites(plugin),
         "installation": _installation(plugin),
         "components": table(["Type", "Name", "What it does"], rows)
         if rows
         else "This plugin has no components yet.",
-        "uninstall": f"```text\n/plugin uninstall {install_id}\n```",
+        "uninstall": _update_and_uninstall(plugin),
         "documentation": table(["Document", "Read it for"], DOCUMENTATION_ROWS),
         "license": LICENSE_TEXT,
     }

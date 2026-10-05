@@ -31,7 +31,8 @@ What a plugin must meet to be accepted and to stay in the catalog. Items marked 
 
 ## Documentation
 
-- [ ] README follows the template: Overview, Requirements, Installation, Usage, Components, Uninstall, Documentation, License, plus Configuration and Permissions when they apply. **gate**
+- [ ] README follows the template: Overview, What it does, Prerequisites, Installation, Usage, Components, FAQ, Update and uninstall, Documentation, License, plus Configuration and Permissions when they apply. **gate**
+- [ ] The FAQ has 3 to 5 questions and opens with "Does installing this plugin modify my project?". **gate**
 - [ ] Usage has at least one concrete example: what the user types and what happens.
 - [ ] No placeholders left (`TODO`, `{{…}}`, `<your-…>`, `YYYY-MM-DD`). **gate**
 - [ ] Generated README blocks are current. **gate**

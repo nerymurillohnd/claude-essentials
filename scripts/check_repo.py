@@ -91,17 +91,13 @@ _EMAIL_ALTERNATIVE = 'use plugin.json "author.email" or an example.com address'
 # User and host names shorter than this match too many ordinary words.
 _MIN_MARKER_LENGTH = 4
 
-_README_HEADINGS = (
-    "## Overview",
-    "## Requirements",
-    "## Installation",
-    "## Usage",
-    "## Components",
-    "## Uninstall",
-    "## Documentation",
-    "## License",
+_README_HEADINGS = tuple(
+    repo.readme_heading(title)
+    for _, title in repo.README_SECTIONS
+    if title not in repo.CONDITIONAL_README_SECTIONS
 )
-_PERMISSIONS_HEADING = "## Permissions"
+_PERMISSIONS_HEADING = repo.readme_heading("Permissions")
+_FAQ_HEADING = repo.readme_heading("FAQ")
 _PRIVILEGED_WHAT = "plugins with hooks, MCP or LSP servers, bin/, monitors or mods"
 _REQUIRED_MANIFEST_KEYS = (
     "name",
@@ -458,6 +454,27 @@ def check_readme(root: Path, plugin: Path, report: Report, *, privileged: bool) 
             where,
             f'installation instructions must use "<plugin>@{repo.MARKETPLACE_NAME}"',
         )
+    _check_faq(text, where, report)
+
+
+def _check_faq(text: str, where: str, report: Report) -> None:
+    """The FAQ holds 3 to 5 questions and opens with the fixed one."""
+    start = re.search(rf"^{re.escape(_FAQ_HEADING)}\s*$", text, re.MULTILINE)
+    if start is None:
+        return
+    rest = text[start.end() :]
+    following = re.search(r"^## ", rest, re.MULTILINE)
+    section = rest[: following.start()] if following else rest
+    questions = [
+        str(found.group(1)).strip()
+        for found in re.finditer(r"<summary>(.*?)</summary>", section, re.DOTALL)
+    ]
+    low, high = repo.FAQ_MIN_QUESTIONS, repo.FAQ_MAX_QUESTIONS
+    if not low <= len(questions) <= high:
+        found = len(questions)
+        report.fail(where, f'"{_FAQ_HEADING}" needs {low} to {high} questions, found {found}')
+    if questions and questions[0] != repo.FAQ_FIRST_QUESTION:
+        report.fail(where, f'"{_FAQ_HEADING}" must open with "{repo.FAQ_FIRST_QUESTION}"')
 
 
 def check_plugin_changelog(root: Path, plugin: Path, version: str, report: Report) -> None:
