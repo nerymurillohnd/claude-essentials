@@ -14,12 +14,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Publish the GitHub Release
+  # The latest Claude Code is downloaded and run here, in a job that can only read the
+  # repository, so no downloaded code ever runs with the token that publishes the release.
+  verify:
+    name: Check the tag and validate the plugin
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
-      contents: write # create the GitHub Release for the pushed tag
+      contents: read # read the tagged plugin
     steps:
       - name: Check out the tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,6 +39,19 @@ jobs:
         run: |
           scripts/release_notes.py verify "${TAG}"
           claude plugin validate "plugins/${TAG%%--v*}" --strict
+
+  publish:
+    name: Publish the GitHub Release
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write # create the GitHub Release for the pushed tag
+    steps:
+      - name: Check out the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Extract release notes from the changelog
         env:

@@ -264,6 +264,14 @@ class RuffConfigTest(unittest.TestCase):
         expected = home / ".config" / "ruff" / "ruff.toml"
         assert check.ruff_user_config({"HOME": str(home)}) == expected
 
+    def test_ci_tools_refuses_outside_github_actions(self) -> None:
+        home = make_fixture_dir(self)
+        env = {"HOME": str(home), "RUFF_CONFIG": "line-length = 100"}
+        result, output = emitted(lambda: check.ci_tools(env))
+        assert result == 1
+        assert "✘ ci-tools runs only on GitHub Actions" in output, output
+        assert not (home / ".config").exists(), "the ruff config was written outside CI"
+
     def test_unused_config_is_reported(self) -> None:
         unused = make_fixture_dir(self) / "ruff" / "ruff.toml"
         result, output = emitted(lambda: check.ruff_uses(unused))

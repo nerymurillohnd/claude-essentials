@@ -259,8 +259,14 @@ def ruff_uses(target: Path) -> bool:
     return False
 
 
-def ci_tools() -> int:
+def ci_tools(env: dict[str, str]) -> int:
     """Install the latest release of every tool on a CI runner; never on a contributor's machine."""
+    # It installs global tools and overwrites the user-level ruff configuration, so it
+    # refuses to run anywhere but a GitHub Actions runner, which sets GITHUB_ACTIONS=true.
+    if env.get("GITHUB_ACTIONS") != "true":
+        repo.emit("✘ ci-tools runs only on GitHub Actions (GITHUB_ACTIONS=true);")
+        repo.emit("  it would replace this machine's tools and its ruff configuration")
+        return 1
     (Path.home() / ".local" / "bin").mkdir(parents=True, exist_ok=True)
     commands = [
         ["npm", "install", "--global", "--no-fund", "--no-audit", "prettier"],
@@ -273,7 +279,7 @@ def ci_tools() -> int:
     ]
     if not run_commands(commands):
         return 1
-    target = write_ruff_config(dict(os.environ))
+    target = write_ruff_config(env)
     return 0 if target is not None and ruff_uses(target) else 1
 
 
@@ -299,7 +305,7 @@ def main() -> int:
     if targets == ["clean"]:
         return clean()
     if targets == ["ci-tools"]:
-        return ci_tools()
+        return ci_tools(dict(os.environ))
     unknown = [t for t in targets if t not in GATES]
     if unknown:
         parser.error(f"unknown target(s): {', '.join(unknown)}; use --list")
