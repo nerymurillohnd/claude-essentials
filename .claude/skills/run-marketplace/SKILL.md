@@ -26,14 +26,14 @@ Test the copy a user receives (HEAD cloned bare, installed through a `git-subdir
 scripts/drive_plugin.py <plugin> --source head --prompt "/<plugin>:<skill> <input>" --expect '<what the reply must contain>'
 ```
 
-| Option                | Use                                                                                       |
-| --------------------- | ----------------------------------------------------------------------------------------- |
-| `--prompt TEXT`       | Any request a user would type; required for a plugin without skills                       |
-| `--expect REGEX`      | Repeatable, case-insensitive; one per behaviour the change must show                      |
-| `--source head`       | Before tagging a release, to drive the exact files users install                          |
-| `--model`, `--budget` | Default `haiku` and `0.50`; use `--model sonnet` when the skill needs more reasoning      |
-| `--tools LIST`        | Built-in tools; `--restricted` drops Bash and WebFetch unless named here                  |
-| `--permission-mode`   | `default`, `acceptEdits`, `plan` or `dontAsk`; in `-p` a call that would prompt is denied |
+| Option | Use |
+| --- | --- |
+| `--prompt TEXT` | Any request a user would type; required for a plugin without skills |
+| `--expect REGEX` | Repeatable, case-insensitive; one per behaviour the change must show |
+| `--source head` | Before tagging a release, to drive the exact files users install |
+| `--model`, `--budget` | Default `haiku` and `0.50`; use `--model sonnet` when the skill needs more reasoning |
+| `--tools LIST` | Built-in tools; `--restricted` drops Bash and WebFetch unless named here |
+| `--permission-mode` | `default`, `acceptEdits`, `plan` or `dontAsk`; in `-p` a call that would prompt is denied |
 
 For a change, write expectations for what the change adds, not only that the plugin answers.
 
