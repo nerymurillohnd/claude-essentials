@@ -11,7 +11,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
-- A hook that adds a note next to the result of every `Write` or `Edit` of a `.svelte`, `.svelte.ts` or `.svelte.js` file, telling Claude that the Svelte autofixer has not checked the new content and the project check has not run since the change. It prints a fixed text: it reads nothing, sends nothing and cannot block an edit.
+- Hooks that keep the language server first and the checks at the end of a turn, at no token cost per edit. In a Svelte project, Claude gets the tool order once at session start (language server, then the Svelte documentation tools, then the project check) and, on its first `Grep` or `Glob` of the session, a reminder to use the language server for the project's symbols. Edits of `.svelte`, `.svelte.ts` or `.svelte.js` files leave a silent marker that the project check clears; if Claude is about to finish with one still there, it is asked once to read the diagnostics, check references, run the project check and then the autofixer. Every hook is a one-line `sh` command with a fixed text: none reads its input or the network, and none can block a tool call.
 
 ### Changed
 
