@@ -293,3 +293,7 @@ CLAUDE.local.md
 # Claude Code worktrees and plugin eval results (.claude/rules/automation.md)
 .claude/worktrees/
 plugins/*/evals/results/
+
+# The Python template's lib/ above must not hide plugin fixtures: SvelteKit keeps
+# its library code in src/lib (svelte-development fixture, found 2026-10-06).
+!plugins/*/skills/*/fixtures/*/src/lib/

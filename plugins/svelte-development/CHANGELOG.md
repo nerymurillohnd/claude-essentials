@@ -9,6 +9,10 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [0.2.0] - 2026-10-06
 
+### Fixed
+
+- The bundled SvelteKit 3 fixture now ships its `src/lib` files (the components, the `Counter` class and `formatCount`): a repository ignore rule had left them out of 0.1.0, so the fixture's imports pointed at files that were missing.
+
 ### Added
 
 - A hook that adds a note next to the result of every `Write` or `Edit` of a `.svelte`, `.svelte.ts` or `.svelte.js` file, telling Claude that the Svelte autofixer has not checked the new content and the project check has not run since the change. It prints a fixed text: it reads nothing, sends nothing and cannot block an edit.

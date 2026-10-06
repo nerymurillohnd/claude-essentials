@@ -48,7 +48,7 @@ Claude Code returns an error for each LSP call on a file whose server it cannot 
 npx --no-install svelte-kit sync
 ```
 
- Since SvelteKit 3 the generated tsconfig lives in `node_modules/$app/tsconfig`, so dependencies must be installed.
+Since SvelteKit 3 the generated tsconfig lives in `node_modules/$app/tsconfig`, so dependencies must be installed.
 
 ## Known open issues
 
