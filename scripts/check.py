@@ -308,8 +308,20 @@ def ci_eval_tools(env: dict[str, str]) -> int:
     commands = [
         ["sudo", "apt-get", "update", "-q"],
         ["sudo", "apt-get", "install", "-y", "-q", "bubblewrap", "socat"],
-        ["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"],
     ]
+    # Ubuntu 24.04 and later stop bubblewrap from creating user namespaces, so every
+    # sandboxed command fails. Same step as anthropics/claude-code-action's action.yml
+    # ("Install subprocess isolation dependencies"), on this throwaway runner only.
+    userns = "kernel.apparmor_restrict_unprivileged_userns"
+    if Path("/proc/sys", *userns.split(".")).exists():
+        commands.append(["sudo", "sysctl", "-w", f"{userns}=0"])
+    # Fail here rather than inside every eval run, as anthropics/sandbox-runtime's
+    # integration tests do; --unshare-net adds the loopback setup that failed in run
+    # 37409155173 ("bwrap: loopback: Failed RTM_NEWADDR").
+    probe = ["--unshare-pid", "--unshare-user", "--unshare-net", "--cap-drop", "ALL"]
+    probe += ["--ro-bind", "/", "/"]
+    commands.append(["bwrap", *probe, "--proc", "/proc", "true"])
+    commands.append(["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"])
     packages = eval_packages(repo.ROOT)
     if packages:
         commands.append(["npm", "install", "--global", "--no-fund", "--no-audit", *packages])
