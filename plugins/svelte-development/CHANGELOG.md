@@ -7,6 +7,10 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- A hook that adds a note next to the result of every `Write` or `Edit` of a `.svelte`, `.svelte.ts` or `.svelte.js` file, telling Claude that the Svelte autofixer has not checked the new content and the project check has not run since the change. It prints a fixed text: it reads nothing, sends nothing and cannot block an edit.
+
 ### Changed
 
 - Each skill now opens with what it is for, when to use it and when not, its rules (which hold for the whole task, not only the turn that loaded the skill), and who does the work: you inline, the `svelte-component-editor` agent for file changes, or the `svelte-code-auditor` agent for read-only reviews, with the exact Agent call. The procedures follow, in order, after the rules.
