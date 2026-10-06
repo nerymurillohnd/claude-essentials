@@ -34,7 +34,7 @@ This skill is the contract for two jobs: reading the current official Svelte doc
 
 ## Rules
 
-These rules hold for every later turn of the task, not only the turn that loaded this skill.
+These rules hold for every later turn of the task, not only the turn that loaded this skill. The short tool names (`get-documentation`, `svelte-autofixer`, `list-sections`, `playground-link`) stand for their full names, `mcp__plugin_svelte-development_svelte__<tool>`; always call the full name.
 
 1. **Docs before code, by default.** Fetch the sections a change touches with `get-documentation` before writing it. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text. Never guess a section path: take it from the docs map.
 2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false.
@@ -93,10 +93,10 @@ ToolSearch
 
 | Tool | Input | Returns |
 |---|---|---|
-| `list-sections` | none | Every section with its `path` (203 on 2026-10-05) and a use-case hint |
-| `get-documentation` | `section`: one path or title, or an array of them | The full text of each section |
-| `svelte-autofixer` | `code` (required), `desired_svelte_version` (required, `5`), `filename`, `async` | `issues`, `suggestions`, `require_another_tool_call_after_fixing` |
-| `playground-link` | `name`, `tailwind`, `files` (`{ "App.svelte": "<code>" }`) | A svelte.dev playground URL holding the code |
+| `mcp__plugin_svelte-development_svelte__list-sections` | none | Every section with its `path` (203 on 2026-10-05) and a use-case hint |
+| `mcp__plugin_svelte-development_svelte__get-documentation` | `section`: one path or title, or an array of them | The full text of each section |
+| `mcp__plugin_svelte-development_svelte__svelte-autofixer` | `code` (required), `desired_svelte_version` (required, `5`), `filename`, `async` | `issues`, `suggestions`, `require_another_tool_call_after_fixing` |
+| `mcp__plugin_svelte-development_svelte__playground-link` | `name`, `tailwind`, `files` (`{ "App.svelte": "<code>" }`) | A svelte.dev playground URL holding the code |
 
 Section paths are written exactly as `list-sections` prints them, without a leading `docs/`: `svelte/$state`, `kit/load`, `cli/sv-migrate`. An exact title also works (`Migrating to SvelteKit v3`). A `docs/kit/…` path returns only "similar results". The `list-sections` hints are missing for the newest sections, including every SvelteKit 3 addition and declaration tags; the docs map classifies them.
 

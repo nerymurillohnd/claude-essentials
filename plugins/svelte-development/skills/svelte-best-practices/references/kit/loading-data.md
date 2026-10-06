@@ -128,7 +128,7 @@ await invalidate((url) => url.hostname === "api.example.com");
 await refreshAll(); // every load function and every active remote query
 ```
 
-- `invalidate(resource, keepState?)` accepts a string, a `URL` or a predicate. The docs show the `keepState` parameter in the signature without describing it; read the live reference (`get-documentation` with `section: ["kit/$app-navigation"]`) before relying on it.
+- `invalidate(resource, keepState?)` accepts a string, a `URL` or a predicate. The docs show the `keepState` parameter in the signature without describing it; read the live reference (`mcp__plugin_svelte-development_svelte__get-documentation` with `section: ["kit/$app-navigation"]`) before relying on it.
 - `invalidateAll()` is deprecated since 3.0. It resets `page.state` to `{}`; `refreshAll()` keeps it.
 - Since 3.0, invalidating during an in-flight navigation no longer aborts it, and results that arrive after the navigation finishes are discarded.
 

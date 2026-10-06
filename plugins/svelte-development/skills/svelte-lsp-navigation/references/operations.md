@@ -141,5 +141,5 @@ That check ran in a copy of the fixture outside the plugin, with the `.example` 
 
 - Claude Code code intelligence: https://code.claude.com/docs/en/plugins/code-intelligence
 - svelte-check flags: `curl -sS https://raw.githubusercontent.com/sveltejs/language-tools/master/packages/svelte-check/README.md`
-- `sv check`: `get-documentation` section `cli/sv-check`, or `curl -sS https://svelte.dev/docs/cli/sv-check/llms.txt`
+- `sv check`: `mcp__plugin_svelte-development_svelte__get-documentation` with `section: ["cli/sv-check"]`, or `curl -sS https://svelte.dev/docs/cli/sv-check/llms.txt`
 - Language tools releases: https://github.com/sveltejs/language-tools/releases

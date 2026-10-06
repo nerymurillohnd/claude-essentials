@@ -19,6 +19,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - The mistakes Claude makes without the plugin are read before the procedures: the Svelte code rules, the SvelteKit 2 to 3 table and the experimental features in `svelte-best-practices`, and the language server gotchas in `svelte-lsp-navigation`.
 - `svelte-lsp-navigation` answers usage questions with a template that marks each location as a language server result or a text match; the editor agent ends with a report template; and `svelte-best-practices` repeats the autofix and check steps until both are clean.
 - `svelte-best-practices` shows a Svelte 4 component converted to Svelte 5, with the rule behind each change; `svelte-lsp-navigation` says which procedure fits a question, a change or a project check; one term, "project check", names the project's type and Svelte check everywhere; and each output template says whether it is fixed or a default.
+- The Svelte MCP tools are named in full (`mcp__plugin_svelte-development_svelte__<tool>`) wherever a call is described, and the skill frontmatter holds no angle-bracket tags.
 - Defaults instead of menus: sections come from the docs map first (`list-sections` only for a topic the map lacks), and `sv` runs with `npx` unless the project's lockfile names another package manager.
 
 ## [0.1.0] - 2026-10-05

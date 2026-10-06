@@ -113,7 +113,7 @@ export default {
 
 ## Fetch before writing when
 
-- You migrate a real codebase: read the migration guide sections that match what you find, and the `sv migrate` page for the current migration list (`get-documentation` with `section: ["svelte/v5-migration-guide", "cli/sv-migrate"]`).
+- You migrate a real codebase: read the migration guide sections that match what you find, and the `sv migrate` page for the current migration list (`mcp__plugin_svelte-development_svelte__get-documentation` with `section: ["svelte/v5-migration-guide", "cli/sv-migrate"]`).
 - You need a `svelte/legacy` export's exact signature or a compiler option such as `compatibility.componentApi`.
 - You plan for Svelte 6: the forward-compatibility notes above come from warnings and option docs, not from a release.
 
