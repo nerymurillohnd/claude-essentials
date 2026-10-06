@@ -28,9 +28,9 @@ Each plugin's README lists its requirements, components and the exact commands t
 
 ## Plugins
 
-| Plugin                                                     | Install as           | Category                   | Version | Description                                                                                                                                                                                                             |
-| ---------------------------------------------------------- | -------------------- | -------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Svelte Development](plugins/svelte-development/README.md) | `svelte-development` | [development](#categories) | 0.1.0   | Svelte 5 and SvelteKit 3 development: current best practices, docs lookup and autofixer, code navigation, an editor and an auditor agent, and the Svelte MCP and language servers, built on the Svelte team's AI tools. |
+| Plugin                                                     | Install as           | Category                   | Version | Description                                                                                                                                                                                                                                                                                                                                         |
+| ---------------------------------------------------------- | -------------------- | -------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Svelte Development](plugins/svelte-development/README.md) | `svelte-development` | [development](#categories) | 0.1.0   | Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a post-edit autofixer reminder, and the Svelte MCP and language servers, built on the Svelte team's AI tools. |
 
 ## Categories
 

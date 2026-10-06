@@ -106,7 +106,7 @@ ToolSearch
 |---|---|---|
 | `mcp__plugin_svelte-development_svelte__list-sections` | none | Every section with its `path` (203 on 2026-10-05) and a use-case hint |
 | `mcp__plugin_svelte-development_svelte__get-documentation` | `section`: one path or title, or an array of them | The full text of each section |
-| `mcp__plugin_svelte-development_svelte__svelte-autofixer` | `code` (required), `desired_svelte_version` (required, `5`), `filename`, `async` | `issues`, `suggestions`, `require_another_tool_call_after_fixing` |
+| `mcp__plugin_svelte-development_svelte__svelte-autofixer` | `code` (required), `desired_svelte_version` (required: `5`, or `4` for Svelte 4 code), `filename`, `async` | `issues`, `suggestions`, `require_another_tool_call_after_fixing` |
 | `mcp__plugin_svelte-development_svelte__playground-link` | `name`, `tailwind`, `files` (`{ "App.svelte": "<code>" }`) | A svelte.dev playground URL holding the code |
 
 Section paths are written exactly as `list-sections` prints them, without a leading `docs/`: `svelte/$state`, `kit/load`, `cli/sv-migrate`. An exact title also works (`Migrating to SvelteKit v3`). A `docs/kit/…` path returns only "similar results". The `list-sections` hints are missing for the newest sections, including every SvelteKit 3 addition and declaration tags; the docs map classifies them.
@@ -118,7 +118,7 @@ Copy this checklist for any Svelte code you write, change or review, and run the
 ```
 - [ ] 1 Find      choose the sections in docs-map.md; call list-sections only for a topic the map lacks
 - [ ] 2 Read      one get-documentation call with every section the code touches
-- [ ] 3 Write     write or edit the code from what the sections say
+- [ ] 3 Write     write or edit the code from what the sections say (a review skips this step)
 - [ ] 4 Fix       svelte-autofixer on the full code; apply issues and suggestions
 - [ ] 5 Repeat    step 4 until no issues and require_another_tool_call_after_fixing is false
 - [ ] 6 Verify    language server diagnostics and the project check (svelte-lsp-navigation)
@@ -131,7 +131,7 @@ mcp__plugin_svelte-development_svelte__get-documentation
   section: ["svelte/$props", "svelte/$bindable"]
 ```
 
-**Step 4, check the code.** Pass the whole component as `code`; set `async: true` only when the project enables `compilerOptions.experimental.async`:
+**Step 4, check the code.** Pass the whole component as `code`; use `desired_svelte_version: 4` only for Svelte 4 code, and set `async: true` only when the project enables `compilerOptions.experimental.async`:
 
 ```text
 mcp__plugin_svelte-development_svelte__svelte-autofixer
@@ -142,7 +142,7 @@ mcp__plugin_svelte-development_svelte__svelte-autofixer
 
 It reports Svelte compiler errors and Svelte-specific mistakes: legacy syntax, effects that should be derived values, runes misuse.
 
-**Step 6, verify.** Read the diagnostics Claude Code reports after each edit of a `.svelte` file, then run the project check from the project root, as the `svelte-lsp-navigation` skill describes:
+**Step 6, verify.** Read the diagnostics Claude Code reports after each edit of a `.svelte` file (the language server serves `.svelte` files only, so `.svelte.ts` and `.svelte.js` edits get none), then run the project check from the project root, as the `svelte-lsp-navigation` skill describes:
 
 ```sh
 npm run check
@@ -167,10 +167,10 @@ Try these in order, and say in the answer that the documentation or the code cou
 2. **Raw download of the docs.** Fetch the section's text and filter it:
 
    ```sh
-   curl -sS https://svelte.dev/docs/kit/load/llms.txt | grep -n 'depends'
+   curl -sS 'https://svelte.dev/docs/kit/load/llms.txt' | grep -n 'depends'
    ```
 
-   The URL pattern is `https://svelte.dev/docs/<area>/<slug>/llms.txt`; the docs map lists it for every section.
+   The URL pattern is `https://svelte.dev/docs/<area>/<slug>/llms.txt`; the docs map lists it for every section. Keep the URL in single quotes: slugs such as `$state` would otherwise be expanded by the shell.
 3. **Local command line, if the user has it.** `@sveltejs/mcp`, installed globally by the user, runs on their machine, sends no code and reads file paths. Use it offline or when code must not leave the machine. Quote inline code in single quotes, because double quotes let the shell expand `$state`:
 
    ```sh

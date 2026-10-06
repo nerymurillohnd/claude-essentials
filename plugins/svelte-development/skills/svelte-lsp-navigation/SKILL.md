@@ -39,7 +39,7 @@ The default route, because each tool answers a different kind of question. Depar
 
 | The question is about | First tool | Why |
 |---|---|---|
-| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for the blind spots the `svelte-lsp-navigation` skill lists |
+| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for the blind spots listed under [Blind spots](#blind-spots) |
 | How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows Svelte 4 and SvelteKit 2 |
 | Whether the project has errors | The project check (`npm run check`) | Diagnostics arrive only for files the language server has open |
 
@@ -55,7 +55,9 @@ These rules hold for every later turn of the task, not only the turn that loaded
 6. **Grep alongside, never instead.** Use Grep only for the [blind spots](#blind-spots), next to the LSP results.
 7. **Diagnostics are not a project check.** Diagnostics are pushed once after an edit, only for open files, and cannot be requested again. "No diagnostics" proves nothing about the project: run the [project check](#project-check).
 8. **Never hide a problem.** No `--compiler-warnings x:ignore` or `--ignore` to get a check passing; ignore only a verified false positive, with the reason.
-9. **Prove a clean result when a tool stays silent, with the probe for that tool.** A silent language server (no diagnostics after an edit, empty answers) and a silent project check (nothing reported after a change that must break) have different probes. **Language server:** `command -v svelteserver` must print a path, and `documentSymbol` on a non-empty `.svelte` file of the project must list its symbols; if either fails, follow [troubleshooting.md](references/troubleshooting.md). **Project check:** the cause is almost always in the project, not in svelte-check. Run `npx --no-install svelte-kit sync` and check again (missing generated types hide errors); read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
+9. **Prove a clean result when a tool stays silent, with the probe for that tool.** A silent language server and a silent project check have different causes:
+   - **Language server** (no diagnostics after an edit, empty answers): `command -v svelteserver` must print a path, and `documentSymbol` on a non-empty `.svelte` file of the project must list its symbols. If either fails, follow [troubleshooting.md](references/troubleshooting.md).
+   - **Project check** (nothing reported after a change that must break): the cause is almost always in the project, not in svelte-check. Run `npx --no-install svelte-kit sync` and check again, because missing generated types hide errors; read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`, SvelteKit 2 projects `./.svelte-kit/tsconfig.json`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
 10. **No installs without consent.** Never install `svelte-language-server`, `sv` or any package; tell the user what is missing.
 
 ## Gotchas
@@ -200,8 +202,8 @@ Dynamic Svelte code is not a blind spot by default. Observed on 2026-10-05 (svel
 | `{#await lazy then mod}` and `<mod.default />` | Yes | `goToDefinition` on `mod` reaches the await block |
 | A function stored in an object: `{ format: formatCount }` | The alias site, yes | `findReferences` on `formatCount` lists the object property |
 | A call through that alias: `handlers.format(...)` | Not as a call of the original | `incomingCalls` lists only direct callers; check the alias's own references |
-| The path string of `import("#lib/components/X.svelte")` | No | A string, not a reference |
-| `import.meta.glob("./*.svelte")` patterns | No | A string pattern |
+| The path string of `import("#lib/components/X.svelte")` | No | A string, not a reference. The project check still reports a literal `import()` of a file that does not exist |
+| `import.meta.glob("./*.svelte")` patterns | No | A string pattern; the project check does not report it either, so only Grep finds it |
 
 `documentSymbol` lists every one of these constructs in a component. Run it before concluding that the server cannot see dynamic code.
 
@@ -210,7 +212,7 @@ Dynamic Svelte code is not a blind spot by default. Observed on 2026-10-05 (svel
 Uses the server cannot see, because they live in strings, file names or configuration. Grep for them, alongside the LSP results, before a rename or delete:
 
 - **Route files**: SvelteKit finds `+page.svelte`, `+layout.svelte`, `+server.ts` and hooks by file name, so nothing references them.
-- **Paths in strings**: `import()` paths, `import.meta.glob` patterns, route paths in `href`, `goto()` and `resolve()`.
+- **Paths in strings**: `import()` paths, `import.meta.glob` patterns, route paths in `href`, `goto()` and `resolve()`. In step 6 of the procedure for a change, the project check reports a literal `import()` of a missing file, but never a glob pattern or a route path.
 - **Calls through an alias**: callers of `obj.fn()` when `fn` was stored in an object; follow the alias with `findReferences`.
 - **Strings and attributes**: CSS class names (including Tailwind classes in `class` objects and arrays), `data-sveltekit-*` attributes.
 - **Configuration and scripts**: `vite.config`, `package.json` scripts and `imports`, `svelte-check --ignore` lists, CI files.

@@ -13,6 +13,12 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- Projects still on SvelteKit 2 or Svelte 4 get code for their installed version: the skills and the editor no longer write SvelteKit 3 APIs or runes there unless the task is the migration, and the auditor lists SvelteKit 3 and Svelte 5 changes as migration work instead of defects.
+- One routing rule in every skill and both agents: the language server first for questions about the project's own symbols, the docs first for Svelte APIs, the project check first for errors; Claude departs from it only for a reason it states.
+- Renames, signature changes and deletions are proven by breaking them on purpose: a baseline project check, a declaration-only change, and a comparison of the new errors with the sites `findReferences` found, so missed uses show up before the edit is finished.
+- Clearer skills after a full read-through: the Svelte 5 and SvelteKit 3 rules say they apply to projects on those versions (rule 6 no longer demands runes in a Svelte 4 project), the autofixer is called with Svelte version 4 for Svelte 4 code, a review skips the writing step, `.svelte.ts` edits are known to get no language server diagnostics, and the language server skill separates what the language server, the project check and Grep each see in dynamic imports.
+- When a tool stays silent, the skills probe the right one: for the language server, `command -v svelteserver` and a `documentSymbol` call on a project component; for the project check, `svelte-kit sync`, the `COMPLETED <n> FILES` line against the tsconfig `include`, what the check script runs, and the app folder in a monorepo.
+- The README's Prerequisites section gives the language server install step on its own, with the reason: without `svelteserver` on your `PATH`, the plugin's LSP configuration does nothing.
 - Each skill now opens with what it is for, when to use it and when not, its rules (which hold for the whole task, not only the turn that loaded the skill), and who does the work: you inline, the `svelte-component-editor` agent for file changes, or the `svelte-code-auditor` agent for read-only reviews, with the exact Agent call. The procedures follow, in order, after the rules.
 - Every tool a skill or agent asks for is shown as the exact call: the Svelte MCP tools with their parameters, the LSP tool, ToolSearch for deferred tools, the Skill tool call that loads a sibling skill, and the shell commands for the project check, versions, changelog windows and fallbacks. Shell examples quote URLs that contain `$`.
 - Skill descriptions name the key use first and add trigger phrases (`when_to_use`), so Claude loads them for code pasted in the chat as well as for project files.
@@ -25,12 +31,8 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `svelte-best-practices` shows a Svelte 4 component converted to Svelte 5, with the rule behind each change; `svelte-lsp-navigation` says which procedure fits a question, a change or a project check; one term, "project check", names the project's type and Svelte check everywhere; and each output template says whether it is fixed or a default.
 - The Svelte MCP tools are named in full (`mcp__plugin_svelte-development_svelte__<tool>`) wherever a call is described, and the skill frontmatter holds no angle-bracket tags.
 - The Windows answer in the README FAQ names `grep` and `awk`, which the changelog and search commands need, besides `curl`.
-- Projects still on SvelteKit 2 or Svelte 4 get code for their installed version: the skills and the editor no longer write SvelteKit 3 APIs or runes there unless the task is the migration, and the auditor lists SvelteKit 3 and Svelte 5 changes as migration work instead of defects.
 - The project's `CLAUDE.md`, saved memory and conventions decide style and structure over the skills, but never make a removed API valid.
 - The README's Permissions section says what changes in Claude Tag: MCP traffic, including code sent to the autofixer, is not in the organization's network export, and the sandbox can block the `curl` fallbacks and has no `svelteserver`.
-- One routing rule in every skill and both agents: the language server first for questions about the project's own symbols, the docs first for Svelte APIs, the project check first for errors; Claude departs from it only for a reason it states.
-- Renames, signature changes and deletions are proven by breaking them on purpose: a baseline project check, a declaration-only change, and a comparison of the new errors with the sites `findReferences` found, so missed uses show up before the edit is finished.
-- The README's Prerequisites section gives the language server install step on its own, with the reason: without `svelteserver` on your `PATH`, the plugin's LSP configuration does nothing.
 - Defaults instead of menus: sections come from the docs map first (`list-sections` only for a topic the map lacks), and `sv` runs with `npx` unless the project's lockfile names another package manager.
 
 ## [0.1.0] - 2026-10-05

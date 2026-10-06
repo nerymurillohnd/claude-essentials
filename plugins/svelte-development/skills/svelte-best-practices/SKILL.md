@@ -10,7 +10,7 @@ metadata:
 
 # Svelte 5 and SvelteKit 3 best practices
 
-This skill is the contract for writing Svelte by the current rules. Target versions: **svelte 5.57.1** and **@sveltejs/kit 3.0.0** (2026-10-01). Most Svelte and SvelteKit code in training data is Svelte 4 or SvelteKit 2; the rules below are where it goes wrong, and each topic has a reference with the foundations, short examples and the exact official sections to fetch.
+This skill is the contract for writing Svelte by the current rules. Target versions: **svelte 5.57.1** and **@sveltejs/kit 3.0.0** (2026-10-01). Most Svelte and SvelteKit code in training data is Svelte 4 or SvelteKit 2; the rules below are where it goes wrong, and each topic has a reference with the foundations, short examples and the exact official sections to fetch. The Svelte 5 rules apply to Svelte 5 projects and the SvelteKit 3 rules to SvelteKit 3 projects; rule 7 says what to do in older ones.
 
 ## Contents
 
@@ -47,12 +47,12 @@ The default route, because each tool answers a different kind of question. Depar
 
 These rules hold for every later turn of the task, not only the turn that loaded this skill.
 
-1. **Never write Svelte from memory alone.** Read the reference for the topic, fetch the live sections it lists before writing, and run the autofixer after (the `svelte-docs-and-autofixer` skill). Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text.
+1. **Never write Svelte from memory alone.** Read the reference for the topic, fetch the live sections the task touches before writing (the reference lists them), and run the autofixer after (the `svelte-docs-and-autofixer` skill). Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text.
 2. **Never skip the fetch when** an exact signature, option name or config key matters; the code uses an experimental feature, an adapter, environment variables, hooks or the Vite config; the project's installed version is newer than the reference's "Verified against" line; or what you remember disagrees with a reference, or a reference with the docs.
 3. **Check the installed version first.** It decides which rules apply (command in the [procedure](#procedure)). When it is newer than a reference's "Verified against" line, read the changelog window in [changelogs.md](references/changelogs.md) before relying on that reference.
 4. **Source precedence.** Package changelogs, release notes and source code decide what exists at the installed version; the official docs explain usage, and in any area SvelteKit 3 changed some pages still show SvelteKit 2 code ([known-doc-errata.md](references/known-doc-errata.md)); these references are the starting point and lose to both. When sources conflict, say so in the answer; never pick one silently.
 5. **No WebFetch for docs or changelogs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools or `curl` for the raw text.
-6. **Runes mode only.** New and changed code uses runes, snippets and event attributes; never mix in legacy syntax.
+6. **Runes mode in Svelte 5.** In a Svelte 5 project, new and changed code uses runes, snippets and event attributes; never mix in legacy syntax. A Svelte 4 project follows rule 7.
 7. **Write for the installed major, never the next one.** The SvelteKit 3 rules apply only when `@sveltejs/kit` 3 is installed, and the runes rules only when `svelte` 5 is. In a SvelteKit 2 project, `#lib/x.js` imports, `$app/env`, `refreshAll`, `defineParams` and options in `sveltekit({ … })` do not exist yet: write code that works on the installed version, say that the live docs describe SvelteKit 3, and offer the migration ([migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md)) instead of mixing versions. A Svelte 4 project likewise has no runes; offer the Svelte 5 migration ([legacy-and-migration.md](references/svelte/legacy-and-migration.md)) unless the task is that migration.
 8. **Project instructions decide conventions, not APIs.** The project's `CLAUDE.md`, saved memory and team conventions win over this skill on style and structure (naming, file layout, formatting). They never make an API valid that the installed version removed; when one asks for such an API, say so.
 
@@ -80,6 +80,8 @@ For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and 
 
 ## Code rules that training data gets wrong
 
+These apply to Svelte 5 and SvelteKit 3 projects; in older ones, rule 7 decides.
+
 **Runes and reactivity** ([runes.md](references/svelte/runes.md))
 
 - Reactive state is `$state`; a plain `let` that is reassigned does not update the template. Use `$state.raw` for large values that are only reassigned.
@@ -99,7 +101,7 @@ For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and 
 
 **Server and client boundaries** ([security.md](references/kit/security.md), [hooks-errors-and-env.md](references/kit/hooks-errors-and-env.md))
 
-- Secrets only in server code: `$app/env/private`, `+page.server.ts`, `+server.ts`, hooks, and any module whose path has a `server` segment or `server/` directory (server-only everywhere except `src/routes` and `static` since 3.0).
+- Secrets only in server code: `$app/env/private` (`$env/static/private` and friends in SvelteKit 2), `+page.server.ts`, `+server.ts`, hooks, and any module whose path has a `server` segment or `server/` directory (server-only everywhere except `src/routes` and `static` since 3.0).
 - Universal `load` runs on both sides: nothing private there. Never keep per-user data in module-level variables: they leak between users during server rendering; use `event.locals` or context.
 - `{@html}` renders unescaped markup: sanitize anything that came from a user.
 
@@ -174,7 +176,7 @@ They change between minor releases: fetch the live section before writing any of
 | Remote functions (`query`, `query.batch`, `query.live`, `form`, `command`, `prerender`) | `experimental.remoteFunctions` in `sveltekit({ … })` plus the async flag above; `*.remote.ts` files error without it |
 | Fork preloads | `experimental.forkPreloads` |
 
-Details: [async-and-boundaries.md](references/svelte/async-and-boundaries.md) and [forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md).
+Details: [async-and-boundaries.md](references/svelte/async-and-boundaries.md) and [forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md). A SvelteKit 2 project keeps its configuration in `svelte.config.js`, so look the keys up there and in the live section, not in this table.
 
 ## Where things are
 
@@ -222,7 +224,7 @@ Run these steps in order for any Svelte code you write, convert or review.
    npm ls svelte @sveltejs/kit --depth=0
    ```
 
-   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. If a version is newer than the reference's "Verified against" line, run the changelog window check in [changelogs.md](references/changelogs.md).
+   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. If a version is newer than the reference's "Verified against" line, run the changelog window check in [changelogs.md](references/changelogs.md). With no project, write for the target versions above and say so in the answer.
 2. **Reference.** Read the reference from [Where things are](#where-things-are) that matches the task; the code rules above apply to every task.
 3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
 
@@ -232,8 +234,8 @@ Run these steps in order for any Svelte code you write, convert or review.
    ```
 
    If the tool is deferred, load it with ToolSearch (`select:mcp__plugin_svelte-development_svelte__get-documentation`); if the server is unavailable, follow the fallbacks in the `svelte-docs-and-autofixer` skill.
-4. **Write** the code by the rules and the sections.
-5. **Autofix** the full code with `mcp__plugin_svelte-development_svelte__svelte-autofixer` (`code`, `desired_svelte_version: 5`, `filename`) until it reports no issues, as the `svelte-docs-and-autofixer` skill says.
+4. **Write** the code by the rules and the sections. For a review, skip this step and take the code under review to step 5.
+5. **Autofix** the full code with `mcp__plugin_svelte-development_svelte__svelte-autofixer` (`code`, `desired_svelte_version` 5, or 4 for Svelte 4 code, `filename`, and `async: true` when the project enables experimental async) until it reports no issues, as the `svelte-docs-and-autofixer` skill says.
 6. **Check**, in a project: the language server diagnostics and the project check (`npm run check`), as the `svelte-lsp-navigation` skill says. If either reports a problem, fix it and repeat steps 5 and 6; finish only when both are clean.
 
 Derived from the `svelte-core-bestpractices` skill of sveltejs/ai-tools (MIT), base `6b5d0da`, and extended; see the plugin NOTICE. Not affiliated with or endorsed by the Svelte project.

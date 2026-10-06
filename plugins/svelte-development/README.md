@@ -4,7 +4,7 @@
 
 [![version: 0.1.0](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md) [![category: development](https://img.shields.io/badge/category-development-informational)](https://github.com/nerymurillohnd/claude-essentials/blob/main/README.md#categories) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![skills: 3](https://img.shields.io/badge/skills-3-blueviolet)](#-components) [![agents: 2](https://img.shields.io/badge/agents-2-blueviolet)](#-components) [![hooks: 1](https://img.shields.io/badge/hooks-1-blueviolet)](#-components) [![mcp servers: 1](https://img.shields.io/badge/mcp%20servers-1-blueviolet)](#-components) [![lsp servers: 1](https://img.shields.io/badge/lsp%20servers-1-blueviolet)](#-components) [![runs code: yes, reviewed](https://img.shields.io/badge/runs%20code-yes%2C%20reviewed-yellow)](#-permissions)
 
-Svelte 5 and SvelteKit 3 development: current best practices, docs lookup and autofixer, code navigation, an editor and an auditor agent, and the Svelte MCP and language servers, built on the Svelte team's AI tools.
+Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a post-edit autofixer reminder, and the Svelte MCP and language servers, built on the Svelte team's AI tools.
 
 Part of [Claude Essentials](https://github.com/nerymurillohnd/claude-essentials), an independent community plugin marketplace for Claude Code. Not affiliated with or endorsed by Anthropic.
 
@@ -14,18 +14,22 @@ Part of [Claude Essentials](https://github.com/nerymurillohnd/claude-essentials)
 
 ## 📖 Overview
 
-Most Svelte code a model has seen is Svelte 4 and SvelteKit 2, so it writes `export let`, `on:click`, `$app/stores` and `svelte.config.js` into projects that run Svelte 5 and SvelteKit 3. This plugin is for developers who build with Svelte, SvelteKit, Astro islands or Tailwind CSS 4 in Claude Code: it gives Claude the current rules, makes it check the official documentation and the changelogs before writing, and makes it prove each change with the Svelte autofixer, the Svelte language server and `sv check`.
+Most Svelte code a model has seen is Svelte 4 and SvelteKit 2, so it writes `export let`, `on:click`, `$app/stores` and `svelte.config.js` into projects that run Svelte 5 and SvelteKit 3. This plugin is for developers who build with Svelte, SvelteKit, Astro islands or Tailwind CSS 4 in Claude Code: it gives Claude the current rules, makes it check the official documentation and the changelogs before writing, and makes it prove each change with the Svelte autofixer, the Svelte language server and your project's own check. It writes for the Svelte and SvelteKit versions your project has installed, so a SvelteKit 2 project gets SvelteKit 2 code and an offer to migrate, never a mix of both.
 
 It builds on the Svelte team's own AI tools ([sveltejs/ai-tools](https://github.com/sveltejs/ai-tools), MIT): their skills and agent are rewritten, corrected and extended with SvelteKit 3, the Svelte CLI, Astro and Tailwind CSS 4, the Svelte team's remote MCP server keeps its connection across session changes, and the Svelte language server runs from a binary you install. Credits and the list of derived files are in [NOTICE](NOTICE). Not affiliated with or endorsed by the Svelte project.
 
 ## 🎯 What it does
 
-| Situation                                          | What the plugin does                                                                                                                                  | Result                                                                             |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| You ask for a new component or route               | Fetches the current Svelte and SvelteKit sections, writes runes and SvelteKit 3 code, runs the autofixer and the language server until both are clean | Code that compiles and type-checks against Svelte 5.57 and SvelteKit 3             |
-| You upgrade a SvelteKit 2 project                  | Explains the breaking changes, runs or reviews `sv migrate sveltekit-3`, and fixes what the codemod leaves in `MIGRATION_TASKS.md`                    | A project on SvelteKit 3 with `#lib`, `$app/state` and the config in `vite.config` |
-| You ask for a review                               | The auditor, which has no file-editing tools, checks legacy syntax, runes misuse, Kit 3 leftovers, server/client leaks, CSRF and origin settings      | A findings table with file, line, severity, evidence and fix                       |
-| You rename or delete a prop, function or component | Finds every reference through the language server before editing, then checks the project                                                             | No missed usages, and proof from `sv check`                                        |
+| Situation                                          | What the plugin does                                                                                                                                                    | Result                                                                                                            |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| You ask for a new component or route               | Fetches the current Svelte and SvelteKit sections, writes runes and SvelteKit 3 code, runs the autofixer, the language server and the project check until all are clean | Code that compiles and type-checks against Svelte 5.57 and SvelteKit 3                                            |
+| You paste a component and ask what is wrong        | Runs the Svelte autofixer on it and checks the current docs                                                                                                             | Each problem with the rule behind it and the fix                                                                  |
+| Your project is still on SvelteKit 2 or Svelte 4   | Writes code for the installed version and says where SvelteKit 3 or Svelte 5 would differ                                                                               | Code that runs on your project today, and a migration offer instead of a mix of versions                          |
+| You upgrade a SvelteKit 2 project                  | Explains the breaking changes, runs or reviews `sv migrate sveltekit-3`, and fixes what the codemod leaves in `MIGRATION_TASKS.md`                                      | A project on SvelteKit 3 with `#lib`, `$app/state` and the config in `vite.config`                                |
+| You ask where something is used or who calls it    | Asks the language server first and adds a text search only for what it cannot see (route files, string paths, CSS classes)                                              | Locations marked as language-server results or text matches                                                       |
+| You rename or delete a prop, function or component | Finds every reference, changes the declaration first, runs the project check and compares its errors with the references before editing the rest                        | No missed usages, with the check's output as proof                                                                |
+| Claude edits a `.svelte` file                      | A hook reminds it, next to the edit, that the autofixer and the project check have not seen the new content                                                             | The checks run after the edit instead of being forgotten                                                          |
+| You ask for a review                               | The auditor, which has no file-editing tools, checks legacy syntax, runes misuse, Kit 3 leftovers, server/client leaks, CSRF and origin settings                        | A findings table with file, line, severity, evidence and fix; next-version changes listed apart as migration work |
 
 ## 📋 Prerequisites
 
@@ -107,6 +111,12 @@ Where is the Counter class used, and is formatPrice still called anywhere?
 [`svelte-lsp-navigation`](skills/svelte-lsp-navigation/SKILL.md) answers with `findReferences` and `incomingCalls` instead of a text search.
 
 ```text
+Rename the label prop of CounterButton to caption everywhere.
+```
+
+Claude lists the uses with `findReferences`, renames the declaration alone, runs the project check, and compares the errors it reports with that list before editing the parents. An error at an unlisted place is a use the language server missed; a listed place with no error is one the check cannot see. Both are fixed before the rename counts as done.
+
+```text
 Use the svelte-code-auditor agent to audit src/ after our SvelteKit 3 upgrade.
 ```
 
@@ -166,13 +176,6 @@ No. Installing adds the plugin to your Claude Code configuration only. Your proj
 </details>
 
 <details>
-<summary>What does it run on my machine, which hosts does it reach, and does my code leave it?</summary>
-
-`svelteserver`, the language server you install, runs locally and sends nothing. The MCP server is remote: the documentation tools reach `https://mcp.svelte.dev`, and code passed to the autofixer or the playground tool is sent there (the Svelte team states it does not log, store or inspect it). The changelog checks reach `raw.githubusercontent.com`, `api.github.com` and the npm registry. See [Permissions](#-permissions).
-
-</details>
-
-<details>
 <summary>I already use the Svelte team's own plugin (`svelte@svelte`). Should I install both?</summary>
 
 No, pick one. `sv add ai-tools` can enable `svelte@svelte` in a project's `.claude/settings.json`. Both plugins connect a Svelte MCP server and a language server for the same files, and their skills give overlapping instructions. To use this one in such a project, disable the other with `/plugin disable svelte@svelte`. This plugin's components have different names, so nothing is overwritten.
@@ -180,9 +183,16 @@ No, pick one. `sv add ai-tools` can enable `svelte@svelte` in a project's `.clau
 </details>
 
 <details>
-<summary>What can the agents read or change, and which model do they use?</summary>
+<summary>What runs on my machine, what leaves it, and what can the agents change?</summary>
 
-Both agents use the model of your session. The [auditor](agents/svelte-code-auditor.md) can read files, search, use the language server, run commands and call the Svelte MCP tools, but has no tool to edit or write files. The [component editor](agents/svelte-component-editor.md) can also edit and write files, limited to what the task asks for. Neither can use your other MCP servers, and every command still goes through your permission prompts.
+`svelteserver`, the language server you install, runs locally and sends nothing; the hook only prints a fixed note. The MCP server is remote: the documentation tools reach `https://mcp.svelte.dev`, and code passed to the autofixer or the playground tool is sent there (the Svelte team states it does not log, store or inspect it); the hook makes Claude run the autofixer after Svelte edits, so keep the server off and use the local `svelte-mcp` if your code must stay on your machine. The changelog checks reach `raw.githubusercontent.com`, `api.github.com` and the npm registry. Both agents use your session's model; the [auditor](agents/svelte-code-auditor.md) has no tool to edit or write files, and the [component editor](agents/svelte-component-editor.md) edits only what the task asks for. Every command goes through your permission prompts. See [Permissions](#-permissions).
+
+</details>
+
+<details>
+<summary>Does it work on a SvelteKit 2 or Svelte 4 project?</summary>
+
+Yes. Claude reads the installed versions first and writes code that runs on them: no `#lib` imports, `$app/env` or `defineParams` in a SvelteKit 2 project, and no runes in Svelte 4 code. It says where the newer version differs and offers the migration (`sv migrate sveltekit-3` or `sv migrate svelte-5`) instead of mixing both. The live documentation describes the newest versions, so Claude checks each API against your installed one.
 
 </details>
 
