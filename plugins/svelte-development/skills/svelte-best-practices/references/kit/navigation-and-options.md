@@ -1,6 +1,6 @@
 # SvelteKit Navigation, Links and Page Options
 
-> Verified against @sveltejs/kit 3.0.0 (npm latest, 2026-10-01) on 2026-10-05. Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+> Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 
 ## Contents
 
@@ -165,6 +165,31 @@ Vercel skew protection can hide a deployment from response-based checks; polling
 
 ## Official sources
 
-- `get-documentation` sections: `kit/$app-navigation`, `kit/shallow-routing`, `kit/snapshots`, `kit/link-options`, `kit/$app-paths`, `kit/page-options`, `kit/@sveltejs-kit-vite`
-- curl: `https://svelte.dev/docs/kit/$app-navigation/llms.txt`, `https://svelte.dev/docs/kit/page-options/llms.txt`, `https://svelte.dev/docs/kit/link-options/llms.txt`, `https://svelte.dev/docs/kit/$app-paths/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["kit/$app-navigation", "kit/shallow-routing"]
+```
+
+Sections: `kit/$app-navigation`, `kit/shallow-routing`, `kit/snapshots`, `kit/link-options`, `kit/$app-paths`, `kit/page-options`, `kit/@sveltejs-kit-vite`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/kit/$app-navigation/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/page-options/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/link-options/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/$app-paths/llms.txt'
+```
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md'
+V="$(node -p "require('@sveltejs/kit/package.json').version")"  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

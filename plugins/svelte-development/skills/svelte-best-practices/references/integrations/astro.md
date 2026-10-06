@@ -1,6 +1,6 @@
 # Svelte components in Astro
 
-> Verified against astro 7.3.5 and @astrojs/svelte 9.0.1 (Svelte 5.57.1) on 2026-10-05. Precedence: changelogs and source code win over the docs, and the docs win over this file.
+> Precedence: changelogs and source code win over the docs, and the docs win over this file.
 
 ## Contents
 
@@ -20,8 +20,14 @@
 ## Fetch before writing when
 
 - The project's `astro` or `@astrojs/svelte` is newer than the versions above, or the slot behavior below does not match what you see.
-- You pass children or named slots from `.astro` files into Svelte components: read `src/server.ts` and `src/client.svelte.ts` of the installed `@astrojs/svelte`.
-- You upgrade across an Astro major: read the upgrade guide and the `astro` changelog window.
+- You pass children or named slots from `.astro` files into Svelte components: read the renderer of the installed `@astrojs/svelte`:
+
+  ```sh
+  npm ls @astrojs/svelte --depth=0
+  curl -sS 'https://raw.githubusercontent.com/withastro/astro/main/packages/integrations/svelte/src/server.ts'
+  curl -sS 'https://raw.githubusercontent.com/withastro/astro/main/packages/integrations/svelte/src/client.svelte.ts'
+  ```
+- You upgrade across an Astro major: read the upgrade guide and the `astro` changelog window (both URLs under [Official sources](#official-sources); the window command is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`).
 
 ## Versions and peers
 

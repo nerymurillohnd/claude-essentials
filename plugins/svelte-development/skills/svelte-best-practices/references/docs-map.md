@@ -1,6 +1,6 @@
 # Map of the official docs
 
-> Verified against the svelte.dev section list (`sections.json`, 203 sections, sha256 `629a3ac945f22026147decd9625711198a35405638c5d8f2e2fd4cce9de63e38`) on 2026-10-05; snapshot 2026-10-05. Precedence: changelogs and source code win over the docs, and the docs win over this file. Call `list-sections` for the live list.
+> Precedence: changelogs and source code win over the docs, and the docs win over this file. Call `list-sections` for the live list.
 
 ## Contents
 
@@ -38,12 +38,24 @@
 
 ## How to use this map
 
-- Pick the narrowest section. Fetch it with the MCP tool `get-documentation` (argument in the second column; the CLI form is `npx -y @sveltejs/mcp get-documentation 'svelte/$state'`, several sections comma-separated), or download the raw text with `curl -sS '<URL>'` from the third column. Quote URLs that contain `$`.
+- Pick the narrowest sections, then fetch them in one call with the argument from the second column:
+
+  ```text
+  mcp__plugin_svelte-development_svelte__get-documentation
+    section: ["svelte/$state", "kit/load"]
+  ```
+
+  Without the MCP server, download the raw text from the third column, in single quotes so the shell does not expand `$`; or, when the user installed `@sveltejs/mcp` globally, use its command line (sections comma-separated):
+
+  ```sh
+  curl -sS 'https://svelte.dev/docs/svelte/$state/llms.txt'
+  svelte-mcp get-documentation 'svelte/$state,kit/load'
+  ```
 - The argument is the `sections.json` key without its leading `docs/`, exactly as `list-sections` prints it after `path:` (`docs/kit/load` becomes `kit/load`). A path that keeps `docs/` does not resolve; the MCP returns only similar results. The exact section title also works.
-- Every Svelte, SvelteKit, CLI and AI URL below returned HTTP 200 with `text/plain` on 2026-10-05 (all 203 checked).
+- Every Svelte, SvelteKit, CLI and AI URL below serves `text/plain`. A 404 means the section was renamed or removed: call `list-sections` for the live list.
 - Whole-package files, when one section is not enough: https://svelte.dev/docs/svelte/llms.txt (about 480 KB), https://svelte.dev/docs/kit/llms.txt (about 650 KB), https://svelte.dev/docs/cli/llms.txt (about 53 KB), https://svelte.dev/docs/ai/llms.txt (about 74 KB).
 - Site-wide bundles are a last resort: https://svelte.dev/llms-small.txt (about 53 KB), https://svelte.dev/llms-medium.txt (about 870 KB), https://svelte.dev/llms-full.txt (about 1.26 MB).
-- Never use WebFetch for these files; it summarizes instead of returning the text.
+- Never use WebFetch or any other web-fetch tool for these files; it summarizes instead of returning the text.
 
 ## Gaps in the MCP section hints
 
@@ -378,7 +390,7 @@
 
 ## Astro
 
-`https://docs.astro.build/llms.txt` returns 404. Read the Markdown sources of the docs site instead (all returned 200 on 2026-10-05):
+`https://docs.astro.build/llms.txt` returns 404. Read the Markdown sources of the docs site instead:
 
 | Page | Raw source URL |
 | --- | --- |
@@ -394,7 +406,7 @@
 
 ## Tailwind CSS
 
-`https://tailwindcss.com/llms.txt` returns 404. The docs site sources are in `tailwindlabs/tailwindcss.com` (all returned 200 on 2026-10-05). The framework guide paths contain a `(docs)` folder, written `%28docs%29` in the URL.
+`https://tailwindcss.com/llms.txt` returns 404. The docs site sources are in `tailwindlabs/tailwindcss.com`. The framework guide paths contain a `(docs)` folder, written `%28docs%29` in the URL.
 
 | Page | Raw source URL |
 | --- | --- |

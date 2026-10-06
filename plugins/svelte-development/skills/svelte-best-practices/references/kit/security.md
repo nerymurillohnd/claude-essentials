@@ -1,6 +1,6 @@
 # SvelteKit Security
 
-> Verified against @sveltejs/kit 3.0.0 (npm latest, 2026-10-01) on 2026-10-05. Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+> Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 
 ## Contents
 
@@ -121,7 +121,31 @@ sveltekit({
 
 ## Official sources
 
-- `get-documentation` sections: `kit/@sveltejs-kit-vite` (`csp`, `csrf`, `paths`), `kit/server-only-modules`, `kit/environment-variables`, `kit/hooks`, `kit/remote-functions`, `kit/state-management`, `kit/auth`, `svelte/@html`, `svelte/hydratable`
-- curl: `https://svelte.dev/docs/kit/@sveltejs-kit-vite/llms.txt`, `https://svelte.dev/docs/kit/server-only-modules/llms.txt`, `https://svelte.dev/docs/svelte/@html/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["kit/@sveltejs-kit-vite", "kit/server-only-modules"]
+```
+
+Sections: `kit/@sveltejs-kit-vite`, `kit/server-only-modules`, `kit/environment-variables`, `kit/hooks`, `kit/remote-functions`, `kit/state-management`, `kit/auth`, `svelte/@html`, `svelte/hydratable`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/kit/@sveltejs-kit-vite/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/server-only-modules/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/@html/llms.txt'
+```
+
 - Changelogs: `https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md`, `https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md`
 - Advisories: `https://github.com/sveltejs/kit/security/advisories`, `https://github.com/sveltejs/svelte/security/advisories`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md'
+V="$(node -p "require('@sveltejs/kit/package.json').version")"  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

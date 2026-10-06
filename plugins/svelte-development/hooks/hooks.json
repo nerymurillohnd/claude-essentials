@@ -1,0 +1,89 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__plugin_svelte-development_svelte__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" docs",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(*svelte-mcp *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" docs",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Bash(*svelte-check*)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" check",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Bash(npx sv *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" cli",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Bash(pnpm dlx sv *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" cli",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Bash(bunx sv *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" cli",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Bash(sv *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" cli",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" lsp",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/check-on-stop.sh\"",
+            "timeout": 300
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rm -f \"${CLAUDE_PLUGIN_DATA}\"/hint-*-\"${CLAUDE_CODE_SESSION_ID}\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

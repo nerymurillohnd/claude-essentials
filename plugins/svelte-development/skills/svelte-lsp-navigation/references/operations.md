@@ -1,6 +1,6 @@
 # LSP operations on Svelte files: observed behaviour and worked examples
 
-> Observed on 2026-10-05 with Claude Code 2.1.289 (LSP tool), svelte-language-server 0.18.4 and svelte-check 4.7.6, in a clean session with only this plugin loaded, on an installed copy of `fixtures/kit3-app` (SvelteKit 3.0.0, Svelte 5.57.1, TypeScript 6). Every result below is the tool's real output, shortened. Paths are relative to the fixture root.
+> Observed in a clean session with only this plugin loaded, on an installed copy of `fixtures/kit3-app`. Every result below is the tool's real output, shortened. Paths are relative to the fixture root.
 
 ## Contents
 
@@ -12,12 +12,23 @@
 - [Read a type with hover](#read-a-type-with-hover)
 - [Trace callers and callees](#trace-callers-and-callees)
 - [Read diagnostics](#read-diagnostics)
+- [Prove it: break something on purpose](#prove-it-break-something-on-purpose)
 - [Fetch before relying on this when](#fetch-before-relying-on-this-when)
 - [Official sources](#official-sources)
 
 ## Call shape
 
-Every operation takes `operation`, `filePath`, `line` and `character`, all 1-based. `workspaceSymbol` also takes `query`, which must not be empty. Point at the first character of the symbol's name.
+Every operation takes `operation`, `filePath`, `line` and `character`, all 1-based. `workspaceSymbol` also takes `query`, which must not be empty. Point at the first character of the symbol's name. Load the tool with ToolSearch (`query: "select:LSP"`) when it is deferred.
+
+```text
+LSP
+  operation: "findReferences"
+  filePath: "src/lib/components/CounterButton.svelte"
+  line: 4
+  character: 12
+```
+
+The examples below write each call on one line as `LSP <operation>  <filePath> <line> <character>`, then the result after `→`.
 
 ## What the server answers
 
@@ -113,7 +124,7 @@ LSP outgoingCalls         src/lib/components/CounterButton.svelte 16 14
 
 ## Read diagnostics
 
-After each edit to a `.svelte` file, Claude Code reports the server's new diagnostics under the edit (`Found N new diagnostic issues in M files`). The fixture's deliberate error, as the whole-project check reports it in Claude Code:
+After each edit to a `.svelte` file, Claude Code reports the server's new diagnostics under the edit (`Found N new diagnostic issues in M files`). The fixture's deliberate error, as the project check reports it in Claude Code:
 
 ```text
 ERROR "src/routes/+page.svelte" 13:26 "Type 'number' is not assignable to type 'string'."
@@ -121,6 +132,26 @@ COMPLETED 177 FILES 1 ERRORS 0 WARNINGS 1 FILES_WITH_PROBLEMS
 ```
 
 That check ran in a copy of the fixture outside the plugin, with the `.example` suffix dropped from its three config files and dependencies installed (see the fixture README), through `npm run check`.
+
+## Prove it: break something on purpose
+
+A clean result proves nothing until a deliberate break has shown that the tool can see the change. Two ways, both with known results (the fixture README's "Mutations" table):
+
+**In the user's project, during a rename** (the "Procedure for a change" in SKILL.md): rename only the declaration, run the project check, and compare its error sites with the `findReferences` list. On the fixture, renaming `label` inside `CounterButton.svelte` makes the check report exactly the three `findReferences` sites above:
+
+```text
+LSP findReferences  src/lib/components/CounterButton.svelte 8 5   (label in Props)
+→ CounterButton.svelte 8:5, 12:18; Dynamic.svelte 14:19, 17:26; +page.svelte 13:26
+
+project check after renaming the declaration only
+→ ERROR "src/lib/components/Dynamic.svelte" 14:19, 17:26; ERROR "src/routes/+page.svelte" 13:26
+```
+
+An error site that is not in the `findReferences` list is a use the language server missed; a `findReferences` site with no error is a use the check cannot see (a string, a pattern). Both go into the edit set.
+
+**When the language server stays silent** (no diagnostics after an edit, empty answers), probe it directly: `command -v svelteserver` must print a path, and `documentSymbol` on a non-empty `.svelte` file must list its symbols, as in [Find a symbol](#find-a-symbol). A script cannot call the LSP tool, so only these calls prove the server.
+
+**When the project check stays silent** (it reports nothing after a change that must break): the cause is almost always in the project, not in svelte-check. Run `npx --no-install svelte-kit sync` and check again (missing generated types hide errors); read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
 
 ## Fetch before relying on this when
 
@@ -131,5 +162,5 @@ That check ran in a copy of the fixture outside the plugin, with the `.example` 
 
 - Claude Code code intelligence: https://code.claude.com/docs/en/plugins/code-intelligence
 - svelte-check flags: `curl -sS https://raw.githubusercontent.com/sveltejs/language-tools/master/packages/svelte-check/README.md`
-- `sv check`: `get-documentation` section `cli/sv-check`, or `curl -sS https://svelte.dev/docs/cli/sv-check/llms.txt`
+- `sv check`: `mcp__plugin_svelte-development_svelte__get-documentation` with `section: ["cli/sv-check"]`, or `curl -sS https://svelte.dev/docs/cli/sv-check/llms.txt`
 - Language tools releases: https://github.com/sveltejs/language-tools/releases

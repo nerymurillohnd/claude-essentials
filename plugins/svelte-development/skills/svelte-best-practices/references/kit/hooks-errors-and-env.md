@@ -1,6 +1,6 @@
 # SvelteKit Hooks, Errors, Environment and Service Workers
 
-> Verified against @sveltejs/kit 3.0.0 (npm latest, 2026-10-01) on 2026-10-05. Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+> Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 
 ## Contents
 
@@ -185,6 +185,31 @@ import { PUBLIC_ANALYTICS_ID } from "$app/env/public";
 
 ## Official sources
 
-- `get-documentation` sections: `kit/hooks`, `kit/errors`, `kit/environment-variables`, `kit/@sveltejs-kit-hooks`, `kit/@sveltejs-kit-env`, `kit/$app-env`, `kit/service-workers`, `kit/$app-service-worker`, `kit/$app-manifest`
-- curl: `https://svelte.dev/docs/kit/hooks/llms.txt`, `https://svelte.dev/docs/kit/errors/llms.txt`, `https://svelte.dev/docs/kit/environment-variables/llms.txt`, `https://svelte.dev/docs/kit/service-workers/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["kit/hooks", "kit/errors"]
+```
+
+Sections: `kit/hooks`, `kit/errors`, `kit/environment-variables`, `kit/@sveltejs-kit-hooks`, `kit/@sveltejs-kit-env`, `kit/$app-env`, `kit/service-workers`, `kit/$app-service-worker`, `kit/$app-manifest`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/kit/hooks/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/errors/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/environment-variables/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/service-workers/llms.txt'
+```
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md'
+V="$(node -p "require('@sveltejs/kit/package.json').version")"  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

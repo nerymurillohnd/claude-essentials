@@ -1,6 +1,6 @@
 # Context, Lifecycle and Reactivity Classes
 
-> Verified against svelte 5.57.1 (npm latest, 2026-09-18) on 2026-10-05. Precedence: the Svelte changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+> Precedence: the Svelte changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 
 ## Contents
 
@@ -145,8 +145,33 @@ export class Online {
 
 ## Official sources
 
-- `get-documentation` sections: `svelte/context`, `svelte/lifecycle-hooks`, `svelte/imperative-component-api`, `svelte/stores`, `svelte/svelte`, `svelte/svelte-reactivity`, `svelte/svelte-reactivity-window`, `svelte/svelte-store`, `svelte/svelte-server`
-- curl: `https://svelte.dev/docs/svelte/context/llms.txt`, `https://svelte.dev/docs/svelte/svelte-reactivity/llms.txt`, `https://svelte.dev/docs/svelte/imperative-component-api/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["svelte/context", "svelte/lifecycle-hooks"]
+```
+
+Sections: `svelte/context`, `svelte/lifecycle-hooks`, `svelte/imperative-component-api`, `svelte/stores`, `svelte/svelte`, `svelte/svelte-reactivity`, `svelte/svelte-reactivity-window`, `svelte/svelte-store`, `svelte/svelte-server`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/svelte/context/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/svelte-reactivity/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/imperative-component-api/llms.txt'
+```
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md'
+V="$(node -p "require('svelte/package.json').version")"  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```
+
 
 Partly derived from sveltejs/ai-tools (MIT), base 6b5d0da; see the plugin NOTICE.

@@ -1,8 +1,8 @@
 {
   "name": "svelte-development",
   "displayName": "Svelte Development",
-  "version": "0.1.0",
-  "description": "Svelte 5 and SvelteKit 3 development: current best practices, docs lookup and autofixer, code navigation, an editor and an auditor agent, and the Svelte MCP and language servers, built on the Svelte team's AI tools.",
+  "version": "0.2.0",
+  "description": "Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools.",
   "author": {
     "name": "Claude Essentials maintainers"
   },

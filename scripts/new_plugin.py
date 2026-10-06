@@ -51,8 +51,11 @@ CONFIGURATION_SECTION = f"""{repo.readme_heading("Configuration")}
 """
 PERMISSIONS_SECTION = f"""{repo.readme_heading("Permissions")}
 
-TODO: explain why the plugin needs each item in the table below and what it does with the
-installing user's files, network and accounts. See docs/security-review.md.
+TODO: one bullet per item in the table below, each opening with the item in bold: why the
+plugin needs it and what it does with the installing user's files, network and accounts.
+Facts that compare go in a table, a warning in a `>` callout; no paragraphs.
+Say which items a permission prompt covers and which it does not, such as hooks.
+See docs/security-review.md.
 
 <!-- BEGIN GENERATED: runtime -->
 <!-- END GENERATED: runtime -->

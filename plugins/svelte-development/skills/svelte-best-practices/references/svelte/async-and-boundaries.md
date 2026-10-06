@@ -1,6 +1,6 @@
 # Async Svelte and Boundaries
 
-> Verified against svelte 5.57.1 (npm latest, 2026-09-18) on 2026-10-05. Precedence: the Svelte changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+> Precedence: the Svelte changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 
 ## Contents
 
@@ -144,9 +144,34 @@ let item = $derived(await getItem(id));
 
 ## Official sources
 
-- `get-documentation` sections: `svelte/await-expressions`, `svelte/svelte-boundary`, `svelte/hydratable`, `svelte/$effect`, `svelte/svelte`, `svelte/svelte-server`, `svelte/imperative-component-api`, `svelte/runtime-errors`, `svelte/runtime-warnings`, `svelte/best-practices`
-- curl: `https://svelte.dev/docs/svelte/await-expressions/llms.txt`, `https://svelte.dev/docs/svelte/svelte-boundary/llms.txt`, `https://svelte.dev/docs/svelte/hydratable/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["svelte/await-expressions", "svelte/svelte-boundary"]
+```
+
+Sections: `svelte/await-expressions`, `svelte/svelte-boundary`, `svelte/hydratable`, `svelte/$effect`, `svelte/svelte`, `svelte/svelte-server`, `svelte/imperative-component-api`, `svelte/runtime-errors`, `svelte/runtime-warnings`, `svelte/best-practices`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/svelte/await-expressions/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/svelte-boundary/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/hydratable/llms.txt'
+```
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md`
 - Source of the `fork` flag check: `https://github.com/sveltejs/svelte/blob/main/packages/svelte/src/internal/client/reactivity/batch.js`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md'
+V="$(node -p "require('svelte/package.json').version")"  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```
+
 
 Partly derived from sveltejs/ai-tools (MIT), base 6b5d0da; see the plugin NOTICE.

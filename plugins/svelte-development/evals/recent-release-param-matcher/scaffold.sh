@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs the shared SvelteKit 3 fixture, then declares @sveltejs/kit 3.0.1 in package.json.
-# 3.0.1 is newer than the "Verified against 3.0.0" line of the plugin's references, so the
-# changelog check is due; the installed package stays 3.0.0, as after an unfinished upgrade.
+# The declared 3.0.1 is newer than the installed 3.0.0, as after an unfinished upgrade, so the
+# task asks about a feature of a release the installed package does not have.
 set -euo pipefail
 
 case_dir="$(cd "$(dirname "$0")" && pwd)"

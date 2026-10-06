@@ -1,6 +1,6 @@
 # Svelte language server troubleshooting
 
-> Verified against Claude Code 2.1.289, svelte-language-server 0.18.4 and svelte-check 4.7.6 on 2026-10-05. Precedence: the language-tools changelogs and the Claude Code docs win over this file.
+> Precedence: the language-tools changelogs and the Claude Code docs win over this file.
 
 ## Contents
 
@@ -15,13 +15,20 @@
 
 Claude Code returns an error for each LSP call on a file whose server it cannot start. Check, in this order:
 
-1. **Binary**: `svelteserver --version` or `command -v svelteserver`. Missing means the user installs `svelte-language-server` globally (`npm install -g svelte-language-server`). In `/plugin`, the **Errors** tab shows `Executable not found in $PATH: "svelteserver"`. Tell the user; do not install packages without their confirmation.
+1. **Binary.** Check that the server is on the PATH:
+
+   ```sh
+   command -v svelteserver || echo "svelteserver not found"
+   ```
+
+   Missing means the user installs it globally with `npm install -g svelte-language-server`; in `/plugin`, the **Errors** tab shows `Executable not found in $PATH: "svelteserver"`. Tell the user; do not install packages without their confirmation.
 2. **File type**: the plugin maps only `.svelte`. A `.ts`, `.js`, `.svelte.ts` or `.svelte.js` file needs a TypeScript language server the user installed separately.
-3. **Session type**: cloud sessions never start plugin language servers. Use the project's check (`npm run check`) there.
+3. **Session type**: cloud sessions never start plugin language servers. Use the project check from the SKILL.md (`npm run check`) there.
 4. **Reload**: after installing the binary, the user runs `/reload-plugins` (a reload that adds the LSP tool for the first time needs `/reload-plugins --force`).
 
 ## No diagnostics appear after an edit
 
+- If nothing appears even after a change that must break, first prove the language server answers: `command -v svelteserver`, then `documentSymbol` on a non-empty `.svelte` file must list its symbols. If the project check is the silent one, see operations.md, "Prove it".
 - The server starts on the first edit of a `.svelte` file, not at session start.
 - Diagnostics after an edit appear as `Found N new diagnostic issues in M files`; only new issues are reported, so an unchanged error does not repeat.
 - `claude --debug` logs `LSP server <name> failed to start: <reason>` when the server crashes at start.
@@ -35,11 +42,17 @@ Claude Code returns an error for each LSP call on a file whose server it cannot 
 
 ## False errors about generated types
 
-`Cannot find module './$types'` or `Cannot find type definition file for '$app/types'` means SvelteKit's generated files are missing. Run `npx --no-install svelte-kit sync` (or the project's `check` script, which runs it) before trusting diagnostics. Since SvelteKit 3 the generated tsconfig lives in `node_modules/$app/tsconfig`, so dependencies must be installed.
+`Cannot find module './$types'` or `Cannot find type definition file for '$app/types'` means SvelteKit's generated files are missing. Generate them before trusting diagnostics (the project's `check` script also runs this):
+
+```sh
+npx --no-install svelte-kit sync
+```
+
+Since SvelteKit 3 the generated tsconfig lives in `node_modules/$app/tsconfig`, so dependencies must be installed.
 
 ## Known open issues
 
-Checked open on 2026-10-05 in `sveltejs/language-tools`; re-check before citing them to the user:
+Issues in `sveltejs/language-tools`; check whether each is still open before citing it to the user:
 
 | Issue | Symptom |
 | --- | --- |
@@ -48,7 +61,11 @@ Checked open on 2026-10-05 in `sveltejs/language-tools`; re-check before citing 
 | #3124 | Type arguments on `$props()` make destructured props `any` |
 | #3063 | TypeScript 7 crashes svelte2tsx and svelte-check; use `--tsgo` with TypeScript 6 and 7 installed |
 
-Re-check an issue: `curl -sS https://api.github.com/repos/sveltejs/language-tools/issues/3108` and read `state`.
+Re-check an issue before citing it:
+
+```sh
+curl -sS 'https://api.github.com/repos/sveltejs/language-tools/issues/3108' | grep -m1 '"state"'
+```
 
 ## Official sources
 

@@ -1,6 +1,6 @@
 # Currency check against changelogs
 
-> Verified against the changelog and release URLs below (svelte 5.57.1, @sveltejs/kit 3.0.0, sv 1.1.0, astro 7.3.5, tailwindcss 4.3.3) on 2026-10-05. Precedence: changelogs and source code win over the docs, and the docs win over this file.
+> Precedence: changelogs and source code win over the docs, and the docs win over this file.
 
 ## Contents
 
@@ -16,7 +16,8 @@
 
 Run it before writing code or advice when any of these holds:
 
-- The installed version of a package is newer than the "Verified against" version of the reference you are about to use.
+- The installed version is not the latest on the registry (`npm view <package> version` against the command in Step 1): read the window between the two. This is the mechanical check; run it whenever the task depends on exact behaviour.
+- A reference here disagrees with what the installed version does, or describes an API the installed version does not have.
 - The task touches an experimental feature (`experimental.async`, remote functions, `forkPreloads`, `fork`), configuration, an adapter, or a migration.
 - The docs and the observed behavior disagree, or a doc page and a changelog disagree.
 - The user asks whether something is current, deprecated or removed.
@@ -39,7 +40,7 @@ npm view @sveltejs/kit time --json        # release date of every version
 npm view @sveltejs/kit peerDependencies engines --json
 ```
 
-If installed equals latest and both match the reference's "Verified against", stop here.
+If installed equals latest and nothing in the task matches the cases above, stop here.
 
 ## Step 3: read only the changelog window
 
@@ -86,34 +87,32 @@ When a lower source contradicts a higher one, follow the higher one and tell the
 
 ## Changelog URLs and heading formats
 
-All URLs returned HTTP 200 on 2026-10-05.
+| Package | Changelog (raw) | Heading format |
+| --- | --- | --- |
+| `svelte` | https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/kit` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/adapter-auto` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-auto/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/adapter-node` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-node/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/adapter-static` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-static/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/adapter-vercel` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-vercel/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/adapter-cloudflare` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-cloudflare/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/adapter-netlify` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-netlify/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/adapter-bun` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-bun/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/enhanced-img` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/enhanced-img/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/package` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/package/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/vite-plugin-svelte` | https://raw.githubusercontent.com/sveltejs/vite-plugin-svelte/main/packages/vite-plugin-svelte/CHANGELOG.md | `## x.y.z` |
+| `sv` | https://raw.githubusercontent.com/sveltejs/cli/main/packages/sv/CHANGELOG.md | `## x.y.z` |
+| `svelte-language-server` | https://raw.githubusercontent.com/sveltejs/language-tools/master/packages/language-server/CHANGELOG.md | `## x.y.z` |
+| `svelte-check` | https://raw.githubusercontent.com/sveltejs/language-tools/master/packages/svelte-check/CHANGELOG.md | `## x.y.z` |
+| `svelte2tsx` | https://raw.githubusercontent.com/sveltejs/language-tools/master/packages/svelte2tsx/CHANGELOG.md | `## x.y.z` |
+| `@sveltejs/mcp` (ai-tools `packages/mcp-stdio`) | https://raw.githubusercontent.com/sveltejs/ai-tools/main/packages/mcp-stdio/CHANGELOG.md | `## x.y.z` |
+| `astro` | https://raw.githubusercontent.com/withastro/astro/main/packages/astro/CHANGELOG.md | `## x.y.z` |
+| `@astrojs/svelte` | https://raw.githubusercontent.com/withastro/astro/main/packages/integrations/svelte/CHANGELOG.md | `## x.y.z` |
+| `tailwindcss` (also `@tailwindcss/vite`) | https://raw.githubusercontent.com/tailwindlabs/tailwindcss/main/CHANGELOG.md | `## [x.y.z] - ` plus the release date |
+| `prettier-plugin-svelte` | https://raw.githubusercontent.com/sveltejs/prettier-plugin-svelte/master/CHANGELOG.md | `## x.y.z` |
+| `prettier-plugin-tailwindcss` | https://raw.githubusercontent.com/tailwindlabs/prettier-plugin-tailwindcss/main/CHANGELOG.md | `## [x.y.z] - ` plus the release date |
 
-| Package | Changelog (raw) | Heading format | Latest on 2026-10-05 |
-| --- | --- | --- | --- |
-| `svelte` | https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md | `## x.y.z` | 5.57.1 |
-| `@sveltejs/kit` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md | `## x.y.z` | 3.0.0 (3.0.1 in changelog, not on npm) |
-| `@sveltejs/adapter-auto` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-auto/CHANGELOG.md | `## x.y.z` | 8.0.0 |
-| `@sveltejs/adapter-node` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-node/CHANGELOG.md | `## x.y.z` | 6.0.0 |
-| `@sveltejs/adapter-static` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-static/CHANGELOG.md | `## x.y.z` | 4.0.0 |
-| `@sveltejs/adapter-vercel` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-vercel/CHANGELOG.md | `## x.y.z` | 7.0.0 |
-| `@sveltejs/adapter-cloudflare` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-cloudflare/CHANGELOG.md | `## x.y.z` | 8.0.0 |
-| `@sveltejs/adapter-netlify` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-netlify/CHANGELOG.md | `## x.y.z` | 7.0.0 (7.0.1 in changelog, not on npm) |
-| `@sveltejs/adapter-bun` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-bun/CHANGELOG.md | `## x.y.z` | 1.0.0 |
-| `@sveltejs/enhanced-img` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/enhanced-img/CHANGELOG.md | `## x.y.z` | 1.0.0 |
-| `@sveltejs/package` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/package/CHANGELOG.md | `## x.y.z` | 3.0.0 |
-| `@sveltejs/vite-plugin-svelte` | https://raw.githubusercontent.com/sveltejs/vite-plugin-svelte/main/packages/vite-plugin-svelte/CHANGELOG.md | `## x.y.z` | 7.3.1 |
-| `sv` | https://raw.githubusercontent.com/sveltejs/cli/main/packages/sv/CHANGELOG.md | `## x.y.z` | 1.1.0 |
-| `svelte-language-server` | https://raw.githubusercontent.com/sveltejs/language-tools/master/packages/language-server/CHANGELOG.md | `## x.y.z` | 0.18.4 |
-| `svelte-check` | https://raw.githubusercontent.com/sveltejs/language-tools/master/packages/svelte-check/CHANGELOG.md | `## x.y.z` | 4.7.6 |
-| `svelte2tsx` | https://raw.githubusercontent.com/sveltejs/language-tools/master/packages/svelte2tsx/CHANGELOG.md | `## x.y.z` | 0.7.61 |
-| `@sveltejs/mcp` (ai-tools `packages/mcp-stdio`) | https://raw.githubusercontent.com/sveltejs/ai-tools/main/packages/mcp-stdio/CHANGELOG.md | `## x.y.z` | 0.1.26 |
-| `astro` | https://raw.githubusercontent.com/withastro/astro/main/packages/astro/CHANGELOG.md | `## x.y.z` | 7.3.5 |
-| `@astrojs/svelte` | https://raw.githubusercontent.com/withastro/astro/main/packages/integrations/svelte/CHANGELOG.md | `## x.y.z` | 9.0.1 |
-| `tailwindcss` (also `@tailwindcss/vite`) | https://raw.githubusercontent.com/tailwindlabs/tailwindcss/main/CHANGELOG.md | `## [x.y.z] - ` plus the release date | 4.3.3 |
-| `prettier-plugin-svelte` | https://raw.githubusercontent.com/sveltejs/prettier-plugin-svelte/master/CHANGELOG.md | `## x.y.z` | 4.1.1 |
-| `prettier-plugin-tailwindcss` | https://raw.githubusercontent.com/tailwindlabs/prettier-plugin-tailwindcss/main/CHANGELOG.md | `## [x.y.z] - ` plus the release date | 0.8.1 |
-
-GitHub releases endpoints (all returned 200 on 2026-10-05):
+GitHub releases endpoints:
 
 | Repository | Releases API |
 | --- | --- |

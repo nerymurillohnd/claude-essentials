@@ -1,6 +1,6 @@
 # SvelteKit Loading Data
 
-> Verified against @sveltejs/kit 3.0.0 (npm latest, 2026-10-01) on 2026-10-05. Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+> Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 
 ## Contents
 
@@ -128,7 +128,7 @@ await invalidate((url) => url.hostname === "api.example.com");
 await refreshAll(); // every load function and every active remote query
 ```
 
-- `invalidate(resource, keepState?)` accepts a string, a `URL` or a predicate. The docs show the `keepState` parameter in the signature without describing it; check the live reference before relying on it.
+- `invalidate(resource, keepState?)` accepts a string, a `URL` or a predicate. The docs show the `keepState` parameter in the signature without describing it; read the live reference (`mcp__plugin_svelte-development_svelte__get-documentation` with `section: ["kit/$app-navigation"]`) before relying on it.
 - `invalidateAll()` is deprecated since 3.0. It resets `page.state` to `{}`; `refreshAll()` keeps it.
 - Since 3.0, invalidating during an in-flight navigation no longer aborts it, and results that arrive after the navigation finishes are discarded.
 
@@ -169,6 +169,30 @@ Layout `load` does not rerun on every navigation, and page and layout `load` run
 
 ## Official sources
 
-- `get-documentation` sections: `kit/load`, `kit/state-management`, `kit/$app-state`, `kit/$app-navigation`, `kit/shallow-routing`, `kit/@sveltejs-kit`
-- curl: `https://svelte.dev/docs/kit/load/llms.txt`, `https://svelte.dev/docs/kit/$app-state/llms.txt`, `https://svelte.dev/docs/kit/$app-navigation/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["kit/load", "kit/state-management"]
+```
+
+Sections: `kit/load`, `kit/state-management`, `kit/$app-state`, `kit/$app-navigation`, `kit/shallow-routing`, `kit/@sveltejs-kit`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/kit/load/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/$app-state/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/$app-navigation/llms.txt'
+```
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md'
+V="$(node -p "require('@sveltejs/kit/package.json').version")"  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

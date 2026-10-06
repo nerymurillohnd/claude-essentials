@@ -231,7 +231,8 @@ __marimo__/
 __MACOSX/
 .AppleDouble
 .LSOverride
-Icon[]
+Icon[
+]
 
 # Resource forks
 ._*
@@ -252,7 +253,8 @@ Icon[]
 .file
 .disk_label*
 lost+found
-.HFS+ Private Directory Data[]
+.HFS+ Private Directory Data[
+]
 
 # Directories potentially created on remote AFP share
 .AppleDB
@@ -293,3 +295,19 @@ CLAUDE.local.md
 # Claude Code worktrees and plugin eval results (.claude/rules/automation.md)
 .claude/worktrees/
 plugins/*/evals/results/
+
+# The Python template's build folders above must not hide plugin content: a plugin
+# ships what it holds, and SvelteKit keeps its code in src/lib (the svelte-development
+# fixture lost src/lib to `lib/` until 2026-10-06).
+!plugins/**/build/
+!plugins/**/develop-eggs/
+!plugins/**/dist/
+!plugins/**/downloads/
+!plugins/**/eggs/
+!plugins/**/.eggs/
+!plugins/**/lib/
+!plugins/**/lib64/
+!plugins/**/parts/
+!plugins/**/sdist/
+!plugins/**/var/
+!plugins/**/wheels/
