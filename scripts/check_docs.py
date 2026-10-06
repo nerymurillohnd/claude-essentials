@@ -77,11 +77,6 @@ PIN_SITES: tuple[PinSite, ...] = (
         ("MIN_CLAUDE_CODE",),
     ),
     PinSite(
-        "CLAUDE.md",
-        r"verified on Claude Code (\d+\.\d+\.\d+) that",
-        ("MIN_CLAUDE_CODE",),
-    ),
-    PinSite(
         "docs/releasing.md",
         r"Claude Code (\d+\.\d+\.\d+) or later",
         ("MIN_CLAUDE_CODE",),
