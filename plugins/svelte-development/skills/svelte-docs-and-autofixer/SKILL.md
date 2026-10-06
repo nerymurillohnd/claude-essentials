@@ -68,7 +68,7 @@ Decide this before the first tool call.
 | Reviewing, auditing or checking project files without changing them | `svelte-code-auditor` agent | Delegate with the Agent tool (below) |
 | The user asks you to work inline, or you already are one of these agents | You | Never delegate further |
 
-The agent starts without this conversation: its prompt must name the files, the task, the constraints and what to report.
+The agent starts without this conversation: its prompt must name the files, the task, the constraints and what to report. Call it without a `name`: a named call can start an agent-team teammate instead of a subagent, and a teammate gets none of the agent's preloaded skills.
 
 ```text
 Agent

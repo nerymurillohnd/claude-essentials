@@ -77,7 +77,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 | The user wants a review or audit of the code, not a change | `svelte-code-auditor` agent | Agent tool, `subagent_type: "svelte-development:svelte-code-auditor"` |
 | You already are one of these agents | You | Never delegate further |
 
-Hand the agent the locations you found (file and line), so it does not repeat the search.
+Hand the agent the locations you found (file and line), so it does not repeat the search. Call it without a `name`: a named call can start an agent-team teammate instead of a subagent, and a teammate gets none of the agent's preloaded skills.
 
 ## Where things are
 

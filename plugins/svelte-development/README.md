@@ -96,7 +96,7 @@ The skills load on their own when a task matches; you can also call them directl
 Create a SvelteKit 3 route at /todos with a form action that adds an item, and a list that shows them.
 ```
 
-Claude hands the work to the [component editor](agents/svelte-component-editor.md) agent, which runs in its own context so the documentation lookups do not fill your conversation. Guided by [`svelte-best-practices`](skills/svelte-best-practices/SKILL.md), it fetches `kit/form-actions` and `kit/load` through the MCP server, writes `+page.server.ts` and `+page.svelte`, runs the autofixer and reads the language server's diagnostics. You can also name the agent yourself: "Use the svelte-component-editor agent to …".
+Claude hands the work to the [component editor](agents/svelte-component-editor.md) agent, which runs in its own context so the documentation lookups do not fill your conversation. Guided by [`svelte-best-practices`](skills/svelte-best-practices/SKILL.md), it fetches `kit/form-actions` and `kit/load` through the MCP server, writes `+page.server.ts` and `+page.svelte`, runs the autofixer and reads the language server's diagnostics. You can also name the agent yourself: "Use the svelte-component-editor agent to …", or mention it to make sure it runs: `@agent-svelte-development:svelte-component-editor`.
 
 ```text
 /svelte-development:svelte-docs-and-autofixer check src/lib/components/Cart.svelte
