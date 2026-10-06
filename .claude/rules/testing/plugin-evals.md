@@ -37,7 +37,7 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 
 - Run from the plugin root (`claude plugin eval .`) or give the plugin path as the target; put the target before `--tag`, `--allow-tools` and `--json`.
 - Default ablation `with-without`: the delta (with minus without, same model) is the number that matters; zero or below means the plugin adds nothing. Use `--ablation none` only to check that cases load and graders work.
-- Pass `--trust-plugin` with `--json` (a run that cannot ask is refused), `--no-publish`, `--scaffold` when cases have scaffolds, `--allow-real-servers` for real MCP servers, `--max-cost-usd` always, `--model` and `--judge-model` pinned.
+- Pass `--trust-plugin` with `--json` (a run that cannot ask is refused), `--no-publish`, `--scaffold` when cases have scaffolds, `--allow-real-servers` for real MCP servers, `--max-cost-usd` always, and no `--model` or `--judge-model`: both are inherited and the run records the models it used (ADR inherited-eval-models-and-full-results, 2026-10-06). The docs recommend pinning `--model` in CI; pin only for a comparison across runs, and say so.
 - `--allow-tools` grants what `allowed_tools` asks for: `Write`, `Edit`, `Bash(...)`, `"mcp__plugin_<plugin>_<server>__*"`. Bash runs in a sandbox whose network reaches only domains granted as `WebFetch(domain:<host>)`. Read the "not granted" lines before trusting a score.
 - Write `--json` to the session scratchpad, never into the repository. The run also writes `evals/results/`, which is gitignored but holds the maintainer's paths; the `repo` gate scans the working tree, so delete it after the run.
 - Isolation: each run has a temporary home, working directory and configuration; only an allowlist of environment variables (including `PATH`) reaches it. A plugin server binary must be on the user's `PATH`; to test without installing it on the maintainer's machine, run the suite against a scratch copy of the plugin whose `.lsp.json` `command` is the binary's absolute path, and say so in the evidence.
@@ -45,6 +45,7 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 
 ## Evidence
 
-- Report only numbers from a run that actually happened: the command, the CLI version, both models, passed and total per arm, the delta per case, the cost, and any "not granted" or load errors.
+- Report only numbers from a run that actually happened: the command, the CLI version, the models the run recorded, passed and total per arm, the delta per case, the cost, and any "not granted" or load errors.
 - Put that record in the pull request (`evals: <plugin> <passed>/<total>, delta <with minus without>`), never in the plugin README.
-- Open question, to settle on the first run that delegates to an agent: whether the trace graders see tool calls made inside a subagent.
+- Open question, to settle from the first run whose full result is kept (the `evals-results` artifact): whether the trace graders see tool calls made inside a subagent. Subagents keep their own transcripts (`agent-<id>.jsonl`, sub-agents docs), so expect them not to.
+- Analyse per grader, from the artifact: drop graders that pass in both arms on every run, fix graders that fail in both arms, explain the ones that pass only with the plugin, and tighten skill wording where runs disagree. An `llm` grader with `focus: trace` sees only the first and last 12 messages: never use it for a step in the middle of a long session.

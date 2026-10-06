@@ -23,8 +23,8 @@ jobs:
     permissions:
       contents: read
     env:
-      AGENT_MODEL: claude-sonnet-5-5
-      JUDGE_MODEL: claude-haiku-4-5-20251001
+      # No --model or --judge-model: both are inherited, and the job summary records the
+      # models each run used (ADR inherited-eval-models-and-full-results).
       RUNS: "1"
       MAX_COST_USD: "10"
     steps:
@@ -78,7 +78,6 @@ jobs:
             claude plugin eval "${dir}" \
               --trust-plugin --scaffold --allow-real-servers --no-publish \
               --runs "${RUNS}" -j 4 \
-              --model "${AGENT_MODEL}" --judge-model "${JUDGE_MODEL}" \
               --max-cost-usd "${MAX_COST_USD}" --threshold 0 \
               --json "${result}" \
               --allow-tools "${grants[@]}" || status=$?
@@ -88,14 +87,19 @@ jobs:
               status=1
               continue
             fi
-            summary="$(jq '{claudeVersion, partial, partialReason, costUsd, durationSeconds, aggregates,
+            # The result document has no documented model field, so list every key whose name
+            # mentions a model, with its value, to record what this run actually used.
+            models="$(jq -c '[paths(scalars) as $p | select($p[-1] | tostring | test("model"; "i"))
+              | {key: ($p | map(tostring) | join(".")), value: getpath($p)}] | unique_by(.key) | .[:20]' "${result}")"
+            summary="$(jq --argjson models "${models}" '{claudeVersion, models: $models, partial, partialReason,
+              costUsd, durationSeconds, aggregates,
               cases: [.cases[] | {name, score: .aggregates.score, delta: .aggregates.delta,
                 errors: [.arms[][]? | .error | select(. != null)]}]}' "${result}")"
             printf '%s\n' "${summary}"
             {
               echo "### ${name}"
               echo
-              echo "Models: ${AGENT_MODEL} (agent), ${JUDGE_MODEL} (judge); runs per arm: ${RUNS}; cost ceiling: \$${MAX_COST_USD}."
+              echo "Models inherited (see \`models\`); runs per arm: ${RUNS}; cost ceiling: \$${MAX_COST_USD}. Full results: the run's \`evals-results\` artifact."
               echo
               echo '```json'
               printf '%s\n' "${summary}"
@@ -112,3 +116,14 @@ jobs:
             fi
           done
           exit "${status}"
+
+      - name: Keep the full results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: evals-results
+          path: |
+            ${{ runner.temp }}/evals-*.json
+            plugins/*/evals/results/
+          if-no-files-found: ignore
+          retention-days: 30

@@ -75,3 +75,5 @@ Chosen option: **an informative, label-triggered workflow**.
 ## More information
 
 Partly replaces the CI exclusion in [docs/testing.md](../../testing.md#behavioral-evaluation). Docs: [plugin evals](https://code.claude.com/docs/en/plugin-evals) ("Run evals in CI", "Grant tools", "How runs are isolated").
+
+Note, 2026-10-06: the pinned agent and judge models are replaced by inherited models, and the full result of each run is kept as an artifact ([ADR inherited-eval-models-and-full-results](ADR_2026-10-06_inherited-eval-models-and-full-results.md)); the rest of this decision stands.
