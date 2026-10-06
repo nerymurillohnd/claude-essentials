@@ -165,8 +165,33 @@ Since 5.29, `{@attach fn}` runs `fn(element)` in an effect when the element moun
 
 ## Official sources
 
-- `get-documentation` sections: `svelte/basic-markup`, `svelte/if`, `svelte/each`, `svelte/key`, `svelte/await`, `svelte/snippet`, `svelte/@render`, `svelte/@html`, `svelte/@attach`, `svelte/@const`, `svelte/@debug`, `svelte/declaration-tags`, `svelte/bind`, `svelte/use`, `svelte/style`, `svelte/class`, `svelte/svelte-attachments`, `svelte/svelte-events`
-- curl: `https://svelte.dev/docs/svelte/@attach/llms.txt` (same pattern for each slug above)
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["svelte/basic-markup", "svelte/if"]
+```
+
+Sections: `svelte/basic-markup`, `svelte/if`, `svelte/each`, `svelte/key`, `svelte/await`, `svelte/snippet`, `svelte/@render`, `svelte/@html`, `svelte/@attach`, `svelte/@const`, `svelte/@debug`, `svelte/declaration-tags`, `svelte/bind`, `svelte/use`, `svelte/style`, `svelte/class`, `svelte/svelte-attachments`, `svelte/svelte-events`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/svelte/@attach/llms.txt'
+```
+
+Same pattern for each slug above.
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md'
+V='5.57.1'  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```
+
 
 Partly derived from sveltejs/ai-tools (MIT), base 6b5d0da; see the plugin NOTICE.

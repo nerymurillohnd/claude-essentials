@@ -114,6 +114,30 @@
 
 ## Official sources
 
-- `get-documentation` sections: `svelte/scoped-styles`, `svelte/global-styles`, `svelte/custom-properties`, `svelte/nested-style-elements`, `svelte/transition`, `svelte/in-and-out`, `svelte/animate`, `svelte/svelte-motion`, `svelte/svelte-transition`, `svelte/svelte-animate`, `svelte/svelte-easing`, `svelte/svelte-window`, `svelte/svelte-document`, `svelte/svelte-body`, `svelte/svelte-head`, `svelte/svelte-element`, `svelte/svelte-options`, `svelte/custom-elements`, `svelte/$host`, `svelte/typescript`
-- curl: `https://svelte.dev/docs/svelte/transition/llms.txt` (same pattern for each slug above)
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["svelte/scoped-styles", "svelte/global-styles"]
+```
+
+Sections: `svelte/scoped-styles`, `svelte/global-styles`, `svelte/custom-properties`, `svelte/nested-style-elements`, `svelte/transition`, `svelte/in-and-out`, `svelte/animate`, `svelte/svelte-motion`, `svelte/svelte-transition`, `svelte/svelte-animate`, `svelte/svelte-easing`, `svelte/svelte-window`, `svelte/svelte-document`, `svelte/svelte-body`, `svelte/svelte-head`, `svelte/svelte-element`, `svelte/svelte-options`, `svelte/custom-elements`, `svelte/$host`, `svelte/typescript`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/svelte/transition/llms.txt'
+```
+
+Same pattern for each slug above.
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md'
+V='5.57.1'  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

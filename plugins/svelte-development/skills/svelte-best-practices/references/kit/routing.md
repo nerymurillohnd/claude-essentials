@@ -153,6 +153,30 @@ Characters that cannot appear in a file name or have meaning to the router are w
 
 ## Official sources
 
-- `get-documentation` sections: `kit/routing`, `kit/advanced-routing`, `kit/@sveltejs-kit-params`, `kit/$app-types`, `kit/$app-manifest`, `kit/errors`
-- curl: `https://svelte.dev/docs/kit/routing/llms.txt`, `https://svelte.dev/docs/kit/advanced-routing/llms.txt`, `https://svelte.dev/docs/kit/@sveltejs-kit-params/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["kit/routing", "kit/advanced-routing"]
+```
+
+Sections: `kit/routing`, `kit/advanced-routing`, `kit/@sveltejs-kit-params`, `kit/$app-types`, `kit/$app-manifest`, `kit/errors`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/kit/routing/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/advanced-routing/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/@sveltejs-kit-params/llms.txt'
+```
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md'
+V='3.0.0'  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

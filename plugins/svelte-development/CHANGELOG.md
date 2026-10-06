@@ -7,6 +7,14 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- Each skill now opens with what it is for, when to use it and when not, its rules, and who does the work: you inline, the `svelte-component-editor` agent for file changes, or the `svelte-code-auditor` agent for read-only reviews, with the exact Agent call. The procedures follow, in order, after the rules.
+- Every tool a skill or agent asks for is shown as the exact call: the Svelte MCP tools with their parameters, the LSP tool, ToolSearch for deferred tools, and the shell commands for the project check, versions, changelog windows and fallbacks. Shell examples quote URLs that contain `$`.
+- Skill descriptions name the key use first and add trigger phrases (`when_to_use`), so Claude loads them for code pasted in the chat as well as for project files.
+- Both agents list their rules before their workflow, and their descriptions say when to use the other agent instead.
+- The docs map's command-line example uses an installed `svelte-mcp` instead of downloading `@sveltejs/mcp` with `npx -y`.
+
 ## [0.1.0] - 2026-10-05
 
 ### Added

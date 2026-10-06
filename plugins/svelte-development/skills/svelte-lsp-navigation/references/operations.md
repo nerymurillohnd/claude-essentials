@@ -17,7 +17,17 @@
 
 ## Call shape
 
-Every operation takes `operation`, `filePath`, `line` and `character`, all 1-based. `workspaceSymbol` also takes `query`, which must not be empty. Point at the first character of the symbol's name.
+Every operation takes `operation`, `filePath`, `line` and `character`, all 1-based. `workspaceSymbol` also takes `query`, which must not be empty. Point at the first character of the symbol's name. Load the tool with ToolSearch (`query: "select:LSP"`) when it is deferred.
+
+```text
+LSP
+  operation: "findReferences"
+  filePath: "src/lib/components/CounterButton.svelte"
+  line: 4
+  character: 12
+```
+
+The examples below write each call on one line as `LSP <operation>  <filePath> <line> <character>`, then the result after `→`.
 
 ## What the server answers
 

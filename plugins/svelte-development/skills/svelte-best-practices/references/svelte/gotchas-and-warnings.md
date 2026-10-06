@@ -19,7 +19,11 @@
 2. **`onClick` is not `onclick`.** Event attributes are case sensitive; `onClick` listens to an event named `Click`. Always write lowercase DOM event names.
 3. **Quoted single expressions.** `prop="{value}"` warns `attribute_quoted` on components and custom elements and will become a string in Svelte 6. Write `prop={value}`.
 4. **Whitespace.** Whitespace at the start and end of a tag is removed, so `foo<span> - bar</span>` renders `foo- bar`. Put the space outside the tag or use `{' '}`.
-5. **Self-closing non-void tags.** `<div />` and `<span />` warn `element_invalid_self_closing_tag` (browsers parse the following content as children). Write `<div></div>`; `npx sv migrate self-closing-tags` fixes a codebase.
+5. **Self-closing non-void tags.** `<div />` and `<span />` warn `element_invalid_self_closing_tag` (browsers parse the following content as children). Write `<div></div>`. To fix a whole codebase, on a committed tree:
+
+   ```sh
+   npx sv migrate self-closing-tags
+   ```
 
 ## Reactivity
 
@@ -56,7 +60,18 @@
   - compile-time errors: `https://svelte.dev/docs/svelte/compiler-errors/llms.txt`
   - runtime warnings (client and server): `https://svelte.dev/docs/svelte/runtime-warnings/llms.txt`
   - runtime errors: `https://svelte.dev/docs/svelte/runtime-errors/llms.txt`
-- Fetch the list and search for `### <code>` to get the message and the explanation; with the MCP server, ask `get-documentation` for `svelte/compiler-warnings` (or the other three paths). Since 5.10, messages link to their documentation.
+- Look the code up in its list; each entry is a `### <code>` heading with the message and the explanation. Since 5.10, messages link to their documentation. With the MCP server:
+
+  ```text
+  mcp__plugin_svelte-development_svelte__get-documentation
+    section: ["svelte/compiler-warnings"]
+  ```
+
+  Without it, download the list and print the entry:
+
+  ```sh
+  curl -sS 'https://svelte.dev/docs/svelte/compiler-warnings/llms.txt' | grep -n -A 12 '^### a11y_click_events_have_key_events'
+  ```
 - Silence a false positive with `<!-- svelte-ignore code_a, code_b (reason) -->` on the line above the markup. Fix accessibility warnings instead of ignoring them unless the reason is documented. Project-wide filtering uses the `warningFilter` compiler option.
 
 ## Fetch before writing when
@@ -67,6 +82,32 @@
 
 ## Official sources
 
-- `get-documentation` sections: `svelte/compiler-warnings`, `svelte/compiler-errors`, `svelte/runtime-warnings`, `svelte/runtime-errors`, `svelte/basic-markup`, `svelte/v5-migration-guide`, `svelte/best-practices`
-- curl: the four code lists above, and `https://svelte.dev/docs/svelte/v5-migration-guide/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["svelte/compiler-warnings", "svelte/compiler-errors"]
+```
+
+Sections: `svelte/compiler-warnings`, `svelte/compiler-errors`, `svelte/runtime-warnings`, `svelte/runtime-errors`, `svelte/basic-markup`, `svelte/v5-migration-guide`, `svelte/best-practices`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/svelte/compiler-warnings/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/compiler-errors/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/runtime-warnings/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/runtime-errors/llms.txt'
+curl -sS 'https://svelte.dev/docs/svelte/v5-migration-guide/llms.txt'
+```
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md'
+V='5.57.1'  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

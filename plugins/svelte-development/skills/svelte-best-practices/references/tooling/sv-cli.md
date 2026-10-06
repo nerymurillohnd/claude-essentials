@@ -21,7 +21,11 @@
 
 - The project's `sv`, `svelte-check`, `prettier-plugin-svelte` or `prettier-plugin-tailwindcss` is newer than the versions above.
 - You need an add-on option value that is not listed here; the typed options live in each add-on's source file.
-- You run `sv migrate`: read the migration guide and the task list printed by `npx sv migrate <migration> --tasks` first.
+- You run `sv migrate`: read the migration guide and the task list first:
+
+  ```sh
+  npx sv migrate sveltekit-3 --tasks   # lists the tasks without running them
+  ```
 
 ## Running sv and the Node.js floor
 
@@ -111,7 +115,7 @@ export default {
 
 ## sv check: a passthrough to svelte-check
 
-`sv check` accepts `-C, --cwd` and forwards every other argument to the project's own `svelte-check` (`src/cli/check.ts`); it exits with an install hint when `svelte-check` is missing. Install it with `npm i -D svelte-check`.
+`sv check` accepts `-C, --cwd` and forwards every other argument to the project's own `svelte-check` (`src/cli/check.ts`); it exits with an install hint when `svelte-check` is missing. The user installs it with `npm i -D svelte-check`; ask before changing dependencies.
 
 | svelte-check flag | Use |
 | --- | --- |
@@ -147,6 +151,20 @@ npx sv migrate sveltekit-3 --tasks environment # run one selectable task
 - Scaffold one with `npx sv create --template addon`; sv 1.0.0 made the add-on API official.
 
 ## Official sources
+
+Fetch the CLI sections the task touches in one call:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["cli/sv-add", "cli/sv-check"]
+```
+
+Sections: `cli/overview`, `cli/sv-create`, `cli/sv-add`, `cli/sv-check`, `cli/sv-migrate`, and one per add-on (`cli/tailwind`, `cli/vitest`, `cli/playwright`, `cli/drizzle` …; the docs map lists them all). Without the MCP server, download the raw text:
+
+```sh
+curl -sS 'https://svelte.dev/docs/cli/sv-check/llms.txt'
+```
+
 
 - sv docs, whole package: https://svelte.dev/docs/cli/llms.txt
 - sv changelog: https://raw.githubusercontent.com/sveltejs/cli/main/packages/sv/CHANGELOG.md

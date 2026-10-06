@@ -38,12 +38,24 @@
 
 ## How to use this map
 
-- Pick the narrowest section. Fetch it with the MCP tool `get-documentation` (argument in the second column; the CLI form is `npx -y @sveltejs/mcp get-documentation 'svelte/$state'`, several sections comma-separated), or download the raw text with `curl -sS '<URL>'` from the third column. Quote URLs that contain `$`.
+- Pick the narrowest sections, then fetch them in one call with the argument from the second column:
+
+  ```text
+  mcp__plugin_svelte-development_svelte__get-documentation
+    section: ["svelte/$state", "kit/load"]
+  ```
+
+  Without the MCP server, download the raw text from the third column, in single quotes so the shell does not expand `$`; or, when the user installed `@sveltejs/mcp` globally, use its command line (sections comma-separated):
+
+  ```sh
+  curl -sS 'https://svelte.dev/docs/svelte/$state/llms.txt'
+  svelte-mcp get-documentation 'svelte/$state,kit/load'
+  ```
 - The argument is the `sections.json` key without its leading `docs/`, exactly as `list-sections` prints it after `path:` (`docs/kit/load` becomes `kit/load`). A path that keeps `docs/` does not resolve; the MCP returns only similar results. The exact section title also works.
 - Every Svelte, SvelteKit, CLI and AI URL below returned HTTP 200 with `text/plain` on 2026-10-05 (all 203 checked).
 - Whole-package files, when one section is not enough: https://svelte.dev/docs/svelte/llms.txt (about 480 KB), https://svelte.dev/docs/kit/llms.txt (about 650 KB), https://svelte.dev/docs/cli/llms.txt (about 53 KB), https://svelte.dev/docs/ai/llms.txt (about 74 KB).
 - Site-wide bundles are a last resort: https://svelte.dev/llms-small.txt (about 53 KB), https://svelte.dev/llms-medium.txt (about 870 KB), https://svelte.dev/llms-full.txt (about 1.26 MB).
-- Never use WebFetch for these files; it summarizes instead of returning the text.
+- Never use WebFetch or any other web-fetch tool for these files; it summarizes instead of returning the text.
 
 ## Gaps in the MCP section hints
 

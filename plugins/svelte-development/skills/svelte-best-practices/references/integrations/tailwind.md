@@ -20,7 +20,14 @@
 
 ## Fetch before writing when
 
-- The project's `tailwindcss` or `@tailwindcss/vite` is newer than 4.3.3: read the changelog window, since 4.x minors add utilities and change generated CSS.
+- The project's `tailwindcss` or `@tailwindcss/vite` is newer than 4.3.3: read the changelog window, since 4.x minors add utilities and change generated CSS:
+
+  ```sh
+  npm ls tailwindcss --depth=0
+  URL='https://raw.githubusercontent.com/tailwindlabs/tailwindcss/main/CHANGELOG.md'
+  V='4.3.3'  # the installed version
+  curl -sS "$URL" | awk -v v="$V" 'index($0, "## [" v "]")==1{exit} {print}'
+  ```
 - You use a utility or directive not listed here, or a v3 config (`tailwind.config.js`, `@config`, `theme()`).
 - Classes are missing from the output: check detection rules before adding a safelist.
 

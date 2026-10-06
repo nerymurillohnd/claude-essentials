@@ -11,7 +11,8 @@ Derived files, all rewritten, corrected and extended for this plugin:
 
   skills/svelte-best-practices/SKILL.md
       from skills/svelte-core-bestpractices/SKILL.md (itself the Svelte
-      "Best practices" docs page); renamed, rewritten as a router and
+      "Best practices" docs page); renamed, rewritten as a contract (rules,
+      delegation, references map, procedure with explicit tool calls) and
       extended with SvelteKit 3, the Svelte CLI, Astro and Tailwind CSS.
   skills/svelte-best-practices/references/svelte/template-syntax.md
       from references/attach.md, bind.md, each.md, render.md, snippet.md
@@ -23,10 +24,12 @@ Derived files, all rewritten, corrected and extended for this plugin:
       from references/svelte-reactivity.md
   skills/svelte-docs-and-autofixer/SKILL.md
       from skills/svelte-code-writer/SKILL.md; tool names, shell quoting
-      and the npx calls corrected, MCP-first workflow added.
+      and the npx calls corrected, rewritten as a contract with an MCP-first
+      procedure and explicit tool calls.
   agents/svelte-component-editor.md
       from agents/svelte-file-editor.md; tool names and the skill reference
-      corrected, the ignored permissionMode field removed, tools pinned.
+      corrected, the ignored permissionMode field removed, tools pinned,
+      rules placed before an ordered workflow with explicit tool calls.
   .lsp.json
       the svelteserver configuration from .claude-plugin/plugin.json.
   .mcp.json

@@ -114,9 +114,21 @@ Check each item after the tasks run, whether or not a task touched it:
 
 ## Verifying the result
 
-1. The project's check (`npm run check`, or `npx --no-install svelte-check`) with no errors, then the unit tests and the build.
-2. `vite preview` against the build: forms (CSRF only runs in builds), redirects, error pages, cookies.
-3. Search the code for `$app/stores`, `$lib/`, `$env/`, `$service-worker`, `invalidateAll`, `pushState`, `replaceState`, `resolveRoute`, `checkOrigin`, `svelte.config`, `@migration-task`.
+1. The project's check with no errors, then the unit tests and the build:
+
+   ```sh
+   npm run check        # or: npx --no-install svelte-kit sync && npx --no-install svelte-check
+   npm test             # when the project has tests
+   npm run build
+   ```
+
+2. `npm run preview` (the `vite preview` script sv projects have) against the build: forms (CSRF only runs in builds), redirects, error pages, cookies.
+3. Search the code for leftovers; every match needs a decision:
+
+   ```sh
+   grep -rnE '\$app/stores|\$lib/|\$env/|\$service-worker|invalidateAll|pushState|replaceState|resolveRoute|checkOrigin|svelte\.config|@migration-task' src
+   ```
+
 4. Deploy to a preview environment before production.
 
 ## Fetch before writing when
@@ -127,6 +139,29 @@ Check each item after the tasks run, whether or not a task touched it:
 
 ## Official sources
 
-- `get-documentation` sections: `kit/migrating-to-sveltekit-3`, `cli/sv-migrate`
-- curl: `https://svelte.dev/docs/kit/migrating-to-sveltekit-3/llms.txt`, `https://svelte.dev/docs/cli/sv-migrate/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["kit/migrating-to-sveltekit-3", "cli/sv-migrate"]
+```
+
+Sections: `kit/migrating-to-sveltekit-3`, `cli/sv-migrate`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/kit/migrating-to-sveltekit-3/llms.txt'
+curl -sS 'https://svelte.dev/docs/cli/sv-migrate/llms.txt'
+```
+
 - Changelogs: `https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md`, `https://raw.githubusercontent.com/sveltejs/cli/main/packages/sv/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md'
+V='3.0.0'  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

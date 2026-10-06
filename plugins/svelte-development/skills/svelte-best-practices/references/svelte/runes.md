@@ -170,8 +170,33 @@ Props were added to `state_referenced_locally` in 5.45.3; since 5.51.2 non-destr
 
 ## Official sources
 
-- `get-documentation` sections: `svelte/what-are-runes`, `svelte/$state`, `svelte/$derived`, `svelte/$effect`, `svelte/$props`, `svelte/$bindable`, `svelte/$inspect`, `svelte/$host`, `svelte/compiler-warnings`, `svelte/runtime-warnings`, `svelte/runtime-errors`
-- curl: `https://svelte.dev/docs/svelte/$state/llms.txt` (same pattern for `$derived`, `$effect`, `$props`, `$bindable`, `$inspect`, `$host`)
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["svelte/what-are-runes", "svelte/$state"]
+```
+
+Sections: `svelte/what-are-runes`, `svelte/$state`, `svelte/$derived`, `svelte/$effect`, `svelte/$props`, `svelte/$bindable`, `svelte/$inspect`, `svelte/$host`, `svelte/compiler-warnings`, `svelte/runtime-warnings`, `svelte/runtime-errors`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/svelte/$state/llms.txt'
+```
+
+Same pattern for `$derived`, `$effect`, `$props`, `$bindable`, `$inspect`, `$host`.
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md'
+V='5.57.1'  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```
+
 
 Partly derived from sveltejs/ai-tools (MIT), base 6b5d0da; see the plugin NOTICE.

@@ -72,13 +72,24 @@ export default {
 
 ## Migration tooling
 
-- Run `npx sv migrate svelte-5` on a committed tree. It bumps dependencies, converts `let`/`$:`/`export let` to runes, `on:click` to `onclick`, slots to snippets and render tags, and `new Component(...)` to `mount(...)`.
+- Run the migration on a committed tree, so its diff can be reviewed and reverted:
+
+  ```sh
+  git status --short          # must print nothing
+  npx sv migrate svelte-5
+  ```
+
+  It bumps dependencies, converts `let`/`$:`/`export let` to runes, `on:click` to `onclick`, slots to snippets and render tags, and `new Component(...)` to `mount(...)`.
 - `svelte-5` is a legacy migration: `sv` delegates it to `svelte-migrate@1`, which is kept available but no longer updated. Review the whole diff and run your checks afterwards.
 - Clean up after it:
   - `run(() => ...)` from `svelte/legacy` marks a `$:` statement it could not classify. It runs once on the server and as `$effect.pre` in the browser. Rewrite it as `$derived` when it computes a value, otherwise as `$effect` (or an event handler).
   - Modifier helpers from `svelte/legacy` (`preventDefault(...)`, ...): inline `event.preventDefault()`.
   - Not migrated at all: `createEventDispatcher` and `beforeUpdate`/`afterUpdate`. Convert them by hand.
-- Self-closing non-void tags (`<div />`) warn `element_invalid_self_closing_tag`; `npx sv migrate self-closing-tags` fixes them.
+- Self-closing non-void tags (`<div />`) warn `element_invalid_self_closing_tag`; fix them with:
+
+  ```sh
+  npx sv migrate self-closing-tags
+  ```
 - One component at a time: the VS Code command "Migrate Component to Svelte 5 Syntax", or the playground "Migrate" button.
 
 ## Behavior changes to keep in mind
@@ -102,12 +113,35 @@ export default {
 
 ## Fetch before writing when
 
-- You migrate a real codebase: read the migration guide sections that match what you find, and the `sv migrate` page for the current migration list.
+- You migrate a real codebase: read the migration guide sections that match what you find, and the `sv migrate` page for the current migration list (`get-documentation` with `section: ["svelte/v5-migration-guide", "cli/sv-migrate"]`).
 - You need a `svelte/legacy` export's exact signature or a compiler option such as `compatibility.componentApi`.
 - You plan for Svelte 6: the forward-compatibility notes above come from warnings and option docs, not from a release.
 
 ## Official sources
 
-- `get-documentation` sections: `svelte/v5-migration-guide`, `svelte/legacy-overview`, `svelte/legacy-let`, `svelte/legacy-reactive-assignments`, `svelte/legacy-export-let`, `svelte/legacy-$$props-and-$$restProps`, `svelte/legacy-on`, `svelte/legacy-slots`, `svelte/legacy-$$slots`, `svelte/legacy-svelte-fragment`, `svelte/legacy-svelte-component`, `svelte/legacy-svelte-self`, `svelte/legacy-component-api`, `svelte/svelte-legacy`, `svelte/svelte-compiler`, `cli/sv-migrate`
-- curl: `https://svelte.dev/docs/svelte/v5-migration-guide/llms.txt`, `https://svelte.dev/docs/cli/sv-migrate/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["svelte/v5-migration-guide", "svelte/legacy-overview"]
+```
+
+Sections: `svelte/v5-migration-guide`, `svelte/legacy-overview`, `svelte/legacy-let`, `svelte/legacy-reactive-assignments`, `svelte/legacy-export-let`, `svelte/legacy-$$props-and-$$restProps`, `svelte/legacy-on`, `svelte/legacy-slots`, `svelte/legacy-$$slots`, `svelte/legacy-svelte-fragment`, `svelte/legacy-svelte-component`, `svelte/legacy-svelte-self`, `svelte/legacy-component-api`, `svelte/svelte-legacy`, `svelte/svelte-compiler`, `cli/sv-migrate`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/svelte/v5-migration-guide/llms.txt'
+curl -sS 'https://svelte.dev/docs/cli/sv-migrate/llms.txt'
+```
+
 - Changelog: `https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md'
+V='5.57.1'  # the installed version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```

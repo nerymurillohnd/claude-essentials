@@ -1,6 +1,7 @@
 ---
 name: svelte-docs-and-autofixer
-description: Looks up the current official Svelte, SvelteKit and Svelte CLI documentation and checks Svelte code with the Svelte autofixer, through the Svelte MCP server, with raw-download and optional local command-line fallbacks. Use whenever creating, editing or reviewing a .svelte component or a .svelte.ts/.svelte.js module, when unsure of a rune, template tag, SvelteKit API or configuration option, when the project's Svelte or SvelteKit version is newer than what you remember, or when asked for a Svelte playground link.
+description: Looks up the current official Svelte, SvelteKit and Svelte CLI docs and checks Svelte code with the Svelte autofixer, through this plugin's Svelte MCP tools (get-documentation, svelte-autofixer), with raw-download and local command-line fallbacks. Use whenever Svelte code is written, changed or checked for problems, including a component pasted in the chat, and whenever an exact Svelte or SvelteKit API, rune, option or signature matters.
+when_to_use: Triggers include "is anything wrong with this component", "check this Svelte code", "how do I … in Svelte 5", "what is the SvelteKit 3 way to", "is this API current", a request for a Svelte playground link, and any reply that will contain Svelte code.
 license: MIT
 metadata:
   upstream: "sveltejs/ai-tools skills/svelte-code-writer"
@@ -9,81 +10,163 @@ metadata:
 
 # Svelte docs and autofixer
 
-Svelte 5 and SvelteKit 3 changed APIs that training data still shows the old way. Before writing Svelte code from memory, get the current section; after writing it, run the autofixer until it reports nothing.
+This skill is the contract for two jobs: reading the current official Svelte docs before writing, and proving Svelte code with the Svelte autofixer after writing. Svelte 5 and SvelteKit 3 changed APIs that training data still shows the old way, so neither job is done from memory.
 
 ## Contents
 
+- [When to use it](#when-to-use-it)
+- [Rules](#rules)
+- [Who does the work](#who-does-the-work)
+- [Where things are](#where-things-are)
 - [Tools](#tools)
-- [Workflow](#workflow)
+- [Procedure](#procedure)
 - [When the MCP server is unavailable](#when-the-mcp-server-is-unavailable)
-- [Source precedence](#source-precedence)
-- [Gotchas](#gotchas)
-- [References](#references)
+- [What the user can start](#what-the-user-can-start)
+
+## When to use it
+
+| Use it | Do not use it |
+|---|---|
+| Before writing or changing any `.svelte`, `.svelte.ts` or `.svelte.js` code, or replying with Svelte code | For where a symbol of the project is defined or used: that is the `svelte-lsp-navigation` skill |
+| When asked whether Svelte code has problems, including code pasted in the chat | For a whole-project type check: that is the project's checker (`svelte-lsp-navigation`) |
+| When an exact rune, template tag, SvelteKit API, option or config key matters | For React, Vue, plain TypeScript or other non-Svelte code |
+| When the project's Svelte or SvelteKit version is newer than what you remember | |
+
+## Rules
+
+1. **Docs before code.** Fetch every section a change touches with `get-documentation` before writing it. Never guess a section path: take it from `list-sections` or the docs map.
+2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false.
+3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" (observed on 2026-10-05). Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
+4. **The autofixer is not proof.** It does not type-check, does not know SvelteKit routing rules and does not run the code. Type errors come from the language server and the project's checker.
+5. **No WebFetch for docs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools, or `curl` for the raw text.
+6. **Source precedence.** Package changelogs, release notes and source code decide what exists at the project's version; the official docs explain usage; the `svelte-best-practices` references are the starting point and lose to both. When two sources disagree, say so in the answer; never pick one silently.
+7. **Playground links only on request.** Offer one only for code answered in the chat, and call `playground-link` only after the user says yes; never for code written to the project's files.
+8. **Network and privacy.** Every MCP call needs network access. `svelte-autofixer` sends the code you pass to the Svelte team's server (Svelte states it does not log, store or inspect it); when the user does not want code to leave the machine, use the local command line below.
+9. **No installs without consent.** Never install `@sveltejs/mcp` or run it through `npx` without the user's confirmation.
+
+## Who does the work
+
+Decide this before the first tool call.
+
+| Situation | Who | How |
+|---|---|---|
+| A question about an API, a review of code pasted in the chat, or a change of one or two lines | You | Follow the [procedure](#procedure) inline |
+| Creating, editing or refactoring `.svelte`, `.svelte.ts`, `.svelte.js` or SvelteKit route files beyond a line or two | `svelte-component-editor` agent | Delegate with the Agent tool (below) |
+| Reviewing, auditing or checking project files without changing them | `svelte-code-auditor` agent | Delegate with the Agent tool (below) |
+| The user asks you to work inline, or you already are one of these agents | You | Never delegate further |
+
+The agent starts without this conversation: its prompt must name the files, the task, the constraints and what to report.
+
+```text
+Agent
+  subagent_type: "svelte-development:svelte-component-editor"
+  description: "Add a bindable value prop"
+  prompt: "In src/lib/components/Counter.svelte, add a bindable `value` prop with default 0 …"
+```
+
+For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and name the scope (files, a directory or a diff).
+
+## Where things are
+
+- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/docs-map.md`: every documentation section classified by area, with its `get-documentation` path and raw URL. Read it to choose sections.
+- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`: the commands that read the changelog window when the project's version is newer than a reference's "Verified against" line.
+- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/known-doc-errata.md`: pages that still show SvelteKit 2 code, and what is right.
+- The `svelte-best-practices` skill: the Svelte 5 and SvelteKit 3 rules to write by. The `svelte-lsp-navigation` skill: language server diagnostics and the whole-project check.
 
 ## Tools
 
-The plugin connects to the Svelte team's remote MCP server, `https://mcp.svelte.dev/mcp`. Claude Code reconnects a remote server on its own when it drops. In Claude Code its tools are named `mcp__plugin_svelte-development_svelte__<tool>`; they may be deferred, so load them with ToolSearch before concluding they are missing.
+The plugin connects to the Svelte team's remote MCP server, `https://mcp.svelte.dev/mcp`; Claude Code reconnects it on its own when it drops. The tools are named `mcp__plugin_svelte-development_svelte__<tool>`. They may be deferred: if they are not in your tool list, load them before concluding they are missing:
 
-| Tool | Does | What leaves the machine |
+```text
+ToolSearch
+  query: "select:mcp__plugin_svelte-development_svelte__get-documentation,mcp__plugin_svelte-development_svelte__svelte-autofixer,mcp__plugin_svelte-development_svelte__list-sections"
+```
+
+| Tool | Input | Returns |
 |---|---|---|
-| `list-sections` | Lists every documentation section with its `path` (203 on 2026-10-05) and a use-case hint | The request only |
-| `get-documentation` | Returns the full text of one or more sections, by `path` (`kit/load`) or exact title | The section names |
-| `svelte-autofixer` | Compiles the code and returns `issues`, `suggestions` and `require_another_tool_call_after_fixing` | **The code you pass** (Svelte states it does not log, store or inspect it) |
-| `playground-link` | Builds a svelte.dev playground URL for the given files | The files you pass; the code lives only in the URL |
+| `list-sections` | none | Every section with its `path` (203 on 2026-10-05) and a use-case hint |
+| `get-documentation` | `section`: one path or title, or an array of them | The full text of each section |
+| `svelte-autofixer` | `code` (required), `desired_svelte_version` (required, `5`), `filename`, `async` | `issues`, `suggestions`, `require_another_tool_call_after_fixing` |
+| `playground-link` | `name`, `tailwind`, `files` (`{ "App.svelte": "<code>" }`) | A svelte.dev playground URL holding the code |
 
-The remote server records usage events (tool name, session and client). Every call needs network access.
+Section paths are written exactly as `list-sections` prints them, without a leading `docs/`: `svelte/$state`, `kit/load`, `cli/sv-migrate`. An exact title also works (`Migrating to SvelteKit v3`). A `docs/kit/…` path returns only "similar results". The `list-sections` hints are missing for the newest sections, including every SvelteKit 3 addition and declaration tags; the docs map classifies them.
 
-The server also offers two things the **user** starts, not the model:
+## Procedure
 
-- **Resources (`doc-section`)**: every documentation section as `svelte://<slug>.md`, returning that page's `llms.txt` text. The user includes one in a prompt by typing `@` and picking it from the autocomplete, for example the transition docs before asking for an animated component. When a user mentions wanting a page "in context", tell them they can attach it this way; you fetch the same content yourself with `get-documentation`.
-- **Prompt `svelte-task`**: takes a `task` argument and injects instructions plus the section list for it. The user runs it from the `/` menu, where Claude Code lists it as an MCP prompt.
-
-Source: https://svelte.dev/docs/ai/resources, https://svelte.dev/docs/ai/prompts and https://code.claude.com/docs/en/mcp (resources and prompts).
-
-## Workflow
-
-For a change to `.svelte`, `.svelte.ts` or `.svelte.js` files, prefer delegating to the `svelte-development:svelte-component-editor` agent, which runs this workflow in its own context. Run it inline only for small changes, when the user asks, or when you already are that agent. Copy this checklist for any Svelte code change:
+Copy this checklist for any Svelte code you write, change or review, and run the calls in this order.
 
 ```
-- [ ] 1 Find      pick sections from the docs map (or list-sections); never guess a path
-- [ ] 2 Read      get-documentation with every section the change touches, in one call
+- [ ] 1 Find      choose the sections in docs-map.md, or call list-sections
+- [ ] 2 Read      one get-documentation call with every section the code touches
 - [ ] 3 Write     write or edit the code from what the sections say
-- [ ] 4 Fix       svelte-autofixer on the result; apply issues and suggestions
-- [ ] 5 Repeat    re-run step 4 while require_another_tool_call_after_fixing is true or issues remain
-- [ ] 6 Verify    LSP diagnostics and sv check (svelte-lsp-navigation skill)
+- [ ] 4 Fix       svelte-autofixer on the full code; apply issues and suggestions
+- [ ] 5 Repeat    step 4 until no issues and require_another_tool_call_after_fixing is false
+- [ ] 6 Verify    language server diagnostics and the project's checker (svelte-lsp-navigation)
 ```
 
-- **Section names.** Pass the `path` exactly as `list-sections` prints it, without a leading `docs/`: `svelte/$state`, `kit/load`, `cli/sv-migrate`. An exact title also works (`Migrating to SvelteKit v3`). A `docs/kit/…` path returns only "similar results". The classified map of all sections is `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/docs-map.md`.
-- **Autofixer input.** Pass the full component code as `code`, with `filename`, `desired_svelte_version` 5 and `async: true` when the project enables `experimental.async`. Never pass a file path: the remote server treats it as code and answers "no issues" (observed on 2026-10-05). It reports Svelte compiler errors and Svelte-specific mistakes (legacy syntax, effects that should be derived values, runes misuse); type errors come from the language server, not from it.
-- **Done** when the autofixer returns no issues and `require_another_tool_call_after_fixing` is false, and the language server and `sv check` report nothing new.
-- **Playground links.** Offer one only for code you answered in the chat, after the user says yes; never for code written to the project's files. The code lives only in the URL, which is therefore long. Source: https://svelte.dev/docs/ai/instructions and https://svelte.dev/docs/ai/tools.
+**Step 2, read the sections in one call:**
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["svelte/$props", "svelte/$bindable"]
+```
+
+**Step 4, check the code.** Pass the whole component as `code`; set `async: true` only when the project enables `compilerOptions.experimental.async`:
+
+```text
+mcp__plugin_svelte-development_svelte__svelte-autofixer
+  code: "<script lang=\"ts\">\n  let { value = $bindable(0) }: { value?: number } = $props();\n</script>\n…"
+  desired_svelte_version: 5
+  filename: "Counter.svelte"
+```
+
+It reports Svelte compiler errors and Svelte-specific mistakes: legacy syntax, effects that should be derived values, runes misuse.
+
+**Step 6, verify.** Read the diagnostics Claude Code reports after each edit of a `.svelte` file, then run the project's checker from the project root, as the `svelte-lsp-navigation` skill describes:
+
+```sh
+npm run check
+```
+
+**Done** when the autofixer returns no issues with `require_another_tool_call_after_fixing` false, and the language server and the checker report nothing new.
+
+**Playground link**, only after the user said yes:
+
+```text
+mcp__plugin_svelte-development_svelte__playground-link
+  name: "Bindable counter"
+  tailwind: false
+  files: { "App.svelte": "<the code from the answer>" }
+```
 
 ## When the MCP server is unavailable
 
-1. **Retry.** The server may be reconnecting; the user can run `/mcp reconnect all`. Say that the documentation could not be checked.
-2. **Raw download.** `curl -sS https://svelte.dev/docs/<area>/<slug>/llms.txt`, for example `https://svelte.dev/docs/kit/load/llms.txt`, then filter with `grep -n` or `sed -n`. Never summarize the docs through a web-fetch tool: it truncates.
-3. **Local command line, if the user has it.** `@sveltejs/mcp` installed globally (`npm install -g @sveltejs/mcp`) gives `svelte-mcp list-sections`, `svelte-mcp get-documentation '<path>,<path>'` and `svelte-mcp svelte-autofixer <file path or code> [--async] [--svelte-version 5]`. Its autofixer runs on the user's machine, sends no code and reads file paths; offer it when the user does not want code sent to the remote server or works offline. Quote inline code in single quotes, because in double quotes the shell expands `$state`. Do not install it, or run it through `npx`, without the user's confirmation.
+Try these in order, and say in the answer that the documentation or the code could not be checked through the server.
 
-## Source precedence
+1. **Retry once.** The server may be reconnecting. The user can run `/mcp reconnect all`.
+2. **Raw download of the docs.** Fetch the section's text and filter it:
 
-The Svelte docs are current but not always right: a few pages still show SvelteKit 2 code. When sources disagree:
+   ```sh
+   curl -sS https://svelte.dev/docs/kit/load/llms.txt | grep -n 'depends'
+   ```
 
-1. The package changelog, release notes and source code decide what exists at the project's version.
-2. The official docs explain usage; check them against item 1 when they touch a changed area.
-3. The `svelte-best-practices` references are the starting point and lose to both.
+   The URL pattern is `https://svelte.dev/docs/<area>/<slug>/llms.txt`; the docs map lists it for every section.
+3. **Local command line, if the user has it.** `@sveltejs/mcp`, installed globally by the user, runs on their machine, sends no code and reads file paths. Use it offline or when code must not leave the machine. Quote inline code in single quotes, because double quotes let the shell expand `$state`:
 
-Say so in the answer when two sources conflict; never pick one silently. Known conflicts: `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/known-doc-errata.md`. Changelog procedure and URLs: `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`.
+   ```sh
+   command -v svelte-mcp                                         # installed?
+   svelte-mcp list-sections
+   svelte-mcp get-documentation 'svelte/$props,svelte/$bindable'
+   svelte-mcp svelte-autofixer src/lib/components/Counter.svelte --svelte-version 5
+   ```
 
-## Gotchas
+   If it is missing, the user installs it with `npm install -g @sveltejs/mcp`; ask before suggesting `npx`.
 
-- **Everything needs network.** Offline, every tool fails; the local command line above is the only autofixer that works then.
-- **A file path is not code.** The remote autofixer reports a path string as clean code; always pass the file's content.
-- **`list-sections` hints are missing for the newest sections**, including every SvelteKit 3 addition and declaration tags ("use title and path to estimate use case"). The docs map classifies them.
-- **The autofixer passing is not proof the code is right.** It does not type-check, does not know SvelteKit routing rules and does not run the code.
+## What the user can start
 
-## References
+The server also offers two things the user starts, not the model:
 
-- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/docs-map.md`: read when choosing sections; every section classified by area with its `get-documentation` path and raw URL.
-- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`: read when the project's version is newer than a reference's "Verified against" line.
+- **Resources (`doc-section`)**: every section as `svelte://<slug>.md`. The user attaches one by typing `@` and picking it, for example the transition docs before asking for an animated component. When a user wants a page "in context", tell them they can attach it this way; you fetch the same content with `get-documentation`.
+- **Prompt `svelte-task`**: takes a `task` argument and injects instructions plus the section list for it; the user runs it from the `/` menu.
 
-Derived from the `svelte-code-writer` skill of sveltejs/ai-tools (MIT), base `6b5d0da`; see the plugin NOTICE. Sources: runtime output of the remote server and of the `@sveltejs/mcp` 0.1.26 command line (2026-10-05), https://svelte.dev/docs/ai/llms.txt, https://code.claude.com/docs/en/mcp (automatic reconnection).
+Derived from the `svelte-code-writer` skill of sveltejs/ai-tools (MIT), base `6b5d0da`; see the plugin NOTICE. Sources: the remote server's `tools/list` schemas and runtime output, and the `@sveltejs/mcp` 0.1.26 command line (2026-10-05); https://svelte.dev/docs/ai/llms.txt, https://svelte.dev/docs/ai/resources, https://svelte.dev/docs/ai/prompts; https://code.claude.com/docs/en/mcp and https://code.claude.com/docs/en/plugins-reference (plugin agents are named `<plugin>:<agent>`).

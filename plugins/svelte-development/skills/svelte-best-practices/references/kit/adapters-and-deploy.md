@@ -36,7 +36,13 @@ Every first-party adapter requires SvelteKit 3 in these majors (npm, 2026-10-01)
 
 ## Choosing and configuring an adapter
 
-The adapter is the `adapter` option of `sveltekit(...)` in `vite.config.*` (`svelte.config.js` is not read in 3.0). `npx sv add sveltekit-adapter` installs and wires one.
+The adapter is the `adapter` option of `sveltekit(...)` in `vite.config.*` (`svelte.config.js` is not read in 3.0). To install and wire one, on a committed tree:
+
+```sh
+npx sv add sveltekit-adapter
+```
+
+By hand:
 
 ```ts
 import adapter from "@sveltejs/adapter-node";
@@ -144,7 +150,31 @@ export const GET: RequestHandler = async ({ request }) => {
 
 ## Official sources
 
-- `get-documentation` sections: `kit/adapters`, `kit/adapter-auto`, `kit/adapter-node`, `kit/adapter-bun`, `kit/adapter-static`, `kit/single-page-apps`, `kit/adapter-cloudflare`, `kit/adapter-cloudflare-workers`, `kit/adapter-netlify`, `kit/adapter-vercel`, `kit/writing-adapters`
-- curl: `https://svelte.dev/docs/kit/adapter-node/llms.txt`, `https://svelte.dev/docs/kit/adapter-cloudflare/llms.txt`, `https://svelte.dev/docs/kit/adapter-vercel/llms.txt`
+Fetch the sections the task touches in one call, choosing them from this list:
+
+```text
+mcp__plugin_svelte-development_svelte__get-documentation
+  section: ["kit/adapters", "kit/adapter-auto"]
+```
+
+Sections: `kit/adapters`, `kit/adapter-auto`, `kit/adapter-node`, `kit/adapter-bun`, `kit/adapter-static`, `kit/single-page-apps`, `kit/adapter-cloudflare`, `kit/adapter-cloudflare-workers`, `kit/adapter-netlify`, `kit/adapter-vercel`, `kit/writing-adapters`.
+
+Without the MCP server, download the raw text; the single quotes keep the shell from expanding `$` in a path:
+
+```sh
+curl -sS 'https://svelte.dev/docs/kit/adapter-node/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/adapter-cloudflare/llms.txt'
+curl -sS 'https://svelte.dev/docs/kit/adapter-vercel/llms.txt'
+```
+
 - Changelogs: `https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-<name>/CHANGELOG.md` (`auto`, `node`, `bun`, `static`, `cloudflare`, `vercel`, `netlify`)
 - npm: `npm view @sveltejs/adapter-<name> version peerDependencies engines`
+
+Read only the changelog entries newer than the installed version (the full procedure is in `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`):
+
+```sh
+URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-node/CHANGELOG.md'  # adapter-<name>
+V='6.0.0'  # the installed adapter version
+curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
+curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
+```
