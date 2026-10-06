@@ -28,7 +28,7 @@ This skill is the contract for two jobs: reading the current official Svelte doc
 | Use it | Do not use it |
 |---|---|
 | Before writing or changing any `.svelte`, `.svelte.ts` or `.svelte.js` code, or replying with Svelte code | For where a symbol of the project is defined or used: that is the `svelte-lsp-navigation` skill |
-| When asked whether Svelte code has problems, including code pasted in the chat | For a whole-project type check: that is the project's checker (`svelte-lsp-navigation`) |
+| When asked whether Svelte code has problems, including code pasted in the chat | For a whole-project type check: that is the project check (`svelte-lsp-navigation`) |
 | When an exact rune, template tag, SvelteKit API, option or config key matters | For React, Vue, plain TypeScript or other non-Svelte code |
 | When the project's Svelte or SvelteKit version is newer than what you remember | |
 
@@ -39,7 +39,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 1. **Docs before code, by default.** Fetch the sections a change touches with `get-documentation` before writing it. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text. Never guess a section path: take it from the docs map.
 2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false.
 3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" (observed on 2026-10-05). Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
-4. **The autofixer is not proof.** It does not type-check, does not know SvelteKit routing rules and does not run the code. Type errors come from the language server and the project's checker.
+4. **The autofixer is not proof.** It does not type-check, does not know SvelteKit routing rules and does not run the code. Type errors come from the language server and the project check.
 5. **No WebFetch for docs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools, or `curl` for the raw text.
 6. **Source precedence.** Package changelogs, release notes and source code decide what exists at the project's version; the official docs explain usage; the `svelte-best-practices` references are the starting point and lose to both. When two sources disagree, say so in the answer; never pick one silently.
 7. **Playground links only on request.** Offer one only for code answered in the chat, and call `playground-link` only after the user says yes; never for code written to the project's files.
@@ -73,7 +73,7 @@ For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and 
 - `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/docs-map.md`: every documentation section classified by area, with its `get-documentation` path and raw URL. Read it to choose sections.
 - `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`: the commands that read the changelog window when the project's version is newer than a reference's "Verified against" line.
 - `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/known-doc-errata.md`: pages that still show SvelteKit 2 code, and what is right.
-- The `svelte-best-practices` skill: the Svelte 5 and SvelteKit 3 rules to write by. The `svelte-lsp-navigation` skill: language server diagnostics and the whole-project check.
+- The `svelte-best-practices` skill: the Svelte 5 and SvelteKit 3 rules to write by. The `svelte-lsp-navigation` skill: language server diagnostics and the project check.
 
 The sibling skills (`svelte-best-practices`, `svelte-lsp-navigation`) are named `svelte-development:<skill>`. When a step needs one that is not loaded yet, load it with the Skill tool:
 
@@ -110,7 +110,7 @@ Copy this checklist for any Svelte code you write, change or review, and run the
 - [ ] 3 Write     write or edit the code from what the sections say
 - [ ] 4 Fix       svelte-autofixer on the full code; apply issues and suggestions
 - [ ] 5 Repeat    step 4 until no issues and require_another_tool_call_after_fixing is false
-- [ ] 6 Verify    language server diagnostics and the project's checker (svelte-lsp-navigation)
+- [ ] 6 Verify    language server diagnostics and the project check (svelte-lsp-navigation)
 ```
 
 **Step 2, read the sections in one call:**
@@ -131,13 +131,13 @@ mcp__plugin_svelte-development_svelte__svelte-autofixer
 
 It reports Svelte compiler errors and Svelte-specific mistakes: legacy syntax, effects that should be derived values, runes misuse.
 
-**Step 6, verify.** Read the diagnostics Claude Code reports after each edit of a `.svelte` file, then run the project's checker from the project root, as the `svelte-lsp-navigation` skill describes:
+**Step 6, verify.** Read the diagnostics Claude Code reports after each edit of a `.svelte` file, then run the project check from the project root, as the `svelte-lsp-navigation` skill describes:
 
 ```sh
 npm run check
 ```
 
-**Done** when the autofixer returns no issues with `require_another_tool_call_after_fixing` false, and the language server and the checker report nothing new.
+**Done** when the autofixer returns no issues with `require_another_tool_call_after_fixing` false, and the language server and the project check report nothing new.
 
 **Playground link**, only after the user said yes:
 

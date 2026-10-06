@@ -35,7 +35,7 @@ If a version is newer than the preloaded references' "Verified against" line, ru
 Copy and tick; run the tool steps in this order.
 
 ```
-- [ ] 1 Check       the project's checker from the project root
+- [ ] 1 Check       the project check from the project root
 - [ ] 2 Autofix     svelte-autofixer on the content of each component in scope
 - [ ] 3 Legacy      export let, $:, on:, <slot>, $$props, createEventDispatcher, {@const}, <svelte:component>, use: where {@attach} fits
 - [ ] 4 Runes       $effect that writes state (should be $derived), plain let read in markup, captured values passed to context
@@ -85,6 +85,8 @@ mcp__plugin_svelte-development_svelte__get-documentation
 ```
 
 ## Report
+
+Use exactly this structure; the table columns are fixed so findings can be compared across audits:
 
 ```markdown
 **Svelte audit**: <scope> (svelte <version>, @sveltejs/kit <version>)

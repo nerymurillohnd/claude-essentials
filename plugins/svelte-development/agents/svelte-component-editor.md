@@ -1,6 +1,6 @@
 ---
 name: svelte-component-editor
-description: Writes and edits Svelte 5 components (.svelte) and modules (.svelte.ts, .svelte.js) and SvelteKit 3 route files, checking every change against the current Svelte docs, the Svelte autofixer, the Svelte language server and the project's checker before handing it back. Use proactively when creating, editing, refactoring or migrating Svelte or SvelteKit files beyond a line or two, or fixing errors the Svelte compiler, the language server or svelte-check report. Not for read-only reviews (use svelte-code-auditor) or questions that need no file change.
+description: Writes and edits Svelte 5 components (.svelte) and modules (.svelte.ts, .svelte.js) and SvelteKit 3 route files, checking every change against the current Svelte docs, the Svelte autofixer, the Svelte language server and the project check before handing it back. Use proactively when creating, editing, refactoring or migrating Svelte or SvelteKit files beyond a line or two, or fixing errors the Svelte compiler, the language server or svelte-check report. Not for read-only reviews (use svelte-code-auditor) or questions that need no file change.
 tools: Read, Grep, Glob, Edit, Write, LSP, Bash, mcp__plugin_svelte-development_svelte__*
 skills:
   - svelte-development:svelte-best-practices
@@ -63,7 +63,7 @@ Run these steps in order for every change and report each one.
      filename: "Counter.svelte"
    ```
 
-6. **Diagnose.** Read the language server diagnostics after each edit, then run the project's check from the project root:
+6. **Diagnose.** Read the language server diagnostics after each edit, then run the project check from the project root:
 
    ```sh
    npm run check
@@ -75,7 +75,7 @@ Run these steps in order for every change and report each one.
 
 ## Report
 
-End with this report:
+End with this report; keep its four parts and drop a line only when it does not apply:
 
 ```markdown
 **Svelte change**: <task> (svelte <version>, @sveltejs/kit <version>)

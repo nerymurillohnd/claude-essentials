@@ -90,6 +90,45 @@ For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and 
 - Universal `load` runs on both sides: nothing private there. Never keep per-user data in module-level variables: they leak between users during server rendering; use `event.locals` or context.
 - `{@html}` renders unescaped markup: sanitize anything that came from a user.
 
+**Example: a Svelte 4 component in Svelte 5.** Input:
+
+```svelte
+<script>
+  import { createEventDispatcher } from 'svelte';
+  export let open = false;
+  export let title;
+  const dispatch = createEventDispatcher();
+  $: label = open ? 'Hide' : 'Show';
+  function toggle() {
+    open = !open;
+    dispatch('toggle', open);
+  }
+</script>
+
+<button on:click={toggle} class:active={open}>{label} {title}</button>
+{#if open}<slot />{/if}
+```
+
+Output:
+
+```svelte
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  let { open = $bindable(false), title, ontoggle, children }:
+    { open?: boolean; title: string; ontoggle?: (open: boolean) => void; children?: Snippet } = $props();
+  const label = $derived(open ? 'Hide' : 'Show');
+  function toggle() {
+    open = !open;
+    ontoggle?.(open);
+  }
+</script>
+
+<button onclick={toggle} class={[open && 'active']}>{label} {title}</button>
+{#if open}{@render children?.()}{/if}
+```
+
+Every change follows a rule above: props from `$props()` (`$bindable` because the parent may bind `open`), a computed value with `$derived`, a callback prop instead of the dispatcher, an event attribute, a `class` array instead of `class:`, and the default slot as the `children` snippet. Run the autofixer on the result before handing it back.
+
 ## SvelteKit 2 to 3: what changed
 
 Full table and the `sv migrate sveltekit-3` codemod: [migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md). The changes that break most often:
@@ -182,6 +221,6 @@ Run these steps in order for any Svelte code you write, convert or review.
    If the tool is deferred, load it with ToolSearch (`select:mcp__plugin_svelte-development_svelte__get-documentation`); if the server is unavailable, follow the fallbacks in the `svelte-docs-and-autofixer` skill.
 4. **Write** the code by the rules and the sections.
 5. **Autofix** the full code with `mcp__plugin_svelte-development_svelte__svelte-autofixer` (`code`, `desired_svelte_version: 5`, `filename`) until it reports no issues, as the `svelte-docs-and-autofixer` skill says.
-6. **Check**, in a project: the language server diagnostics and the project's checker (`npm run check`), as the `svelte-lsp-navigation` skill says. If either reports a problem, fix it and repeat steps 5 and 6; finish only when both are clean.
+6. **Check**, in a project: the language server diagnostics and the project check (`npm run check`), as the `svelte-lsp-navigation` skill says. If either reports a problem, fix it and repeat steps 5 and 6; finish only when both are clean.
 
 Derived from the `svelte-core-bestpractices` skill of sveltejs/ai-tools (MIT), base `6b5d0da`, and extended; see the plugin NOTICE. Not affiliated with or endorsed by the Svelte project.

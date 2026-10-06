@@ -123,7 +123,7 @@ LSP outgoingCalls         src/lib/components/CounterButton.svelte 16 14
 
 ## Read diagnostics
 
-After each edit to a `.svelte` file, Claude Code reports the server's new diagnostics under the edit (`Found N new diagnostic issues in M files`). The fixture's deliberate error, as the whole-project check reports it in Claude Code:
+After each edit to a `.svelte` file, Claude Code reports the server's new diagnostics under the edit (`Found N new diagnostic issues in M files`). The fixture's deliberate error, as the project check reports it in Claude Code:
 
 ```text
 ERROR "src/routes/+page.svelte" 13:26 "Type 'number' is not assignable to type 'string'."
