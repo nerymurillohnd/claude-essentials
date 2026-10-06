@@ -94,6 +94,13 @@ Read the one reference that matches the task; each opens with its "Verified agai
 | [changelogs.md](references/changelogs.md) | The project's version is newer than a reference, or behaviour differs from the docs |
 | [known-doc-errata.md](references/known-doc-errata.md) | Before copying a docs example in an area SvelteKit 3 changed |
 
+The sibling skills (`svelte-docs-and-autofixer`, `svelte-lsp-navigation`) are named `svelte-development:<skill>`. When a step needs one that is not loaded yet, load it with the Skill tool:
+
+```text
+Skill
+  skill: "svelte-development:svelte-docs-and-autofixer"
+```
+
 ## Procedure
 
 Run these steps in order for any Svelte code you write, convert or review.

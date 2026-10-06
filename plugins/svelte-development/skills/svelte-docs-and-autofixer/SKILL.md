@@ -75,6 +75,13 @@ For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and 
 - `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/known-doc-errata.md`: pages that still show SvelteKit 2 code, and what is right.
 - The `svelte-best-practices` skill: the Svelte 5 and SvelteKit 3 rules to write by. The `svelte-lsp-navigation` skill: language server diagnostics and the whole-project check.
 
+The sibling skills (`svelte-best-practices`, `svelte-lsp-navigation`) are named `svelte-development:<skill>`. When a step needs one that is not loaded yet, load it with the Skill tool:
+
+```text
+Skill
+  skill: "svelte-development:svelte-best-practices"
+```
+
 ## Tools
 
 The plugin connects to the Svelte team's remote MCP server, `https://mcp.svelte.dev/mcp`; Claude Code reconnects it on its own when it drops. The tools are named `mcp__plugin_svelte-development_svelte__<tool>`. They may be deferred: if they are not in your tool list, load them before concluding they are missing:

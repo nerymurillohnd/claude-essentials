@@ -65,6 +65,13 @@ Hand the agent the locations you found (file and line), so it does not repeat th
 - `${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/fixtures/kit3-app`: a SvelteKit 3 project with known symbols for trying each operation; its README says how to install a copy.
 - The `svelte-best-practices` skill for the rules when fixing what diagnostics report; the `svelte-docs-and-autofixer` skill for the docs and the autofixer.
 
+The sibling skills (`svelte-best-practices`, `svelte-docs-and-autofixer`) are named `svelte-development:<skill>`. When a step needs one that is not loaded yet, load it with the Skill tool:
+
+```text
+Skill
+  skill: "svelte-development:svelte-best-practices"
+```
+
 ## Calling the LSP tool
 
 Load it when it is not in your tool list:
