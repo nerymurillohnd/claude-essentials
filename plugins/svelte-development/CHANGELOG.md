@@ -14,6 +14,9 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Skill descriptions name the key use first and add trigger phrases (`when_to_use`), so Claude loads them for code pasted in the chat as well as for project files.
 - Both agents list their rules before their workflow, and their descriptions say when to use the other agent instead.
 - The docs map's command-line example uses an installed `svelte-mcp` instead of downloading `@sveltejs/mcp` with `npx -y`.
+- `svelte-best-practices` and `svelte-docs-and-autofixer` now agree on when to read the docs: always before writing, except for changes that use no Svelte or SvelteKit API (copy, CSS values, markup text); the cases where the fetch is never skipped are unchanged.
+- `svelte-lsp-navigation` is shorter: the "Common mistakes" table repeated its rules and is gone, and its operations reference is read when an example or an unexpected result calls for it, not before every session.
+- Defaults instead of menus: sections come from the docs map first (`list-sections` only for a topic the map lacks), and `sv` runs with `npx` unless the project's lockfile names another package manager.
 
 ## [0.1.0] - 2026-10-05
 

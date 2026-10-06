@@ -36,7 +36,7 @@ This skill is the contract for two jobs: reading the current official Svelte doc
 
 These rules hold for every later turn of the task, not only the turn that loaded this skill.
 
-1. **Docs before code.** Fetch every section a change touches with `get-documentation` before writing it. Never guess a section path: take it from `list-sections` or the docs map.
+1. **Docs before code, by default.** Fetch the sections a change touches with `get-documentation` before writing it. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text. Never guess a section path: take it from the docs map.
 2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false.
 3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" (observed on 2026-10-05). Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
 4. **The autofixer is not proof.** It does not type-check, does not know SvelteKit routing rules and does not run the code. Type errors come from the language server and the project's checker.
@@ -105,7 +105,7 @@ Section paths are written exactly as `list-sections` prints them, without a lead
 Copy this checklist for any Svelte code you write, change or review, and run the calls in this order.
 
 ```
-- [ ] 1 Find      choose the sections in docs-map.md, or call list-sections
+- [ ] 1 Find      choose the sections in docs-map.md; call list-sections only for a topic the map lacks
 - [ ] 2 Read      one get-documentation call with every section the code touches
 - [ ] 3 Write     write or edit the code from what the sections say
 - [ ] 4 Fix       svelte-autofixer on the full code; apply issues and suggestions

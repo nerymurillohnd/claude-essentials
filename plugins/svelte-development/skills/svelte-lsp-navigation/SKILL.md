@@ -21,7 +21,6 @@ This skill is the contract for questions about the project's own code. The plugi
 - [Whole-project check](#whole-project-check)
 - [What the server sees in dynamic code](#what-the-server-sees-in-dynamic-code)
 - [Blind spots](#blind-spots)
-- [Common mistakes](#common-mistakes)
 - [Environment limits](#environment-limits)
 
 ## When to use it
@@ -38,7 +37,7 @@ This skill is the contract for questions about the project's own code. The plugi
 These rules hold for every later turn of the task, not only the turn that loaded this skill.
 
 1. **LSP first for every symbol question.** The first code-navigation call is an LSP call, never Grep or a whole-file Read.
-2. **Start every call from a `.svelte` file.** The plugin maps only `.svelte` to the Svelte server. A call on a `.ts`, `.js`, `.svelte.ts` or `.svelte.js` file returns `No LSP server available for file type: .ts`; that is configuration, not a crash. From a `.svelte` position the server still finds definitions and references inside those files.
+2. **Start every call from a `.svelte` file.** The plugin maps only `.svelte` to the Svelte server. A call on a `.ts`, `.js`, `.svelte.ts` or `.svelte.js` file returns `No LSP server available for file type: .ts`; that is configuration, not a crash. From a `.svelte` position the server still finds definitions and references inside those files. Never map `.ts` to the Svelte server to work around this: it returns empty results for TypeScript files and hides their symbols; to start from TypeScript files the user installs a TypeScript language server.
 3. **Load the tool before calling it.** The LSP tool may be deferred; a call without its loaded schema fails with invalid parameters (observed: eight failed calls in a row). Load it with ToolSearch first.
 4. **Warm up before giving up.** An error or an empty result is retried as the [procedure](#procedure-for-a-symbol-question) says, up to three attempts per question, before any fallback.
 5. **Say when you fall back.** Grep results are text matches: tell the user "LSP unavailable, using text search" and what that can miss. Never present them as semantic answers.
@@ -60,7 +59,7 @@ Hand the agent the locations you found (file and line), so it does not repeat th
 
 ## Where things are
 
-- [references/operations.md](references/operations.md): read before the first LSP call in a session; every operation's real result on the bundled fixture, and what the server answers per file type.
+- [references/operations.md](references/operations.md): read when you need to see what an operation returns (real output on the bundled fixture), or a result does not match what you expected.
 - [references/troubleshooting.md](references/troubleshooting.md): read when a call errors, returns nothing unexpectedly, or diagnostics never appear.
 - `${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/fixtures/kit3-app`: a SvelteKit 3 project with known symbols for trying each operation; its README says how to install a copy.
 - The `svelte-best-practices` skill for the rules when fixing what diagnostics report; the `svelte-docs-and-autofixer` skill for the docs and the autofixer.
@@ -176,17 +175,6 @@ Uses the server cannot see, because they live in strings, file names or configur
 - **Calls through an alias**: callers of `obj.fn()` when `fn` was stored in an object; follow the alias with `findReferences`.
 - **Strings and attributes**: CSS class names (including Tailwind classes in `class` objects and arrays), `data-sveltekit-*` attributes.
 - **Configuration and scripts**: `vite.config`, `package.json` scripts and `imports`, `svelte-check --ignore` lists, CI files.
-
-## Common mistakes
-
-| Tempting thought | Why it is wrong | Instead |
-|---|---|---|
-| "`findReferences` found nothing, so it is unused." | A position off the name, a start in a `.ts` file, or a server that crashed after route files changed gives the same answer | `hover` at the same position, start from a `.svelte` usage, Grep the blind spots, then decide |
-| "No diagnostics came back, so the component is clean." | Diagnostics are pushed only after an edit and only for open files | Run the whole-project check |
-| "The LSP tool is missing, so I'll Grep quietly." | It may only be deferred, and the user would take text matches for semantic answers | Load it with ToolSearch; if it still fails, say so |
-| "I'll map `.ts` to the Svelte server so TypeScript files work." | The Svelte server returns empty results for them and takes those extensions from a TypeScript server | Start from `.svelte`, or have the user install a TypeScript language server |
-| "The server cannot see dynamic code." | It tracks components held in variables, `svelte:element`, await blocks and object aliases | `documentSymbol`, then `findReferences` on what it lists; Grep only the string cases |
-| "Reading the whole component is quicker." | It spends context and still leaves imports to trace | `documentSymbol`, then `goToDefinition`, then Read only the lines needed |
 
 ## Environment limits
 

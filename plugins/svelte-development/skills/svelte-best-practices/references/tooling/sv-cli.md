@@ -29,7 +29,7 @@
 
 ## Running sv and the Node.js floor
 
-- Run it through the package manager's executor: `npx sv <command>`, `pnpm dlx sv`, `bunx sv`, `yarn dlx sv` or `deno run npm:sv`. Inside a project that has `sv` installed, `npx` uses the local copy.
+- Run it as `npx sv <command>`; inside a project that has `sv` installed, `npx` uses the local copy. In a pnpm, Bun, Yarn or Deno project (its lockfile says which), use that manager's executor instead: `pnpm dlx sv`, `bunx sv`, `yarn dlx sv`, `deno run npm:sv`.
 - Every command checks the running Node.js against `22.17.0` and prints a warning below it, then continues (`src/core/common.ts`, `runCommand`). SvelteKit 3 itself declares `engines.node >=22.17`, so treat 22.17 as the real minimum.
 - `sv` is non-interactive when every choice is given on the command line; pass the add-on options, `--install <pm>` or `--no-install`, and `--no-git-check` for scripted runs.
 

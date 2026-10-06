@@ -101,7 +101,7 @@ Where is the Counter class used, and is formatPrice still called anywhere?
 Use the svelte-code-auditor agent to audit src/ after our SvelteKit 3 upgrade.
 ```
 
-The [auditor](agents/svelte-code-auditor.md) runs `sv check` and the autofixer, walks its checklist and returns a findings table without changing files. Ask the [component editor](agents/svelte-component-editor.md) to apply the fixes.
+The [auditor](agents/svelte-code-auditor.md) runs the project's check and the autofixer, walks its checklist and returns a findings table without changing files. Ask the [component editor](agents/svelte-component-editor.md) to apply the fixes.
 
 ## 🧩 Components
 
