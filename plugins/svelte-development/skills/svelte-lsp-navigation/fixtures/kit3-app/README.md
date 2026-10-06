@@ -18,3 +18,14 @@ for f in package.json tsconfig.json vite.config.ts; do mv "$f.example" "$f"; don
 npm install
 npm run check
 ```
+
+## Mutations
+
+Deliberate breakage with known results, observed with svelte-check 4.7.6 on 2026-10-05. `scripts/selftest.sh` applies them to a scratch copy and fails when the project check reports anything else; `references/operations.md` and the plugin evals use the same sites.
+
+| Step | Change | The project check must report | What it proves |
+| --- | --- | --- | --- |
+| Baseline | none | `src/routes/+page.svelte` 13:26 | The check runs and sees the deliberate `label={42}` error |
+| Mutation 1 | Rename the `label` prop to `caption` inside `CounterButton.svelte` only | `Dynamic.svelte` 14:19 and 17:26, `+page.svelte` 13:26 | Every parent that passes the old prop fails, at the same sites `findReferences` lists for `label` |
+| Mutation 2 | Rename `CounterButton.svelte` to `Button.svelte` | `Dynamic.svelte` 2:29 and 8:23, `+page.svelte` 2:29 | Static imports and the literal dynamic `import()` fail; `import.meta.glob("./*.svelte")` (`Dynamic.svelte` 9) changes what it loads with no diagnostic, so only Grep finds it. The baseline error disappears while the module is missing: one error can hide another |
+| Restored | Undo both | `+page.svelte` 13:26 | The check is back to the baseline |

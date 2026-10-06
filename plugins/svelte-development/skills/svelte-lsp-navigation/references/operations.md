@@ -12,6 +12,7 @@
 - [Read a type with hover](#read-a-type-with-hover)
 - [Trace callers and callees](#trace-callers-and-callees)
 - [Read diagnostics](#read-diagnostics)
+- [Prove it: break something on purpose](#prove-it-break-something-on-purpose)
 - [Fetch before relying on this when](#fetch-before-relying-on-this-when)
 - [Official sources](#official-sources)
 
@@ -131,6 +132,30 @@ COMPLETED 177 FILES 1 ERRORS 0 WARNINGS 1 FILES_WITH_PROBLEMS
 ```
 
 That check ran in a copy of the fixture outside the plugin, with the `.example` suffix dropped from its three config files and dependencies installed (see the fixture README), through `npm run check`.
+
+## Prove it: break something on purpose
+
+A clean result proves nothing until a deliberate break has shown that the tool can see the change. Two ways, both with known results (the fixture README's "Mutations" table):
+
+**In the user's project, during a rename** (the "Procedure for a change" in SKILL.md): rename only the declaration, run the project check, and compare its error sites with the `findReferences` list. On the fixture, renaming `label` inside `CounterButton.svelte` makes the check report exactly the three `findReferences` sites above:
+
+```text
+LSP findReferences  src/lib/components/CounterButton.svelte 8 5   (label in Props)
+→ CounterButton.svelte 8:5, 12:18; Dynamic.svelte 14:19, 17:26; +page.svelte 13:26
+
+project check after renaming the declaration only
+→ ERROR "src/lib/components/Dynamic.svelte" 14:19, 17:26; ERROR "src/routes/+page.svelte" 13:26
+```
+
+An error site that is not in the `findReferences` list is a use the language server missed; a `findReferences` site with no error is a use the check cannot see (a string, a pattern). Both go into the edit set.
+
+**When the tools stay silent** (no diagnostics after an edit, or a check that reports nothing after a change that must break), run the bundled self-test. It installs a scratch copy of the fixture, applies both mutations and compares every result; it never touches the user's project, needs `node`, `npm` and the npm registry, and takes about a minute:
+
+```sh
+"${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/scripts/selftest.sh"
+```
+
+Exit 0 means the project check sees deliberate breakage; exit 1 lists the step that did not match; exit 2 means a requirement or the install failed. Run it with a Bash timeout of at least five minutes.
 
 ## Fetch before relying on this when
 
