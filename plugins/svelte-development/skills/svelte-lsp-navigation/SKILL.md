@@ -57,7 +57,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 8. **Never hide a problem.** No `--compiler-warnings x:ignore` or `--ignore` to get a check passing; ignore only a verified false positive, with the reason.
 9. **Prove a clean result when a tool stays silent, with the probe for that tool.** A silent language server and a silent project check have different causes:
    - **Language server** (no diagnostics after an edit, empty answers): `command -v svelteserver` must print a path, and `documentSymbol` on a non-empty `.svelte` file of the project must list its symbols. If either fails, follow [troubleshooting.md](references/troubleshooting.md).
-   - **Project check** (nothing reported after a change that must break): the cause is almost always in the project, not in svelte-check. Run `npx --no-install svelte-kit sync` and check again, because missing generated types hide errors; read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`, SvelteKit 2 projects `./.svelte-kit/tsconfig.json`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
+   - **Project check** (nothing reported after a change that must break): the cause is almost always in the project, not in svelte-check. in a SvelteKit project run `npx --no-install svelte-kit sync` and check again, because missing generated types hide errors (a project on Svelte alone has no sync to run); read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`, SvelteKit 2 projects `./.svelte-kit/tsconfig.json`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
 10. **No installs without consent.** Never install `svelte-language-server`, `sv` or any package; tell the user what is missing.
 
 ## Gotchas
@@ -175,12 +175,16 @@ Run it from the project root, choosing the first command that applies:
 # 1. The project has a check script (look in package.json "scripts")
 npm run check
 
-# 2. No check script: generate SvelteKit's types, then run the svelte-check the project already has
+# 2. No check script, SvelteKit project: generate its types, then run the svelte-check the project already has
 npx --no-install svelte-kit sync
 npx --no-install svelte-check --tsconfig ./tsconfig.json
+
+# 3. No check script, Svelte without SvelteKit: there is no sync, svelte-check is the whole check
+npx --no-install svelte-check
 ```
 
-- Without `svelte-kit sync`, the generated `./$types` and `$app/types` are missing and the check reports false errors.
+- `svelte-check` is the check in every Svelte project; `svelte-kit sync` exists only in a SvelteKit one, so never chain them with `&&`: in a project on Svelte alone the sync fails and the check would never run.
+- In a SvelteKit project, without `svelte-kit sync` the generated `./$types` and `$app/types` are missing and the check reports false errors.
 - `npx sv check` forwards to the same tool but downloads `sv` when the project does not depend on it: ask before running it.
 - Inside Claude Code, svelte-check prints its machine format by default, because it detects the `CLAUDECODE` environment variable. Parse these lines; pass `--output human` only for the user:
 

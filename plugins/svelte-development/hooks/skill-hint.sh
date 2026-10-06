@@ -17,7 +17,7 @@ docs)
   text="${plugin}: if the skill ${plugin}:svelte-docs-and-autofixer is not loaded in this session, load it with the Skill tool: it holds the section map, the autofixer parameters and the known documentation errors. Load ${plugin}:svelte-best-practices too before writing Svelte code."
   ;;
 check)
-  text="${plugin}: if the skill ${plugin}:svelte-lsp-navigation is not loaded in this session, load it with the Skill tool: its project check procedure says how to read the result (svelte-kit sync first, the COMPLETED line, the tsconfig include) and how to prove a rename by comparing the new errors with findReferences."
+  text="${plugin}: if the skill ${plugin}:svelte-lsp-navigation is not loaded in this session, load it with the Skill tool: its project check procedure says how to read the result (the COMPLETED line, the tsconfig include, and the generated types a SvelteKit project needs first) and how to prove a rename by comparing the new errors with findReferences."
   ;;
 cli)
   text="${plugin}: if the skill ${plugin}:svelte-best-practices is not loaded in this session, load it with the Skill tool: its sv CLI reference lists the current commands, add-ons and flags."

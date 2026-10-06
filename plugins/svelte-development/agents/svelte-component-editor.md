@@ -71,8 +71,11 @@ Run these steps in order for every change and report each one.
 
    ```sh
    npm run check
-   # no check script:
-   npx --no-install svelte-kit sync && npx --no-install svelte-check --tsconfig ./tsconfig.json
+   # no check script, SvelteKit project (its generated types come first):
+   npx --no-install svelte-kit sync
+   npx --no-install svelte-check --tsconfig ./tsconfig.json
+   # no check script, Svelte without SvelteKit (there is no sync to run):
+   npx --no-install svelte-check
    ```
 
    Repeat steps 4 to 6 until nothing new is reported.

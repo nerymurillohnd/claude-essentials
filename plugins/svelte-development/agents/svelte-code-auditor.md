@@ -55,8 +55,11 @@ Copy and tick; run the tool steps in this order.
 
 ```sh
 npm run check
-# no check script:
-npx --no-install svelte-kit sync && npx --no-install svelte-check --tsconfig ./tsconfig.json
+# no check script, SvelteKit project (its generated types come first):
+npx --no-install svelte-kit sync
+npx --no-install svelte-check --tsconfig ./tsconfig.json
+# no check script, Svelte without SvelteKit (there is no sync to run):
+npx --no-install svelte-check
 ```
 
 **Step 2**, once per component (read the file, pass its content):
