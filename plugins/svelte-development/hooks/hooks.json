@@ -1,66 +1,12 @@
 {
   "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "grep -qs '\"svelte\"' \"${CLAUDE_PROJECT_DIR}/package.json\" || exit 0; echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"svelte-development: this is a Svelte project. Tool order for its code: 1) the LSP tool for the symbols, imports, types and errors of the project (diagnostics, hover, goToDefinition, findReferences, documentSymbol, incomingCalls; skill svelte-development:svelte-lsp-navigation); 2) the Svelte MCP documentation tools for Svelte and SvelteKit APIs (skill svelte-development:svelte-docs-and-autofixer); 3) the project check for the whole project. Grep only for what the language server cannot see. Load svelte-development:svelte-best-practices before writing Svelte code.\"}}'",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
     "PreToolUse": [
       {
-        "matcher": "Grep|Glob",
+        "matcher": "mcp__plugin_svelte-development_svelte__.*",
         "hooks": [
           {
             "type": "command",
-            "command": "grep -qs '\"svelte\"' \"${CLAUDE_PROJECT_DIR}/package.json\" || exit 0; [ -e \"${CLAUDE_PLUGIN_DATA}/lsp-hint-${CLAUDE_CODE_SESSION_ID}\" ] && exit 0; mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && touch \"${CLAUDE_PLUGIN_DATA}/lsp-hint-${CLAUDE_CODE_SESSION_ID}\" && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"svelte-development: for the definition, references, callers or type of a symbol of this Svelte project, use the LSP tool first (findReferences, goToDefinition, hover, incomingCalls from a .svelte position; skill svelte-development:svelte-lsp-navigation). Grep and Glob are for strings, routes, file names and what the language server cannot see. This note appears once per session.\"}}'",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "if": "Write(*.svelte)",
-            "command": "mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && touch \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "if": "Write(*.svelte.ts)",
-            "command": "mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && touch \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "if": "Write(*.svelte.js)",
-            "command": "mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && touch \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "if": "Edit(*.svelte)",
-            "command": "mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && touch \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "if": "Edit(*.svelte.ts)",
-            "command": "mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && touch \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
-            "timeout": 5
-          },
-          {
-            "type": "command",
-            "if": "Edit(*.svelte.js)",
-            "command": "mkdir -p \"${CLAUDE_PLUGIN_DATA}\" && touch \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" docs",
             "timeout": 5
           }
         ]
@@ -70,26 +16,48 @@
         "hooks": [
           {
             "type": "command",
+            "if": "Bash(*svelte-mcp *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" docs",
+            "timeout": 5
+          },
+          {
+            "type": "command",
             "if": "Bash(*svelte-check*)",
-            "command": "rm -f \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" check",
             "timeout": 5
           },
           {
             "type": "command",
-            "if": "Bash(* run check*)",
-            "command": "rm -f \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
+            "if": "Bash(npx sv *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" cli",
             "timeout": 5
           },
           {
             "type": "command",
-            "if": "Bash(pnpm check*)",
-            "command": "rm -f \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
+            "if": "Bash(pnpm dlx sv *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" cli",
             "timeout": 5
           },
           {
             "type": "command",
-            "if": "Bash(yarn check*)",
-            "command": "rm -f \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\"",
+            "if": "Bash(bunx sv *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" cli",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Bash(sv *)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" cli",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" lsp",
             "timeout": 5
           }
         ]
@@ -100,8 +68,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ -e \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\" ] || exit 0; rm -f \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\" && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"Stop\",\"additionalContext\":\"svelte-development: Svelte files changed in this session and the project check has not run since the last change. Before finishing: read the LSP diagnostics of each changed .svelte file and check the references of any changed prop, export or signature with the LSP tool (findReferences), run the project check, then the Svelte autofixer on each changed component (its full content as code). Report what each one found.\"}}'",
-            "timeout": 5
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/check-on-stop.sh\"",
+            "timeout": 300
           }
         ]
       }
@@ -111,7 +79,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "rm -f \"${CLAUDE_PLUGIN_DATA}/svelte-pending-${CLAUDE_CODE_SESSION_ID}\" \"${CLAUDE_PLUGIN_DATA}/lsp-hint-${CLAUDE_CODE_SESSION_ID}\"",
+            "command": "rm -f \"${CLAUDE_PLUGIN_DATA}\"/hint-*-\"${CLAUDE_CODE_SESSION_ID}\"",
             "timeout": 5
           }
         ]

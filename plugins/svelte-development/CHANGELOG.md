@@ -11,7 +11,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Hooks that keep the language server first and the checks at the end of a turn, at no token cost per edit. In a Svelte project, Claude gets the tool order once at session start (language server, then the Svelte documentation tools, then the project check) and, on its first `Grep` or `Glob` of the session, a reminder to use the language server for the project's symbols. Edits of `.svelte`, `.svelte.ts` or `.svelte.js` files leave a silent marker that the project check clears; if Claude is about to finish with one still there, it is asked once to read the diagnostics, check references, run the project check and then the autofixer. Every hook is a one-line `sh` command with a fixed text: none reads its input or the network, and none can block a tool call.
+- Hooks that keep the language server first and check Svelte changes before Claude stops. When Claude finishes a turn with changed `.svelte`, `.svelte.ts` or `.svelte.js` files it has not checked, the plugin runs your project's own `svelte-check` (whole project, from `node_modules/.bin`, never downloaded) and sends the errors back, so Claude fixes them in the same turn; it checks each state of your changes once, so older errors cannot keep it in a loop. Before a Svelte MCP tool, a `svelte-mcp`, `svelte-check` or `sv` command, or a search in a Svelte project, Claude is told once per session which skill to load, and that symbols go to the language server first. Per-file diagnostics come from the language server after each edit.
 
 ### Changed
 
