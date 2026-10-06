@@ -6,11 +6,17 @@ Community plugins for [Claude Code](https://code.claude.com/docs): workflows, ag
 
 Claude Essentials is an independent community project. It is not affiliated with or endorsed by Anthropic.
 
-**Contents:** [Quick start](#quick-start) · [Plugins](#plugins) · [Categories](#categories) · [Keep plugins updated](#keep-plugins-updated) · [Set up for a team](#set-up-for-a-team) · [Trust and security](#trust-and-security) · [Contributing](#contributing) · [Project documentation](#project-documentation) · [License](#license)
+**Contents:** [Quick start](#quick-start) · [Plugins](#plugins) · [Categories](#categories) · [Update and uninstall](#update-and-uninstall) · [Set up for a team](#set-up-for-a-team) · [Trust and security](#trust-and-security) · [Contributing](#contributing) · [Project documentation](#project-documentation) · [License](#license)
 
 ## Quick start
 
-Requires Claude Code 2.1.289 or later. Inside a Claude Code session, add the marketplace once and install the plugins you want:
+Before you install:
+
+1. **Platform**: macOS, Linux (WSL included), or Windows with [Git Bash](https://git-scm.com/downloads/win). Claude Code runs hooks and shell commands with Git Bash on Windows; these plugins are not supported without it.
+2. **Claude Code** 2.1.289 or later (`claude --version`).
+3. **The plugin's own prerequisites**, such as a language server binary: each plugin README lists them under Prerequisites. Install them first, so the plugin finds them when it loads.
+
+Then, inside a Claude Code session, add the marketplace once and install the plugins you want:
 
 ```text
 /plugin marketplace add nerymurillohnd/claude-essentials
@@ -28,9 +34,9 @@ Each plugin's README lists its requirements, components and the exact commands t
 
 ## Plugins
 
-| Plugin                                                     | Install as           | Category                   | Version | Description                                                                                                                                                                                                                                                                                                                                         |
-| ---------------------------------------------------------- | -------------------- | -------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Svelte Development](plugins/svelte-development/README.md) | `svelte-development` | [development](#categories) | 0.2.0   | Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a post-edit autofixer reminder, and the Svelte MCP and language servers, built on the Svelte team's AI tools. |
+| Plugin                                                     | Install as           | Category                   | Version | Description                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------- | -------------------- | -------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Svelte Development](plugins/svelte-development/README.md) | `svelte-development` | [development](#categories) | 0.2.0   | Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools. |
 
 ## Categories
 
@@ -46,15 +52,17 @@ Each plugin's README lists its requirements, components and the exact commands t
 | `research`       | Deep web and source research                           | 0       |
 | `model-behavior` | Output styles, guardrails and operating rules          | 0       |
 
-## Keep plugins updated
+## Update and uninstall
 
 Claude Code does not update plugins from community marketplaces in the background unless you turn that on. Without it, you keep the version you installed, including any bug or security fix released later.
 
-| To                    | Do this                                                                                            |
-| --------------------- | -------------------------------------------------------------------------------------------------- |
-| Update automatically  | Run `/plugin`, open **Marketplaces**, select `claude-essentials` and choose **Enable auto-update** |
-| Update one plugin now | `claude plugin update <plugin>@claude-essentials`                                                  |
-| Refresh the catalog   | `/plugin marketplace update claude-essentials`                                                     |
+| To                     | Do this                                                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Update automatically   | Run `/plugin`, open **Marketplaces**, select `claude-essentials` and choose **Enable auto-update**                         |
+| Update one plugin now  | `claude plugin update <plugin>@claude-essentials`, or `/plugin` → **Installed** → the plugin → **Update now** in a session |
+| Refresh the catalog    | `/plugin marketplace update claude-essentials`                                                                             |
+| Uninstall a plugin     | `/plugin uninstall <plugin>@claude-essentials` in a session, or `claude plugin uninstall <plugin>@claude-essentials`       |
+| Remove the marketplace | `/plugin marketplace remove claude-essentials` in a session, or `claude plugin marketplace remove claude-essentials`       |
 
 ## Set up for a team
 

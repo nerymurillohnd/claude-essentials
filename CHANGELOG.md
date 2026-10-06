@@ -8,7 +8,8 @@ The catalog has no version: users always receive the latest catalog, and only pl
 
 ### Changed
 
-- `svelte-development`: the catalog description now names SvelteKit 2 support, language-server navigation with renames proven by the project check, and the post-edit autofixer reminder.
+- Every plugin supports macOS, Linux (WSL included) and Windows with Git Bash; the READMEs list the platform first among the prerequisites, and the root Quick start lists what to install, in order, before a plugin.
+- `svelte-development`: the catalog description now names SvelteKit 2 support, language-server navigation with renames proven by the project check, and a svelte-check of your changes before Claude stops.
 
 ## 2026-10-05
 

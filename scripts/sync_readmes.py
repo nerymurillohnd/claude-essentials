@@ -70,6 +70,8 @@ DOCUMENTATION_ROWS = [
     [f"[Claude Code plugins]({PLUGINS_DOCS_URL})", "Installing, updating and removing plugins"],
 ]
 SETUP_URL = "https://code.claude.com/docs/en/setup"
+GIT_FOR_WINDOWS_URL = "https://git-scm.com/downloads/win"
+PLATFORMS = f"macOS, Linux (WSL included), or Windows with [Git Bash]({GIT_FOR_WINDOWS_URL})"
 BLOCK_HEADINGS = {
     "configuration": repo.readme_heading("Configuration"),
     "runtime": repo.readme_heading("Permissions"),
@@ -414,10 +416,16 @@ def _header(plugin: Plugin, *, privileged: bool, has_config: bool) -> str:
 
 
 def _prerequisites(plugin: Plugin) -> str:
-    rows = [["Claude Code", plugin.min_claude_code, "`claude --version`"]]
+    # Plugins run on macOS, Linux (WSL included) or Windows with Git Bash (ADR supported-platforms).
+    rows = [
+        ["Operating system", PLATFORMS, "`uname -s` (in Git Bash on Windows)"],
+        ["Claude Code", plugin.min_claude_code, "`claude --version`"],
+    ]
     setup = (
         f"Not installed, or older than the minimum? Follow the [setup guide]({SETUP_URL}), "
-        "or run `claude update` to update an existing install."
+        "or run `claude update` to update an existing install. On Windows, install "
+        f"[Git for Windows]({GIT_FOR_WINDOWS_URL}), which provides Git Bash: Claude Code runs "
+        "hooks and shell commands with it, and these plugins are not supported without it."
     )
     return "\n\n".join([table(["Requirement", "Minimum", "Check"], rows), setup])
 

@@ -4,7 +4,7 @@
 
 [![version: 0.2.0](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md) [![category: development](https://img.shields.io/badge/category-development-informational)](https://github.com/nerymurillohnd/claude-essentials/blob/main/README.md#categories) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![skills: 3](https://img.shields.io/badge/skills-3-blueviolet)](#-components) [![agents: 2](https://img.shields.io/badge/agents-2-blueviolet)](#-components) [![hooks: 3](https://img.shields.io/badge/hooks-3-blueviolet)](#-components) [![mcp servers: 1](https://img.shields.io/badge/mcp%20servers-1-blueviolet)](#-components) [![lsp servers: 1](https://img.shields.io/badge/lsp%20servers-1-blueviolet)](#-components) [![runs code: yes, reviewed](https://img.shields.io/badge/runs%20code-yes%2C%20reviewed-yellow)](#-permissions)
 
-Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a post-edit autofixer reminder, and the Svelte MCP and language servers, built on the Svelte team's AI tools.
+Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools.
 
 Part of [Claude Essentials](https://github.com/nerymurillohnd/claude-essentials), an independent community plugin marketplace for Claude Code. Not affiliated with or endorsed by Anthropic.
 
@@ -35,32 +35,45 @@ It builds on the Svelte team's own AI tools ([sveltejs/ai-tools](https://github.
 
 <!-- BEGIN GENERATED: requirements -->
 
-| Requirement | Minimum | Check              |
-| ----------- | ------- | ------------------ |
-| Claude Code | 2.1.289 | `claude --version` |
+| Requirement      | Minimum                                                                                    | Check                               |
+| ---------------- | ------------------------------------------------------------------------------------------ | ----------------------------------- |
+| Operating system | macOS, Linux (WSL included), or Windows with [Git Bash](https://git-scm.com/downloads/win) | `uname -s` (in Git Bash on Windows) |
+| Claude Code      | 2.1.289                                                                                    | `claude --version`                  |
 
-Not installed, or older than the minimum? Follow the [setup guide](https://code.claude.com/docs/en/setup), or run `claude update` to update an existing install.
+Not installed, or older than the minimum? Follow the [setup guide](https://code.claude.com/docs/en/setup), or run `claude update` to update an existing install. On Windows, install [Git for Windows](https://git-scm.com/downloads/win), which provides Git Bash: Claude Code runs hooks and shell commands with it, and these plugins are not supported without it.
 
 <!-- END GENERATED: requirements -->
 
-| Tool                                      | Minimum                                                    | Check                                        | Why                                                                                                                             |
-| ----------------------------------------- | ---------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Node.js                                   | 18 for the language server; 22.17 for SvelteKit 3 projects | `node --version`                             | Runs `svelteserver`; SvelteKit 3 itself needs 22.17                                                                             |
-| `@sveltejs/mcp` (`svelte-mcp`), optional  | 0.1.26                                                     | `npm ls -g --depth 0 @sveltejs/mcp`          | Only to run the autofixer on your machine instead of the remote server, or offline. Install with `npm install -g @sveltejs/mcp` |
-| `svelte-language-server` (`svelteserver`) | 0.18.4                                                     | `npm ls -g --depth 0 svelte-language-server` | Code intelligence for `.svelte` files. Install with `npm install -g svelte-language-server`                                     |
-| TypeScript in your project                | 5.9 or 6                                                   | `npx tsc --version`                          | Peer of the language server; SvelteKit 3 projects use TypeScript 6                                                              |
-| `curl`                                    | any                                                        | `curl --version`                             | Raw documentation and changelog downloads when the MCP server is unavailable                                                    |
+In the order you install them, before the plugin:
 
-**Install the language server binary.** The plugin's LSP configuration (`.lsp.json`) starts `svelteserver`, which the plugin does not ship. Until it is on your `PATH`, that configuration does nothing: there is no code intelligence for `.svelte` files, and the `svelte-lsp-navigation` skill falls back to text search. Install it once, globally, then reload:
+| Tool                                      | Minimum                                                    | Check                     | Why                                                                                                                                       |
+| ----------------------------------------- | ---------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Node.js                                   | 18 for the language server; 22.17 for SvelteKit 3 projects | `node --version`          | Runs `svelteserver`; SvelteKit 3 itself needs 22.17                                                                                       |
+| `svelte-language-server` (`svelteserver`) | 0.18.4                                                     | `command -v svelteserver` | Code intelligence for `.svelte` files; see the next step                                                                                  |
+| TypeScript in your project                | 5.9 or 6                                                   | `npx tsc --version`       | Peer of the language server; SvelteKit 3 projects use TypeScript 6                                                                        |
+| `svelte-check` in your project            | 4                                                          | `npm ls svelte-check`     | The project check, which the skills run and the end-of-turn hook runs from `node_modules/.bin`; projects created with `sv create` have it |
+| `curl`                                    | any                                                        | `curl --version`          | Raw documentation and changelog downloads when the MCP server is unavailable                                                              |
+| `@sveltejs/mcp` (`svelte-mcp`), optional  | 0.1.26                                                     | `command -v svelte-mcp`   | Only to run the autofixer on your machine instead of the remote server, or offline: `npm install -g @sveltejs/mcp`                        |
 
-```bash
-npm install -g svelte-language-server
-command -v svelteserver   # must print a path
-```
+**Install the language server binary first.** The plugin's LSP configuration (`.lsp.json`) starts `svelteserver`, which the plugin does not ship. Claude Code finds it only on the `PATH` of the shell you start `claude` from; until then that configuration does nothing, there is no code intelligence for `.svelte` files, and the `svelte-lsp-navigation` skill falls back to text search. Choose one:
 
-Then run `/reload-plugins` in an open session (`/reload-plugins --force` if the LSP tool was never loaded in it).
+- **Global** (recommended: one install for every project):
 
-The Svelte MCP server is remote (`https://mcp.svelte.dev/mcp`): it needs network access and nothing installed. Without `svelteserver` the plugin still loads: the skills and the MCP tools work, and code intelligence for `.svelte` files stays unavailable until you install it and run `/reload-plugins`. Code intelligence for `.ts` and `.js` files needs a TypeScript language server plugin, which this plugin does not include.
+  ```bash
+  npm install -g svelte-language-server
+  command -v svelteserver   # must print a path
+  ```
+
+- **In one project**, if you keep tools per project: install it as a dev dependency and start `claude` with the project's `node_modules/.bin` on your `PATH`, for example through your shell or direnv:
+
+  ```bash
+  npm install -D svelte-language-server
+  PATH="$PWD/node_modules/.bin:$PATH" claude
+  ```
+
+If a session was already open, run `/reload-plugins` after installing (`/reload-plugins --force` if the LSP tool was never loaded in it).
+
+The Svelte MCP server is remote (`https://mcp.svelte.dev/mcp`): it needs network access and nothing installed. Without `svelteserver` the plugin still loads: the skills and the MCP tools work. Code intelligence for `.ts` and `.js` files needs a TypeScript language server plugin, which this plugin does not include.
 
 ## ⚡ Installation
 
@@ -147,7 +160,7 @@ The [auditor](agents/svelte-code-auditor.md) runs the project check and the auto
 - **LSP server `svelte` (`svelteserver`)** runs locally over stdio for `.svelte` files and reads your project's files and `node_modules` to resolve types. It sends nothing over the network.
 - **Network from the skills and agents**: when the MCP server is unavailable, or to check what changed between versions, they run `curl -sS` against `svelte.dev`, `raw.githubusercontent.com` (the `sveltejs`, `withastro` and `tailwindlabs` repositories) and `api.github.com` (unauthenticated, 60 requests per hour), and `npm view` against the npm registry. Every command goes through your normal permission prompts.
 - **Files**: the [auditor](agents/svelte-code-auditor.md) has no Edit or Write tool. It does have Bash, limited by its instructions rather than technically, to run the project checks; every command still goes through your permission prompts, and the checks it is told to run regenerate only SvelteKit's `.svelte-kit` folder. The [component editor](agents/svelte-component-editor.md) edits only what the task asks for. Both run `svelte-check` and `svelte-kit sync` with `npx --no-install`, so they never download a package your project does not already have.
-- **Hooks**: two scripts in `hooks/`, run by path, both bash, neither reading its input or the network. `skill-hint.sh` runs before a Svelte MCP tool, a `svelte-mcp`, `svelte-check` or `sv` command, or a `Grep` or `Glob` call (the last only in a project whose `package.json` mentions `svelte`); once per session for each kind, it names the skill that fits and, for searches, says to ask the language server first. It keeps one empty file per hint and session in the plugin's data folder (`${CLAUDE_PLUGIN_DATA}`), removed at `SessionEnd`. A hook cannot load a skill; it only tells Claude which one to load. `check-on-stop.sh` runs when Claude finishes a turn. If `git status` shows changed `.svelte`, `.svelte.ts` or `.svelte.js` files whose current state it has not checked, it runs `svelte-kit sync` and `svelte-check` from your project's `node_modules/.bin` (it never downloads or installs anything) and, on errors, sends them to Claude, which keeps working on them. It checks the whole project, because `svelte-check` has no single-file mode; it stays silent without git or before the first commit (nothing tells your changes apart then), without an installed `svelte-check`, outside the project root (a monorepo package in a subfolder is not checked) and for a state it already checked, so errors that were there before your session cannot hold Claude in a loop. It stores one fingerprint per project in the plugin's data folder and has a 5-minute limit. The checks it asks for include the autofixer, so more of your component code is sent to the Svelte team's server than without it; if that code must stay on your machine, disable the `svelte` server in `/mcp` and ask Claude to use the local `svelte-mcp` command line.
+- **Hooks**: two scripts in `hooks/`, run by path, both bash, neither reading its input or the network. `skill-hint.sh` runs before a Svelte MCP tool, a `svelte-mcp`, `svelte-check` or `sv` command, or a `Grep` or `Glob` call (the last only in a project whose `package.json` mentions `svelte`); once per session for each kind, it names the skill that fits and, for searches, says to ask the language server first. It keeps one empty file per hint and session in the plugin's data folder (`${CLAUDE_PLUGIN_DATA}`), removed at `SessionEnd`. A hook cannot load a skill; it only tells Claude which one to load. `check-on-stop.sh` runs when Claude finishes a turn. If `git status` shows changed `.svelte`, `.svelte.ts` or `.svelte.js` files whose current state it has not checked, it runs `svelte-kit sync` and `svelte-check` from your project's `node_modules/.bin` (it never downloads or installs anything). These are your project's own tools running your project's code: both load `vite.config` and `svelte.config`, which are JavaScript, and the sync rewrites SvelteKit's generated files in `.svelte-kit/`, as `npm run check` does and, on errors, sends them to Claude, which keeps working on them. It checks the whole project, because `svelte-check` has no single-file mode; it stays silent without git or before the first commit (nothing tells your changes apart then), without an installed `svelte-check`, outside the project root (a monorepo package in a subfolder is not checked) and for a state it already checked, so errors that were there before your session cannot hold Claude in a loop. It stores one fingerprint per project in the plugin's data folder and has a 5-minute limit. The checks it asks for include the autofixer, so more of your component code is sent to the Svelte team's server than without it; if that code must stay on your machine, disable the `svelte` server in `/mcp` and ask Claude to use the local `svelte-mcp` command line.
 - **In Claude Tag** (Slack, public beta, checked 2026-10-05): the organization's Activity page exports the outbound requests Claude makes, but not its MCP traffic, so code sent to the autofixer does not appear in that export ([audit](https://claude.com/docs/claude-tag/admins/audit)). Sessions run in a sandbox where hosts other than the default package registries can be blocked until an admin allows them, which can stop the `curl` fallbacks, and `svelteserver` is not preinstalled there ([configure GitHub](https://claude.com/docs/claude-tag/admins/configure-github#install-project-dependencies)).
 - Nothing is pre-approved. To skip prompts for the read-only documentation tools, you can add allow rules to your own settings, for example `mcp__plugin_svelte-development_svelte__list-sections`, `mcp__plugin_svelte-development_svelte__get-documentation` and `Bash(curl -sS https://svelte.dev/docs/*)`.
 
@@ -205,7 +218,7 @@ Yes. Claude reads the installed versions first and writes code that runs on them
 <details>
 <summary>Does it work on Windows?</summary>
 
-Not tested yet. The MCP server is remote, and the language server is a Node.js program that should run anywhere Node.js does; the skills' fallback commands use `curl`, which Windows 10 and later include, and the changelog and search commands in the references also use `grep` and `awk`, which come with Git Bash. Report problems through an issue.
+Not tested yet. The MCP server is remote, and the language server is a Node.js program that should run anywhere Node.js does; the skills' fallback commands use `curl`, which Windows 10 and later include, and the changelog and search commands in the references also use `grep` and `awk`, which come with Git Bash. Windows needs Git Bash, as the [Prerequisites](#-prerequisites) say: Claude Code runs the plugin's hooks with it, and without it the hooks fail (without blocking anything) and the plugin is not supported. Report problems through an issue.
 
 </details>
 

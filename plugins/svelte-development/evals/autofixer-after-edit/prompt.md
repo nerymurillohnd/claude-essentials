@@ -1,5 +1,5 @@
 ---
-description: After a small inline edit of a component, the autofixer checks the new content (the skills and the end-of-turn hook together; the case does not separate them).
+description: After a small inline edit of a component, the autofixer checks the new content (the skills; the end-of-turn check stays silent here, because the scaffold has no git baseline).
 runs: 2
 max_turns: 30
 allowed_tools:

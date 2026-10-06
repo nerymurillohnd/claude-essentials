@@ -16,7 +16,7 @@ TODO: a table of two to four situations a user starts from, what the plugin does
 <!-- BEGIN GENERATED: requirements -->
 <!-- END GENERATED: requirements -->
 
-TODO: list every tool, service or account this plugin's components need, as a table with the columns Tool, Minimum, Check and Why, or write "No other prerequisites."
+TODO: list every other tool, service or account this plugin's components need, in the order a user installs them, as a table with the columns Tool, Minimum, Check and Why, or write "No other prerequisites." For every binary the plugin starts (a language server, an MCP command), give its install command before the Installation section, say whether a global or a project-local install works (Claude Code finds it only on the `PATH` of the shell that starts `claude`), and what the plugin does without it.
 
 ## ⚡ Installation
 
