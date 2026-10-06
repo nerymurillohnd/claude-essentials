@@ -48,6 +48,15 @@ Not installed, or older than the minimum? Follow the [setup guide](https://code.
 | `curl`                                    | any                                                        | `curl --version`                             | Raw documentation and changelog downloads when the MCP server is unavailable                                                    |
 | `bash` and `npm`, optional                | any                                                        | `bash --version`, `npm --version`            | Only for the self-test, which installs a scratch copy of the bundled fixture from the npm registry                              |
 
+**Install the language server binary.** The plugin's LSP configuration (`.lsp.json`) starts `svelteserver`, which the plugin does not ship. Until it is on your `PATH`, that configuration does nothing: there is no code intelligence for `.svelte` files, and the `svelte-lsp-navigation` skill falls back to text search. Install it once, globally, then reload:
+
+```bash
+npm install -g svelte-language-server
+command -v svelteserver   # must print a path
+```
+
+Then run `/reload-plugins` in an open session (`/reload-plugins --force` if the LSP tool was never loaded in it).
+
 The Svelte MCP server is remote (`https://mcp.svelte.dev/mcp`): it needs network access and nothing installed. Without `svelteserver` the plugin still loads: the skills and the MCP tools work, and code intelligence for `.svelte` files stays unavailable until you install it and run `/reload-plugins`. Code intelligence for `.ts` and `.js` files needs a TypeScript language server plugin, which this plugin does not include.
 
 ## ⚡ Installation

@@ -29,6 +29,9 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Projects still on SvelteKit 2 or Svelte 4 get code for their installed version: the skills and the editor no longer write SvelteKit 3 APIs or runes there unless the task is the migration, and the auditor lists SvelteKit 3 and Svelte 5 changes as migration work instead of defects.
 - The project's `CLAUDE.md`, saved memory and conventions decide style and structure over the skills, but never make a removed API valid.
 - The README's Permissions section says what changes in Claude Tag: MCP traffic, including code sent to the autofixer, is not in the organization's network export, and the sandbox can block the `curl` fallbacks and has no `svelteserver`.
+- One routing rule in every skill and both agents: the language server first for questions about the project's own symbols, the docs first for Svelte APIs, the project check first for errors; Claude departs from it only for a reason it states.
+- Renames, signature changes and deletions are proven by breaking them on purpose: a baseline project check, a declaration-only change, and a comparison of the new errors with the sites `findReferences` found, so missed uses show up before the edit is finished.
+- The README's Prerequisites section gives the language server install step on its own, with the reason: without `svelteserver` on your `PATH`, the plugin's LSP configuration does nothing.
 - Defaults instead of menus: sections come from the docs map first (`list-sections` only for a topic the map lacks), and `sv` runs with `npx` unless the project's lockfile names another package manager.
 
 ## [0.1.0] - 2026-10-05

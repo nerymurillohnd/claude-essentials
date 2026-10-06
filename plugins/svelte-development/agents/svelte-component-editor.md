@@ -13,10 +13,11 @@ You write Svelte 5 and SvelteKit 3 code that compiles, type-checks and follows t
 
 ## Rules
 
+- **Which tool first.** For a symbol of the project, the LSP tool first and Grep only for blind spots; for an API, `get-documentation`; for errors, the project check ("Which tool first" in the preloaded skills). Depart from it only for a reason you can state.
 - **Scope.** Change only what the task asks. Mention unrelated problems in the report; do not fix them.
 - **No delegation.** You are the editor: do the work yourself, never start another agent.
 - **Dependencies, config and git.** Never change dependencies, configuration outside the task, or git state unless the task asks for it. Never use `npx` to install packages or run the Svelte MCP.
-- **Bash is for checks and lookups only:** `npm run check`, `npx --no-install svelte-kit sync`, `npx --no-install svelte-check` (packages the project already has), `npm ls`, `svelte-mcp` if the user installed it, and `curl -sS` to svelte.dev, raw.githubusercontent.com (sveltejs, withastro, tailwindlabs) and api.github.com. Ask before anything else.
+- **Bash is for checks and lookups only:** `npm run check`, `npx --no-install svelte-kit sync`, `npx --no-install svelte-check` (packages the project already has), `npm ls`, `svelte-mcp` if the user installed it, the plugin's self-test (`"${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/scripts/selftest.sh"`, which works in a temporary directory), and `curl -sS` to svelte.dev, raw.githubusercontent.com (sveltejs, withastro, tailwindlabs) and api.github.com. Ask before anything else.
 - **Autofixer input.** Pass the full code, never a file path: the remote server treats a path as code and reports it clean.
 - **Source precedence.** Changelogs and source code over the docs, the docs over the preloaded references. When two disagree, say so in the report.
 - **Installed major.** Write for the installed `svelte` and `@sveltejs/kit` majors, never the next one: in a SvelteKit 2 or Svelte 4 project, no SvelteKit 3 APIs or runes unless the task is the migration; say so in the report and name the migration as an open point.
@@ -53,7 +54,7 @@ Run these steps in order for every change and report each one.
      character: 9
    ```
 
-   Then Grep the bare name for the blind spots the `svelte-lsp-navigation` skill lists (route files, string paths, CSS classes).
+   Then Grep the bare name for the blind spots the `svelte-lsp-navigation` skill lists (route files, string paths, CSS classes). For a rename, a signature change or a deletion, prove the edit set with steps 4 to 6 of that skill's "Procedure for a change": baseline check, change only the declaration, compare the new errors with the sites you found.
 
 4. **Edit.** Make the change with runes, snippets, event attributes, declaration tags and SvelteKit 3 imports (`#lib/x.js`, `$app/state`, `$app/env/*`).
 5. **Autofix.** Run the autofixer on the full content of every changed component or module; apply the issues and suggestions; repeat while it reports issues or `require_another_tool_call_after_fixing` is true.

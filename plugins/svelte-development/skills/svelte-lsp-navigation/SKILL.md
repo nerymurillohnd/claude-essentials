@@ -12,6 +12,7 @@ This skill is the contract for questions about the project's own code. The plugi
 ## Contents
 
 - [When to use it](#when-to-use-it)
+- [Which tool first](#which-tool-first)
 - [Rules](#rules)
 - [Gotchas](#gotchas)
 - [Who does the work](#who-does-the-work)
@@ -32,11 +33,21 @@ This skill is the contract for questions about the project's own code. The plugi
 | Reading an inferred type, or a long component's outline | For text that is not a symbol (route paths, CSS classes): Grep, per [blind spots](#blind-spots) |
 | Proving the project has no type or Svelte errors after a change | |
 
+## Which tool first
+
+The default route, because each tool answers a different kind of question. Depart from it when the project gives a reason, and say why.
+
+| The question is about | First tool | Why |
+|---|---|---|
+| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for the blind spots the `svelte-lsp-navigation` skill lists |
+| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows Svelte 4 and SvelteKit 2 |
+| Whether the project has errors | The project check (`npm run check`) | Diagnostics arrive only for files the language server has open |
+
 ## Rules
 
 These rules hold for every later turn of the task, not only the turn that loaded this skill.
 
-1. **LSP first for every symbol question.** The first code-navigation call is an LSP call, never Grep or a whole-file Read.
+1. **LSP first for every symbol question** ([Which tool first](#which-tool-first)). The first code-navigation call is an LSP call, never Grep or a whole-file Read.
 2. **Start every call from a `.svelte` file.** The plugin maps only `.svelte` to the Svelte server. A call on a `.ts`, `.js`, `.svelte.ts` or `.svelte.js` file returns `No LSP server available for file type: .ts`; that is configuration, not a crash. From a `.svelte` position the server still finds definitions and references inside those files. Never map `.ts` to the Svelte server to work around this: it returns empty results for TypeScript files and hides their symbols; to start from TypeScript files the user installs a TypeScript language server.
 3. **Load the tool before calling it.** The LSP tool may be deferred; a call without its loaded schema fails with invalid parameters (observed: eight failed calls in a row). Load it with ToolSearch first.
 4. **Warm up before giving up.** An error or an empty result is retried as the [procedure](#procedure-for-a-symbol-question) says, up to three attempts per question, before any fallback.
@@ -44,7 +55,8 @@ These rules hold for every later turn of the task, not only the turn that loaded
 6. **Grep alongside, never instead.** Use Grep only for the [blind spots](#blind-spots), next to the LSP results.
 7. **Diagnostics are not a project check.** Diagnostics are pushed once after an edit, only for open files, and cannot be requested again. "No diagnostics" proves nothing about the project: run the [project check](#project-check).
 8. **Never hide a problem.** No `--compiler-warnings x:ignore` or `--ignore` to get a check passing; ignore only a verified false positive, with the reason.
-9. **No installs without consent.** Never install `svelte-language-server`, `sv` or any package; tell the user what is missing.
+9. **Prove a clean result when the tools stay silent.** No diagnostics after an edit, or a project check that reports nothing after a change that must break, means the tool may not be looking. Run the self-test before trusting it: `"${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/scripts/selftest.sh"` (it uses a scratch copy of the bundled fixture, never the project; [operations.md](references/operations.md), "Prove it").
+10. **No installs without consent.** Never install `svelte-language-server`, `sv` or any package; tell the user what is missing.
 
 ## Gotchas
 
@@ -136,18 +148,22 @@ Run these in order and do not skip a step:
 
 ## Procedure for a change
 
-Copy this checklist when a change touches a symbol other files use:
+Copy this checklist when a change touches a symbol other files use. Steps 4 to 6 make the project check prove the edit set by breaking it on purpose; use them for a rename, a signature change or a deletion in a project that has a project check, and skip them for a change no other file uses.
 
 ```
 - [ ] 1 Locate     documentSymbol or workspaceSymbol(query) from a .svelte file, for the exact position
 - [ ] 2 Impact     findReferences from a .svelte usage (and incomingCalls for functions)
-- [ ] 3 Blind      Grep the bare name for the blind spots
-- [ ] 4 Edit       change the declaration and every location from steps 2 and 3
-- [ ] 5 Diagnose   read the diagnostics after each edit; fix until no new ones appear
-- [ ] 6 Project    run the project check; repeat 4-6 until it is clean
+- [ ] 3 Blind      Grep the bare name for the blind spots below
+- [ ] 4 Baseline   run the project check before editing; note the errors already there
+- [ ] 5 Break      change only the declaration; run the project check again
+- [ ] 6 Compare    every new error must sit at a site from steps 2-3; an error elsewhere is a use the LSP missed,
+                   a listed site with no error is one the check cannot see; both join the edit set
+- [ ] 7 Edit       change every site in the edit set
+- [ ] 8 Confirm    the project check is back to the baseline and the diagnostics are clean; run it once more
+                   after fixing errors, because one error can hide another
 ```
 
-There is no rename operation: a rename is steps 2 to 4, including the props passed to the component and destructured in `$props()`.
+There is no rename operation: a rename is steps 2 to 7, including the props passed to the component and destructured in `$props()`. On the bundled fixture, renaming the `label` prop inside `CounterButton.svelte` alone makes the check fail at exactly the three `findReferences` sites; [operations.md](references/operations.md), "Prove it", shows both outputs.
 
 ## Project check
 

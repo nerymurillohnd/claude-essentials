@@ -15,6 +15,7 @@ This skill is the contract for two jobs: reading the current official Svelte doc
 ## Contents
 
 - [When to use it](#when-to-use-it)
+- [Which tool first](#which-tool-first)
 - [Rules](#rules)
 - [Who does the work](#who-does-the-work)
 - [Where things are](#where-things-are)
@@ -31,6 +32,16 @@ This skill is the contract for two jobs: reading the current official Svelte doc
 | When asked whether Svelte code has problems, including code pasted in the chat | For a whole-project type check: that is the project check (`svelte-lsp-navigation`) |
 | When an exact rune, template tag, SvelteKit API, option or config key matters | For React, Vue, plain TypeScript or other non-Svelte code |
 | When the project's Svelte or SvelteKit version is newer than what you remember | |
+
+## Which tool first
+
+The default route, because each tool answers a different kind of question. Depart from it when the project gives a reason, and say why.
+
+| The question is about | First tool | Why |
+|---|---|---|
+| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for the blind spots the `svelte-lsp-navigation` skill lists |
+| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows Svelte 4 and SvelteKit 2 |
+| Whether the project has errors | The project check (`npm run check`) | Diagnostics arrive only for files the language server has open |
 
 ## Rules
 
