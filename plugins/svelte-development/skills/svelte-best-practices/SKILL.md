@@ -17,11 +17,11 @@ This skill is the contract for writing Svelte by the current rules. Target versi
 - [When to use it](#when-to-use-it)
 - [Rules for working](#rules-for-working)
 - [Who does the work](#who-does-the-work)
-- [Where things are](#where-things-are)
-- [Procedure](#procedure)
 - [Code rules that training data gets wrong](#code-rules-that-training-data-gets-wrong)
 - [SvelteKit 2 to 3: what changed](#sveltekit-2-to-3-what-changed)
 - [Experimental features](#experimental-features)
+- [Where things are](#where-things-are)
+- [Procedure](#procedure)
 
 ## When to use it
 
@@ -64,66 +64,6 @@ Agent
 ```
 
 For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and name the scope. Source: https://svelte.dev/docs/ai/subagent and https://svelte.dev/docs/ai/instructions.
-
-## Where things are
-
-Read the one reference that matches the task; each opens with its "Verified against" line and ends with the exact calls that fetch its official sections.
-
-| Reference | Read when |
-| --- | --- |
-| [svelte/runes.md](references/svelte/runes.md) | Using `$state`, `$derived`, `$effect`, `$props`, `$bindable`, `$inspect` or `$host` |
-| [svelte/template-syntax.md](references/svelte/template-syntax.md) | Writing markup: blocks, snippets, declaration tags, attachments, bindings, events, classes |
-| [svelte/async-and-boundaries.md](references/svelte/async-and-boundaries.md) | `await` in components, `<svelte:boundary>`, `fork`, `hydratable`, server rendering |
-| [svelte/context-lifecycle-and-reactivity-classes.md](references/svelte/context-lifecycle-and-reactivity-classes.md) | Context, lifecycle, `svelte/reactivity`, stores, `mount`/`hydrate`/`render` |
-| [svelte/styling-motion-and-elements.md](references/svelte/styling-motion-and-elements.md) | Styles, transitions, motion, special elements, custom elements, TypeScript |
-| [svelte/legacy-and-migration.md](references/svelte/legacy-and-migration.md) | Reading or migrating Svelte 4 code |
-| [svelte/gotchas-and-warnings.md](references/svelte/gotchas-and-warnings.md) | A compiler or runtime warning, or behaviour that surprises |
-| [kit/project-and-config.md](references/kit/project-and-config.md) | Project layout, `vite.config`, `#lib`, tsconfig, server-only modules |
-| [kit/routing.md](references/kit/routing.md) | Routes, layouts, params and matchers, error pages |
-| [kit/loading-data.md](references/kit/loading-data.md) | `load`, invalidation, `refreshAll`, `$app/state` |
-| [kit/forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md) | Form actions, `use:enhance`, remote functions |
-| [kit/hooks-errors-and-env.md](references/kit/hooks-errors-and-env.md) | Hooks, errors, environment variables, service workers, cookies |
-| [kit/navigation-and-options.md](references/kit/navigation-and-options.md) | `goto`, link options, page options, `$app/paths` |
-| [kit/adapters-and-deploy.md](references/kit/adapters-and-deploy.md) | Choosing or configuring an adapter and deploying |
-| [kit/security.md](references/kit/security.md) | CSRF, origins, redirects, secrets, CSP, required security releases |
-| [kit/migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md) | Upgrading a SvelteKit 2 project |
-| [tooling/sv-cli.md](references/tooling/sv-cli.md) | `sv create`, `sv add`, `sv check`, `sv migrate`, Prettier, testing add-ons |
-| [integrations/astro.md](references/integrations/astro.md) | Svelte components inside an Astro 7 site |
-| [integrations/tailwind.md](references/integrations/tailwind.md) | Tailwind CSS 4 with SvelteKit or Astro |
-| [docs-map.md](references/docs-map.md) | Choosing which official section to fetch |
-| [changelogs.md](references/changelogs.md) | The project's version is newer than a reference, or behaviour differs from the docs |
-| [known-doc-errata.md](references/known-doc-errata.md) | Before copying a docs example in an area SvelteKit 3 changed |
-
-The sibling skills (`svelte-docs-and-autofixer`, `svelte-lsp-navigation`) are named `svelte-development:<skill>`. When a step needs one that is not loaded yet, load it with the Skill tool:
-
-```text
-Skill
-  skill: "svelte-development:svelte-docs-and-autofixer"
-```
-
-## Procedure
-
-Run these steps in order for any Svelte code you write, convert or review.
-
-1. **Installed versions**, in a project (skip for code pasted in the chat with no project):
-
-   ```sh
-   npm ls svelte @sveltejs/kit --depth=0
-   ```
-
-   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. If a version is newer than the reference's "Verified against" line, run the changelog window check in [changelogs.md](references/changelogs.md).
-2. **Reference.** Read the reference from [Where things are](#where-things-are) that matches the task, and the code rules below.
-3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
-
-   ```text
-   mcp__plugin_svelte-development_svelte__get-documentation
-     section: ["svelte/$props", "svelte/snippet", "svelte/v5-migration-guide"]
-   ```
-
-   If the tool is deferred, load it with ToolSearch (`select:mcp__plugin_svelte-development_svelte__get-documentation`); if the server is unavailable, follow the fallbacks in the `svelte-docs-and-autofixer` skill.
-4. **Write** the code by the rules and the sections.
-5. **Autofix** the full code with `mcp__plugin_svelte-development_svelte__svelte-autofixer` (`code`, `desired_svelte_version: 5`, `filename`) until it reports no issues, as the `svelte-docs-and-autofixer` skill says.
-6. **Check**, in a project: the language server diagnostics and the project's checker (`npm run check`), as the `svelte-lsp-navigation` skill says.
 
 ## Code rules that training data gets wrong
 
@@ -183,5 +123,65 @@ They change between minor releases: fetch the live section before writing any of
 | Fork preloads | `experimental.forkPreloads` |
 
 Details: [async-and-boundaries.md](references/svelte/async-and-boundaries.md) and [forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md).
+
+## Where things are
+
+Read the one reference that matches the task; each opens with its "Verified against" line and ends with the exact calls that fetch its official sections.
+
+| Reference | Read when |
+| --- | --- |
+| [svelte/runes.md](references/svelte/runes.md) | Using `$state`, `$derived`, `$effect`, `$props`, `$bindable`, `$inspect` or `$host` |
+| [svelte/template-syntax.md](references/svelte/template-syntax.md) | Writing markup: blocks, snippets, declaration tags, attachments, bindings, events, classes |
+| [svelte/async-and-boundaries.md](references/svelte/async-and-boundaries.md) | `await` in components, `<svelte:boundary>`, `fork`, `hydratable`, server rendering |
+| [svelte/context-lifecycle-and-reactivity-classes.md](references/svelte/context-lifecycle-and-reactivity-classes.md) | Context, lifecycle, `svelte/reactivity`, stores, `mount`/`hydrate`/`render` |
+| [svelte/styling-motion-and-elements.md](references/svelte/styling-motion-and-elements.md) | Styles, transitions, motion, special elements, custom elements, TypeScript |
+| [svelte/legacy-and-migration.md](references/svelte/legacy-and-migration.md) | Reading or migrating Svelte 4 code |
+| [svelte/gotchas-and-warnings.md](references/svelte/gotchas-and-warnings.md) | A compiler or runtime warning, or behaviour that surprises |
+| [kit/project-and-config.md](references/kit/project-and-config.md) | Project layout, `vite.config`, `#lib`, tsconfig, server-only modules |
+| [kit/routing.md](references/kit/routing.md) | Routes, layouts, params and matchers, error pages |
+| [kit/loading-data.md](references/kit/loading-data.md) | `load`, invalidation, `refreshAll`, `$app/state` |
+| [kit/forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md) | Form actions, `use:enhance`, remote functions |
+| [kit/hooks-errors-and-env.md](references/kit/hooks-errors-and-env.md) | Hooks, errors, environment variables, service workers, cookies |
+| [kit/navigation-and-options.md](references/kit/navigation-and-options.md) | `goto`, link options, page options, `$app/paths` |
+| [kit/adapters-and-deploy.md](references/kit/adapters-and-deploy.md) | Choosing or configuring an adapter and deploying |
+| [kit/security.md](references/kit/security.md) | CSRF, origins, redirects, secrets, CSP, required security releases |
+| [kit/migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md) | Upgrading a SvelteKit 2 project |
+| [tooling/sv-cli.md](references/tooling/sv-cli.md) | `sv create`, `sv add`, `sv check`, `sv migrate`, Prettier, testing add-ons |
+| [integrations/astro.md](references/integrations/astro.md) | Svelte components inside an Astro 7 site |
+| [integrations/tailwind.md](references/integrations/tailwind.md) | Tailwind CSS 4 with SvelteKit or Astro |
+| [docs-map.md](references/docs-map.md) | Choosing which official section to fetch |
+| [changelogs.md](references/changelogs.md) | The project's version is newer than a reference, or behaviour differs from the docs |
+| [known-doc-errata.md](references/known-doc-errata.md) | Before copying a docs example in an area SvelteKit 3 changed |
+
+The sibling skills (`svelte-docs-and-autofixer`, `svelte-lsp-navigation`) are named `svelte-development:<skill>`. When a step needs one that is not loaded yet, load it with the Skill tool:
+
+```text
+Skill
+  skill: "svelte-development:svelte-docs-and-autofixer"
+```
+
+## Procedure
+
+Run these steps in order for any Svelte code you write, convert or review.
+
+1. **Installed versions**, in a project (skip for code pasted in the chat with no project):
+
+   ```sh
+   npm ls svelte @sveltejs/kit --depth=0
+   ```
+
+   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. If a version is newer than the reference's "Verified against" line, run the changelog window check in [changelogs.md](references/changelogs.md).
+2. **Reference.** Read the reference from [Where things are](#where-things-are) that matches the task; the code rules above apply to every task.
+3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
+
+   ```text
+   mcp__plugin_svelte-development_svelte__get-documentation
+     section: ["svelte/$props", "svelte/snippet", "svelte/v5-migration-guide"]
+   ```
+
+   If the tool is deferred, load it with ToolSearch (`select:mcp__plugin_svelte-development_svelte__get-documentation`); if the server is unavailable, follow the fallbacks in the `svelte-docs-and-autofixer` skill.
+4. **Write** the code by the rules and the sections.
+5. **Autofix** the full code with `mcp__plugin_svelte-development_svelte__svelte-autofixer` (`code`, `desired_svelte_version: 5`, `filename`) until it reports no issues, as the `svelte-docs-and-autofixer` skill says.
+6. **Check**, in a project: the language server diagnostics and the project's checker (`npm run check`), as the `svelte-lsp-navigation` skill says. If either reports a problem, fix it and repeat steps 5 and 6; finish only when both are clean.
 
 Derived from the `svelte-core-bestpractices` skill of sveltejs/ai-tools (MIT), base `6b5d0da`, and extended; see the plugin NOTICE. Not affiliated with or endorsed by the Svelte project.

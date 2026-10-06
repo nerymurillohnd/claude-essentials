@@ -75,11 +75,18 @@ Run these steps in order for every change and report each one.
 
 ## Report
 
-End with:
+End with this report:
 
-1. **Changes**: each file and what changed.
-2. **Docs used**: the sections fetched, and any conflict between sources.
-3. **Checks**: the autofixer, language server and project-check results, with the final error and warning counts.
-4. **Open points**: anything not verified (for example, the MCP server or the language server was unavailable) and suggestions outside the task.
+```markdown
+**Svelte change**: <task> (svelte <version>, @sveltejs/kit <version>)
+
+Changes:
+
+- `src/lib/components/Counter.svelte`: <what changed>
+
+Docs used: `svelte/$props`, `svelte/$bindable`; conflicts between sources: <none, or which>
+Checks: autofixer <files checked>, 0 issues; language server <new diagnostics>; project check <errors> errors, <warnings> warnings
+Open points: <anything not verified, such as an unavailable MCP or language server; suggestions outside the task>
+```
 
 Derived from the `svelte-file-editor` agent of sveltejs/ai-tools (MIT), base `6b5d0da`; see the plugin NOTICE.

@@ -13,6 +13,7 @@ This skill is the contract for questions about the project's own code. The plugi
 
 - [When to use it](#when-to-use-it)
 - [Rules](#rules)
+- [Gotchas](#gotchas)
 - [Who does the work](#who-does-the-work)
 - [Where things are](#where-things-are)
 - [Calling the LSP tool](#calling-the-lsp-tool)
@@ -21,7 +22,6 @@ This skill is the contract for questions about the project's own code. The plugi
 - [Whole-project check](#whole-project-check)
 - [What the server sees in dynamic code](#what-the-server-sees-in-dynamic-code)
 - [Blind spots](#blind-spots)
-- [Environment limits](#environment-limits)
 
 ## When to use it
 
@@ -45,6 +45,14 @@ These rules hold for every later turn of the task, not only the turn that loaded
 7. **Diagnostics are not a project check.** Diagnostics are pushed once after an edit, only for open files, and cannot be requested again. "No diagnostics" proves nothing about the project: run the [whole-project check](#whole-project-check).
 8. **Never hide a problem.** No `--compiler-warnings x:ignore` or `--ignore` to get a check passing; ignore only a verified false positive, with the reason.
 9. **No installs without consent.** Never install `svelte-language-server`, `sv` or any package; tell the user what is missing.
+
+## Gotchas
+
+- The server needs `svelteserver` on the user's PATH (`npm install -g svelte-language-server`, done by the user) and TypeScript in the project.
+- The server's workspace is the directory Claude Code was started in. In a monorepo whose Svelte app lives in a subfolder, results that ignore the app's `tsconfig` or `vite.config` may come from a session started at the repository root (not tested on a monorepo); tell the user, and run the whole-project check from the app folder.
+- The plugin restarts a crashed server up to three times and waits up to 90 seconds per request; after that, ask the user to run `/reload-plugins`.
+- Cloud sessions do not start plugin language servers: use the whole-project check there.
+- svelte-language-server 0.18.4 and svelte-check 4.7.6 predate SvelteKit 3's release. Open on 2026-10-05: moving, creating or deleting route files can crash the server (language-tools #3108); config reading from `vite.config` can be wrong (#3080); type arguments on `$props()` make destructured props `any` (#3124); TypeScript 7 crashes svelte-check without `--tsgo` (#3063). If results look wrong after such changes, ask the user to run `/reload-plugins` and confirm with the whole-project check.
 
 ## Who does the work
 
@@ -110,6 +118,19 @@ Run these in order and do not skip a step:
 4. **Warm up if it fails.** On an error or an empty result: `documentSymbol` on the file (opens it and confirms the position), `hover` at the position (confirms the symbol), then repeat step 3. Stop after three attempts on the same question.
 5. **Fall back, and say so.** Only after step 4 fails: tell the user the language server is not answering and why, if the error says. Then use the whole-project check for diagnostics, Grep for locations (stating they are text matches), or the Svelte MCP docs tools for API questions.
 6. **Add the blind spots.** Before answering "unused" or listing an edit set, Grep the bare name for the [blind spots](#blind-spots).
+7. **Answer with this template**, so the user can tell semantic results from text matches:
+
+   ```markdown
+   **`<symbol>`** (<kind>), declared at <file>:<line>
+
+   | # | File:line | Use | Found by |
+   |---|---|---|---|
+   | 1 | src/routes/+page.svelte:13 | passes `label` | LSP findReferences |
+   | 2 | src/lib/menu.ts:8 | route path in a string | Grep (text match) |
+
+   Blind-spot search: `<pattern>` → <matches, or "none">
+   Not covered: <what neither the language server nor Grep can see, or "nothing known">
+   ```
 
 ## Procedure for a change
 
@@ -175,13 +196,5 @@ Uses the server cannot see, because they live in strings, file names or configur
 - **Calls through an alias**: callers of `obj.fn()` when `fn` was stored in an object; follow the alias with `findReferences`.
 - **Strings and attributes**: CSS class names (including Tailwind classes in `class` objects and arrays), `data-sveltekit-*` attributes.
 - **Configuration and scripts**: `vite.config`, `package.json` scripts and `imports`, `svelte-check --ignore` lists, CI files.
-
-## Environment limits
-
-- The server needs `svelteserver` on the user's PATH (`npm install -g svelte-language-server`, done by the user) and TypeScript in the project.
-- The server's workspace is the directory Claude Code was started in. In a monorepo whose Svelte app lives in a subfolder, results that ignore the app's `tsconfig` or `vite.config` may come from a session started at the repository root (not tested on a monorepo); tell the user, and run the whole-project check from the app folder.
-- The plugin restarts a crashed server up to three times and waits up to 90 seconds per request; after that, ask the user to run `/reload-plugins`.
-- Cloud sessions do not start plugin language servers: use the whole-project check there.
-- svelte-language-server 0.18.4 and svelte-check 4.7.6 predate SvelteKit 3's release. Open on 2026-10-05: moving, creating or deleting route files can crash the server (language-tools #3108); config reading from `vite.config` can be wrong (#3080); type arguments on `$props()` make destructured props `any` (#3124); TypeScript 7 crashes svelte-check without `--tsgo` (#3063). If results look wrong after such changes, ask the user to run `/reload-plugins` and confirm with the whole-project check.
 
 Sources: Claude Code LSP tool (runtime schema and observed results, Claude Code 2.1.289, 2026-10-05), https://code.claude.com/docs/en/plugins/code-intelligence, https://code.claude.com/docs/en/plugins-reference (plugin agents are named `<plugin>:<agent>`), svelte-check `src/options.ts` (machine output when `CLAUDECODE=1`).
