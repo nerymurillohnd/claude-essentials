@@ -15,9 +15,42 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # A pull request that changes no plugin never starts the eval job: no runner, no Claude
+  # Code install, no model call. The label alone is not enough to spend money.
+  changes:
+    name: Detect plugin changes
+    if: github.event.label.name == 'run-evals'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      plugins: ${{ steps.detect.outputs.plugins }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Look for changed plugin files
+        id: detect
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "${BASE_SHA}...HEAD" -- plugins)"
+          if [[ -n "${changed}" ]]; then
+            echo "plugins=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "plugins=false" >> "${GITHUB_OUTPUT}"
+            echo "No plugin file changed: the eval suites are skipped." >> "${GITHUB_STEP_SUMMARY}"
+          fi
+
   evals:
     name: Plugin eval suites
-    if: github.event.label.name == 'run-evals'
+    needs: changes
+    if: github.event.label.name == 'run-evals' && needs.changes.outputs.plugins == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     permissions:
