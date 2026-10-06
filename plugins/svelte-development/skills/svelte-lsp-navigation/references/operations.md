@@ -149,7 +149,9 @@ project check after renaming the declaration only
 
 An error site that is not in the `findReferences` list is a use the language server missed; a `findReferences` site with no error is a use the check cannot see (a string, a pattern). Both go into the edit set.
 
-**When the tools stay silent** (no diagnostics after an edit, or a check that reports nothing after a change that must break), run the bundled self-test. It installs a scratch copy of the fixture, applies both mutations and compares every result; it never touches the user's project, needs `node`, `npm` and the npm registry, and takes about a minute:
+**When the language server stays silent** (no diagnostics after an edit, empty answers), probe it directly: `command -v svelteserver` must print a path, and `documentSymbol` on a non-empty `.svelte` file must list its symbols, as in [Find a symbol](#find-a-symbol). A script cannot call the LSP tool, so only these calls prove the server.
+
+**When the project check stays silent** (it reports nothing after a change that must break), run the bundled self-test. It installs a scratch copy of the fixture, applies both mutations and compares every result; it never touches the user's project, needs `node`, `npm` and the npm registry, and takes about a minute:
 
 ```sh
 "${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/scripts/selftest.sh"

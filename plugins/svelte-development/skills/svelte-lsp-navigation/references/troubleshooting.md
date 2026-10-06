@@ -28,7 +28,7 @@ Claude Code returns an error for each LSP call on a file whose server it cannot 
 
 ## No diagnostics appear after an edit
 
-- If nothing appears even after a change that must break, prove the tools work before trusting a clean result: run the self-test, `"${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/scripts/selftest.sh"` (see operations.md, "Prove it").
+- If nothing appears even after a change that must break, first prove the language server answers: `command -v svelteserver`, then `documentSymbol` on a non-empty `.svelte` file must list its symbols. If the project check is the silent one, run the self-test, `"${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/scripts/selftest.sh"` (see operations.md, "Prove it"); it checks svelte-check on a scratch copy of the fixture and does not exercise the language server.
 - The server starts on the first edit of a `.svelte` file, not at session start.
 - Diagnostics after an edit appear as `Found N new diagnostic issues in M files`; only new issues are reported, so an unchanged error does not repeat.
 - `claude --debug` logs `LSP server <name> failed to start: <reason>` when the server crashes at start.
