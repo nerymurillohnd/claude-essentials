@@ -151,13 +151,7 @@ An error site that is not in the `findReferences` list is a use the language ser
 
 **When the language server stays silent** (no diagnostics after an edit, empty answers), probe it directly: `command -v svelteserver` must print a path, and `documentSymbol` on a non-empty `.svelte` file must list its symbols, as in [Find a symbol](#find-a-symbol). A script cannot call the LSP tool, so only these calls prove the server.
 
-**When the project check stays silent** (it reports nothing after a change that must break), run the bundled self-test. It installs a scratch copy of the fixture, applies both mutations and compares every result; it never touches the user's project, needs `node`, `npm` and the npm registry, and takes about a minute:
-
-```sh
-"${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/scripts/selftest.sh"
-```
-
-Exit 0 means the project check sees deliberate breakage; exit 1 lists the step that did not match; exit 2 means a requirement or the install failed. Run it with a Bash timeout of at least five minutes.
+**When the project check stays silent** (it reports nothing after a change that must break): the cause is almost always in the project, not in svelte-check. Run `npx --no-install svelte-kit sync` and check again (missing generated types hide errors); read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
 
 ## Fetch before relying on this when
 

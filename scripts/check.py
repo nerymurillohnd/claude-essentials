@@ -52,7 +52,6 @@ TEMP_PREFIXES = (
     "add-component-",
     "new-plugin-",
     "gate-fixture-",
-    "svelte-development-selftest-",
 )
 
 SCRIPTS = repo.ROOT / "scripts"

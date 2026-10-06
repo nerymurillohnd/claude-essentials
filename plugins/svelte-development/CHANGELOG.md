@@ -9,7 +9,6 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
-- A self-test (`skills/svelte-lsp-navigation/scripts/selftest.sh`) that proves the project check sees deliberate breakage: on a temporary copy of the bundled fixture it renames a prop and a component file and compares every reported error with the known sites, including a blind spot that only a text search finds.
 - A hook that adds a note next to the result of every `Write` or `Edit` of a `.svelte`, `.svelte.ts` or `.svelte.js` file, telling Claude that the Svelte autofixer has not checked the new content and the project check has not run since the change. It prints a fixed text: it reads nothing, sends nothing and cannot block an edit.
 
 ### Changed
