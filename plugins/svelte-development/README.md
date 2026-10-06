@@ -171,7 +171,7 @@ Both agents use the model of your session. The [auditor](agents/svelte-code-audi
 <details>
 <summary>Does it work on Windows?</summary>
 
-Not tested yet. The MCP server is remote, and the language server is a Node.js program that should run anywhere Node.js does; the skills' fallback commands use `curl`, which Windows 10 and later include. Report problems through an issue.
+Not tested yet. The MCP server is remote, and the language server is a Node.js program that should run anywhere Node.js does; the skills' fallback commands use `curl`, which Windows 10 and later include, and the changelog and search commands in the references also use `grep` and `awk`, which come with Git Bash. Report problems through an issue.
 
 </details>
 
