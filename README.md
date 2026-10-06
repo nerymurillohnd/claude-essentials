@@ -90,6 +90,13 @@ claude plugin marketplace add nerymurillohnd/claude-essentials --sparse .claude-
 
 </details>
 
+<details>
+<summary>Use these plugins in Claude Tag (Slack)</summary>
+
+Claude Tag syncs plugins only from a private or internal repository, so it cannot use this public one directly. Do not turn a private fork of this whole repository into your skills repository: when Claude Tag clones a repository it was granted, it loads that repository's `CLAUDE.md`, `.claude/rules/` and `.claude/skills/`, and here those hold the maintainers' own instructions and release skills, which would then steer Claude in your channels. Instead, upload a plugin as a zip archive of its `plugins/<name>/` folder (**Organization settings → Plugins & skills → Add → Upload a plugin**), or copy the `plugins/<name>/` folders you want into your own skills repository. Sources: [skills repository](https://claude.com/docs/claude-tag/admins/skills-repo) and [what loads from a repository](https://claude.com/docs/claude-tag/admins/configure-github#what-loads-from-a-repository); Claude Tag is in public beta, checked 2026-10-05.
+
+</details>
+
 ## Trust and security
 
 A plugin runs with the permissions of the person who installs it. Every plugin here is reviewed against the [quality bar](docs/quality-bar.md), and plugins with hooks, MCP or LSP servers, executables or mods also pass the [security review](docs/security-review.md). Each plugin README has a **Permissions** section that states what it runs on your machine. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
