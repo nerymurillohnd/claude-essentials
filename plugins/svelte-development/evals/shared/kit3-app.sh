@@ -8,6 +8,9 @@ evals_dir="$(dirname "${shared_dir}")"
 plugin_root="$(dirname "${evals_dir}")"
 
 cp -R "${plugin_root}/skills/svelte-lsp-navigation/fixtures/kit3-app/." .
+# The fixture README lists the known answers (symbols, mutation sites): keep it out of the
+# workspace, so a case measures the tools, not a lookup of the expected result.
+rm -f README.md
 for name in package.json tsconfig.json vite.config.ts; do
   mv "${name}.example" "${name}"
 done
