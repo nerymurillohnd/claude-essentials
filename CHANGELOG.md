@@ -8,6 +8,7 @@ The catalog has no version: users always receive the latest catalog, and only pl
 
 ### Changed
 
+- Plugin READMEs are written as a page for the user who is deciding to install, not as a second changelog: one paragraph in the whole file, and tables, labelled bullets, callouts and `<details>` blocks everywhere else. The rule and its fix order are in `docs/readme-guide.md`, and the scaffold's own TODO text asks for that shape, so every new plugin starts from it.
 - Every plugin supports macOS, Linux (WSL included) and Windows with Git Bash; the READMEs list the platform first among the prerequisites, and the root Quick start lists what to install, in order, before a plugin.
 - `svelte-development`: the catalog description now names SvelteKit 2 support, language-server navigation with renames proven by the project check, and a svelte-check of your changes before Claude stops.
 

@@ -5,11 +5,11 @@
 
 ## 📖 Overview
 
-TODO: two or three sentences on the problem this plugin solves, who it is for, and what a user gets after installing it.
+TODO: two or three sentences on the problem this plugin solves. This is the only paragraph in the README; everything after it is scannable. Follow it with a `>` callout naming who the plugin is for, and a short bulleted list of what a user gets after installing it, each bullet opening with a bold label.
 
 ## 🎯 What it does
 
-TODO: a table of two to four situations a user starts from, what the plugin does in each and the result they see. Use the columns Situation, What the plugin does and Result.
+TODO: a table of two to four situations a user starts from, what the plugin does in each and the result they see. Use the columns Situation, What the plugin does and Result. One line per cell.
 
 ## 📋 Prerequisites
 
@@ -25,7 +25,7 @@ TODO: list every other tool, service or account this plugin's components need, i
 
 ## 🚀 Usage
 
-TODO: show how to use each component with at least one concrete example: the prompt or command the user types and what happens.
+TODO: show how to use each component with at least one concrete example: the prompt or command the user types in a fenced block, and under it one or two bullets on what happens, never a paragraph.
 
 ## 🧩 Components
 

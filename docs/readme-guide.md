@@ -19,7 +19,7 @@ The README is what users read before they install: it says what the plugin conta
 | ----------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Title                   | Yes                       | `displayName`                                                                                                                                                                                                                                                                                                         |
 | Header                  | Yes                       | Generated: badges, description, affiliation statement, Contents line                                                                                                                                                                                                                                                  |
-| 📖 Overview             | Yes                       | Author: the problem, the audience, what users get                                                                                                                                                                                                                                                                     |
+| 📖 Overview             | Yes                       | Author: the problem in one paragraph, then a `>` callout with the audience and a labelled bullet list of what users get                                                                                                                                                                                               |
 | 🎯 What it does         | Yes                       | Author: a table of two to four situations, with the columns Situation, What the plugin does and Result                                                                                                                                                                                                                |
 | 📋 Prerequisites        | Yes                       | Generated table with the supported platforms (macOS, Linux, Windows with Git Bash; ADR supported-platforms) and the Claude Code minimum; then author: every other tool in install order, with Tool, Minimum, Check and Why, and each binary's install command (global or project-local), or "No other prerequisites." |
 | ⚡ Installation         | Yes                       | Generated: the one-command session install with `--marketplace`, the two-step session install and the shell install                                                                                                                                                                                                   |
@@ -50,6 +50,21 @@ A section that does not apply is left out entirely, never written as "N/A". The 
 
 Answer only what is true of the published version; leave out a question you cannot answer with certainty.
 
+## Readable, not a changelog
+
+A README is read by a person deciding whether to install the plugin, not by someone tracking what changed. Keep it scannable: the changelog is where the history of a release belongs.
+
+| Rule                     | How it looks                                                                                                              |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| One paragraph per README | The description under 📖 Overview. Every other section uses tables, bullets, fenced blocks or `>` callouts                |
+| Bullets carry a label    | `- **What it is:** one line`, so the eye finds the item before the sentence                                               |
+| One idea per line        | A bullet or a table cell holds one fact; a second fact gets its own line                                                  |
+| Emphasis means something | Bold for the label or the thing a user must not miss, _italics_ for an aside, `>` callouts for a warning or who it is for |
+| Emoji only in headings   | Plus, at most, one leading emoji per bullet in a short list; never inside a sentence                                      |
+| Say it once              | A fact lives in one place and is linked from the others; repeating it is how a README turns into release notes            |
+
+A section that needs more than a screen is reorganised, not written longer: split it with `###` subheadings, move the detail into a table, or put the rarely needed part in a `<details>` block.
+
 ## Links
 
 - Generated content links what it can: each component in the Components table to its file, the Contents line to every section, badges to their sections, and repository documents to absolute GitHub URLs.
@@ -60,7 +75,7 @@ Answer only what is true of the published version; leave out a question you cann
 ## Conventions
 
 - **Badges:** generated static images from manifest data plus GitHub's workflow status badge. Root: plugin count, minimum Claude Code, license, CI, community status. Plugin: version, category, minimum Claude Code, license, CI, one badge per component type, and whether the plugin runs code.
-- **Hierarchy:** one `#` title, `##` sections in the order above, short paragraphs, tables for facts that compare (components, options, documents), prose for explanations.
+- **Hierarchy:** one `#` title, `##` sections in the order above, `###` subheadings and bold labels inside a long section, tables for facts that compare (components, options, documents).
 - **Code blocks:** always fenced with a language: `text` for slash commands typed in Claude Code, `bash` for shell commands, `json` for settings.
 - **Collapsible sections:** `<details>` only for advanced or rarely needed content, such as pinning or sparse clones.
 - **Placeholders:** `{{name}}` is filled by scripts; `TODO:` marks text the author must write. `scripts/check.py` fails while either remains in a plugin.
