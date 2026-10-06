@@ -18,3 +18,9 @@ paths:
   - Hook decisions: on blocking events such as PreToolUse, exit 2 or JSON `permissionDecision: "deny"` blocks and `"ask"` prompts; exit 1, a missing script and a command-hook timeout do not block. Exit 2 does not block on SessionStart.
   - Saved workflows in `.claude/workflows/<file>.js` run as `/<meta.name>`; `export const meta` must stay a plain literal.
   - Observed: an `agents` directory created mid-session became available without a restart, although the sub-agents page says a new directory needs one.
+- Read in the docs on 2026-10-05/06 (Claude Code 2.1.290), for plugin skills and agents:
+  - An invoked skill's content stays in the conversation and is not re-read; after compaction Claude Code re-attaches the first 5,000 tokens of each invoked skill, within 25,000 tokens in total, newest first. Keep a skill's rules at its top.
+  - `context: fork` with `agent` lists built-in agents and `.claude/agents/` agents; a plugin agent there is untested.
+  - A named Agent call can start an agent-team teammate, and a teammate gets none of the definition's preloaded `skills`; plugin agents should load their skills themselves when they are missing, and plugin skills should delegate without a `name`.
+  - A subagent's model resolves as: the call's `model`, the definition's `model` (`inherit` is the session model), `CLAUDE_CODE_SUBAGENT_MODEL`, then the session model; set `model: inherit` when a plugin promises the session model.
+  - A hook or child process can post to its own session through `CLAUDE_CODE_MESSAGING_SOCKET` (cross-session messaging docs); a candidate channel for a background reviewer, not used yet.
