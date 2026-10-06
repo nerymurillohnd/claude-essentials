@@ -9,10 +9,6 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [0.2.0] - 2026-10-06
 
-### Fixed
-
-- The bundled SvelteKit 3 fixture now ships its `src/lib` files (the components, the `Counter` class and `formatCount`): a repository ignore rule had left them out of 0.1.0, so the fixture's imports pointed at files that were missing.
-
 ### Added
 
 - A hook that adds a note next to the result of every `Write` or `Edit` of a `.svelte`, `.svelte.ts` or `.svelte.js` file, telling Claude that the Svelte autofixer has not checked the new content and the project check has not run since the change. It prints a fixed text: it reads nothing, sends nothing and cannot block an edit.
@@ -42,6 +38,10 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - The project's `CLAUDE.md`, saved memory and conventions decide style and structure over the skills, but never make a removed API valid.
 - The README's Permissions section says what changes in Claude Tag: MCP traffic, including code sent to the autofixer, is not in the organization's network export, and the sandbox can block the `curl` fallbacks and has no `svelteserver`.
 - Defaults instead of menus: sections come from the docs map first (`list-sections` only for a topic the map lacks), and `sv` runs with `npx` unless the project's lockfile names another package manager.
+
+### Fixed
+
+- The bundled SvelteKit 3 fixture now ships its `src/lib` files (the components, the `Counter` class and `formatCount`): a repository ignore rule had left them out of 0.1.0, so the fixture's imports pointed at files that were missing.
 
 ## [0.1.0] - 2026-10-05
 
