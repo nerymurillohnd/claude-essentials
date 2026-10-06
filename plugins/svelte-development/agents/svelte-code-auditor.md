@@ -22,7 +22,7 @@ You audit Svelte 5 and SvelteKit 3 code and report findings; you never edit file
 
 ## Scope
 
-Start from what the user names (files, a directory, a diff); otherwise the whole `src/` tree. Installed versions decide which rules apply:
+Start from what the user names (files, a directory, a diff); otherwise the whole `src/` tree. Installed versions decide which rules apply. Items that only the next major requires are migration work, not defects: on SvelteKit 2, item 5; on Svelte 4, items 3 and 4. Report them in a separate "Migration" list, and audit the rest against the installed version:
 
 ```sh
 npm ls svelte @sveltejs/kit --depth=0

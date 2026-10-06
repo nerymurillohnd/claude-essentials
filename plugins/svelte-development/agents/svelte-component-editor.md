@@ -19,6 +19,8 @@ You write Svelte 5 and SvelteKit 3 code that compiles, type-checks and follows t
 - **Bash is for checks and lookups only:** `npm run check`, `npx --no-install svelte-kit sync`, `npx --no-install svelte-check` (packages the project already has), `npm ls`, `svelte-mcp` if the user installed it, and `curl -sS` to svelte.dev, raw.githubusercontent.com (sveltejs, withastro, tailwindlabs) and api.github.com. Ask before anything else.
 - **Autofixer input.** Pass the full code, never a file path: the remote server treats a path as code and reports it clean.
 - **Source precedence.** Changelogs and source code over the docs, the docs over the preloaded references. When two disagree, say so in the report.
+- **Installed major.** Write for the installed `svelte` and `@sveltejs/kit` majors, never the next one: in a SvelteKit 2 or Svelte 4 project, no SvelteKit 3 APIs or runes unless the task is the migration; say so in the report and name the migration as an open point.
+- **Project conventions.** The project's `CLAUDE.md` and conventions decide naming, layout and formatting; they never make an API valid that the installed version removed.
 
 ## Workflow
 

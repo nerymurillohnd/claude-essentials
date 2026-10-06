@@ -21,6 +21,8 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - `svelte-best-practices` shows a Svelte 4 component converted to Svelte 5, with the rule behind each change; `svelte-lsp-navigation` says which procedure fits a question, a change or a project check; one term, "project check", names the project's type and Svelte check everywhere; and each output template says whether it is fixed or a default.
 - The Svelte MCP tools are named in full (`mcp__plugin_svelte-development_svelte__<tool>`) wherever a call is described, and the skill frontmatter holds no angle-bracket tags.
 - The Windows answer in the README FAQ names `grep` and `awk`, which the changelog and search commands need, besides `curl`.
+- Projects still on SvelteKit 2 or Svelte 4 get code for their installed version: the skills and the editor no longer write SvelteKit 3 APIs or runes there unless the task is the migration, and the auditor lists SvelteKit 3 and Svelte 5 changes as migration work instead of defects.
+- The project's `CLAUDE.md`, saved memory and conventions decide style and structure over the skills, but never make a removed API valid.
 - Defaults instead of menus: sections come from the docs map first (`list-sections` only for a topic the map lacks), and `sv` runs with `npx` unless the project's lockfile names another package manager.
 
 ## [0.1.0] - 2026-10-05
