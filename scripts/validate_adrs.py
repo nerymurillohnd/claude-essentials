@@ -25,6 +25,7 @@ import repo
 
 FILENAME_RE = re.compile(r"^ADR_(\d{4}-\d{2}-\d{2})_([a-z0-9]+(?:-[a-z0-9]+)*)\.md$")
 STATUSES = frozenset({"proposed", "accepted", "rejected", "deprecated", "superseded"})
+ADR_REFERENCE_FIELDS = ("supersedes", "superseded-by")
 REQUIRED_SECTIONS = (
     "## Purpose",
     "## Scope",
@@ -68,8 +69,29 @@ def parse_frontmatter(text: str) -> tuple[dict[str, str | list[str]], str] | Non
     return fields, text[end + 5 :]
 
 
-def _frontmatter_problems(fields: dict[str, str | list[str]], file_date: str) -> list[str]:
+def _reference_problems(fields: dict[str, str | list[str]], decisions: Path) -> list[str]:
+    """Check `supersedes` and `superseded-by`: "none" or the file name of an existing record."""
     problems: list[str] = []
+    for name in ADR_REFERENCE_FIELDS:
+        value = fields.get(name)
+        if value is None or value == "none":
+            continue
+        if not (
+            isinstance(value, str) and FILENAME_RE.match(value) and (decisions / value).is_file()
+        ):
+            problems.append(
+                f'{name} "{value}" must be "none" or the file name of an existing record'
+            )
+    successor = fields.get("superseded-by")
+    if fields.get("status") == "superseded" and successor in (None, "none"):
+        problems.append("a superseded record must name its successor in superseded-by")
+    return problems
+
+
+def _frontmatter_problems(
+    fields: dict[str, str | list[str]], file_date: str, decisions: Path
+) -> list[str]:
+    problems: list[str] = _reference_problems(fields, decisions)
     if fields.get("date") != file_date:
         problems.append(
             f'frontmatter date "{fields.get("date")}" must equal the file name date {file_date}'
@@ -139,7 +161,7 @@ def validate_record(path: Path, decisions: Path) -> list[str]:
     if parsed is None:
         return [*problems, "missing YAML frontmatter between --- lines"]
     fields, body = parsed
-    problems.extend(_frontmatter_problems(fields, file_date))
+    problems.extend(_frontmatter_problems(fields, file_date, decisions))
     problems.extend(_structure_problems(text, body))
     problems.extend(_link_problems(path, decisions, body, fields.get("status")))
     return problems

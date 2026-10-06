@@ -551,7 +551,7 @@ def root_readme(plugins: list[Plugin]) -> str:
             [
                 f"[{p.display_name}](plugins/{p.name}/README.md)",
                 f"`{p.name}`",
-                f"[{p.category}](#categories)",
+                f"[{p.category}](#-categories)",
                 p.version,
                 repo.as_str(p.entry.get("description")) or "",
             ]
@@ -569,7 +569,7 @@ def root_readme(plugins: list[Plugin]) -> str:
     )
     badges = " ".join(
         [
-            badge("plugins", str(len(plugins)), "informational", "#plugins"),
+            badge("plugins", str(len(plugins)), "informational", "#-plugins"),
             badge("Claude Code", f"≥ {repo.MIN_CLAUDE_CODE}", "orange", DOCS_URL),
             badge("license", "MIT", "green", "LICENSE"),
             ci_badge(),

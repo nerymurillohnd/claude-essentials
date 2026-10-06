@@ -570,7 +570,43 @@ class AdrValidatorTest(RepositoryFixture):
 
     def test_superseded_without_successor_fails(self) -> None:
         self.replace_in_record("status: accepted", "status: superseded")
-        self.assert_adr_fails_with("must link to the record that supersedes it")
+        errors = self.adr_errors()
+        assert any("must name its successor in superseded-by" in e for e in errors), errors
+        assert any("must link to the record that supersedes it" in e for e in errors), errors
+
+    def test_superseded_with_existing_successor_passes(self) -> None:
+        self.replace_in_record(
+            "status: accepted",
+            "status: superseded\nsuperseded-by: ADR_2026-10-03_validation-stack.md",
+        )
+        self.replace_in_record(
+            "## Purpose\n",
+            "## Purpose\n\nReplaced by [validation stack](ADR_2026-10-03_validation-stack.md).\n",
+        )
+        assert self.adr_errors() == []
+
+    def test_superseded_by_missing_file_fails(self) -> None:
+        self.replace_in_record(
+            "status: accepted",
+            "status: superseded\nsuperseded-by: ADR_2026-10-03_missing.md",
+        )
+        self.replace_in_record(
+            "## Purpose\n",
+            "## Purpose\n\nReplaced by [validation stack](ADR_2026-10-03_validation-stack.md).\n",
+        )
+        self.assert_adr_fails_with('superseded-by "ADR_2026-10-03_missing.md" must be')
+
+    def test_supersedes_missing_file_fails(self) -> None:
+        self.replace_in_record(
+            "status: accepted", "status: accepted\nsupersedes: ADR_2026-10-03_missing.md"
+        )
+        self.assert_adr_fails_with('supersedes "ADR_2026-10-03_missing.md" must be')
+
+    def test_supersedes_existing_file_passes(self) -> None:
+        self.replace_in_record(
+            "status: accepted", "status: accepted\nsupersedes: ADR_2026-10-03_validation-stack.md"
+        )
+        assert self.adr_errors() == []
 
     def test_broken_link_fails(self) -> None:
         self.replace_in_record(
