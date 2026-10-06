@@ -1,20 +1,22 @@
 # Claude Essentials
 
-[![plugins: 1](https://img.shields.io/badge/plugins-1-informational)](#plugins) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![community: unaffiliated](https://img.shields.io/badge/community-unaffiliated-lightgrey)](#claude-essentials)
+[![plugins: 1](https://img.shields.io/badge/plugins-1-informational)](#-plugins) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![community: unaffiliated](https://img.shields.io/badge/community-unaffiliated-lightgrey)](#claude-essentials)
 
 Community plugins for [Claude Code](https://code.claude.com/docs): workflows, agents, audits, code review, documentation, development practices, deep research and model behavior, distributed as a Claude Code plugin marketplace.
 
-Claude Essentials is an independent community project. It is not affiliated with or endorsed by Anthropic.
+> [!NOTE]
+> Claude Essentials is an independent community project. It is not affiliated with or endorsed by Anthropic.
 
-**Contents:** [Quick start](#quick-start) · [Plugins](#plugins) · [Categories](#categories) · [Update and uninstall](#update-and-uninstall) · [Set up for a team](#set-up-for-a-team) · [Trust and security](#trust-and-security) · [Contributing](#contributing) · [Project documentation](#project-documentation) · [License](#license)
+**🧭 Contents:** [🚀 Quick start](#-quick-start) · [🧩 Plugins](#-plugins) · [🗂️ Categories](#-categories) · [🔄 Update and uninstall](#-update-and-uninstall) · [👥 Set up for a team](#-set-up-for-a-team) · [🛡️ Trust and security](#-trust-and-security) · [🤝 Contributing](#-contributing) · [📚 Project documentation](#-project-documentation) · [📄 License](#-license)
 
-## Quick start
+## 🚀 Quick start
 
-Before you install:
+> [!IMPORTANT]
+> Before you install, check these three things.
 
-1. **Platform**: macOS, Linux (WSL included), or Windows with [Git Bash](https://git-scm.com/downloads/win). Claude Code runs hooks and shell commands with Git Bash on Windows; these plugins are not supported without it.
-2. **Claude Code** 2.1.289 or later (`claude --version`).
-3. **The plugin's own prerequisites**, such as a language server binary: each plugin README lists them under Prerequisites. Install them first, so the plugin finds them when it loads.
+1. 🖥️ **Platform:** macOS, Linux (WSL included), or Windows with [Git Bash](https://git-scm.com/downloads/win). Claude Code runs hooks and shell commands with Git Bash on Windows; these plugins are not supported without it.
+2. 🤖 **Claude Code** 2.1.289 or later (`claude --version`).
+3. 🧰 **The plugin's own prerequisites**, such as a language server binary: each plugin README lists them under Prerequisites. Install them first, so the plugin finds them when it loads.
 
 Then, inside a Claude Code session, add the marketplace once and install the plugins you want:
 
@@ -30,15 +32,16 @@ claude plugin marketplace add nerymurillohnd/claude-essentials
 claude plugin install <plugin>@claude-essentials
 ```
 
-Each plugin's README lists its requirements, components and the exact commands to use it.
+> [!TIP]
+> Each plugin's README lists its requirements, components and the exact commands to use it.
 
-## Plugins
+## 🧩 Plugins
 
-| Plugin                                                     | Install as           | Category                   | Version | Description                                                                                                                                                                                                                                                                                                                                                             |
-| ---------------------------------------------------------- | -------------------- | -------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Svelte Development](plugins/svelte-development/README.md) | `svelte-development` | [development](#categories) | 0.2.0   | Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools. |
+| Plugin                                                     | Install as           | Category                    | Version | Description                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------------------------- | -------------------- | --------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Svelte Development](plugins/svelte-development/README.md) | `svelte-development` | [development](#-categories) | 0.2.0   | Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools. |
 
-## Categories
+## 🗂️ Categories
 
 | Category         | Covers                                                 | Plugins |
 | ---------------- | ------------------------------------------------------ | ------- |
@@ -52,19 +55,20 @@ Each plugin's README lists its requirements, components and the exact commands t
 | `research`       | Deep web and source research                           | 0       |
 | `model-behavior` | Output styles, guardrails and operating rules          | 0       |
 
-## Update and uninstall
+## 🔄 Update and uninstall
 
-Claude Code does not update plugins from community marketplaces in the background unless you turn that on. Without it, you keep the version you installed, including any bug or security fix released later.
+> [!WARNING]
+> Claude Code does not update plugins from community marketplaces in the background unless you turn that on. Without it, you keep the version you installed, including any bug or security fix released later.
 
-| To                     | Do this                                                                                                                    |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Update automatically   | Run `/plugin`, open **Marketplaces**, select `claude-essentials` and choose **Enable auto-update**                         |
-| Update one plugin now  | `claude plugin update <plugin>@claude-essentials`, or `/plugin` → **Installed** → the plugin → **Update now** in a session |
-| Refresh the catalog    | `/plugin marketplace update claude-essentials`                                                                             |
-| Uninstall a plugin     | `/plugin uninstall <plugin>@claude-essentials` in a session, or `claude plugin uninstall <plugin>@claude-essentials`       |
-| Remove the marketplace | `/plugin marketplace remove claude-essentials` in a session, or `claude plugin marketplace remove claude-essentials`       |
+| 🎯 To                     | ✍️ Do this                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| ♻️ Update automatically   | Run `/plugin`, open **Marketplaces**, select `claude-essentials` and choose **Enable auto-update**                         |
+| ⬆️ Update one plugin now  | `claude plugin update <plugin>@claude-essentials`, or `/plugin` → **Installed** → the plugin → **Update now** in a session |
+| 🔁 Refresh the catalog    | `/plugin marketplace update claude-essentials`                                                                             |
+| 🗑️ Uninstall a plugin     | `/plugin uninstall <plugin>@claude-essentials` in a session, or `claude plugin uninstall <plugin>@claude-essentials`       |
+| 🚪 Remove the marketplace | `/plugin marketplace remove claude-essentials` in a session, or `claude plugin marketplace remove claude-essentials`       |
 
-## Set up for a team
+## 👥 Set up for a team
 
 Commit this to your repository's `.claude/settings.json` so everyone who trusts the folder gets the marketplace and the plugins you choose. Each person still installs the plugins once.
 
@@ -86,7 +90,7 @@ Commit this to your repository's `.claude/settings.json` so everyone who trusts 
 ```
 
 <details>
-<summary>Pin a branch or tag, or clone only what Claude Code needs</summary>
+<summary>📌 Pin a branch or tag, or clone only what Claude Code needs</summary>
 
 Pin the catalog to a branch or tag by appending it to the source: `/plugin marketplace add nerymurillohnd/claude-essentials#<ref>`.
 
@@ -99,23 +103,26 @@ claude plugin marketplace add nerymurillohnd/claude-essentials --sparse .claude-
 </details>
 
 <details>
-<summary>Use these plugins in Claude Tag (Slack)</summary>
+<summary>💬 Use these plugins in Claude Tag (Slack)</summary>
 
 Claude Tag syncs plugins only from a private or internal repository, so it cannot use this public one directly. Do not turn a private fork of this whole repository into your skills repository: when Claude Tag clones a repository it was granted, it loads that repository's `CLAUDE.md`, `.claude/rules/` and `.claude/skills/`, and here those hold the maintainers' own instructions and release skills, which would then steer Claude in your channels. Instead, upload a plugin as a zip archive of its `plugins/<name>/` folder (**Organization settings → Plugins & skills → Add → Upload a plugin**), or copy the `plugins/<name>/` folders you want into your own skills repository. Sources: [skills repository](https://claude.com/docs/claude-tag/admins/skills-repo) and [what loads from a repository](https://claude.com/docs/claude-tag/admins/configure-github#what-loads-from-a-repository); Claude Tag is in public beta, checked 2026-10-05.
 
 </details>
 
-## Trust and security
+## 🛡️ Trust and security
 
-A plugin runs with the permissions of the person who installs it. Every plugin here is reviewed against the [quality bar](docs/quality-bar.md), and plugins with hooks, MCP or LSP servers, executables or mods also pass the [security review](docs/security-review.md). Each plugin README has a **Permissions** section that states what it runs on your machine. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+> [!CAUTION]
+> A plugin runs with the permissions of the person who installs it. Read a plugin's **Permissions** section before you install it.
 
-## Contributing
+Every plugin here is reviewed against the [quality bar](docs/quality-bar.md), and plugins with hooks, MCP or LSP servers, executables or mods also pass the [security review](docs/security-review.md). Each plugin README has a **Permissions** section that states what it runs on your machine. Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+
+## 🤝 Contributing
 
 This repository is developed and maintained only by its maintainer and Claude, so pull requests from others are not accepted. Bug reports and plugin proposals are welcome as issues: start with [CONTRIBUTING.md](CONTRIBUTING.md). We attend every issue and update the catalog ourselves.
 
-## Project documentation
+## 📚 Project documentation
 
-| Document                                     | What it covers                                                     |
+| 📄 Document                                  | 🔎 What it covers                                                  |
 | -------------------------------------------- | ------------------------------------------------------------------ |
 | [Authoring guide](docs/authoring.md)         | How to build a plugin for this marketplace                         |
 | [Quality bar](docs/quality-bar.md)           | What a plugin must meet to be accepted                             |
@@ -126,6 +133,6 @@ This repository is developed and maintained only by its maintainer and Claude, s
 | [Architecture decisions](docs/adr/README.md) | Why the repository works the way it does                           |
 | [Changelog](CHANGELOG.md)                    | Marketplace-level changes                                          |
 
-## License
+## 📄 License
 
 [MIT](LICENSE). Third-party material is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -1,6 +1,5 @@
 name: Bug report
 description: A plugin, the catalog or the documentation does not work as documented.
-title: "bug(<plugin>): <short summary>"
 labels: ["type:bug", "status:needs-triage"]
 body:
   - type: markdown
@@ -8,6 +7,14 @@ body:
       value: |
         Thanks for reporting. Do not include secrets, tokens or private data.
         **Security issues must not be reported here**: follow [SECURITY.md](https://github.com/nerymurillohnd/claude-essentials/blob/main/SECURITY.md) instead.
+  - type: checkboxes
+    id: updated
+    attributes:
+      label: Before you report
+      description: Support asks you to update the plugin and check its load errors first.
+      options:
+        - label: "I ran `claude plugin update <plugin>@claude-essentials` and checked `/plugin` → Errors"
+          required: true
   - type: input
     id: plugin
     attributes:
@@ -29,7 +36,6 @@ body:
     attributes:
       label: Claude Code version
       description: From `claude --version`.
-      placeholder: 2.1.289
     validations:
       required: true
   - type: dropdown

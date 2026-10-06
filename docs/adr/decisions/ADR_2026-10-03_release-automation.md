@@ -3,6 +3,7 @@ status: superseded
 date: 2026-10-03
 decision-makers:
   - "Nery Samuel Murillo (maintainer)"
+superseded-by: ADR_2026-10-04_release-orchestration.md
 ---
 
 # Release process: editorial changelogs, a bump script, manual signed tags, CI publication
