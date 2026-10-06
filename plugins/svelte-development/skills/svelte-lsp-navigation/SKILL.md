@@ -64,7 +64,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 
 - The server needs `svelteserver` on the user's PATH (`npm install -g svelte-language-server`, done by the user) and TypeScript in the project.
 - The server's workspace is the directory Claude Code was started in. In a monorepo whose Svelte app lives in a subfolder, results that ignore the app's `tsconfig` or `vite.config` may come from a session started at the repository root (not tested on a monorepo); tell the user, and run the project check from the app folder.
-- The plugin restarts a crashed server up to three times and waits up to 90 seconds per request; after that, ask the user to run `/reload-plugins`.
+- The plugin restarts a crashed server up to three times, and a request the server never answers fails after 60 seconds (Claude Code's default); after that, ask the user to run `/reload-plugins`.
 - Cloud sessions do not start plugin language servers: use the project check there.
 - svelte-language-server 0.18.4 and svelte-check 4.7.6 predate SvelteKit 3's release. Open on 2026-10-05: moving, creating or deleting route files can crash the server (language-tools #3108); config reading from `vite.config` can be wrong (#3080); type arguments on `$props()` make destructured props `any` (#3124); TypeScript 7 crashes svelte-check without `--tsgo` (#3063). If results look wrong after such changes, ask the user to run `/reload-plugins` and confirm with the project check.
 
