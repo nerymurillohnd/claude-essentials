@@ -23,6 +23,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - The Windows answer in the README FAQ names `grep` and `awk`, which the changelog and search commands need, besides `curl`.
 - Projects still on SvelteKit 2 or Svelte 4 get code for their installed version: the skills and the editor no longer write SvelteKit 3 APIs or runes there unless the task is the migration, and the auditor lists SvelteKit 3 and Svelte 5 changes as migration work instead of defects.
 - The project's `CLAUDE.md`, saved memory and conventions decide style and structure over the skills, but never make a removed API valid.
+- The README's Permissions section says what changes in Claude Tag: MCP traffic, including code sent to the autofixer, is not in the organization's network export, and the sandbox can block the `curl` fallbacks and has no `svelteserver`.
 - Defaults instead of menus: sections come from the docs map first (`list-sections` only for a topic the map lacks), and `sv` runs with `npx` unless the project's lockfile names another package manager.
 
 ## [0.1.0] - 2026-10-05
