@@ -31,7 +31,7 @@ Start from what the user names (files, a directory, a diff); otherwise the whole
 npm ls svelte @sveltejs/kit --depth=0
 ```
 
-If a version is newer than the preloaded references' "Verified against" line, run the changelog window check from the `svelte-best-practices` references and audit against the newer behaviour.
+When a reference disagrees with what the installed version does, run the changelog window check from the `svelte-best-practices` references and audit against the installed behaviour.
 
 ## Checklist
 

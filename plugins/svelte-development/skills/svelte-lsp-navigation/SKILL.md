@@ -57,7 +57,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 8. **Never hide a problem.** No `--compiler-warnings x:ignore` or `--ignore` to get a check passing; ignore only a verified false positive, with the reason.
 9. **Prove a clean result when a tool stays silent, with the probe for that tool.** A silent language server and a silent project check have different causes:
    - **Language server** (no diagnostics after an edit, empty answers): `command -v svelteserver` must print a path, and `documentSymbol` on a non-empty `.svelte` file of the project must list its symbols. If either fails, follow [troubleshooting.md](references/troubleshooting.md).
-   - **Project check** (nothing reported after a change that must break): the cause is almost always in the project, not in svelte-check. in a SvelteKit project run `npx --no-install svelte-kit sync` and check again, because missing generated types hide errors (a project on Svelte alone has no sync to run); read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`, SvelteKit 2 projects `./.svelte-kit/tsconfig.json`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
+   - **Project check** (nothing reported after a change that must break): the cause is almost always in the project, not in svelte-check. In a SvelteKit project, run `npx --no-install svelte-kit sync` and check again, because missing generated types hide errors (a project on Svelte alone has no sync to run); read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`, SvelteKit 2 projects `./.svelte-kit/tsconfig.json`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
 10. **No installs without consent.** Never install `svelte-language-server`, `sv` or any package; tell the user what is missing.
 
 ## Gotchas
@@ -66,7 +66,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 - The server's workspace is the directory Claude Code was started in. In a monorepo whose Svelte app lives in a subfolder, results that ignore the app's `tsconfig` or `vite.config` may come from a session started at the repository root (not tested on a monorepo); tell the user, and run the project check from the app folder.
 - The plugin restarts a crashed server up to three times, and a request the server never answers fails after 60 seconds (Claude Code's default); after that, ask the user to run `/reload-plugins`.
 - Cloud sessions do not start plugin language servers: use the project check there.
-- svelte-language-server 0.18.4 and svelte-check 4.7.6 predate SvelteKit 3's release. Open on 2026-10-05: moving, creating or deleting route files can crash the server (language-tools #3108); config reading from `vite.config` can be wrong (#3080); type arguments on `$props()` make destructured props `any` (#3124); TypeScript 7 crashes svelte-check without `--tsgo` (#3063). If results look wrong after such changes, ask the user to run `/reload-plugins` and confirm with the project check.
+- The language server and svelte-check lag SvelteKit 3, so some results are wrong rather than missing. Issues to re-check in `sveltejs/language-tools` before citing them: moving, creating or deleting route files can crash the server (#3108); config reading from `vite.config` can be wrong (#3080); type arguments on `$props()` make destructured props `any` (#3124); TypeScript 7 crashes svelte-check without `--tsgo` (#3063). If results look wrong after such changes, ask the user to run `/reload-plugins` and confirm with the project check.
 
 ## Who does the work
 
@@ -197,7 +197,7 @@ npx --no-install svelte-check
 
 ## What the server sees in dynamic code
 
-Dynamic Svelte code is not a blind spot by default. Observed on 2026-10-05 (svelte-language-server 0.18.4):
+Dynamic Svelte code is not a blind spot by default. Observed on this plugin's fixture:
 
 | Code | Seen | How |
 |---|---|---|
@@ -221,4 +221,4 @@ Uses the server cannot see, because they live in strings, file names or configur
 - **Strings and attributes**: CSS class names (including Tailwind classes in `class` objects and arrays), `data-sveltekit-*` attributes.
 - **Configuration and scripts**: `vite.config`, `package.json` scripts and `imports`, `svelte-check --ignore` lists, CI files.
 
-Sources: Claude Code LSP tool (runtime schema and observed results, Claude Code 2.1.289, 2026-10-05), https://code.claude.com/docs/en/plugins/code-intelligence, https://code.claude.com/docs/en/plugins-reference (plugin agents are named `<plugin>:<agent>`), svelte-check `src/options.ts` (machine output when `CLAUDECODE=1`).
+Sources: the Claude Code LSP tool (its runtime schema and observed results), https://code.claude.com/docs/en/plugins/code-intelligence, https://code.claude.com/docs/en/plugins-reference (plugin agents are named `<plugin>:<agent>`), svelte-check `src/options.ts` (machine output when `CLAUDECODE=1`).

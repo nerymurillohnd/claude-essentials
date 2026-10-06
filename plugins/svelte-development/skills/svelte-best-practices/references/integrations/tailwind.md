@@ -1,6 +1,6 @@
 # Tailwind CSS with SvelteKit and Astro
 
-> Verified against tailwindcss 4.3.3 and @tailwindcss/vite 4.3.3 (with SvelteKit 3.0.0, astro 7.3.5, prettier-plugin-tailwindcss 0.8.1) on 2026-10-05. Precedence: changelogs and source code win over the docs, and the docs win over this file.
+> Precedence: changelogs and source code win over the docs, and the docs win over this file.
 
 ## Contents
 
@@ -20,12 +20,12 @@
 
 ## Fetch before writing when
 
-- The project's `tailwindcss` or `@tailwindcss/vite` is newer than 4.3.3: read the changelog window, since 4.x minors add utilities and change generated CSS:
+- The project's `tailwindcss` or `@tailwindcss/vite` is not the latest on the registry (`npm view tailwindcss version`): read the changelog window, since 4.x minors add utilities and change generated CSS:
 
   ```sh
   npm ls tailwindcss --depth=0
   URL='https://raw.githubusercontent.com/tailwindlabs/tailwindcss/main/CHANGELOG.md'
-  V='4.3.3'  # the installed version
+  V="$(node -p "require('tailwindcss/package.json').version")"  # the installed version
   curl -sS "$URL" | awk -v v="$V" 'index($0, "## [" v "]")==1{exit} {print}'
   ```
 - You use a utility or directive not listed here, or a v3 config (`tailwind.config.js`, `@config`, `theme()`).

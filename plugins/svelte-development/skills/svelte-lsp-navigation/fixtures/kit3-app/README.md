@@ -21,7 +21,7 @@ npm run check
 
 ## Mutations
 
-Deliberate breakage with known results, observed with svelte-check 4.7.6 on 2026-10-05. They are the expected results of the plugin's evals on this fixture and of the examples in `references/operations.md`; re-check them when the fixture's pinned versions change.
+Deliberate breakage with known results. They are the expected results of the plugin's evals on this fixture and of the examples in `references/operations.md`; re-check them when the fixture's pinned versions change.
 
 | Step | Change | The project check must report | What it proves |
 | --- | --- | --- | --- |

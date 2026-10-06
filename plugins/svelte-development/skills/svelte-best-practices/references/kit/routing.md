@@ -1,6 +1,6 @@
 # SvelteKit Routing
 
-> Verified against @sveltejs/kit 3.0.0 (npm latest, 2026-10-01) on 2026-10-05. Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+> Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 
 ## Contents
 
@@ -176,7 +176,7 @@ Read only the changelog entries newer than the installed version (the full proce
 
 ```sh
 URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md'
-V='3.0.0'  # the installed version
+V="$(node -p "require('@sveltejs/kit/package.json').version")"  # the installed version
 curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
 curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
 ```

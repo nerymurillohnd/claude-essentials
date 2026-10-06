@@ -10,7 +10,7 @@ metadata:
 
 # Svelte 5 and SvelteKit 3 best practices
 
-This skill is the contract for writing Svelte by the current rules. Target versions: **svelte 5.57.1** and **@sveltejs/kit 3.0.0** (2026-10-01). Most Svelte and SvelteKit code in training data is Svelte 4 or SvelteKit 2; the rules below are where it goes wrong, and each topic has a reference with the foundations, short examples and the exact official sections to fetch. The Svelte 5 rules apply to Svelte 5 projects and the SvelteKit 3 rules to SvelteKit 3 projects; rule 7 says what to do in older ones.
+This skill is the contract for writing Svelte by the current rules. It is written for **Svelte 5** and **SvelteKit 3**; the plugin README declares every major it targets under "Versions this plugin is written for", and no reference here repeats them. Most Svelte and SvelteKit code in training data is Svelte 4 or SvelteKit 2; the rules below are where it goes wrong, and each topic has a reference with the foundations, short examples and the exact official sections to fetch. The Svelte 5 rules apply to Svelte 5 projects and the SvelteKit 3 rules to SvelteKit 3 projects; rule 7 says what to do in older ones.
 
 ## Contents
 
@@ -48,8 +48,8 @@ The default route, because each tool answers a different kind of question. Depar
 These rules hold for every later turn of the task, not only the turn that loaded this skill.
 
 1. **Never write Svelte from memory alone.** Read the reference for the topic, fetch the live sections the task touches before writing (the reference lists them), and run the autofixer after (the `svelte-docs-and-autofixer` skill). Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text.
-2. **Never skip the fetch when** an exact signature, option name or config key matters; the code uses an experimental feature, an adapter, environment variables, hooks or the Vite config; the project's installed version is newer than the reference's "Verified against" line; or what you remember disagrees with a reference, or a reference with the docs.
-3. **Check the installed version first.** It decides which rules apply (command in the [procedure](#procedure)). When it is newer than a reference's "Verified against" line, read the changelog window in [changelogs.md](references/changelogs.md) before relying on that reference.
+2. **Never skip the fetch when** an exact signature, option name or config key matters; the code uses an experimental feature, an adapter, environment variables, hooks or the Vite config; or what you remember disagrees with a reference, or a reference with the docs.
+3. **Check the installed version first.** It decides which rules apply (command in the [procedure](#procedure)). These references follow the latest release of each package, so they can lag what is installed: read the changelog window in [changelogs.md](references/changelogs.md) whenever a reference disagrees with what the installed version does, and in the cases that file lists.
 4. **Source precedence.** Package changelogs, release notes and source code decide what exists at the installed version; the official docs explain usage, and in any area SvelteKit 3 changed some pages still show SvelteKit 2 code ([known-doc-errata.md](references/known-doc-errata.md)); these references are the starting point and lose to both. When sources conflict, say so in the answer; never pick one silently.
 5. **No WebFetch for docs or changelogs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools or `curl` for the raw text.
 6. **Runes mode in Svelte 5.** In a Svelte 5 project, new and changed code uses runes, snippets and event attributes; never mix in legacy syntax. A Svelte 4 project follows rule 7.
@@ -164,7 +164,7 @@ Full table and the `sv migrate sveltekit-3` codemod: [migrating-to-kit-3.md](ref
 | `csrf.checkOrigin`, `prerender.origin`, adapter-node `ORIGIN` | `csrf.trustedOrigins`, `paths.origin` |
 | `$service-worker` | `$app/env` (`version`), `$app/manifest`, `$app/paths` |
 
-Requirements: Node 22.17+, Vite 8 (`^8.0.12`), Svelte `^5.57.1`, TypeScript 6 when TypeScript is used, `@sveltejs/vite-plugin-svelte` 7, and the 3.0 adapter majors (auto 8, node 6, static 4, cloudflare 8, vercel 7, netlify 7, bun 1).
+Requirements: Node 22.17+, Vite 8, Svelte 5, TypeScript 6 when TypeScript is used, `@sveltejs/vite-plugin-svelte` 7, and the 3.0 adapter majors (auto 8, node 6, static 4, cloudflare 8, vercel 7, netlify 7, bun 1). The exact peer ranges and engines are in [project-and-config.md](references/kit/project-and-config.md) and are not repeated here.
 
 ## Experimental features
 
@@ -180,7 +180,7 @@ Details: [async-and-boundaries.md](references/svelte/async-and-boundaries.md) an
 
 ## Where things are
 
-Read the one reference that matches the task; each opens with its "Verified against" line and ends with the exact calls that fetch its official sections.
+Read the one reference that matches the task; each opens with its source precedence and ends with the exact calls that fetch its official sections.
 
 | Reference | Read when |
 | --- | --- |
@@ -224,7 +224,7 @@ Run these steps in order for any Svelte code you write, convert or review.
    npm ls svelte @sveltejs/kit --depth=0
    ```
 
-   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. If a version is newer than the reference's "Verified against" line, run the changelog window check in [changelogs.md](references/changelogs.md). With no project, write for the target versions above and say so in the answer.
+   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. Rule 7 decides what the installed major allows, and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
 2. **Reference.** Read the reference from [Where things are](#where-things-are) that matches the task; the code rules above apply to every task.
 3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
 

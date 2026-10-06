@@ -34,7 +34,7 @@ Run these steps in order for every change and report each one.
    npm ls svelte @sveltejs/kit --depth=0
    ```
 
-   If a version is newer than the references' "Verified against" line, run the changelog window check from the `svelte-best-practices` references before relying on them.
+   When a reference disagrees with what the installed version does, run the changelog window check from the `svelte-best-practices` references before relying on them.
 
 2. **Docs.** Fetch every section the change touches in one call, with paths from the docs map. If the MCP tools are deferred, load them with ToolSearch first.
 

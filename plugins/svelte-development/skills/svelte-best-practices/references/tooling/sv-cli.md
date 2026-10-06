@@ -1,6 +1,6 @@
 # The sv command line
 
-> Verified against sv 1.1.0 (svelte-check 4.7.6) on 2026-10-05. Precedence: changelogs and source code win over the docs, and the docs win over this file.
+> Precedence: changelogs and source code win over the docs, and the docs win over this file.
 
 ## Contents
 

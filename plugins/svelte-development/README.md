@@ -62,6 +62,19 @@ Not installed, or older than the minimum? Follow the [setup guide](https://code.
 
 <!-- END GENERATED: requirements -->
 
+### Versions this plugin is written for
+
+| Target                     | Major     |
+| -------------------------- | --------- |
+| Svelte                     | 5 (runes) |
+| SvelteKit                  | 3         |
+| Astro, with Svelte islands | 7         |
+| Tailwind CSS               | 4         |
+
+This table is the single declaration: no skill, agent or reference inside the plugin repeats it, and none of them carries a verification date. A version number appears inside the plugin only where the number is the fact being taught — the release that added or removed an API, a minimum that carries a security fix, a peer range — and then in one reference that the others link to. On an older major the plugin writes for what your project has installed and offers the migration, instead of mixing versions.
+
+### Tools
+
 In the order you install them, before the plugin:
 
 | Tool                                      | Minimum                                                    | Check                     | Why                                                                                                                                       |
@@ -254,7 +267,7 @@ When `svelte-check` reports errors only in a JSON configuration file, it could n
 
 ### In Claude Tag
 
-Slack, public beta, checked 2026-10-05:
+Slack, public beta:
 
 - The organization's Activity page exports the outbound requests Claude makes, **but not its MCP traffic**, so code sent to the autofixer is not in that export ([audit](https://claude.com/docs/claude-tag/admins/audit)).
 - Sessions run in a sandbox that can block hosts other than the default package registries until an admin allows them, which stops the `curl` fallbacks.

@@ -1,6 +1,6 @@
 # Svelte language server troubleshooting
 
-> Verified against Claude Code 2.1.289, svelte-language-server 0.18.4 and svelte-check 4.7.6 on 2026-10-05. Precedence: the language-tools changelogs and the Claude Code docs win over this file.
+> Precedence: the language-tools changelogs and the Claude Code docs win over this file.
 
 ## Contents
 
@@ -52,7 +52,7 @@ Since SvelteKit 3 the generated tsconfig lives in `node_modules/$app/tsconfig`, 
 
 ## Known open issues
 
-Checked open on 2026-10-05 in `sveltejs/language-tools`; re-check before citing them to the user:
+Issues in `sveltejs/language-tools`; check whether each is still open before citing it to the user:
 
 | Issue | Symptom |
 | --- | --- |

@@ -1,6 +1,6 @@
 # Svelte components in Astro
 
-> Verified against astro 7.3.5 and @astrojs/svelte 9.0.1 (Svelte 5.57.1) on 2026-10-05. Precedence: changelogs and source code win over the docs, and the docs win over this file.
+> Precedence: changelogs and source code win over the docs, and the docs win over this file.
 
 ## Contents
 

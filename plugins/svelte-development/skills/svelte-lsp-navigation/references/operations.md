@@ -1,6 +1,6 @@
 # LSP operations on Svelte files: observed behaviour and worked examples
 
-> Observed on 2026-10-05 with Claude Code 2.1.289 (LSP tool), svelte-language-server 0.18.4 and svelte-check 4.7.6, in a clean session with only this plugin loaded, on an installed copy of `fixtures/kit3-app` (SvelteKit 3.0.0, Svelte 5.57.1, TypeScript 6). Every result below is the tool's real output, shortened. Paths are relative to the fixture root.
+> Observed in a clean session with only this plugin loaded, on an installed copy of `fixtures/kit3-app`. Every result below is the tool's real output, shortened. Paths are relative to the fixture root.
 
 ## Contents
 

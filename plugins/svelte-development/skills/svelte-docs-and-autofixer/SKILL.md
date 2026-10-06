@@ -49,7 +49,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 
 1. **Docs before code, by default.** Fetch the sections a change touches with `get-documentation` before writing it. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text. Never guess a section path: take it from the docs map.
 2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false. After each `Write` or `Edit` of a Svelte file, the plugin adds a note next to the tool result saying the autofixer has not checked the new content: that note marks the file as unchecked until you run step 4 of the procedure on it.
-3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" (observed on 2026-10-05). Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
+3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" instead of refusing it. Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
 4. **The autofixer is not proof.** It does not type-check, does not know SvelteKit routing rules and does not run the code. Type errors come from the language server and the project check.
 5. **No WebFetch for docs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools, or `curl` for the raw text.
 6. **Source precedence.** Package changelogs, release notes and source code decide what exists at the project's version; the official docs explain usage; the `svelte-best-practices` references are the starting point and lose to both. When two sources disagree, say so in the answer; never pick one silently. The live docs describe the newest Svelte and SvelteKit: in a project on an older major (SvelteKit 2, Svelte 4), check each API against the installed version before using it.
@@ -82,7 +82,7 @@ For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and 
 ## Where things are
 
 - `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/docs-map.md`: every documentation section classified by area, with its `get-documentation` path and raw URL. Read it to choose sections.
-- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`: the commands that read the changelog window when the project's version is newer than a reference's "Verified against" line.
+- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/changelogs.md`: the commands that read the changelog window, and the cases that call for it.
 - `${CLAUDE_PLUGIN_ROOT}/skills/svelte-best-practices/references/known-doc-errata.md`: pages that still show SvelteKit 2 code, and what is right.
 - The `svelte-best-practices` skill: the Svelte 5 and SvelteKit 3 rules to write by. The `svelte-lsp-navigation` skill: language server diagnostics and the project check.
 
@@ -104,7 +104,7 @@ ToolSearch
 
 | Tool | Input | Returns |
 |---|---|---|
-| `mcp__plugin_svelte-development_svelte__list-sections` | none | Every section with its `path` (203 on 2026-10-05) and a use-case hint |
+| `mcp__plugin_svelte-development_svelte__list-sections` | none | Every section with its `path` and a use-case hint |
 | `mcp__plugin_svelte-development_svelte__get-documentation` | `section`: one path or title, or an array of them | The full text of each section |
 | `mcp__plugin_svelte-development_svelte__svelte-autofixer` | `code` (required), `desired_svelte_version` (required: `5`, or `4` for Svelte 4 code), `filename`, `async` | `issues`, `suggestions`, `require_another_tool_call_after_fixing` |
 | `mcp__plugin_svelte-development_svelte__playground-link` | `name`, `tailwind`, `files` (`{ "App.svelte": "<code>" }`) | A svelte.dev playground URL holding the code |
@@ -189,4 +189,4 @@ The server also offers two things the user starts, not the model:
 - **Resources (`doc-section`)**: every section as `svelte://<slug>.md`. The user attaches one by typing `@` and picking it, for example the transition docs before asking for an animated component. When a user wants a page "in context", tell them they can attach it this way; you fetch the same content with `get-documentation`.
 - **Prompt `svelte-task`**: takes a `task` argument and injects instructions plus the section list for it; the user runs it from the `/` menu.
 
-Derived from the `svelte-code-writer` skill of sveltejs/ai-tools (MIT), base `6b5d0da`; see the plugin NOTICE. Sources: the remote server's `tools/list` schemas and runtime output, and the `@sveltejs/mcp` 0.1.26 command line (2026-10-05); https://svelte.dev/docs/ai/llms.txt, https://svelte.dev/docs/ai/resources, https://svelte.dev/docs/ai/prompts; https://code.claude.com/docs/en/mcp and https://code.claude.com/docs/en/plugins-reference (plugin agents are named `<plugin>:<agent>`).
+Derived from the `svelte-code-writer` skill of sveltejs/ai-tools (MIT), base `6b5d0da`; see the plugin NOTICE. Sources: the remote server's `tools/list` schemas and runtime output, and the `@sveltejs/mcp` command line; https://svelte.dev/docs/ai/llms.txt, https://svelte.dev/docs/ai/resources, https://svelte.dev/docs/ai/prompts; https://code.claude.com/docs/en/mcp and https://code.claude.com/docs/en/plugins-reference (plugin agents are named `<plugin>:<agent>`).

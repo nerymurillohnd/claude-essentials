@@ -1,6 +1,6 @@
 # SvelteKit Adapters and Deployment
 
-> Verified against @sveltejs/kit 3.0.0 (npm latest, 2026-10-01) on 2026-10-05. Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+> Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 
 ## Contents
 
@@ -20,7 +20,7 @@
 
 ## Adapter versions for Kit 3
 
-Every first-party adapter requires SvelteKit 3 in these majors (npm, 2026-10-01):
+Every first-party adapter requires SvelteKit 3 in these majors (confirm the current version with `npm view <package> version`):
 
 | Package | Version | Key requirement |
 | --- | --- | --- |
@@ -174,7 +174,7 @@ Read only the changelog entries newer than the installed version (the full proce
 
 ```sh
 URL='https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-node/CHANGELOG.md'  # adapter-<name>
-V='6.0.0'  # the installed adapter version
+V="$(node -p "require('@sveltejs/adapter-node/package.json').version")"  # the installed adapter version
 curl -sS "$URL" | grep -c "^## $V\$"  # must print 1
 curl -sS "$URL" | awk -v v="## $V" '$0==v{exit} {print}'
 ```

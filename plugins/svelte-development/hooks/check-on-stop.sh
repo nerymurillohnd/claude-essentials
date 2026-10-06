@@ -2,7 +2,7 @@
 # Stop hook: when Svelte files changed and that state was not checked yet, run the
 # project's own svelte-check and send its errors back to Claude (exit 2 keeps it working).
 # svelte-check is the only command it runs, and it runs in every Svelte project, with or
-# without SvelteKit (verified 2026-10-06 on svelte-check 4.7.6). Nothing here runs a
+# without SvelteKit. Nothing here runs a
 # generator: generating a project's types is the project's own command, behind a permission
 # prompt, so a project whose types were never generated is reported, never fixed silently.
 # svelte-check has no single-file mode by design (a renamed prop breaks other files), so
@@ -58,11 +58,10 @@ lines="$(printf '%s\n' "${output}" | grep ' ERROR ' || true)"
 # checked. The code is then unchecked, not broken, so Claude is asked to run the project
 # check, which generates the types first and goes through a permission prompt.
 # The condition is the absence of any error outside a JSON file, because what the generated
-# path is called, and whether the message names it, follow the SvelteKit major: verified
-# 2026-10-06 that svelte-check 4.7.6 reports it at tsconfig.json as "Cannot read file
-# '<project>/.svelte-kit/tsconfig.json'" on SvelteKit 2.46.4 and as "File '$app/tsconfig'
-# not found." on SvelteKit 3.0.0, which generates that file under node_modules instead, and
-# that a synced project with a custom outDir checks correctly with no .svelte-kit folder.
+# path is called, and whether the message names it at all, follow the SvelteKit major: one
+# reports it at tsconfig.json as a file it cannot read under .svelte-kit, the next as a
+# missing "$app/tsconfig", generated under node_modules instead. A folder test would also
+# refuse to check a synced project that generates its output elsewhere (a custom outDir).
 # grep -v, never grep -q: a -q exits on its first match, the SIGPIPE it sends back fails the
 # pipeline under pipefail, and the condition would invert.
 source_errors="$(printf '%s\n' "${lines}" | grep -v ' ERROR "[^"]*\.json"' || true)"
