@@ -35,6 +35,8 @@ This skill is the contract for questions about the project's own code. The plugi
 
 ## Rules
 
+These rules hold for every later turn of the task, not only the turn that loaded this skill.
+
 1. **LSP first for every symbol question.** The first code-navigation call is an LSP call, never Grep or a whole-file Read.
 2. **Start every call from a `.svelte` file.** The plugin maps only `.svelte` to the Svelte server. A call on a `.ts`, `.js`, `.svelte.ts` or `.svelte.js` file returns `No LSP server available for file type: .ts`; that is configuration, not a crash. From a `.svelte` position the server still finds definitions and references inside those files.
 3. **Load the tool before calling it.** The LSP tool may be deferred; a call without its loaded schema fails with invalid parameters (observed: eight failed calls in a row). Load it with ToolSearch first.

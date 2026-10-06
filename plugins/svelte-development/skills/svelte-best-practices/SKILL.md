@@ -34,6 +34,8 @@ This skill is the contract for writing Svelte by the current rules. Target versi
 
 ## Rules for working
 
+These rules hold for every later turn of the task, not only the turn that loaded this skill.
+
 1. **Never write Svelte from memory alone.** Read the reference for the topic, then fetch the live sections with the `svelte-docs-and-autofixer` skill before writing, and run the autofixer after.
 2. **Fetch the live section before writing when** an exact signature, option name or config key matters; the code uses an experimental feature, an adapter, environment variables, hooks or the Vite config; the project's installed version is newer than the reference's "Verified against" line; or what you remember disagrees with a reference, or a reference with the docs.
 3. **Check the installed version first.** It decides which rules apply (command in the [procedure](#procedure)). When it is newer than a reference's "Verified against" line, read the changelog window in [changelogs.md](references/changelogs.md) before relying on that reference.

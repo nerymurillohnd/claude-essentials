@@ -34,6 +34,8 @@ This skill is the contract for two jobs: reading the current official Svelte doc
 
 ## Rules
 
+These rules hold for every later turn of the task, not only the turn that loaded this skill.
+
 1. **Docs before code.** Fetch every section a change touches with `get-documentation` before writing it. Never guess a section path: take it from `list-sections` or the docs map.
 2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false.
 3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" (observed on 2026-10-05). Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
