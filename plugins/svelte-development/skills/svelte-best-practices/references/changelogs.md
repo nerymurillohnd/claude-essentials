@@ -91,7 +91,7 @@ All URLs returned HTTP 200 on 2026-10-05.
 | Package | Changelog (raw) | Heading format | Latest on 2026-10-05 |
 | --- | --- | --- | --- |
 | `svelte` | https://raw.githubusercontent.com/sveltejs/svelte/main/packages/svelte/CHANGELOG.md | `## x.y.z` | 5.57.1 |
-| `@sveltejs/kit` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md | `## x.y.z` | 3.0.0 (3.0.1 in changelog, not on npm) |
+| `@sveltejs/kit` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/kit/CHANGELOG.md | `## x.y.z` | 3.0.1 (on npm by 2026-10-06; its only entry fixes generated types under `nodenext`, so the references verified against 3.0.0 still hold) |
 | `@sveltejs/adapter-auto` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-auto/CHANGELOG.md | `## x.y.z` | 8.0.0 |
 | `@sveltejs/adapter-node` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-node/CHANGELOG.md | `## x.y.z` | 6.0.0 |
 | `@sveltejs/adapter-static` | https://raw.githubusercontent.com/sveltejs/kit/main/packages/adapter-static/CHANGELOG.md | `## x.y.z` | 4.0.0 |

@@ -83,7 +83,7 @@ Hand the agent the locations you found (file and line), so it does not repeat th
 
 - [references/operations.md](references/operations.md): read when you need to see what an operation returns (real output on the bundled fixture), or a result does not match what you expected.
 - [references/troubleshooting.md](references/troubleshooting.md): read when a call errors, returns nothing unexpectedly, or diagnostics never appear.
-- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/fixtures/kit3-app`: the SvelteKit 3 project behind the examples in operations.md; its README lists each symbol and the deliberate breaks with their known results. Read it to compare a result with a known one; it is not meant to be installed in the user's project.
+- `${CLAUDE_PLUGIN_ROOT}/skills/svelte-lsp-navigation/fixtures/kit3-app`: the SvelteKit 3 project behind the examples in operations.md; it is not meant to be installed in the user's project.
 - The `svelte-best-practices` skill for the rules when fixing what diagnostics report; the `svelte-docs-and-autofixer` skill for the docs and the autofixer.
 
 The sibling skills (`svelte-best-practices`, `svelte-docs-and-autofixer`) are named `svelte-development:<skill>`. When a step needs one that is not loaded yet, load it with the Skill tool:
@@ -165,7 +165,7 @@ Copy this checklist when a change touches a symbol other files use. Steps 4 to 6
                    after fixing errors, because one error can hide another
 ```
 
-There is no rename operation: a rename is steps 2 to 7, including the props passed to the component and destructured in `$props()`. On the bundled fixture, renaming the `label` prop inside `CounterButton.svelte` alone makes the check fail at exactly the three `findReferences` sites; [operations.md](references/operations.md), "Prove it", shows both outputs.
+There is no rename operation: a rename is steps 2 to 7, including the props passed to the component and destructured in `$props()`. [operations.md](references/operations.md), "Prove it", shows a worked example.
 
 ## Project check
 

@@ -1,7 +1,7 @@
 ---
 name: svelte-component-editor
 description: Writes and edits Svelte 5 components (.svelte) and modules (.svelte.ts, .svelte.js) and SvelteKit 3 route files, checking every change against the current Svelte docs, the Svelte autofixer, the Svelte language server and the project check before handing it back. Use proactively when creating, editing, refactoring or migrating Svelte or SvelteKit files beyond a line or two, or fixing errors the Svelte compiler, the language server or svelte-check report. Not for read-only reviews (use svelte-code-auditor) or questions that need no file change.
-tools: Read, Grep, Glob, Edit, Write, LSP, Bash, mcp__plugin_svelte-development_svelte__*
+tools: Read, Grep, Glob, Edit, Write, LSP, Bash, Skill, ToolSearch, mcp__plugin_svelte-development_svelte__*
 skills:
   - svelte-development:svelte-best-practices
   - svelte-development:svelte-docs-and-autofixer
@@ -57,13 +57,13 @@ Run these steps in order for every change and report each one.
 
    Then Grep the bare name for the blind spots the `svelte-lsp-navigation` skill lists (route files, string paths, CSS classes). For a rename, a signature change or a deletion, prove the edit set with steps 4 to 6 of that skill's "Procedure for a change": baseline check, change only the declaration, compare the new errors with the sites you found.
 
-4. **Edit.** Make the change with runes, snippets, event attributes, declaration tags and SvelteKit 3 imports (`#lib/x.js`, `$app/state`, `$app/env/*`).
+4. **Edit.** Make the change with the APIs of the installed versions: in Svelte 5 and SvelteKit 3, runes, snippets, event attributes, declaration tags and SvelteKit 3 imports (`#lib/x.js`, `$app/state`, `$app/env/*`); in an older project, its own APIs (the "Installed major" rule).
 5. **Autofix.** Run the autofixer on the full content of every changed component or module; apply the issues and suggestions; repeat while it reports issues or `require_another_tool_call_after_fixing` is true.
 
    ```text
    mcp__plugin_svelte-development_svelte__svelte-autofixer
      code: "<full file content>"
-     desired_svelte_version: 5
+     desired_svelte_version: 5 # 4 in a Svelte 4 project
      filename: "Counter.svelte"
    ```
 

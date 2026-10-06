@@ -1,5 +1,5 @@
 ---
-description: After a small inline edit of a component, the autofixer checks the new content.
+description: After a small inline edit of a component, the autofixer checks the new content (the skills and the post-edit hook together; the case does not separate them).
 runs: 2
 max_turns: 30
 allowed_tools:

@@ -9,7 +9,6 @@ allowed_tools:
     Grep,
     Skill,
     LSP,
-    Agent,
     Bash,
     Edit,
     Write,

@@ -1,7 +1,7 @@
 ---
 name: svelte-code-auditor
 description: Audits Svelte 5 and SvelteKit 3 code without changing it - legacy Svelte 4 syntax, runes misuse, SvelteKit 2 leftovers after an upgrade, server and client boundary leaks, CSRF and origin settings, unsafe HTML, accessibility warnings, Astro island props and Tailwind CSS 4 setup - and reports evidence-backed findings with file, line, severity and fix. Use when asked to review, audit or check a Svelte or SvelteKit codebase, a pull request or a migration to Svelte 5 or SvelteKit 3. Not for making changes (use svelte-component-editor).
-tools: Read, Grep, Glob, LSP, Bash, mcp__plugin_svelte-development_svelte__*
+tools: Read, Grep, Glob, LSP, Bash, Skill, ToolSearch, mcp__plugin_svelte-development_svelte__*
 skills:
   - svelte-development:svelte-best-practices
   - svelte-development:svelte-docs-and-autofixer
@@ -64,7 +64,7 @@ npx --no-install svelte-kit sync && npx --no-install svelte-check --tsconfig ./t
 ```text
 mcp__plugin_svelte-development_svelte__svelte-autofixer
   code: "<full file content>"
-  desired_svelte_version: 5
+  desired_svelte_version: 5 # 4 in a Svelte 4 project
   filename: "+page.svelte"
 ```
 

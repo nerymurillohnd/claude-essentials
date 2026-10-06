@@ -8,6 +8,9 @@
     "workspaceFolder": "${CLAUDE_PROJECT_DIR}",
     "startupTimeout": 30000,
     "shutdownTimeout": 10000,
-    "maxRestarts": 3
+    "requestTimeout": 60000,
+    "restartOnCrash": true,
+    "maxRestarts": 3,
+    "diagnostics": true
   }
 }
