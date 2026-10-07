@@ -27,7 +27,7 @@ const AREAS = [
   {
     key: "claude-md",
     prompt:
-      "Compare CLAUDE.md (Commands, Architecture, Where Knowledge Lives, Current state, Definition of done) and README.md with the repository as it is now: git log -20, the scripts, .claude/ (skills, agents, workflows, settings.json) and docs/. Report every statement that is no longer true or that omits something a maintainer needs.",
+      "Compare CLAUDE.md (Non-negotiable rules, Architecture, Commands, Read before acting, Current state) and README.md with the repository as it is now: git log -20, the scripts, .claude/ (skills, agents, workflows, settings.json) and docs/. Report every statement that is no longer true or that omits something a maintainer needs.",
   },
   {
     key: "automation",

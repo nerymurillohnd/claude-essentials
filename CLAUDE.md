@@ -28,7 +28,7 @@ scripts/                          stdlib Python run by path; shebang picks the i
   check.py                        single entry point: every gate, test-install, clean, ci-tools, ci-eval-tools
   repo.py                         shared constants, naming, SemVer, changelog parsing
   check_repo.py                   repository gates
-  check_docs.py                   docs gate: Claude Code minimum, gate list, names, rule paths, links
+  check_docs.py                   docs gate: gate list, names, rule paths, links
   check_pr.py                     release discipline for pull requests
   check_commit_msg.py             Conventional Commits checker (CI and optional hook)
   new_plugin.py                   scaffold wrapping `claude plugin init` in a throwaway config

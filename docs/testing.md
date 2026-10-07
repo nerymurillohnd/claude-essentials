@@ -4,19 +4,19 @@ Every gate runs locally with `scripts/check.py` and in CI with the same command.
 
 ## Targets
 
-| Target                          | What it proves                                                                                                                                                                    |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace, the project's `.claude/` skills and agents, and each plugin                                                            |
-| `scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, plugin scripts, mods, labels, the release tag pattern and local-only pre-commit hooks         |
-| `scripts/check.py adrs`         | Every ADR record has a dated name, valid frontmatter, required sections, no placeholders and working links                                                                        |
-| `scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                                                                       |
-| `scripts/check.py docs`         | Docs match the code: the minimum Claude Code version, gate list, script and `check.py` target names, rule `paths`, relative links, `docs/*.md` references and project skill names |
-| `scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                                                                             |
-| `scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML, except `skills/` folders                                                                                                          |
-| `scripts/check.py python`       | ruff and basedpyright with warnings as errors                                                                                                                                     |
-| `scripts/check.py workflows`    | actionlint and the zizmor security audit                                                                                                                                          |
-| `scripts/check.py schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                                                                             |
-| `scripts/check.py test-install` | Every plugin installs and loads like a user's install                                                                                                                             |
+| Target                          | What it proves                                                                                                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/check.py validate`     | `claude plugin validate --strict` accepts the marketplace, the project's `.claude/` skills and agents, and each plugin                                                    |
+| `scripts/check.py repo`         | Catalog, names, SemVer, changelogs, README sections, portability, self-containment, plugin scripts, mods, labels, the release tag pattern and local-only pre-commit hooks |
+| `scripts/check.py adrs`         | Every ADR record has a dated name, valid frontmatter, required sections, no placeholders and working links                                                                |
+| `scripts/check.py readmes`      | Generated README content matches manifests and plugin files                                                                                                               |
+| `scripts/check.py docs`         | Docs match the code: the gate list, script and `check.py` target names, rule `paths`, relative links, `docs/*.md` references and project skill names                      |
+| `scripts/check.py tests`        | Each gate fails for the defect it targets (see below)                                                                                                                     |
+| `scripts/check.py format`       | Prettier formatting of Markdown, JSON and YAML, except `skills/` folders                                                                                                  |
+| `scripts/check.py python`       | ruff and basedpyright with warnings as errors                                                                                                                             |
+| `scripts/check.py workflows`    | actionlint and the zizmor security audit                                                                                                                                  |
+| `scripts/check.py schemas`      | Workflows and issue forms match GitHub's JSON Schemas                                                                                                                     |
+| `scripts/check.py test-install` | Every plugin installs and loads like a user's install                                                                                                                     |
 
 ## Set up
 

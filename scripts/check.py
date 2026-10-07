@@ -113,7 +113,7 @@ GATES: dict[str, tuple[str, Callable[[], list[list[str]]]]] = {
         lambda: [_script("sync_readmes.py", "--check")],
     ),
     "docs": (
-        "Docs match the code: Claude Code minimum, gate list, script names, rule paths, links",
+        "Docs match the code: gate list, script names, rule paths, links",
         lambda: [_script("check_docs.py")],
     ),
     "tests": (
