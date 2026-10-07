@@ -124,20 +124,6 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Review condition:** Closes when the denial is explained and the token's exposure is documented with a verified mitigation.
 - **Related records:** DEBT-006; `.claude/rules/ci-github.md`.
 
-### DEBT-008 — Claude review posting after the `--setting-sources user` change is unverified
-
-- **Status:** Pending
-- **Category:** quality (CI)
-- **Evidence:**
-  - **Confirmed facts:** PR #6's review posted nothing because a project `permissions.ask` rule denied `gh pr comment`. PR #7 (`f5884f8`) added `--setting-sources user` so the review can post.
-  - **Inferences:** The fix is probably correct.
-  - **Open questions:** Whether the review posts on the next pull request; `.claude/rules/ci-github.md` says that pull request shows it.
-- **Impact / risk:** The review may stay silent without any failure.
-- **Owner or responsible area:** `.github/workflows/claude-code-review.yml`.
-- **Next action:** Check the review's output on the next pull request that changes plugins or workflows.
-- **Review condition:** Closes when a review comment is posted and linked in the record.
-- **Related records:** `.claude/rules/ci-github.md`; PR #7.
-
 ### DEBT-009 — `test-install` session scenario has no unit test
 
 - **Status:** Pending
@@ -210,15 +196,15 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 
 ### DEBT-014 — Plugin evals ran on any labeled pull request
 
-- **Status:** Pending (fix on branch `ci/evals-only-for-plugins`, not merged)
+- **Status:** Pending (fix merged on `main` as `07dfa66`; behavior on a pull request unverified)
 - **Category:** cost
 - **Evidence:**
-  - **Confirmed facts:** `.github/workflows/plugin-evals.yml` ran its eval job for any pull request labelled `run-evals`, including pull requests that change no plugin. Inside the loop, plugins without changes make no model call, but the job still started a runner and installed Claude Code.
-  - **Inferences:** The branch's change adds a `changes` job so the eval job skips when no plugin file changed.
+  - **Confirmed facts:** `.github/workflows/plugin-evals.yml` ran its eval job for any pull request labelled `run-evals`, including pull requests that change no plugin. Inside the loop, plugins without changes make no model call, but the job still started a runner and installed Claude Code. `07dfa66` adds a `changes` job so the eval job skips when no plugin file changed; `Validate` passed on it (run `37455669608`).
+  - **Inferences:** none.
   - **Open questions:** none.
 - **Impact / risk:** Avoidable CI minutes on every labelled pull request; model cost only when a plugin changes.
 - **Owner or responsible area:** `.github/workflows/plugin-evals.yml`.
-- **Next action:** Review and merge the branch after the maintainer approves. Verify with one pull request that changes no plugin (the eval job must show as skipped) and one that does.
+- **Next action:** Verify with one labelled pull request that changes no plugin (the eval job must show as skipped) and one that does.
 - **Review condition:** Closes when the change is merged and both pull requests behave as described.
 - **Related records:** `ADR_2026-10-05_plugin-evals-in-ci`, `ADR_2026-10-06_inherited-eval-models-and-full-results`.
 
@@ -235,3 +221,45 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Next action:** None until a second collaborator exists. Then enable required reviews before granting access.
 - **Review condition:** A second collaborator is added to the repository.
 - **Related records:** `.claude/rules/ci-github.md`.
+
+### DEBT-016 — Issue forms not confirmed in a signed-in browser
+
+- **Status:** Pending
+- **Category:** quality (issue intake)
+- **Evidence:**
+  - **Confirmed facts:** The API lists the three contact links of `.github/ISSUE_TEMPLATE/config.yml`; GitHub shows issue forms only to signed-in users. `51e96f6` gave the bug report dropdowns a neutral first option. The chooser screenshot of 2026-10-06 (DEBT-012) shows the security entries; no record says whether the two forms, the three contact links and the dropdown defaults were checked.
+  - **Inferences:** none.
+  - **Open questions:** Whether both forms render and their dropdowns start on the neutral option.
+- **Impact / risk:** A broken form would stop bug reports or plugin proposals with no failure in CI.
+- **Owner or responsible area:** repository maintainer (signed-in browser); `.github/ISSUE_TEMPLATE/`.
+- **Next action:** Open `/issues/new/choose` signed in and check the two forms, the three contact links and the dropdown defaults.
+- **Review condition:** Closes when the check is recorded with its date.
+- **Related records:** DEBT-012; `51e96f6`.
+
+### DEBT-017 — No rule makes plugins declare every external tool they run
+
+- **Status:** Pending (maintainer decision)
+- **Category:** compatibility
+- **Evidence:**
+  - **Confirmed facts:** `svelte-development` starts `svelteserver` and runs the project's `svelte-check`; its README lists them as prerequisites because the README template asks authors to (ADR `ADR_2026-10-06_supported-platforms`, `.claude/rules/plugins/readmes.md`). No rule or gate checks that a plugin's hooks, LSP and MCP servers only run declared tools, or that a plugin relies on no version-specific tool feature.
+  - **Inferences:** A plugin can depend on an undeclared tool and fail on a user's machine while passing every gate.
+  - **Open questions:** Whether the rule should be a review checklist item or a gate.
+- **Impact / risk:** Plugins that fail silently for users who lack a tool or run another version of it.
+- **Owner or responsible area:** repository maintainer (decision); `.claude/rules/plugins/authoring.md`, `docs/quality-bar.md`.
+- **Next action:** Maintainer decides; if accepted, add the rule and the matching review or gate check.
+- **Review condition:** Closes on the decision and the matching change.
+- **Related records:** `ADR_2026-10-06_supported-platforms`.
+
+### DEBT-018 — `drive_plugin.py` sessions run on the maintainer's login
+
+- **Status:** Pending (maintainer decision)
+- **Category:** quality (test isolation)
+- **Evidence:**
+  - **Confirmed facts:** `.claude/rules/testing/drive-plugin.md` records that credentials are keyed to `CLAUDE_CONFIG_DIR`, so an isolated configuration has no login, and the driver runs with the maintainer's own login. `claude plugin eval` is the clean-room check meanwhile.
+  - **Inferences:** A `CLAUDE_CODE_OAUTH_TOKEN` in the driver's environment would authenticate an isolated configuration, as it does on CI.
+  - **Open questions:** Where the token would live locally without exposing it to the plugin under test.
+- **Impact / risk:** Smoke tests are not a clean room; the maintainer's account state can affect results.
+- **Owner or responsible area:** repository maintainer (decision); `scripts/drive_plugin.py`.
+- **Next action:** Maintainer decides; if accepted, pass the token by environment variable reference and update the rule.
+- **Review condition:** Closes on the decision and, if accepted, a driven session with an isolated configuration.
+- **Related records:** `.claude/rules/testing/drive-plugin.md`; DEBT-006, DEBT-007 (same token).
