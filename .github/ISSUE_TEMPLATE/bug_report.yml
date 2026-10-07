@@ -36,6 +36,7 @@ body:
     attributes:
       label: Claude Code version
       description: From `claude --version`.
+      placeholder: 2.1.289
     validations:
       required: true
   - type: dropdown
