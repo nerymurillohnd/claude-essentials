@@ -26,34 +26,6 @@ Don't add general improvement ideas, unverified speculation, or a copy of every 
 
 Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), the repository state at `dd7227d`, and the eval and CI records cited below.
 
-### DEBT-002 — Minimum-version pin is documented as enforced but nothing enforces it
-
-- **Status:** Pending
-- **Category:** compatibility
-- **Evidence:**
-  - **Confirmed facts:** The official plugin reference says `metadata` is a "free-form object for your own data. Claude Code doesn't read it" (checked 2026-10-06). `minimumVersion` only limits auto-updates; `requiredMinimumVersion` is a managed setting (checked 2026-10-06). The repo writes `metadata.minClaudeCodeVersion` in `scripts/new_plugin.py:171` and shows the badge `Claude Code: ≥ 2.1.289` in `README.md:3`. ADR `ADR_2026-10-03_minimum-claude-code-version` still says CI installs exactly the pin; a 2026-10-05 note supersedes that, but the ADR is not marked superseded.
-  - **Inferences:** A plugin cannot block an older Claude Code. The pin informs readers only.
-  - **Open questions:** Whether `claude plugin validate --strict` reads `metadata.minClaudeCodeVersion` (not checked).
-- **Impact / risk:** Users read a requirement that nothing enforces. A mod declared at 2.1.287 can run on an older Claude Code with no warning.
-- **Owner or responsible area:** repository maintainer (decision); `scripts/repo.py`, `scripts/check_docs.py`, ADRs.
-- **Next action:** Maintainer chooses between relabelling the pin as "tested version" and adding a plugin-side `SessionStart` check for mods. Record the choice in a new ADR that supersedes the 2026-10-03 one.
-- **Review condition:** Closes when the ADR is accepted and the badge, README, and gate wording match the decision.
-- **Related records:** `ADR_2026-10-03_minimum-claude-code-version`, `ADR_2026-10-05_unpinned-tooling-and-shebang-interpreters`, `.claude/rules/claude-code-version.md`.
-
-### DEBT-003 — Session-start notice flags versions that were already reviewed
-
-- **Status:** Pending
-- **Category:** quality (noise)
-- **Evidence:**
-  - **Confirmed facts:** `scripts/claude_hooks.py:410-413` compares the installed version with `repo.MIN_CLAUDE_CODE` and prints a note. The note appeared for 2.1.290 and 2.1.291; both were reviewed and changed no rule (`.claude/rules/claude-code-version.md`).
-  - **Inferences:** The notice fires on every session until the pin moves, so it cannot tell a real change from a reviewed one.
-  - **Open questions:** Whether the maintainer wants the notice at all (see DEBT-002).
-- **Impact / risk:** Alert fatigue; a real change that needs review may be ignored.
-- **Owner or responsible area:** repository maintainer; `scripts/claude_hooks.py`.
-- **Next action:** Decide with DEBT-002. Either remove the notice, or compare against the last reviewed version recorded in the rule file.
-- **Review condition:** Closes when the notice matches the decision, with a test in `tests/`.
-- **Related records:** DEBT-002.
-
 ### DEBT-004 — `svelte-development` skills do not trigger on their own
 
 - **Status:** Pending

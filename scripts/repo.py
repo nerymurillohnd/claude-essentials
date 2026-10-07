@@ -49,10 +49,6 @@ CATEGORY_DESCRIPTIONS: dict[str, str] = {
     "model-behavior": "Output styles, guardrails and operating rules",
 }
 
-# Minimum Claude Code version for this repository's tooling and for new
-# plugins (changelog review in CLAUDE.md: validator fixes up to 2.1.289).
-MIN_CLAUDE_CODE = "2.1.289"
-
 # Mods require Claude Code 2.1.287 or later (docs: plugins/mods/create).
 MOD_MIN_CLAUDE_CODE = (2, 1, 287)
 

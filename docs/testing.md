@@ -24,7 +24,7 @@ The repository has no dependency manifest and nothing to install inside it. Thes
 
 | Tool                                                                                                                                               | Used for                                                                              |
 | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [Claude Code](https://code.claude.com/docs/en/setup) 2.1.289 or later                                                                              | `claude plugin validate`, the scaffold, tags and install tests                        |
+| [Claude Code](https://code.claude.com/docs/en/setup), a current release                                                                            | `claude plugin validate`, the scaffold, tags and install tests                        |
 | [uv](https://docs.astral.sh/uv/)                                                                                                                   | Provides the `python3` that the scripts' shebang finds, and installs the Python tools |
 | git                                                                                                                                                | Version control                                                                       |
 | [Prettier](https://prettier.io/)                                                                                                                   | Formatting of Markdown, JSON and YAML                                                 |

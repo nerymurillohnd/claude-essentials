@@ -168,7 +168,6 @@ def adapt_manifest(path: Path, spec: PluginSpec) -> None:
         "repository": repo.REPOSITORY_URL,
         "license": "MIT",
         "keywords": [spec.category, *[tag for tag in spec.tags if tag != spec.category]],
-        "metadata": {"minClaudeCodeVersion": repo.MIN_CLAUDE_CODE},
     }
     for key, value in data.items():
         if key in ("$schema", "name", "version", "description", "author", "skills"):

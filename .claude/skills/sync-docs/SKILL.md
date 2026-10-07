@@ -1,6 +1,6 @@
 ---
 name: sync-docs
-description: Finds and fixes drift between the claude-essentials code and its documentation - pins, gate lists, script names, rule paths, links, guides, rules, ADRs, the sourcing log and CLAUDE.md Current state. Use after changing scripts, gates, tooling, workflows or rules, before a commit that touches them, or when asked to sync, update or audit the docs.
+description: Finds and fixes drift between the claude-essentials code and its documentation - gate lists, script names, rule paths, links, guides, rules, ADRs, the sourcing log and CLAUDE.md Current state. Use after changing scripts, gates, tooling, workflows or rules, before a commit that touches them, or when asked to sync, update or audit the docs.
 ---
 
 # Sync the documentation
@@ -15,7 +15,7 @@ The code is the source of truth; documents follow it. Mechanical drift is caught
 - [ ] 5 Verify       scripts/check.py
 ```
 
-1. **Mechanical.** Run `scripts/check_docs.py`. Each line names a file and the value it must have. Fix the copy, not the constant, unless the constant is what changed; when a pinned sentence was reworded on purpose, update `PIN_SITES` in `scripts/check_docs.py` and its test.
+1. **Mechanical.** Run `scripts/check_docs.py`. Each line names a file and the value it must have. Fix the copy, not the constant, unless the constant is what changed.
 2. **Changed files.** List them with `git diff --name-only main...HEAD` plus `git status --short`. For each, update what describes it:
 
    | Changed | Update |

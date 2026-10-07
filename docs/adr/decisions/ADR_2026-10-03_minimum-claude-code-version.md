@@ -1,8 +1,9 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-03
 decision-makers:
   - "Nery Samuel Murillo (maintainer)"
+superseded-by: ADR_2026-10-07_no-pinned-claude-code-version.md
 ---
 
 # Minimum Claude Code version 2.1.289 for tooling and new plugins

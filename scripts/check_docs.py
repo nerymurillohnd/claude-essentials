@@ -4,8 +4,6 @@
 Run: scripts/check_docs.py [--root PATH]
 
 Checks, each against the single source of truth in the code:
-  * every copy of the minimum Claude Code version equals repo.MIN_CLAUDE_CODE
-    (PIN_SITES lists where copies live);
   * the gate count and list in the rules and docs/testing.md equal check.GATES;
   * every `scripts/<name>.py` a document names exists, and every
     `scripts/check.py <target>` names a real gate or command;
@@ -20,7 +18,6 @@ file and what to change (docs/adr/decisions/ADR_2026-10-04_claude-code-automatio
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 from pathlib import Path
 import re
 import sys
@@ -50,43 +47,6 @@ _NUMBER_WORDS = {
     "twelve": 12,
 }
 
-
-@dataclass(frozen=True)
-class PinSite:
-    """A place in the docs that repeats a version constant of repo.py, in capture-group order."""
-
-    path: str
-    pattern: str
-    constants: tuple[str, ...]
-
-
-PIN_SITES: tuple[PinSite, ...] = (
-    PinSite(
-        ".claude/rules/claude-code-version.md",
-        r"verified on Claude Code (\d+\.\d+\.\d+) on",
-        ("MIN_CLAUDE_CODE",),
-    ),
-    PinSite(
-        ".claude/rules/claude-code-version.md",
-        r"pinned at (\d+\.\d+\.\d+), in",
-        ("MIN_CLAUDE_CODE",),
-    ),
-    PinSite(
-        ".claude/rules/claude-code-version.md",
-        r"every changelog entry newer than (\d+\.\d+\.\d+)\.",
-        ("MIN_CLAUDE_CODE",),
-    ),
-    PinSite(
-        "docs/releasing.md",
-        r"Claude Code (\d+\.\d+\.\d+) or later",
-        ("MIN_CLAUDE_CODE",),
-    ),
-    PinSite(
-        ".github/ISSUE_TEMPLATE/bug_report.yml",
-        r"label: Claude Code version\n(?:.*\n)*?\s+placeholder: (\d+\.\d+\.\d+)",
-        ("MIN_CLAUDE_CODE",),
-    ),
-)
 
 _SCRIPT_RE = re.compile(r"\bscripts/([\w/-]+\.py)\b")
 # Only commands written as code count; prose such as "check.py and" is not a target.
@@ -142,27 +102,6 @@ def check_doc_references(root: Path, files: list[Path], report: Report) -> None:
         ):
             if "YYYY" not in reference and not (root / reference).is_file():
                 report.fail(_rel(root, path), f"names {reference}, which does not exist")
-
-
-def check_pins(root: Path, report: Report) -> None:
-    """Every copy of a version constant equals its value in scripts/repo.py."""
-    for site in PIN_SITES:
-        path = root / site.path
-        if not path.is_file():
-            report.fail(site.path, "missing file listed in PIN_SITES (scripts/check_docs.py)")
-            continue
-        matches = list(re.finditer(site.pattern, path.read_text(encoding="utf-8")))
-        if not matches:
-            report.fail(
-                site.path,
-                f"pin text /{site.pattern}/ not found; update the text or PIN_SITES",
-            )
-        for match in matches:
-            for group, constant in enumerate(site.constants, start=1):
-                expected = str(getattr(repo, constant))  # pyright: ignore[reportAny]  # module constants are read by name
-                found = match.group(group)
-                if found != expected:
-                    report.fail(site.path, f"{found} must be {expected} ({constant} in repo.py)")
 
 
 def _count(text: str) -> int | None:
@@ -292,7 +231,6 @@ def run_checks(root: Path) -> Report:
     """Run every documentation check on the repository at `root`."""
     report = Report()
     files = repository_files(root)
-    check_pins(root, report)
     check_gate_list(root, report)
     check_script_references(root, files, report)
     check_rule_paths(root, files, report)

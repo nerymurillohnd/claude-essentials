@@ -75,7 +75,7 @@ The release is prepared in the pull request that changes the plugin, and tagged 
 
 0. **Branch.** Work on a short-lived `<plugin>/<topic>` branch from an up-to-date `main` (`git switch -c <plugin>/<topic>`); GitHub deletes it on merge, and `git fetch --prune` removes the local remote-tracking reference. Non-plugin pull requests use the commit scope as prefix: `marketplace/`, `scripts/`, `ci/` or `docs/` ([ADR branch-naming](adr/decisions/ADR_2026-10-04_branch-naming.md)).
 
-Requirements: signing configured for commits and tags, Claude Code 2.1.289 or later.
+Requirements: signing configured for commits and tags, a current Claude Code.
 
 1. **Notes.** Describe every user-relevant change under `## [Unreleased]` in `plugins/<name>/CHANGELOG.md`. To draft notes from history, optionally run git-cliff without installing anything, and then rewrite the draft for users:
 

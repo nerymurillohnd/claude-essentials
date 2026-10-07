@@ -60,7 +60,7 @@ Claude Code copies each plugin installed from a git, URL or other remote marketp
 
 - `name` is permanent: users install, enable and configure the plugin by `<name>@claude-essentials`. Use `displayName` for the label. See [naming](naming.md).
 - `version` lives only in `plugin.json`, never in the marketplace entry. Do not change it in feature pull requests; releases change it ([releasing](releasing.md)).
-- `metadata.minClaudeCodeVersion` states the oldest Claude Code version you tested; it appears in the README badge and requirements.
+- `metadata.minClaudeCodeVersion` is optional: declare it only when the plugin relies on a feature of a specific Claude Code version, and set it to the oldest version you tested. It appears in the README badge and requirements; without it, the README asks for a current release. Claude Code does not read it.
 - `keywords` include the category. `license` is `MIT`; `repository` is this repository.
 - Declare `userConfig` for values users must provide instead of asking them to edit settings; sensitive values go to secure storage ([user configuration](https://code.claude.com/docs/en/plugins/manifest-reference#user-configuration)).
 

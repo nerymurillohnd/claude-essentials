@@ -29,6 +29,7 @@ import check_repo
 import claude_hooks
 import drive_plugin
 import repo
+import sync_readmes
 import validate_adrs
 
 if TYPE_CHECKING:
@@ -837,18 +838,6 @@ class DocsGateTest(RepositoryFixture):
     def test_unmodified_repository_passes(self) -> None:
         assert self.docs_errors() == []
 
-    def test_claude_code_minimum_drift_fails(self) -> None:
-        self.replace(
-            ".github/ISSUE_TEMPLATE/bug_report.yml",
-            f"placeholder: {repo.MIN_CLAUDE_CODE}",
-            "placeholder: 2.1.200",
-        )
-        self.assert_drift("2.1.200 must be")
-
-    def test_moved_pin_sentence_fails(self) -> None:
-        self.replace("docs/releasing.md", " or later", " and newer")
-        self.assert_drift("update the text or PIN_SITES")
-
     def test_gate_count_drift_fails(self) -> None:
         self.replace(".claude/rules/testing/gates.md", "10 gates", "9 gates")
         self.assert_drift("gate count is 9")
@@ -1083,6 +1072,27 @@ class ClaudeHooksTest(unittest.TestCase):
         status = claude_hooks.session_status(ROOT)
         assert status.startswith("claude-essentials: "), status
         assert "path-scoped rules" in status
+        assert "/cc-currency" not in status, status
+
+
+class MinimumVersionTest(unittest.TestCase):
+    """The repository pins no Claude Code version: a plugin states one only when it declares one."""
+
+    @staticmethod
+    def plugin(metadata: dict[str, repo.JSON]) -> sync_readmes.Plugin:
+        manifest: dict[str, repo.JSON] = {"name": "demo", "version": "0.1.0", "metadata": metadata}
+        return sync_readmes.Plugin(ROOT, "demo", manifest, {})
+
+    def test_undeclared_minimum_is_none(self) -> None:
+        assert self.plugin({}).min_claude_code is None
+
+    def test_declared_minimum_is_kept(self) -> None:
+        assert self.plugin({"minClaudeCodeVersion": "2.1.287"}).min_claude_code == "2.1.287"
+
+    def test_root_readme_shows_no_version_badge_or_number(self) -> None:
+        text = sync_readmes.root_readme([])
+        assert "Claude%20Code" not in text, "the root README still shows a Claude Code badge"
+        assert "a current release" in text
 
 
 class AddComponentTest(unittest.TestCase):

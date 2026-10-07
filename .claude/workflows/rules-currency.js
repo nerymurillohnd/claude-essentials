@@ -3,7 +3,7 @@ export const meta = {
   description:
     "Check every .claude/rules fact against the official Claude Code docs and changelog, then verify each stale claim",
   whenToUse:
-    "From /cc-currency when a new Claude Code release is out, or before raising the minimum version pin",
+    "From /cc-currency when a new Claude Code release is out, or before trusting the rules for a new release",
   phases: [
     {
       title: "Check",
@@ -16,10 +16,12 @@ export const meta = {
   ],
 };
 
-// args: { pin: "2.1.289", latest: "2.1.290" } — versions are passed in because the
-// script has no shell; /cc-currency reads them first.
+// args: { pin: "2.1.292", latest: "2.1.293" } — versions are passed in because the
+// script has no shell; /cc-currency reads them first. `pin` is the last reviewed
+// release recorded in .claude/rules/claude-code-version.md.
 const pin =
-  (args && args.pin) || "the pin in scripts/repo.py (MIN_CLAUDE_CODE)";
+  (args && args.pin) ||
+  "the last reviewed release in .claude/rules/claude-code-version.md";
 const latest =
   (args && args.latest) ||
   "the latest published version (npm view @anthropic-ai/claude-code dist-tags)";
@@ -97,7 +99,7 @@ const results = await pipeline(
   GROUPS,
   (group) =>
     agent(
-      `Read these Claude Code rule files of the claude-essentials repository with the Read tool: ${group.files}. The rules were verified on Claude Code ${pin}; the latest release is ${latest}. For every factual statement about Claude Code (fields, commands, flags, versions, behaviour), check it against the official sources only: https://code.claude.com/docs/llms.txt, the pages it lists (append .md for raw Markdown, fetch with curl), and every changelog entry newer than ${pin} in https://code.claude.com/docs/en/changelog.md. Never use any other marketplace or plugin collection as a source. Mark a statement stale only with a literal quote from an official source; mark it unverifiable when no official source settles it. Do not edit files.`,
+      `Read these Claude Code rule files of the claude-essentials repository with the Read tool: ${group.files}. The rules were last reviewed on Claude Code ${pin}; the latest release is ${latest}. For every factual statement about Claude Code (fields, commands, flags, versions, behaviour), check it against the official sources only: https://code.claude.com/docs/llms.txt, the pages it lists (append .md for raw Markdown, fetch with curl), and every changelog entry newer than ${pin} in https://code.claude.com/docs/en/changelog.md. Never use any other marketplace or plugin collection as a source. Mark a statement stale only with a literal quote from an official source; mark it unverifiable when no official source settles it. Do not edit files.`,
       { label: `check:${group.key}`, phase: "Check", schema: CLAIMS },
     ),
   (checked, group) => {

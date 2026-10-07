@@ -24,7 +24,7 @@ paths:
 - The `guard-edit` hook runs before Edit and Write. It denies hand edits of `version` in a plugin's `plugin.json` and of `BEGIN GENERATED` blocks.
 - The `guard-sources` hook runs before file, search, shell, web and GitHub tools. It denies reading or searching into the forbidden sources listed in the untracked `CLAUDE.local.md`.
 - The `format` hook runs after Edit and Write. It runs prettier on edited Markdown, JSON, YAML and workflow scripts and tells Claude to re-read the file.
-- The `session-status` hook runs at session start, resume, clear and compaction. It prints the branch, changed files, a notice when Claude Code is newer than the pin, and a reminder to read files with the Read tool.
+- The `session-status` hook runs at session start, resume, clear and compaction. It prints the branch, changed files and a reminder to read files with the Read tool.
 - `worktree.baseRef: head` makes new worktrees start from the local `HEAD`, so unpushed commits are present.
 - The `verify` skill: Claude Code tells Claude to run it before each commit, and it runs `scripts/check.py`. The instruction applies when the skill loads from a project, personal, enterprise, additional-directory or `.claude/commands/` location, Claude may invoke it (no `disable-model-invocation: true`) and `includeGitInstructions` is not off. Docs-only and tests-only changes are excepted, and plugin skills do not count.
 - Approving a prompt with "don't ask again" saves an allow rule in the local settings. It never overrides a project `ask` rule, so the next push asks again.
@@ -39,7 +39,7 @@ paths:
 - `/review-pr [number|branch]` - Review with the `plugin-reviewer` agent: gates on a temporary checkout, quality bar, security, release rules.
 - `/run-marketplace <plugin>` - Drive a plugin in a real headless session with only that plugin loaded.
 - `/sync-docs` - Fix documentation drift after a change.
-- `/cc-currency` - Compare the repository with the current Claude Code release and update rules and the pin.
+- `/cc-currency` - Compare the repository with the current Claude Code release, update the affected rules and record the last reviewed release.
 - `/verify` - Run every gate.
 - `plugin-versioning` - Claude loads it when it touches `plugins/` or the catalog: bump level, PR or direct push, branch names.
 
@@ -68,7 +68,7 @@ paths:
 - Saved dynamic workflows in `.claude/workflows/` run many agents and cost more than a skill.
 - Start them with `/<name>`. Each stays under ten agents and verifies every finding with a skeptic agent before reporting it.
 - `/drift-audit` - Meaning drift between guides, rules, CLAUDE.md, skills and the code, which the `docs` gate cannot see.
-- `/rules-currency` - Every fact in `.claude/rules/` checked against the official docs and changelog; pass the pin and the latest version.
+- `/rules-currency` - Every fact in `.claude/rules/` checked against the official docs and changelog; pass the last reviewed release as `pin` and the latest version.
 - `/review-pr-deep` - Large or risky pull requests: release, quality, security and docs reviewed in parallel.
 
 ## Gates

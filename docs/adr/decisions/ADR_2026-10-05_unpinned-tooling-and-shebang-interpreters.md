@@ -101,3 +101,5 @@ Chosen option: **unpinned tooling, shebang-chosen interpreters, and a plugin-scr
 ## More information
 
 This record replaces part of [ADR validation-stack](ADR_2026-10-03_validation-stack.md) (scripts run with `python3`, `sys.executable`, the Python 3.12 minimum, pinned CI tools and pre-commit `rev`s) and part of [ADR minimum-claude-code-version](ADR_2026-10-03_minimum-claude-code-version.md) (CI installs exactly the pinned version); both keep the rest of their decisions and get a dated pointer note. Approved by the maintainer in the Claude Code session of 2026-10-05.
+
+Pointer note (2026-10-07): [ADR no-pinned-claude-code-version](ADR_2026-10-07_no-pinned-claude-code-version.md) removes `repo.MIN_CLAUDE_CODE`, which the out-of-scope list above keeps; `metadata.minClaudeCodeVersion` stays as an optional declaration per plugin. Approved by the maintainer in the Claude Code session of 2026-10-07.

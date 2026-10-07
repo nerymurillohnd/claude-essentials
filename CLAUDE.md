@@ -17,7 +17,7 @@
 2. **Portability:** no absolute or home paths, user or machine names, personal data or secrets in plugins.
 3. **Ownership:** only the maintainer and Claude change this repo; third parties open issues, which we resolve and update; every pull request is ours and is reviewed and merged by us.
 4. **Approval:** sign every commit and tag; get the maintainer's explicit approval for each exact remote change, push, pull request, merge, publication or plugin eval run.
-5. **Live docs first:** follow `.claude/rules/` to the line. Before schema, component, release or distribution work, run `/cc-currency`: it compares `claude --version` and the latest release with the version pinned in `.claude/rules/claude-code-version.md`, reads every newer changelog entry, and updates the matching rules and pins with the date and version. When the docs or changelog disagree with these files, follow the live source and flag the exact change needed.
+5. **Live docs first:** follow `.claude/rules/` to the line. Before schema, component, release or distribution work, run `/cc-currency`: it compares `claude --version` and the latest release with the last reviewed release recorded in `.claude/rules/claude-code-version.md`, reads every newer changelog entry, and updates the matching rules with the date and version. The repository pins no Claude Code version. When the docs or changelog disagree with these files, follow the live source and flag the exact change needed.
 
 ## Architecture
 
@@ -110,4 +110,4 @@ docs/                             guides and dated ADRs
 - Every plugin release keeps both its signed tag and its GitHub Release (maintainer decision, 2026-10-07).
 - `svelte-development` maps only `.svelte` to `svelteserver`: `.ts` mapped to it returned empty results (2026-10-05), so TypeScript code intelligence will be its own plugin. The remote MCP server choice is recorded in `docs/sourcing-log.md`.
 - Deferred by the maintainer for `svelte-development`: a background auditor, a `svelte-audit` skill with `context: fork`, and `disallowed-tools` or a WebFetch guard.
-- Awaiting my decision outside the ledger: refining the user-level Python rule, which lives outside this repository. Ledger items that need my decision: DEBT-002, DEBT-003, DEBT-010, DEBT-011, DEBT-017 and DEBT-018.
+- Awaiting my decision outside the ledger: refining the user-level Python rule, which lives outside this repository. Ledger items that need my decision: DEBT-010, DEBT-011, DEBT-017 and DEBT-018.

@@ -35,3 +35,27 @@ that links back to it — don't rewrite history.
 - **Residual risk / follow-up:** The review job's unexplained permission denial and the token's exposure stay open in DEBT-007.
 - **Related records:** PR #7; `.claude/rules/ci-github.md`; DEBT-007.
 - **Superseded by:** none.
+
+### DEBT-002 — 2026-10-07 — Minimum-version pin removed instead of enforced
+
+- **Original pending record:** DEBT-002 in `pending-debt.md` (recorded 2026-10-06), "Minimum-version pin is documented as enforced but nothing enforces it".
+- **Resolved debt:** `repo.MIN_CLAUDE_CODE` (2.1.289) fed the README badges, the new-plugin default and five documented copies, but Claude Code does not read `metadata.minClaudeCodeVersion`, so the minimum never blocked an older install.
+- **Resolution:** The maintainer chose to remove the pin (session of 2026-10-07). `MIN_CLAUDE_CODE`, `PIN_SITES` and the default `minClaudeCodeVersion` of new plugins are gone; a plugin declares one only when it needs a specific version, and its README then shows it. `/cc-currency` starts from the last reviewed release in `.claude/rules/claude-code-version.md`. Recorded in ADR no-pinned-claude-code-version, which supersedes ADR minimum-claude-code-version.
+- **Positive verification:** `scripts/check.py` passed all 10 gates, including 159 tests with the new `MinimumVersionTest`; `scripts/validate_adrs.py` accepted 30 records; `grep -rnE "MIN_CLAUDE_CODE\b|PIN_SITES"` outside `docs/adr/decisions/` finds only `MOD_MIN_CLAUDE_CODE`, the mods floor. README generation for a plugin without a declared minimum, run in a scratch interpreter, printed no badge and the row `A current release`.
+- **Negative verification:** `git diff --stat -- plugins` is empty, so `svelte-development` (which declares 2.1.289) is unchanged and needs no release.
+- **Owner or responsible area:** repository maintainer; `scripts/repo.py`, `scripts/check_docs.py`, `scripts/sync_readmes.py`, ADRs.
+- **Residual risk / follow-up:** The generated plugin README sentence "older than the minimum?" still reads as if a minimum existed; changing it rewrites every plugin README and needs a plugin release, so it waits for the next one.
+- **Related records:** ADR no-pinned-claude-code-version; DEBT-003.
+- **Superseded by:** none.
+
+### DEBT-003 — 2026-10-07 — Session-start version notice removed
+
+- **Original pending record:** DEBT-003 in `pending-debt.md` (recorded 2026-10-06), "Session-start notice flags versions that were already reviewed".
+- **Resolved debt:** The `session-status` hook printed a note on every session while Claude Code was newer than the pin, so it could not tell a real change from a reviewed one.
+- **Resolution:** The comparison and `_NEWER_NOTE` are removed from `scripts/claude_hooks.py` together with the pin; the hook prints the branch, changed files and the Read reminder. The maintainer runs `/cc-currency` before schema, component, release or distribution work (CLAUDE.md, Non-negotiable rules).
+- **Positive verification:** `ClaudeHooksTest.test_session_status_names_the_project_and_the_rule_loading` asserts the status has no `/cc-currency` note; `scripts/check.py` passed all 10 gates.
+- **Negative verification:** The session no longer warns when Claude Code is newer than the last review; this is accepted in the ADR.
+- **Owner or responsible area:** `scripts/claude_hooks.py`, `.claude/rules/automation.md`.
+- **Residual risk / follow-up:** A release that changes a rule is found only when `/cc-currency` runs.
+- **Related records:** ADR no-pinned-claude-code-version; DEBT-002.
+- **Superseded by:** none.

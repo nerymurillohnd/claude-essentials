@@ -15,7 +15,7 @@ Community plugins for [Claude Code](https://code.claude.com/docs): workflows, ag
 > Before you install, check these three things.
 
 1. 🖥️ **Platform:** macOS, Linux (WSL included), or Windows with [Git Bash](https://git-scm.com/downloads/win). Claude Code runs hooks and shell commands with Git Bash on Windows; these plugins are not supported without it.
-2. 🤖 **Claude Code** {{min_claude_code}} or later (`claude --version`).
+2. 🤖 **Claude Code**, a current release (`claude --version`). A plugin that needs a specific version lists it in its own README.
 3. 🧰 **The plugin's own prerequisites**, such as a language server binary: each plugin README lists them under Prerequisites. Install them first, so the plugin finds them when it loads.
 
 Then, inside a Claude Code session, add the marketplace once and install the plugins you want:

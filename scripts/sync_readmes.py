@@ -179,10 +179,10 @@ class Plugin:
         return repo.as_str(self.entry.get("category")) or ""
 
     @property
-    def min_claude_code(self) -> str:
-        """The minimum Claude Code version the plugin declares."""
+    def min_claude_code(self) -> str | None:
+        """The minimum Claude Code version the plugin declares, if it declares one."""
         metadata = repo.as_dict(self.manifest.get("metadata")) or {}
-        return repo.as_str(metadata.get("minClaudeCodeVersion")) or repo.MIN_CLAUDE_CODE
+        return repo.as_str(metadata.get("minClaudeCodeVersion")) or None
 
 
 def load_plugins() -> list[Plugin]:
@@ -395,11 +395,12 @@ def _header(plugin: Plugin, *, privileged: bool, has_config: bool) -> str:
     present = {"Configuration": has_config, "Permissions": privileged}
     sections = [title for _, title in repo.README_SECTIONS if present.get(title, True)]
     nav = " · ".join(f"[{title}]({repo.readme_anchor(title)})" for title in sections)
+    minimum = plugin.min_claude_code
     badges = " ".join(
         [
             badge("version", plugin.version, "blue", "CHANGELOG.md"),
             badge("category", plugin.category, "informational", f"{BLOB}/README.md#categories"),
-            badge("Claude Code", f"≥ {plugin.min_claude_code}", "orange", DOCS_URL),
+            *([badge("Claude Code", f"≥ {minimum}", "orange", DOCS_URL)] if minimum else []),
             badge("license", "MIT", "green", "LICENSE"),
             ci_badge(),
             *component_badges(plugin),
@@ -419,7 +420,7 @@ def _prerequisites(plugin: Plugin) -> str:
     # Plugins run on macOS, Linux (WSL included) or Windows with Git Bash (ADR supported-platforms).
     rows = [
         ["Operating system", PLATFORMS, "`uname -s` (in Git Bash on Windows)"],
-        ["Claude Code", plugin.min_claude_code, "`claude --version`"],
+        ["Claude Code", plugin.min_claude_code or "A current release", "`claude --version`"],
     ]
     setup = (
         f"Not installed, or older than the minimum? Follow the [setup guide]({SETUP_URL}), "
@@ -570,7 +571,6 @@ def root_readme(plugins: list[Plugin]) -> str:
     badges = " ".join(
         [
             badge("plugins", str(len(plugins)), "informational", "#-plugins"),
-            badge("Claude Code", f"≥ {repo.MIN_CLAUDE_CODE}", "orange", DOCS_URL),
             badge("license", "MIT", "green", "LICENSE"),
             ci_badge(),
             badge("community", "unaffiliated", "lightgrey", "#claude-essentials"),
@@ -581,7 +581,6 @@ def root_readme(plugins: list[Plugin]) -> str:
         "badges": badges,
         "catalog": catalog,
         "categories": categories,
-        "min_claude_code": repo.MIN_CLAUDE_CODE,
     }
     for key, value in values.items():
         text = text.replace("{{" + key + "}}", value)

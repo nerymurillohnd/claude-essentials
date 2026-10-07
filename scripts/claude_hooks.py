@@ -70,7 +70,6 @@ _RECURSIVE_RE = re.compile(
 )
 _RULES_REMINDER = "Read repo files with Read, not cat: path-scoped rules load only on Read/Edit."
 _FORMATTED_NOTE = "prettier reformatted {name}; re-read it before the next edit."
-_NEWER_NOTE = "Claude Code {installed} is newer than the pin {pin}: run /cc-currency first."
 
 
 # --------------------------------------------------------------------------
@@ -395,22 +394,12 @@ def format_file(path: Path, root: Path) -> dict[str, JSON] | None:
     return None
 
 
-def _version(text: str) -> tuple[int, ...]:
-    match = re.search(r"(\d+)\.(\d+)\.(\d+)", text)
-    return tuple(int(part) for part in match.groups()) if match else ()
-
-
 def session_status(root: Path) -> str:
     """A few lines of repository state for the start of a session."""
     lines: list[str] = []
     branch = repo.run(["git", "status", "--short", "--branch"], cwd=root, check=False).stdout
     first, *changes = branch.splitlines() or ["## unknown"]
     lines.append(f"claude-essentials: {first.removeprefix('## ')}, {len(changes)} changed file(s)")
-    installed = repo.run(["claude", "--version"], cwd=root, check=False).stdout.strip()
-    pin = _version(repo.MIN_CLAUDE_CODE)
-    if _version(installed) > pin:
-        version = installed.split()[0]
-        lines.append(_NEWER_NOTE.format(installed=version, pin=repo.MIN_CLAUDE_CODE))
     lines.append(_RULES_REMINDER)
     return "\n".join(lines)
 

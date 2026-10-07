@@ -1,6 +1,6 @@
 # Claude Essentials
 
-[![plugins: 1](https://img.shields.io/badge/plugins-1-informational)](#-plugins) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![community: unaffiliated](https://img.shields.io/badge/community-unaffiliated-lightgrey)](#claude-essentials)
+[![plugins: 1](https://img.shields.io/badge/plugins-1-informational)](#-plugins) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![community: unaffiliated](https://img.shields.io/badge/community-unaffiliated-lightgrey)](#claude-essentials)
 
 Community plugins for [Claude Code](https://code.claude.com/docs): workflows, agents, audits, code review, documentation, development practices, deep research and model behavior, distributed as a Claude Code plugin marketplace.
 
@@ -15,7 +15,7 @@ Community plugins for [Claude Code](https://code.claude.com/docs): workflows, ag
 > Before you install, check these three things.
 
 1. 🖥️ **Platform:** macOS, Linux (WSL included), or Windows with [Git Bash](https://git-scm.com/downloads/win). Claude Code runs hooks and shell commands with Git Bash on Windows; these plugins are not supported without it.
-2. 🤖 **Claude Code** 2.1.289 or later (`claude --version`).
+2. 🤖 **Claude Code**, a current release (`claude --version`). A plugin that needs a specific version lists it in its own README.
 3. 🧰 **The plugin's own prerequisites**, such as a language server binary: each plugin README lists them under Prerequisites. Install them first, so the plugin finds them when it loads.
 
 Then, inside a Claude Code session, add the marketplace once and install the plugins you want:
