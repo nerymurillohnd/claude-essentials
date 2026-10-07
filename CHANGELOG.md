@@ -8,9 +8,6 @@ The catalog has no version: users always receive the latest catalog, and only pl
 
 ### Changed
 
-- The root README is laid out as a page for someone deciding what to install: section icons, GitHub callouts for the install prerequisites, the update warning and the permissions caution, and a Contents line with icons. Its anchors follow the new headings, and the wording of the affiliation notice, install commands and Claude Tag guidance is unchanged.
-- Plugin evals run only when a pull request changes a file under `plugins/`. A labelled pull request that changes no plugin skips the eval job, so it starts no runner and makes no model call.
-- Plugin READMEs are written as a page for the user who is deciding to install, not as a second changelog: one paragraph in the whole file, and tables, labelled bullets, callouts and `<details>` blocks everywhere else. The rule and its fix order are in `docs/readme-guide.md`, and the scaffold's own TODO text asks for that shape, so every new plugin starts from it.
 - Every plugin supports macOS, Linux (WSL included) and Windows with Git Bash; the READMEs list the platform first among the prerequisites, and the root Quick start lists what to install, in order, before a plugin.
 - `svelte-development`: the catalog description now names SvelteKit 2 support, language-server navigation with renames proven by the project check, and a svelte-check of your changes before Claude stops.
 
