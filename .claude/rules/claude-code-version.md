@@ -3,10 +3,27 @@
 - Last reviewed release: 2.1.292 (2026-10-07). `/cc-currency` starts from this release and replaces it after each review.
 - The repository pins no Claude Code version: CI installs the latest release (ADR unpinned-tooling-and-shebang-interpreters) and nothing in a script, test or gate compares against a version (ADR no-pinned-claude-code-version).
 - Every fact in these rules carries its own version and date, so a stale fact is found by reading the changelog, not by a constant.
-- A plugin declares `metadata.minClaudeCodeVersion` only when it relies on a feature of a specific version, set to the oldest version its author tested. Claude Code does not read `metadata` (checked 2026-10-04): the value informs users and never blocks older versions.
+- A plugin declares `metadata.minClaudeCodeVersion` only when it relies on a feature of a specific version.
+- Set it to the oldest version its author tested.
+- Claude Code does not read `metadata` (checked 2026-10-04).
+- The value informs users and never blocks older versions.
 - A plugin with mods must declare at least 2.1.287 (`MOD_MIN_CLAUDE_CODE` in `scripts/repo.py`), a floor set by the feature, not by the repository.
 - Before touching schema, components or releases, read `llms.txt` and every changelog entry newer than the last reviewed release.
 - Validator fixes the gates rely on: names Claude Code cannot install fail (2.1.283), and a plugin was skipped when its folder also held a marketplace manifest (fixed in 2.1.289).
-- Reviewed window 2.1.292 on 2026-10-07 with `/cc-currency`: installed and latest 2.1.292, stable 2.1.285. Read in full. Relevant: `claude plugin install --marketplace <source>` from the shell (recorded in `distribution.md`); `claude plugin test` now fails on a failed `expect` or a refused stub instead of passing silently, and `claude plugin validate` fixes for hooks modules (mods only, `svelte-development` has none); agent names are capped at 256 characters and a longer skill or plugin file `name` is ignored (our names stay at 64 or fewer); text written in a hook's output has `<system-reminder>` tags escaped (our hooks print none); `permissionMode: auto` in a subagent no longer enters auto mode when unavailable (plugin agents ignore the field anyway). No other entry touches a rule.
-- Reviewed window 2.1.291 on 2026-10-06: installed and latest 2.1.291, stable 2.1.285. The entry holds two regression fixes only (cloud sessions dropping permission answers, the last messages of a session lost on quit) and changes no rule. Re-read of 2.1.290 for that release: a plugin's **async** `Stop` hook with an unquoted script path under a folder with a space made Claude reply in an endless loop; `svelte-development` runs its `Stop` hook synchronously and quotes `"${CLAUDE_PLUGIN_ROOT}"`, so the fix confirms the shape already shipped.
-- Reviewed window 2.1.290 on 2026-10-05: installed and latest 2.1.290, stable 2.1.285. The entries that touch skills (multi-line `!` blocks with CRLF fixed on Windows, `!` commands with raw control characters refused, skills found by their `SKILL.md` name) change no rule, and plugin skills here use no `!` injection.
+- Reviewed window 2.1.292 on 2026-10-07 with `/cc-currency`: installed and latest 2.1.292, stable 2.1.285. Read in full.
+  - Relevant: `claude plugin install --marketplace <source>` from the shell (recorded in `.claude/rules/distribution.md`).
+  - Relevant: `claude plugin test` now fails on a failed `expect` or a refused stub instead of passing silently.
+  - Relevant: `claude plugin validate` fixes for hooks modules (mods only, `svelte-development` has none).
+  - Relevant: agent names are capped at 256 characters and a longer skill or plugin file `name` is ignored (our names stay at 64 or fewer).
+  - Relevant: text written in a hook's output has `<system-reminder>` tags escaped (our hooks print none).
+  - Relevant: `permissionMode: auto` in a subagent no longer enters auto mode when unavailable (plugin agents ignore the field anyway).
+  - No other entry touches a rule.
+- Reviewed window 2.1.291 on 2026-10-06: installed and latest 2.1.291, stable 2.1.285.
+  - The entry holds two regression fixes only (cloud sessions dropping permission answers, the last messages of a session lost on quit).
+  - It changes no rule.
+  - Re-read of 2.1.290 for that release: a plugin's **async** `Stop` hook with an unquoted script path under a folder with a space made Claude reply in an endless loop.
+  - `svelte-development` runs its `Stop` hook synchronously and quotes `"${CLAUDE_PLUGIN_ROOT}"`.
+  - So the fix confirms the shape already shipped.
+- Reviewed window 2.1.290 on 2026-10-05: installed and latest 2.1.290, stable 2.1.285.
+  - The entries that touch skills change no rule: multi-line `!` blocks with CRLF fixed on Windows, `!` commands with raw control characters refused, skills found by their `SKILL.md` name.
+  - Plugin skills here use no `!` injection.

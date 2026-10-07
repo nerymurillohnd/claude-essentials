@@ -19,7 +19,9 @@ paths:
 
 # Versioning, tags and releases
 
-- Policy, levels, branches and the release steps: `docs/releasing.md`; maintainers release with the `release-plugin` skill (ADR release-orchestration), which stops at the open pull request, and `/github-ops:automatic-pr-lifecycle` handles reviews and the merge.
+- Policy, levels, branches and the release steps: `docs/releasing.md`.
+- Maintainers release with the `release-plugin` skill (ADR release-orchestration), which stops at the open pull request.
+- `/github-ops:automatic-pr-lifecycle` handles reviews and the merge.
 
 - Only plugins are versioned and tagged. The catalog has no `version` (top-level or `metadata.version`); its history is the root `CHANGELOG.md` with `## YYYY-MM-DD` sections.
 - The official tag format is `<name>--v<version>` (double hyphen, lowercase `v`).
@@ -27,15 +29,26 @@ paths:
 - `claude plugin tag` refuses a plugin directory with uncommitted changes and a tag that already exists, unless `--force` is passed.
 - Each plugin has independent SemVer and the version lives only in `plugin.json`; Claude Code does not validate SemVer.
 - release-please was rejected because its commits and tags are not signed with my key.
-- The merge to `main` with a bump is the release users receive; the tag and GitHub Release are the signed record and serve dependency ranges, and Claude Code reads them only to resolve a dependent plugin's version constraint on this plugin, never to install a plugin itself (docs: host-marketplace, dependencies; checked 2026-10-04 on 2.1.289).
+- The merge to `main` with a bump is the release users receive.
+- The tag and GitHub Release are the signed record and serve dependency ranges.
+- Claude Code reads them only to resolve a dependent plugin's version constraint on this plugin, never to install a plugin itself (docs: host-marketplace, dependencies; checked 2026-10-04 on 2.1.289).
 - Every workflow, script and doc that consumes tags matches exactly `<name>--v<semver>`, never `v*` or `<name>-v*`.
 - A full release in a throwaway clone verified the tag signature: `git tag -v` reports a good ED25519 signature.
 - Release dates are UTC.
 - If `version` is set and not bumped, users never receive the new commits.
 - After the merge, tag from an up-to-date `main`: `git switch main && git pull --ff-only`, then `claude plugin tag plugins/<name>` and `git tag -v <name>--v<version>`.
-- Push the tag only when approved: `git push origin <name>--v<version>`. The push runs `.github/workflows/release.yml`, which checks the tag against `plugin.json` (`scripts/release_notes.py verify`), validates the plugin and publishes a GitHub Release whose notes are that version's changelog section (`scripts/release_notes.py notes`).
-- Roll back by fixing forward. Never delete, move or force-push a pushed tag or its GitHub Release: users may have installed that version, and Claude Code delivers updates only when `version` changes.
-- Fix forward on a new `<plugin>/<topic>` branch: revert the faulty change (`git revert <sha>`) or correct it, write a `### Fixed` note under `## [Unreleased]`, and release a PATCH with `/release-plugin <plugin> patch <topic>`. Release a MAJOR with a `### Migration` section if users must act.
+- Push the tag only when approved: `git push origin <name>--v<version>`.
+- The push runs `.github/workflows/release.yml`.
+- It checks the tag against `plugin.json` (`scripts/release_notes.py verify`) and validates the plugin.
+- It publishes a GitHub Release whose notes are that version's changelog section (`scripts/release_notes.py notes`).
+- Roll back by fixing forward.
+- Never delete, move or force-push a pushed tag or its GitHub Release.
+- Users may have installed that version, and Claude Code delivers updates only when `version` changes.
+- Fix forward on a new `<plugin>/<topic>` branch.
+- Revert the faulty change (`git revert <sha>`) or correct it.
+- Write a `### Fixed` note under `## [Unreleased]`.
+- Release a PATCH with `/release-plugin <plugin> patch <topic>`.
+- Release a MAJOR with a `### Migration` section if users must act.
 - For a serious defect also edit the faulty release's notes to point at the fix; an approval prompt guards `gh release edit`.
 - A tag that was created but not pushed can be deleted locally with `git tag -d <name>--v<version>`.
 - Withdraw a plugin only through "Deprecate or remove a plugin" in `docs/releasing.md`.
