@@ -12,6 +12,18 @@ that links back to it — don't rewrite history.
 
 ## Resolved Items
 
+### DEBT-001 — 2026-10-06 — CLAUDE.md "Current state" matches the repository
+
+- **Original pending record:** DEBT-001 in `pending-debt.md` (recorded 2026-10-06), "CLAUDE.md "Current state" is stale".
+- **Resolved debt:** "Current state" called merged work unpushed, listed PR #17 as open, and omitted the 0.1.0 release and the PR #15 revert.
+- **Resolution:** "Current state" now holds only live facts: the ledger pointer, the catalog version and its missing tag, the plugin's scope and deferred features, and the decisions awaiting the maintainer. History moved out: it is in `git log`, the ADRs, the rules and this ledger. Its pending items were checked against `pending-debt.md`, and the three missing ones were added as DEBT-016 to DEBT-018 (`b36db96`).
+- **Positive verification:** Every fact in the section was checked on 2026-10-06: `plugin.json` version 0.2.0 and PR #17 merged as `dd7227d`; `git tag -l` and `gh release list` show `svelte-development--v0.1.0` as the latest release and no 0.2.0 tag; the remote MCP decision is in `docs/sourcing-log.md`. `scripts/check.py` passed all 10 gates.
+- **Negative verification:** The section no longer says any merged work is unpushed or any merged pull request is open; it states no commit or pull request state except PR #17, which `gh pr list` shows as merged.
+- **Owner or responsible area:** repository maintainer and Claude (`CLAUDE.md`).
+- **Residual risk / follow-up:** The section can drift again; it now points new debt to this ledger instead of accumulating history.
+- **Related records:** handoff `2026-10-06-0100`; DEBT-016, DEBT-017, DEBT-018.
+- **Superseded by:** none.
+
 ### DEBT-008 — 2026-10-06 — Claude review posts after the `--setting-sources user` change
 
 - **Original pending record:** DEBT-008 in `pending-debt.md` (recorded 2026-10-06), "Claude review posting after the `--setting-sources user` change is unverified".

@@ -26,20 +26,6 @@ Don't add general improvement ideas, unverified speculation, or a copy of every 
 
 Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), the repository state at `dd7227d`, and the eval and CI records cited below.
 
-### DEBT-001 — CLAUDE.md "Current state" is stale
-
-- **Status:** Pending
-- **Category:** quality (documentation)
-- **Evidence:**
-  - **Confirmed facts:** `CLAUDE.md` "Current state" says `svelte-development` and the unpinned tooling are "not yet committed or pushed"; both are merged (`0ce9ebb`, `02ab6d9`). It says PR #17 is open; it merged as `dd7227d`. It does not record the `svelte-development--v0.1.0` release, the eval results, or the PR #15 revert (`7957a64`).
-  - **Inferences:** none.
-  - **Open questions:** none.
-- **Impact / risk:** A new session reads a false picture of the repository and may act on it.
-- **Owner or responsible area:** repository maintainer and Claude (`CLAUDE.md`).
-- **Next action:** Update "Current state" in a docs-only commit.
-- **Review condition:** Closes when "Current state" matches `git log` and the GitHub releases.
-- **Related records:** handoff `2026-10-06-0100`.
-
 ### DEBT-002 — Minimum-version pin is documented as enforced but nothing enforces it
 
 - **Status:** Pending
@@ -87,12 +73,12 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Status:** Pending
 - **Category:** quality (measurement)
 - **Evidence:**
-  - **Confirmed facts:** Run `37395261454`: `lsp-priority` 0, `lsp-dynamic-code` 0.25, and the tool-choice cases (docs, project-check, references) delta 0. The LSP cases ran on a fixture whose `src/lib` was never committed (`.gitignore` hid it until 2026-10-06), so their zeros are not evidence about the plugin.
+  - **Confirmed facts:** Run `37395261454`: `lsp-priority` 0, `lsp-dynamic-code` 0.25, and the tool-choice cases (docs, project-check, references) delta 0. The LSP cases ran on a fixture whose `src/lib` was never committed (`.gitignore` hid it until 2026-10-06), so their zeros are not evidence about the plugin. The fixture's `src/lib` is committed since `dd7227d` (PR #17); no eval run has measured it yet.
   - **Inferences:** The zeros may come from the fixture, the isolated `PATH` on CI, or ToolSearch not loading the LSP tool.
   - **Open questions:** Whether `svelteserver` reaches the eval's isolated `PATH` on CI; whether the model loads the LSP tool through ToolSearch.
 - **Impact / risk:** The plugin's LSP and tool-choice value is unmeasured.
 - **Owner or responsible area:** `plugins/svelte-development/evals/`, `.github/workflows/plugin-evals.yml`.
-- **Next action:** Commit the fixture's `src/lib`, then inspect transcripts from a fresh CI run.
+- **Next action:** Inspect transcripts from a fresh CI eval run on the committed fixture.
 - **Review condition:** Closes when a rerun shows LSP and tool-choice cases with transcripts that prove the tool was called, or when the cases are removed with a recorded reason.
 - **Related records:** DEBT-004, the open items in handoff `2026-10-06-0100`.
 
