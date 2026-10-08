@@ -219,7 +219,8 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Category:** quality (plugin behavior)
 - **Evidence:**
   - **Confirmed facts:** `/code-review` of `svelte-development/activation` on 2026-10-08 reported, in the skills: ground rule 5 ("nothing new compared with the run before your change") against "diagnostics clean" in the best-practices step 6 and the navigation step 8; the `src/routes/**` path pattern, which also matches React and Solid projects and misses monorepo apps; and a docs-and-autofixer description that no longer names code pasted in the chat or the playground link.
-  - **Inferences:** The review also inferred that `paths` narrows when a skill loads; the 2026-10-08 pilot contradicts it, because skills loaded for requests with no file open (cases 01, 07, 08).
+  - **Confirmed facts (docs, read 2026-10-08):** the skills docs say `paths` are "Glob patterns that limit when this skill is activated" and that Claude loads such a skill automatically "only when working with files matching the patterns", so the review's first finding was right. An earlier note here called it contradicted by the pilot; that was wrong, since the pilot's no-file cases could have loaded `svelte-docs-and-autofixer`, which has no `paths`.
+  - **Inferences:** none.
   - **Open questions:** none.
 - **Impact / risk:** Contradictory finishing rules and over-broad activation in non-Svelte projects.
 - **Owner or responsible area:** `plugins/svelte-development/skills/*/SKILL.md`.
