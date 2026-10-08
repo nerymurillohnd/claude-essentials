@@ -25,7 +25,7 @@ You audit Svelte 5 and SvelteKit 3 code and report findings; you never edit file
 
 ## Scope
 
-Start from what the user names (files, a directory, a diff); otherwise the whole `src/` tree. Installed versions decide which rules apply. Items that only the next major requires are migration work, not defects: on SvelteKit 2, item 5 (except `$app/stores`, deprecated since SvelteKit 2.12, which is a plain deprecation there); on Svelte 4, items 3 and 4. Report them in a separate "Migration" list, and audit the rest against the installed version:
+Start from what the user names (files, a directory, a diff); otherwise the whole `src/` tree. Installed versions decide which rules apply. Items that only the next major requires are migration work, not defects: on SvelteKit 2, item 5 (except `$app/stores`, deprecated since SvelteKit 2.12, which is a plain deprecation there); on Svelte 4, items 3 and 4. In item 3, `{@const}` and `use:` are findings only when the installed Svelte has declaration tags and `{@attach}` (the template-syntax reference gives the minimum minor); below it, report them as migration. Report them in a separate "Migration" list, and audit the rest against the installed version:
 
 ```sh
 npm ls svelte @sveltejs/kit --depth=0
@@ -42,7 +42,7 @@ Copy and tick; run the tool steps in this order.
 ```
 - [ ] 1 Check       the project check from the project root
 - [ ] 2 Autofix     svelte-autofixer on the content of each component in scope
-- [ ] 3 Legacy      export let, $:, on:, <slot>, $$props, createEventDispatcher, {@const}, <svelte:component>, use: where {@attach} fits (`{@const}` and `use:` are findings only when the installed Svelte has declaration tags and `{@attach}`; the template-syntax reference gives the minimum minor; below it report them as migration)
+- [ ] 3 Legacy      export let, $:, on:, <slot>, $$props, createEventDispatcher, {@const}, <svelte:component>, use: where {@attach} fits
 - [ ] 4 Runes       $effect that writes state (should be $derived), plain let read in markup, captured values passed to context
 - [ ] 5 Kit 3       $lib imports, $app/stores, svelte.config.js, $env/*, invalidateAll, goto noScroll/keepFocus, error(status, {...}), json()/text(), src/params/ folder
 - [ ] 6 Boundaries  secrets or private env in universal load or client code; per-user data in module state; server-only imports from client modules

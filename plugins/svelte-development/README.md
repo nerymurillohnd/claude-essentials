@@ -85,7 +85,7 @@ Not installed, or older than the minimum? Follow the [setup guide](https://code.
 | Astro, with Svelte islands | 7         |
 | Tailwind CSS               | 4         |
 
-This table is the single declaration of the majors: skills and agents name Svelte 5 and SvelteKit 3 only in their names and descriptions, so Claude can match a request to them, and none of them carries a verification date. A version number appears inside the plugin only where the number is the fact being taught — the release that added or removed an API, a minimum that carries a security fix, a peer range — and then in one reference that the others link to. On an older major the plugin writes for what your project has installed and offers the migration, instead of mixing versions.
+This table is the single declaration of the majors: skills and agents name only the majors they are written for, never a minor or patch release, and none of them carries a verification date. A version number appears inside the plugin only where the number is the fact being taught — the release that added or removed an API, a minimum that carries a security fix, a peer range — and then in one reference that the others link to. On an older major the plugin writes for what your project has installed and offers the migration, instead of mixing versions.
 
 ### Tools
 

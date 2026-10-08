@@ -151,7 +151,7 @@ import { PUBLIC_ANALYTICS_ID } from "$app/env/public";
 - `schema` takes a Standard Schema or a function returning the value (or throwing). Invalid values stop the app from starting or building. Without a schema, a variable must be set but may be empty. Public dynamic values must be devalue-serializable.
 - `defineEnvVars` and the `EnvVarConfig` types live in `@sveltejs/kit/env` since 3.0 (they were in `@sveltejs/kit/hooks`).
 - `.env` and `.env.local` are loaded during development and build; `env.dir` changes the directory.
-- `$env/static/private`, `$env/static/public`, `$env/dynamic/private`, `$env/dynamic/public` and `$app/environment` remain as deprecated aliases until Kit 4. In a SvelteKit 3 project, do not write them in new code; a SvelteKit 2 project before 2.63 has no `$app/env/*`, so keep them there.
+- `$env/static/private`, `$env/static/public`, `$env/dynamic/private`, `$env/dynamic/public` and `$app/environment` remain as deprecated aliases until Kit 4. In a SvelteKit 3 project, do not write them in new code; a SvelteKit 2 project keeps them unless it enabled the `explicitEnvironmentVariables` option (2.63 or later).
 
 ## Build and runtime flags
 

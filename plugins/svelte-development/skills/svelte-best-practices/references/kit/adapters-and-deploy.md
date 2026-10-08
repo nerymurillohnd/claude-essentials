@@ -24,7 +24,7 @@
 
 Every first-party adapter requires SvelteKit 3 in these majors (confirm the current version with `npm view <package> version`):
 
-| Package | Version | Key requirement |
+| Package | First SvelteKit 3 release | Key requirement |
 | --- | --- | --- |
 | `@sveltejs/adapter-auto` | 8.0.0 |  |
 | `@sveltejs/adapter-node` | 6.0.0 | Node `>=22.17` (from Kit) |
@@ -32,7 +32,7 @@ Every first-party adapter requires SvelteKit 3 in these majors (confirm the curr
 | `@sveltejs/adapter-static` | 4.0.0 |  |
 | `@sveltejs/adapter-cloudflare` | 8.0.0 | peer `wrangler ^4.118.0` |
 | `@sveltejs/adapter-vercel` | 7.0.0 | runtimes `nodejs22.x`, `nodejs24.x`, `bun1.x` |
-| `@sveltejs/adapter-netlify` | 7.0.x | Netlify CLI 17.31.0 or later |
+| `@sveltejs/adapter-netlify` | 7.0.0 | Netlify CLI 17.31.0 or later |
 
 `@sveltejs/adapter-cloudflare-workers` is deprecated on npm; its last release (2.9.0) peers on `@sveltejs/kit ^2.0.0`, so there is no Kit 3 version. Migrate to `adapter-cloudflare`.
 
