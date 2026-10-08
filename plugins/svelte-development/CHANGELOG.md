@@ -15,7 +15,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - The component editor no longer reads "SvelteKit 2 or Svelte 4" as "no runes" in a SvelteKit 2 project on Svelte 5: the two majors are independent. Both agents and the best-practices skill also use declaration tags and `{@attach}` only when the installed Svelte has them, and read `package.json` and the lockfile when `npm ls` prints nothing.
 - Migrating to SvelteKit 3: the leftover search covers the whole project instead of `src`, the `sv migrate` flags for a run without a prompt are listed, and five breaking changes missing from the manual checklist are added.
 - Svelte gotchas now cover `derived_invalid_export`, `derived_references_self`, `snippet_without_render_tag`, `bind_not_bindable`, `props_invalid_value`, `each_key_duplicate` and `effect_orphan`.
-- The SvelteKit references say they are for SvelteKit 3 projects, the `$env/*` advice no longer applies to a SvelteKit 2 project before 2.63, and the adapter example no longer reuses the removed `ORIGIN` variable.
+- The SvelteKit references say they are for SvelteKit 3 projects, a SvelteKit 2 project keeps `$env/*` unless it enabled explicit environment variables, and the adapter example no longer reuses the removed `ORIGIN` variable.
 
 - Without `svelteserver` on the PATH, the navigation skill checks for the server first and goes straight to labelled text search instead of retrying a tool that cannot answer; a symbol that lives only in `.ts`/`.js` files may start with text search, said to you.
 - The final check in every skill falls back to `svelte-check` (after `svelte-kit sync` in SvelteKit) when the project has no `check` script.
@@ -23,6 +23,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **Migrate first, then write for the latest.** In a SvelteKit 2 or Svelte 4 project, Claude now proposes the migration to SvelteKit 3 or Svelte 5 before writing any code, and works on the latest versions after it. It writes code for the old version only if you decline the migration, and says so. The component editor reports an old major back instead of editing, and the auditor opens its report with the migration recommendation. SvelteKit 1 and Svelte 3 projects are pointed to the older `sv migrate` steps.
 - A task that spans several topics reads every reference it touches, not only one.
 - The docs-and-autofixer skill loads for checking code, exact APIs and playground links, not for every reply that contains Svelte code.
 - The skills are leaner contracts. The SvelteKit 2 to 3 table and the experimental-flag table in `svelte-best-practices` now live only in their references, and the language-server table for dynamic code moved into the navigation reference. References no longer point back to a skill.

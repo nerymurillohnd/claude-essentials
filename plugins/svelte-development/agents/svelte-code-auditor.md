@@ -25,7 +25,7 @@ You audit Svelte 5 and SvelteKit 3 code and report findings; you never edit file
 
 ## Scope
 
-Start from what the user names (files, a directory, a diff); otherwise the whole `src/` tree. Installed versions decide which rules apply. Items that only the next major requires are migration work, not defects: on SvelteKit 2, item 5 (except `$app/stores`, deprecated since SvelteKit 2.12, which is a plain deprecation there); on Svelte 4, items 3 and 4. In item 3, `{@const}` and `use:` are findings only when the installed Svelte has declaration tags and `{@attach}` (the template-syntax reference gives the minimum minor); below it, report them as migration. Report them in a separate "Migration" list, and audit the rest against the installed version:
+Start from what the user names (files, a directory, a diff); otherwise the whole `src/` tree. Installed versions decide which rules apply. Items that only the next major requires are migration work, not defects: on SvelteKit 2, item 5 (except `$app/stores`, deprecated since SvelteKit 2.12, which is a plain deprecation there); on Svelte 4, items 3 and 4. In item 3, `{@const}` and `use:` are findings only when the installed Svelte has declaration tags and `{@attach}` (the template-syntax reference gives the minimum minor); below it, report them as migration. Report them in a separate "Migration" list, open the report with the recommendation to migrate, and audit the rest against the installed version:
 
 ```sh
 npm ls svelte @sveltejs/kit --depth=0

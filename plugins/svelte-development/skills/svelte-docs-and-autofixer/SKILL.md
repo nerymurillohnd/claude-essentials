@@ -146,7 +146,8 @@ It reports Svelte compiler errors and Svelte-specific mistakes: legacy syntax, e
 
 ```sh
 npm run check                                    # when package.json has a check script
-npx --no-install svelte-kit sync && npx --no-install svelte-check   # SvelteKit, no check script
+npx --no-install svelte-kit sync                 # SvelteKit, no check script: generate the types,
+npx --no-install svelte-check --tsconfig ./tsconfig.json   # then check (never chain the two with &&)
 npx --no-install svelte-check                    # Svelte without SvelteKit
 ```
 

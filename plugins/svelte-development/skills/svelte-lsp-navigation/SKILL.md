@@ -51,7 +51,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 3. **Load the tool before calling it.** The LSP tool may be deferred; a call without its loaded schema fails with invalid parameters (observed: eight failed calls in a row). Load it with ToolSearch first.
 4. **Warm up before giving up, when the server is installed.** An error or an empty result is retried as the [procedure](#procedure-for-a-symbol-question) says, up to three attempts per question, before any fallback. A missing server is not retried.
 5. **Say when you fall back.** Grep results are text matches: tell the user "LSP unavailable, using text search" and what that can miss. Never present them as semantic answers.
-6. **Grep alongside, never instead.** Use Grep only for the [blind spots](#blind-spots), next to the LSP results.
+6. **Grep alongside, never instead,** except in the two cases of rule 1. Use Grep only for the [blind spots](#blind-spots), next to the LSP results.
 7. **Diagnostics are not a project check.** Diagnostics are pushed once after an edit, only for open files, and cannot be requested again. "No diagnostics" proves nothing about the project: run the [project check](#project-check).
 8. **Never hide a problem.** No `--compiler-warnings x:ignore` or `--ignore` to get a check passing; ignore only a verified false positive, with the reason.
 9. **Prove a clean result when a tool stays silent, with the probe for that tool.** A silent language server and a silent project check have different causes:
@@ -132,7 +132,7 @@ Run these in order and do not skip a step:
 2. **Locate** the symbol: `documentSymbol` on the `.svelte` file that uses it, or `workspaceSymbol` with its name from any `.svelte` file. Take the exact line and character from the result.
 3. **Ask** the question: `findReferences`, `goToDefinition`, `hover` or `incomingCalls` at that position.
 4. **Warm up if it fails.** On an error or an empty result: `documentSymbol` on the file (opens it and confirms the position), `hover` at the position (confirms the symbol), then repeat step 3. Stop after three attempts on the same question.
-5. **Fall back, and say so.** Only after step 0 or step 4 fails: tell the user the language server is not answering and why, if the error says. Then use the project check for diagnostics, Grep for locations (stating they are text matches), or the Svelte MCP docs tools for API questions.
+5. **Fall back, and say so.** Only after step 0, 1 or 4 fails: tell the user the language server is not answering and why, if the error says. Then use the project check for diagnostics, Grep for locations (stating they are text matches), or the Svelte MCP docs tools for API questions.
 6. **Add the blind spots.** Before answering "unused" or listing an edit set, Grep the bare name for the [blind spots](#blind-spots).
 7. **Answer with this default structure**, so the user can tell semantic results from text matches; drop the lines that do not apply:
 

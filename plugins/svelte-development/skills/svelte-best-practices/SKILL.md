@@ -50,14 +50,14 @@ These rules hold for every later turn of the task, not only the turn that loaded
 2. **Never skip the fetch when** an exact signature, option name or config key matters; the code uses an experimental feature, an adapter, environment variables, hooks or the Vite config; or what you remember disagrees with a reference, or a reference with the docs.
 3. **Check the installed version first.** It decides which rules apply (command in the [procedure](#procedure)). These references follow the latest release of each package, so they can lag what is installed: read the changelog window in [changelogs.md](references/changelogs.md) whenever a reference disagrees with what the installed version does, and in the cases that file lists.
 4. **Source precedence.** Package changelogs, release notes and source code decide what exists at the installed version; the official docs explain usage, and in any area SvelteKit 3 changed some pages still show SvelteKit 2 code ([known-doc-errata.md](references/known-doc-errata.md)); these references are the starting point and lose to both. When sources conflict, say so in the answer; never pick one silently.
-5. **No WebFetch for docs or changelogs**: it returns a truncated summary. Use the MCP tools or `curl`, as the `svelte-docs-and-autofixer` skill says.
+5. **No WebFetch for docs or changelogs**: WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools or `curl`, as the `svelte-docs-and-autofixer` skill says.
 6. **Runes mode in Svelte 5.** In a Svelte 5 project, new and changed code uses runes, snippets and event attributes; never mix in legacy syntax. A Svelte 4 project follows rule 7.
-7. **Write for the installed major, never the next one.** The SvelteKit 3 rules apply only when `@sveltejs/kit` 3 is installed, and the runes rules only when `svelte` 5 is. In a SvelteKit 2 project, `#lib/x.js` imports, `$app/env`, `refreshAll`, `defineParams` and options in `sveltekit({ … })` do not exist yet: write code that works on the installed version, say that the live docs describe SvelteKit 3, and offer the migration ([migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md)) instead of mixing versions. A Svelte 4 project likewise has no runes; offer the Svelte 5 migration ([legacy-and-migration.md](references/svelte/legacy-and-migration.md)) unless the task is that migration.
+7. **Migrate first, then write for the latest.** This plugin is for SvelteKit 3 and Svelte 5. In a project on SvelteKit 2 or Svelte 4, before writing any code, tell the user and propose the migration: SvelteKit 2 to 3 with [migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md), Svelte 4 to 5 with [legacy-and-migration.md](references/svelte/legacy-and-migration.md); the two majors are independent, so migrate only the one that is old. After the migration, work by the current rules. Only if the user declines, write code that works on the installed version (in SvelteKit 2, no `#lib/x.js` imports, `$app/env`, `refreshAll`, `defineParams` or options in `sveltekit({ … })`; in Svelte 4, no runes), never mix versions, and say in the answer that it is old-version code. SvelteKit 1 or Svelte 3 first need the legacy `sv migrate sveltekit-2` or `svelte-4` steps ([sv-cli.md](references/tooling/sv-cli.md)).
 8. **Project instructions decide conventions, not APIs.** The project's `CLAUDE.md`, saved memory and team conventions win over this skill on style and structure (naming, file layout, formatting). They never make an API valid that the installed version removed; when one asks for such an API, say so.
 
 ## Who does the work
 
-Decide this before the first tool call.
+Decide this before the first tool call. In a SvelteKit 2 or Svelte 4 project, settle the migration with the user first (rule 7), and say in the agent's prompt whether they migrated or declined.
 
 | Situation | Who | How |
 |---|---|---|
@@ -196,7 +196,7 @@ Run these steps in order for any Svelte code you write, convert or review.
    npm ls svelte @sveltejs/kit --depth=0
    ```
 
-   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. When it prints nothing (no `node_modules`, a monorepo), read the ranges in `package.json` and the lockfile; when the version is still unknown, write for Svelte 5 and SvelteKit 3 and say so. Rule 7 decides what the installed major allows, and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
+   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. When it prints nothing (no `node_modules`, a monorepo), read the ranges in `package.json` and the lockfile; when the version is still unknown, write for Svelte 5 and SvelteKit 3 and say so. Rule 7 decides: on an old major, propose the migration before step 2; and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
 2. **References.** Read every reference from [Where things are](#where-things-are) that the task touches; the code rules above apply to every task.
 3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
 
@@ -212,7 +212,8 @@ Run these steps in order for any Svelte code you write, convert or review.
 
    ```sh
    npm run check                                    # when package.json has a check script
-   npx --no-install svelte-kit sync && npx --no-install svelte-check   # SvelteKit, no check script
+   npx --no-install svelte-kit sync                 # SvelteKit, no check script: generate the types,
+   npx --no-install svelte-check --tsconfig ./tsconfig.json   # then check (never chain the two with &&)
    npx --no-install svelte-check                    # Svelte without SvelteKit
    ```
 

@@ -4,7 +4,7 @@
 
 [![version: 0.2.1](https://img.shields.io/badge/version-0.2.1-blue)](CHANGELOG.md) [![category: development](https://img.shields.io/badge/category-development-informational)](https://github.com/nerymurillohnd/claude-essentials/blob/main/README.md#categories) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![skills: 3](https://img.shields.io/badge/skills-3-blueviolet)](#-components) [![agents: 2](https://img.shields.io/badge/agents-2-blueviolet)](#-components) [![hooks: 3](https://img.shields.io/badge/hooks-3-blueviolet)](#-components) [![mcp servers: 1](https://img.shields.io/badge/mcp%20servers-1-blueviolet)](#-components) [![lsp servers: 1](https://img.shields.io/badge/lsp%20servers-1-blueviolet)](#-components) [![runs code: yes, reviewed](https://img.shields.io/badge/runs%20code-yes%2C%20reviewed-yellow)](#-permissions)
 
-Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools.
+Svelte 5 and SvelteKit 3 development, with a guided migration for SvelteKit 2 and Svelte 4 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools.
 
 Part of [Claude Essentials](https://github.com/nerymurillohnd/claude-essentials), an independent community plugin marketplace for Claude Code. Not affiliated with or endorsed by Anthropic.
 
@@ -22,7 +22,7 @@ Most Svelte code a model has seen is Svelte 4 and SvelteKit 2, so it writes `exp
 
 - 📚 **Reads the docs first.** The official documentation and the changelogs, before writing, not after.
 - 🧪 **Proves each change.** Svelte autofixer → language server → your project's own check, until all three are clean.
-- 🏷️ **Writes for _your_ installed versions.** A SvelteKit 2 project gets SvelteKit 2 code and an offer to migrate — never a mix.
+- 🏷️ **Migrates first, then writes for the latest.** In a SvelteKit 2 or Svelte 4 project, Claude proposes the migration before writing; SvelteKit 2 or Svelte 4 code only if you decline, and it says so — never a mix.
 - 🔎 **Asks the language server, not Grep,** for symbols, references and callers.
 
 **The difference in one component**
@@ -56,7 +56,7 @@ _Not affiliated with or endorsed by the Svelte project._
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | You ask for a new component or route               | Fetches the current Svelte and SvelteKit sections, writes runes and SvelteKit 3 code, runs the autofixer, the language server and the project check until all are clean                                                                                                             | Code that compiles and type-checks against the Svelte and SvelteKit versions your project has installed           |
 | You paste a component and ask what is wrong        | Runs the Svelte autofixer on it and checks the current docs                                                                                                                                                                                                                         | Each problem with the rule behind it and the fix                                                                  |
-| Your project is still on SvelteKit 2 or Svelte 4   | Writes code for the installed version and says where SvelteKit 3 or Svelte 5 would differ                                                                                                                                                                                           | Code that runs on your project today, and a migration offer instead of a mix of versions                          |
+| Your project is still on SvelteKit 2 or Svelte 4   | Proposes the migration before writing, runs it with you (`sv migrate`, then the manual checklist), and writes old-version code only if you decline                                                                                                                                  | A project on SvelteKit 3 and Svelte 5, or, if you decline, code that runs today without a mix of versions         |
 | You upgrade a SvelteKit 2 project                  | Explains the breaking changes, runs or reviews `sv migrate sveltekit-3`, and fixes what the codemod leaves in `MIGRATION_TASKS.md`                                                                                                                                                  | A project on SvelteKit 3 with `#lib`, `$app/state` and the config in `vite.config`                                |
 | You ask where something is used or who calls it    | Asks the language server first and adds a text search only for what it cannot see (route files, string paths, CSS classes)                                                                                                                                                          | Locations marked as language-server results or text matches                                                       |
 | You rename or delete a prop, function or component | Finds every reference, changes the declaration first, runs the project check and compares its errors with the references before editing the rest                                                                                                                                    | No missed usages, with the check's output as proof                                                                |
@@ -85,7 +85,7 @@ Not installed, or older than the minimum? Follow the [setup guide](https://code.
 | Astro, with Svelte islands | 7         |
 | Tailwind CSS               | 4         |
 
-This table is the single declaration of the majors: skills and agents name only the majors they are written for, never a minor or patch release, and none of them carries a verification date. A version number appears inside the plugin only where the number is the fact being taught — the release that added or removed an API, a minimum that carries a security fix, a peer range — and then in one reference that the others link to. On an older major the plugin writes for what your project has installed and offers the migration, instead of mixing versions.
+This table is the single declaration of the majors: skills and agents name the majors they are written for, a minor or patch number only where it is the fact being taught, and none of them carries a verification date. A version number appears inside the plugin only where the number is the fact being taught — the release that added or removed an API, a minimum that carries a security fix, a peer range — and then in one reference that the others link to. On an older major the plugin writes for what your project has installed and offers the migration, instead of mixing versions.
 
 ### Tools
 
@@ -365,10 +365,11 @@ The end-of-turn check leads Claude to run the autofixer after Svelte edits, so k
 <details>
 <summary>Does it work on a SvelteKit 2 or Svelte 4 project?</summary>
 
-**Yes.** Claude reads the installed versions first and writes code that runs on them.
+**Yes, by migrating it first.** Claude reads the installed versions before writing anything.
 
-- No `#lib` imports, `$app/env` or `defineParams` in a SvelteKit 2 project, and no runes in Svelte 4 code.
-- It says where the newer version differs and offers the migration (`sv migrate sveltekit-3` or `sv migrate svelte-5`) instead of mixing both.
+- On SvelteKit 2 or Svelte 4, it proposes the migration (`sv migrate sveltekit-3` or `sv migrate svelte-5`), runs it with you, and then works on SvelteKit 3 and Svelte 5.
+- If you decline, it writes code that runs on your installed version — no `#lib` imports, `$app/env` or `defineParams` in SvelteKit 2, no runes in Svelte 4 — and says so.
+- SvelteKit 1 or Svelte 3 first need the older `sv migrate` steps (`sveltekit-2`, `svelte-4`); the plugin has no step-by-step guide for them.
 - The live documentation describes the newest versions, so Claude checks each API against your installed one.
 
 </details>

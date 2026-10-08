@@ -2,7 +2,7 @@
 
 > Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
 >
-> Applies to SvelteKit 3 projects. In an installed SvelteKit 2, write what that version supports and offer the migration ([migrating-to-kit-3.md](migrating-to-kit-3.md)).
+> Applies to SvelteKit 3 projects. A SvelteKit 2 project migrates first ([migrating-to-kit-3.md](migrating-to-kit-3.md)); write SvelteKit 2 code only when the user declines the migration.
 
 ## Contents
 
