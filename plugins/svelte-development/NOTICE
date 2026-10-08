@@ -38,6 +38,18 @@ Derived files, all rewritten, corrected and extended for this plugin:
       "npx -y @sveltejs/mcp" to the Svelte team's remote server
       (https://mcp.svelte.dev/mcp), which needs no download and reconnects.
 
+The eval suite's mock documentation (evals/mocks/svelte/get-documentation.md)
+holds excerpts of the official Svelte and SvelteKit documentation, downloaded
+on 2026-10-07 from https://svelte.dev/docs/<area>/<slug>/llms.txt, with
+relative links made absolute:
+
+  Svelte documentation:    Copyright (c) 2016-2025 Svelte Contributors
+                           (https://github.com/sveltejs/svelte/graphs/contributors)
+  SvelteKit documentation: Copyright (c) 2020 SvelteKit contributors
+                           (https://github.com/sveltejs/kit/graphs/contributors)
+
+Both are licensed under the MIT License, with the permission notice below.
+
 Everything else in this plugin is original. The Svelte name is used only to
 describe compatibility; this plugin is not affiliated with or endorsed by the
 Svelte project or its contributors.

@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: 04-kit3-numeric-route
+context:
+  scaffold_script: scaffold.sh

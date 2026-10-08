@@ -3,3 +3,6 @@
 WebFetch(domain:svelte.dev)
 WebFetch(domain:raw.githubusercontent.com)
 WebFetch(domain:api.github.com)
+Bash(command -v *)
+LSP
+ToolSearch

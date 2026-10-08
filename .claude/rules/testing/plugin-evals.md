@@ -7,7 +7,7 @@ paths:
 
 # Plugin Evals
 
-How to design and run `claude plugin eval` suites for this marketplace's plugins. Verified on Claude Code 2.1.289 on 2026-10-05 against https://code.claude.com/docs/en/plugin-evals and the CLI reference, while building the svelte-development suite.
+How to design and run `claude plugin eval` suites for this marketplace's plugins. Verified on Claude Code 2.1.289 on 2026-10-05 against https://code.claude.com/docs/en/plugin-evals and the CLI reference, and again on 2.1.293 and 2.1.294 on 2026-10-07 and 2026-10-08 while rebuilding the svelte-development suite (smoke and pilot runs).
 
 ## Before Any Run
 
@@ -44,7 +44,21 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
   - Use exact error positions rather than a word the answer would mention anyway.
 - Quote frontmatter values that contain `{`, `:` or `[`. YAML reads `{ … }` as a map.
 - After Prettier rewrites the frontmatter, re-parse every pattern to confirm it is unchanged.
-- Use no MCP mocks in plugin suites. Mock files use `{{…}}` substitutions, which the `repo` gate rejects in plugin files.
+- Mock every MCP tool a case can call (ADR pinned-eval-models-and-mocked-mcp).
+  - Put suite-wide mocks in `evals/mocks/<server>/<tool>.md`, and a case's own in `<case>/mocks/`.
+  - Use `fixed` mocks without `{{…}}` substitutions: the `repo` gate rejects them in plugin files.
+  - Use `expect:` only for an argument whose mistake the real server could not recover from; a violation aborts the whole run with score 0 and skips every grader.
+  - Measure recoverable argument mistakes with a scored `tool_used` grader on the tool's JSON input (`min: 0`, `max: 0`, `input_match` on the bad shape): CI run 37749514321 aborted a case-01 run over a missing `desired_svelte_version`, which the real server rejects as one failed call.
+  - Use `error: true` for an unavailable server.
+  - Save the server's real `tools/list` result as `_tools.json`.
+  - A mocked tool needs no `allowed_tools` entry and no grant; a tool without a mock does not exist in the run.
+  - Make links in documentation excerpts absolute: the `docs` gate checks them.
+  - The live server stays covered by `scripts/drive_plugin.py`.
+- Grader syntax (docs, "Grader types"): a `regex` grader takes `pattern:` in the frontmatter, a JavaScript regex; case-insensitivity goes in `flags: i`, never `(?i)`.
+- `tool_order` passes only when both tools were called. To require "no Grep before the first LSP call", use a `regex` over the trace: `^(?:(?!"name":\s*"LSP")[\s\S])*"name":\s*"(?:Grep|Glob)"` with `match: not_contains`.
+- Never match the trace for words a loaded skill contains (`npm install -g`, `svelte-kit sync`): the trace holds the skill text. Use `tool_used` with `input_match` over the tool input instead.
+- Graders that are `with-only` by default under ablation: `tool_used` on `Skill`, and every grader on `mock_calls` (observed 2026-10-08).
+- A case that edits a file holding a deliberate fixture error must accept that error fixed: the plugin's Stop hook can lead Claude to fix errors in files it touched.
 
 ## Scaffold Scripts
 
@@ -75,12 +89,20 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 - Pass `--trust-plugin` with `--json`. A run that cannot ask is refused.
 - Pass `--no-publish`.
 - Pass `--scaffold` when cases have scaffolds.
-- Pass `--allow-real-servers` for real MCP servers.
+- Pass `--allow-real-servers` only for a server that has no mocks; a mocked server never starts.
 - Always pass `--max-cost-usd`.
-- Pass no `--model` or `--judge-model`. Both are inherited and the run records the models it used (ADR inherited-eval-models-and-full-results, 2026-10-06).
-- The docs recommend pinning `--model` in CI. Pin only for a comparison across runs, and say so.
+- Pass `--model claude-sonnet-5-5 --judge-model claude-opus-5-5`, full IDs, never aliases (ADR pinned-eval-models-and-mocked-mcp, 2026-10-08).
+- Without `--judge-model` the judge is `haiku` (`claude plugin eval --help`, 2.1.293), not the agent's model: runs before 2026-10-08 were judged by Haiku.
+- CI passes no `--runs`: each case runs the `runs` its `prompt.md` declares (3).
 - `--allow-tools` grants what `allowed_tools` asks for: `Write`, `Edit`, `Bash(...)`, `"mcp__plugin_<plugin>_<server>__*"`.
 - Bash runs in a sandbox whose network reaches only domains granted as `WebFetch(domain:<host>)`.
+- The sandbox reads only the run's workspace and the directories on `PATH`, not the targets of symlinks in them (observed 2026-10-08, 2.1.294).
+  - With nvm on macOS, `npm` and `npx` are symlinks into `lib/`, so every `npm` call in a run fails with `Cannot find module`.
+  - A globally installed `svelteserver` is a symlink too, so `command -v svelteserver` prints nothing inside the run, while the LSP server (started by Claude Code outside the sandbox) answers.
+  - Local pilots on such a machine therefore cannot measure project checks or the language-server probe.
+  - Not yet checked on CI: `actions/setup-node` also links `npm` into `lib/`, so read the first CI trace before trusting a check grader there.
+- Pass `--keep-temp` to read a run's trace at `<kept dir>/out/trace.jsonl`; the kept directory is read-only and its `home/` and `tmp/` are sealed.
+- Pass `--output-dir` and `--report` into the session scratchpad, so no result lands in `evals/results/`.
 - Read the "not granted" lines before trusting a score.
 - On Ubuntu 24.04 runners the sandbox cannot start until `kernel.apparmor_restrict_unprivileged_userns` is 0.
   - Run 37409155173, 2026-10-06: every Bash call failed with `bwrap: loopback: Failed RTM_NEWADDR` in both arms.
@@ -91,10 +113,9 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 - The `repo` gate scans the working tree, so delete `evals/results/` after the run.
 - Isolation: each run has a temporary home, working directory and configuration.
 - Only an allowlist of environment variables (including `PATH`) reaches the run.
-- A plugin server binary must be on the user's `PATH`.
-- To test without installing the binary on the maintainer's machine, run the suite against a scratch copy of the plugin.
-- In that copy, set the `.lsp.json` `command` to the binary's absolute path.
-- Say so in the evidence.
+- A plugin server binary must be on the user's `PATH`. Install it first, then the plugin, as the code-intelligence docs prescribe ("Install the language server binary first, then the plugin, then confirm the server starts", read 2026-10-08); never remove it from the maintainer's machine to isolate a run, since each run already has its own home and configuration.
+- On a machine without the binary, run the suite against a scratch copy of the plugin whose `.lsp.json` `command` is the absolute path of a binary installed with `npm install --prefix <scratchpad>/eval-tools`. It works: `findReferences` answered in the 2026-10-08 pilot. Say so in the evidence.
+- Not yet checked locally: whether the shipped `.lsp.json` finds a global binary on `PATH` inside a run. On CI it does: case `08-lsp-where-used` called the LSP tool in 3 of 3 runs (run 37749514321, 2026-10-08).
 - Scores with real MCP servers are advisory unless the run is in an isolated environment such as a CI runner (docs, "Trust the plugin directory").
 - Full runs go to CI: apply the `run-evals` label to the pull request (ADR plugin-evals-in-ci).
 - Local runs are pilots.
@@ -106,8 +127,7 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 - Report only numbers from a run that actually happened.
 - Include the command, the CLI version, the models the run recorded, passed and total per arm, the delta per case, the cost, and any "not granted" or load errors.
 - Put that record in the pull request (`evals: <plugin> <passed>/<total>, delta <with minus without>`), never in the plugin README.
-- Open question, to settle from the first run whose full result is kept (the `evals-results` artifact): whether the trace graders see tool calls made inside a subagent.
-- Subagents keep their own transcripts (`agent-<id>.jsonl`, sub-agents docs), so expect them not to.
+- The trace holds a subagent's tool calls, each with `parent_tool_use_id` and `agent_id` set, so trace and `tool_used` graders see them (pilot 2026-10-08, case `10-editor-delegation`).
 - Analyse per grader, from the artifact.
   - Drop graders that pass in both arms on every run.
   - Fix graders that fail in both arms.

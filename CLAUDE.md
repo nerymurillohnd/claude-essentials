@@ -106,8 +106,8 @@ docs/                             guides and dated ADRs
 ## Current state
 
 - Open debt lives in `docs/maintenance/pending-debt.md` and closed debt in `docs/maintenance/resolved-debt.md`: read them before planning work, and record new debt there, not here.
-- The catalog holds `svelte-development` 0.2.0, merged in PR #17 (`dd7227d`, 2026-10-06) and released as `svelte-development--v0.2.0` on 2026-10-07.
+- The catalog on `main` holds `svelte-development` 0.3.0, merged in PR #18 (`ff57eb7`, 2026-10-07) and released as `svelte-development--v0.3.0` on 2026-10-08. Version 0.4.0 (skill activation by path, governance, the rebuilt eval suite) is in PR #19, not yet merged.
 - Every plugin release keeps both its signed tag and its GitHub Release (maintainer decision, 2026-10-07).
 - `svelte-development` maps only `.svelte` to `svelteserver`: `.ts` mapped to it returned empty results (2026-10-05), so TypeScript code intelligence will be its own plugin. The remote MCP server choice is recorded in `docs/sourcing-log.md`.
 - Deferred by the maintainer for `svelte-development`: a background auditor, a `svelte-audit` skill with `context: fork`, and `disallowed-tools` or a WebFetch guard.
-- Awaiting my decision outside the ledger: refining the user-level Python rule, which lives outside this repository. Ledger items that need my decision: DEBT-010, DEBT-011, DEBT-017 and DEBT-018.
+- Awaiting my decision outside the ledger: refining the user-level Python rule, which lives outside this repository. Ledger items that need my decision: DEBT-010, DEBT-011, DEBT-017, DEBT-018 and DEBT-020.

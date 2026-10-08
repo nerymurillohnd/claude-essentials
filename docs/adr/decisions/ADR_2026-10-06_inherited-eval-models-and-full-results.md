@@ -1,10 +1,11 @@
 ---
-status: accepted
+status: superseded
 date: 2026-10-06
 decision-makers:
   - "Nery Samuel Murillo (maintainer)"
 consulted:
   - "Claude Code by Anthropic (research, drafting and verification)"
+superseded-by: ADR_2026-10-08_pinned-eval-models-and-mocked-mcp.md
 ---
 
 # Eval runs inherit their models and keep their full results

@@ -59,3 +59,27 @@ that links back to it — don't rewrite history.
 - **Residual risk / follow-up:** A release that changes a rule is found only when `/cc-currency` runs.
 - **Related records:** ADR no-pinned-claude-code-version; DEBT-002.
 - **Superseded by:** none.
+
+### DEBT-013 — 2026-10-08 — Eval trace graders see a subagent's tool calls
+
+- **Original pending record:** DEBT-013 in `pending-debt.md` (recorded 2026-10-06), "Open question on eval trace graders and subagent tool calls".
+- **Resolved debt:** Nobody knew whether trace and `tool_used` graders count tool calls made inside a subagent.
+- **Resolution:** The trace of a run holds the subagent's messages, each with `parent_tool_use_id` (the `Agent` call) and `agent_id` set. `.claude/rules/testing/plugin-evals.md` records it under Evidence.
+- **Positive verification:** Local pilot of 2026-10-08 (`--keep-temp`), case `10-editor-delegation`, treatment arm: after the `Agent` call to `svelte-development:svelte-component-editor`, 13 tool calls (Read, Bash, ToolSearch, `get-documentation`, Write, `svelte-autofixer`) carry `parent_tool_use_id` and `agent_id` `ac13328bc543c4915` in `out/trace.jsonl`.
+- **Negative verification:** The main thread's own calls in the same trace carry neither field, so the two can be told apart.
+- **Owner or responsible area:** `.claude/rules/testing/plugin-evals.md`.
+- **Residual risk / follow-up:** Observed on Claude Code 2.1.294 with a background subagent; re-check if the trace format changes.
+- **Related records:** DEBT-005.
+- **Superseded by:** none.
+
+### DEBT-005 — 2026-10-08 — The LSP eval cases measure the plugin
+
+- **Original pending record:** DEBT-005 in `pending-debt.md` (recorded 2026-10-06), "LSP and tool-choice eval cases show a delta of 0; cause unknown".
+- **Resolved debt:** The LSP and tool-choice cases scored a delta of 0, and nobody knew whether the language server reached the eval runs.
+- **Resolution:** The suite was rebuilt (`2a73a9c`): the tool-choice cases became graders inside task cases, and the LSP cases run on the committed fixture. The CI run proves the language server answers in a run.
+- **Positive verification:** CI run `37749514321` (PR #19, 2026-10-08, Claude Code 2.1.294, three runs per arm): case `08-lsp-where-used` called the LSP tool in 3 of 3 treatment runs and in none of the baseline runs, delta +0.38; case `09-rename-proven-by-check` passed `lsp-used` in the treatment arm.
+- **Negative verification:** The baseline arm failed `lsp-used` and `lsp-before-text-search` in 3 of 3 runs, so the graders still tell the arms apart.
+- **Owner or responsible area:** `plugins/svelte-development/evals/`.
+- **Residual risk / follow-up:** Locally, on machines whose global binaries are symlinks, the skill's Bash probe still fails (DEBT-019).
+- **Related records:** DEBT-004, DEBT-013, DEBT-019.
+- **Superseded by:** none.

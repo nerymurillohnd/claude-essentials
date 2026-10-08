@@ -77,3 +77,5 @@ Chosen option: **an informative, label-triggered workflow**.
 Partly replaces the CI exclusion in [docs/testing.md](../../testing.md#behavioral-evaluation). Docs: [plugin evals](https://code.claude.com/docs/en/plugin-evals) ("Run evals in CI", "Grant tools", "How runs are isolated").
 
 Note, 2026-10-06: the pinned agent and judge models are replaced by inherited models, and the full result of each run is kept as an artifact ([ADR inherited-eval-models-and-full-results](ADR_2026-10-06_inherited-eval-models-and-full-results.md)); the rest of this decision stands.
+
+Note, 2026-10-08: the agent and judge models are pinned again, plugin MCP servers are mocked, and each case runs the `runs` its `prompt.md` declares instead of `--runs 1` ([ADR pinned-eval-models-and-mocked-mcp](ADR_2026-10-08_pinned-eval-models-and-mocked-mcp.md)); the label trigger, the grants and the informative threshold stand.

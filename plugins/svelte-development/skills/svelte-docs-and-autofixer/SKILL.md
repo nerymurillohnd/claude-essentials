@@ -1,7 +1,6 @@
 ---
 name: svelte-docs-and-autofixer
-description: Looks up the current official Svelte, SvelteKit and Svelte CLI docs and checks Svelte code with the Svelte autofixer, through this plugin's Svelte MCP tools (get-documentation, svelte-autofixer), with raw-download and local command-line fallbacks. Use when Svelte code must be checked for problems, including a component pasted in the chat, when an exact Svelte or SvelteKit API, rune, option or signature matters, or when a playground link is requested.
-when_to_use: Triggers include "is anything wrong with this component", "check this Svelte code", "how do I … in Svelte 5", "what is the SvelteKit 3 way to", "is this API current", and a request for a Svelte playground link.
+description: Fetches the official Svelte, SvelteKit and Svelte CLI docs and checks Svelte code with the Svelte autofixer, through the plugin's Svelte MCP tools. Use when an exact Svelte API, rune, option or signature matters, or to check a Svelte component for problems.
 license: MIT
 metadata:
   upstream: "sveltejs/ai-tools skills/svelte-code-writer"
@@ -10,21 +9,11 @@ metadata:
 
 # Svelte docs and autofixer
 
-This skill is the contract for two jobs: reading the current official Svelte docs before writing, and proving Svelte code with the Svelte autofixer after writing. Svelte 5 and SvelteKit 3 changed APIs that training data still shows the old way, so neither job is done from memory.
+## Overview
 
-## Contents
+The contract for the two tools that keep Svelte code current: reading the official docs before writing (`get-documentation`, `list-sections`) and proving code with the Svelte autofixer after writing. Svelte 5 and SvelteKit 3 changed APIs that training data still shows the old way, so neither job is done from memory. It also covers the fallbacks when the MCP server is unavailable and the playground link.
 
-- [When to use it](#when-to-use-it)
-- [Which tool first](#which-tool-first)
-- [Rules](#rules)
-- [Who does the work](#who-does-the-work)
-- [Where things are](#where-things-are)
-- [Tools](#tools)
-- [Procedure](#procedure)
-- [When the MCP server is unavailable](#when-the-mcp-server-is-unavailable)
-- [What the user can start](#what-the-user-can-start)
-
-## When to use it
+## When to use it and when not
 
 | Use it | Do not use it |
 |---|---|
@@ -33,22 +22,24 @@ This skill is the contract for two jobs: reading the current official Svelte doc
 | When an exact rune, template tag, SvelteKit API, option or config key matters | For React, Vue, plain TypeScript or other non-Svelte code |
 | When the project's Svelte or SvelteKit version is newer than what you remember | |
 
-## Which tool first
+## Governance rules
 
-The default route, because each tool answers a different kind of question. Depart from it when the project gives a reason, and say why.
+All of these rules hold for every later turn of the task, not only the turn that loaded this skill, whichever Svelte skill loaded first. Depart from one only for a reason you state to the user.
 
-| The question is about | First tool | Why |
-|---|---|---|
-| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for what the server cannot see: route files, paths in strings, CSS classes, configuration. Without `svelteserver` on the PATH there is no LSP tool: use Grep and say they are text matches |
-| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows older Svelte and SvelteKit |
-| Whether the project has errors | The project check: `npm run check`; without a `check` script, `npx --no-install svelte-check` (after `npx --no-install svelte-kit sync` in SvelteKit) | Diagnostics arrive only for files the language server has open |
+### Ground rules for every Svelte task
 
-## Rules
+1. **Version first.** In a project, find the installed `svelte` and `@sveltejs/kit` before writing (`npm ls`, else the `package.json` ranges and the lockfile). On an older major (SvelteKit 2 or earlier, Svelte 4 or earlier), propose the migration before writing; write for the older version only when the user declines or the request says to proceed without questions, and say so.
+2. **Docs before code.** Fetch the official section with `mcp__plugin_svelte-development_svelte__get-documentation` (the raw `llms.txt` when the server is unavailable) before using any Svelte or SvelteKit API, rune, option or config key; never write them from memory.
+3. **Symbols through the language server.** Where something of the project is defined, used or called goes to the LSP tool first when `svelteserver` is installed; Grep only for strings, route files, CSS classes, configuration, or a symbol that lives only in `.ts`/`.js` files no `.svelte` file imports, labelled as text matches.
+4. **Autofixer after code.** Run `mcp__plugin_svelte-development_svelte__svelte-autofixer` (the local `svelte-mcp` when the code must not leave the machine) on every component or module you wrote, until it reports no issues; for code you review, report what it finds.
+5. **Done means checked.** When you changed code in a project, finish only when the project check reports nothing new compared with the run before your change; a review or a question reports the check result instead. The check: `npm run check`; without that script, `npx --no-install svelte-kit sync`, then `npx --no-install svelte-check --tsconfig ./tsconfig.json` in SvelteKit, or `npx --no-install svelte-check` without SvelteKit, never chained with `&&`.
 
-These rules hold for every later turn of the task, not only the turn that loaded this skill. The short tool names (`get-documentation`, `svelte-autofixer`, `list-sections`, `playground-link`) stand for their full names, `mcp__plugin_svelte-development_svelte__<tool>`; always call the full name.
+### Rules of this skill
 
-1. **Docs before code, by default.** Fetch the sections a change touches with `get-documentation` before writing it. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text. Never guess a section path: take it from the docs map.
-2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false. Every `Write` or `Edit` of a Svelte file leaves it unchecked until you run step 4 of the procedure on its new content.
+The short tool names (`get-documentation`, `svelte-autofixer`, `list-sections`, `playground-link`) stand for their full names, `mcp__plugin_svelte-development_svelte__<tool>`; always call the full name.
+
+1. **Sections from the docs map.** Fetch every section a change touches in one `get-documentation` call (ground rule 2); never guess a section path, take it from the docs map. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text.
+2. **Autofixer until clean** (ground rule 4): repeat until it returns no issues and `require_another_tool_call_after_fixing` is false. Every `Write` or `Edit` of a Svelte file leaves it unchecked until you run step 4 of the procedure on its new content.
 3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" instead of refusing it. Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
 4. **The autofixer is not proof.** It does not type-check, does not know SvelteKit routing rules and does not run the code. Type errors come from the language server and the project check.
 5. **No WebFetch for docs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools, or `curl` for the raw text.
@@ -56,6 +47,15 @@ These rules hold for every later turn of the task, not only the turn that loaded
 7. **Playground links only on request.** Offer one only for code answered in the chat, and call `playground-link` only after the user says yes; never for code written to the project's files.
 8. **Network and privacy.** Every MCP call needs network access. `svelte-autofixer` sends the code you pass to the Svelte team's server (Svelte states it does not log, store or inspect it); when the user does not want code to leave the machine, use the local command line below.
 9. **No installs without consent.** Never install `@sveltejs/mcp` or run it through `npx` without the user's confirmation.
+
+## Contents
+
+- [Who does the work](#who-does-the-work)
+- [Where things are](#where-things-are)
+- [Tools](#tools)
+- [Procedure](#procedure)
+- [When the MCP server is unavailable](#when-the-mcp-server-is-unavailable)
+- [What the user can start](#what-the-user-can-start)
 
 ## Who does the work
 
