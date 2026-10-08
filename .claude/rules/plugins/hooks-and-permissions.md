@@ -39,6 +39,7 @@ paths:
   - `if: Edit(*.svelte)` did not fire for `Write` calls in a real session, although permission `Edit(...)` rules cover every file-editing tool.
   - Give `Write` and `Edit` their own handlers.
   - `Write(*.svelte*)` also matched files under `.svelte-kit/` and names such as `x.svelte-check`. List each extension.
+  - A hook's `if` holds exactly one rule, with no list syntax (hooks docs, read 2026-10-08), and file rules use gitignore syntax, which has no `{a,b}` braces but has character classes, so `*.svelte.[tj]s` covers `.svelte.ts` and `.svelte.js` in one handler. Proven 2026-10-08 on 2.1.294 with `scripts/drive_plugin.py`: `Write(*.svelte.[tj]s)` fired for `counter.svelte.ts`, `Write(*.svelte)` for `Hello.svelte`, and neither for `util.ts`.
   - On `PostToolUse`, an `mcp_tool` hook's output is read like command stdout at exit 0, which goes to the debug log only.
   - Claude sees `hookSpecificOutput.additionalContext`.
   - An MCP tool whose output is not hook JSON never reaches Claude through a hook.

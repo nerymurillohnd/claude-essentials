@@ -15,7 +15,7 @@
 
 Claude Code returns an error for each LSP call on a file whose server it cannot start. Check, in this order:
 
-1. **Binary.** Check that the server is on the PATH:
+1. **Binary.** The error names it (`Executable not found in $PATH: "svelteserver"`). The user can confirm it in their own shell, outside Claude Code; a sandboxed Bash cannot follow a symlinked global install, so an empty result there proves nothing:
 
    ```sh
    command -v svelteserver || echo "svelteserver not found"
@@ -28,7 +28,7 @@ Claude Code returns an error for each LSP call on a file whose server it cannot 
 
 ## No diagnostics appear after an edit
 
-- If nothing appears even after a change that must break, first prove the language server answers: `command -v svelteserver`, then `documentSymbol` on a non-empty `.svelte` file must list its symbols. If the project check is the silent one, see operations.md, "Prove it".
+- If nothing appears even after a change that must break, first prove the language server answers: `documentSymbol` on a non-empty `.svelte` file must list its symbols. If the project check is the silent one, see operations.md, "Prove it".
 - The server starts on the first edit of a `.svelte` file, not at session start.
 - Diagnostics after an edit appear as `Found N new diagnostic issues in M files`; only new issues are reported, so an unchanged error does not repeat.
 - `claude --debug` logs `LSP server <name> failed to start: <reason>` when the server crashes at start.

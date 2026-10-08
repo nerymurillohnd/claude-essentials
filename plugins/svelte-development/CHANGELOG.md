@@ -7,6 +7,27 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-08
+
+### Added
+
+- In a project whose `package.json` mentions `svelte`, a note at session start, resume, `/clear` and compaction names the skills and agents to use, so Claude loads them for tasks that do not mention Svelte, such as a route rule or a prop rename.
+- Before Claude writes or edits a `.svelte`, `.svelte.ts` or `.svelte.js` file, a hook reminds it, once per session, to load the best-practices skill and to hand larger changes to the component editor.
+
+### Changed
+
+- Every skill now starts by routing the work: audits and reviews go to the auditor agent and changes beyond a line or two to the component editor; Claude works inline only for questions, pasted code, small changes or when you ask. The auditor is also offered proactively.
+- The autofixer runs on every component and module Claude writes or reviews, always with the Svelte version, and the auditor reports how many files of its scope it checked.
+- After a change, Claude finishes when the project check reports no error in the files it changed. When the change touches something other files use (props, exports, signatures, a rename or a deletion), it first runs the check once as a baseline and also makes sure nothing new appears elsewhere. It never stashes or resets your work to rebuild that baseline.
+- The language server is probed with a language-server call instead of `command -v svelteserver`, which a sandboxed shell can get wrong, and Claude says when results for symbols in `.svelte.ts`, `.ts` or `.js` files come from `.svelte` positions or the project check.
+- The docs-and-autofixer skill also matches code pasted in the chat and requests for a playground link.
+- Before sending more than 20 files of your code to the remote autofixer, Claude asks and offers the local `svelte-mcp`.
+- Requires Claude Code 2.1.294, the oldest version the new hook patterns were tested on.
+
+### Removed
+
+- The `paths` that 0.4.0 added to the best-practices and navigation skills. Claude Code reads `paths` as a limit: such a skill loads on its own only while Claude works with matching files, so 0.4.0 narrowed when the skills load instead of widening it, and `src/routes` also matched React and Solid projects.
+
 ## [0.4.0] - 2026-10-08
 
 ### Added

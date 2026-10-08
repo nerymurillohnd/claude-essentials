@@ -1,6 +1,6 @@
 ---
 name: svelte-docs-and-autofixer
-description: Fetches the official Svelte, SvelteKit and Svelte CLI docs and checks Svelte code with the Svelte autofixer, through the plugin's Svelte MCP tools. Use when an exact Svelte API, rune, option or signature matters, or to check a Svelte component for problems.
+description: Fetches the official Svelte, SvelteKit and Svelte CLI docs and checks Svelte code with the Svelte autofixer, through the plugin's Svelte MCP tools. Use when an exact Svelte API, rune, option or signature matters, to check a Svelte component for problems (including code pasted in the chat), or for a Svelte playground link.
 license: MIT
 metadata:
   upstream: "sveltejs/ai-tools skills/svelte-code-writer"
@@ -28,11 +28,12 @@ All of these rules hold for every later turn of the task, not only the turn that
 
 ### Ground rules for every Svelte task
 
+0. **Route before the first tool call.** An audit or review of project files goes to the `svelte-code-auditor` agent; creating or changing `.svelte`, `.svelte.ts`, `.svelte.js` or SvelteKit route files beyond a line or two goes to the `svelte-component-editor` agent (Agent tool, without a `name`). Work inline only for a question, code pasted in the chat, a change of one or two lines, when the user asks you to, or when you already are one of these agents. [Who does the work](#who-does-the-work) gives the detail.
 1. **Version first.** In a project, find the installed `svelte` and `@sveltejs/kit` before writing (`npm ls`, else the `package.json` ranges and the lockfile). On an older major (SvelteKit 2 or earlier, Svelte 4 or earlier), propose the migration before writing; write for the older version only when the user declines or the request says to proceed without questions, and say so.
 2. **Docs before code.** Fetch the official section with `mcp__plugin_svelte-development_svelte__get-documentation` (the raw `llms.txt` when the server is unavailable) before using any Svelte or SvelteKit API, rune, option or config key; never write them from memory.
-3. **Symbols through the language server.** Where something of the project is defined, used or called goes to the LSP tool first when `svelteserver` is installed; Grep only for strings, route files, CSS classes, configuration, or a symbol that lives only in `.ts`/`.js` files no `.svelte` file imports, labelled as text matches.
-4. **Autofixer after code.** Run `mcp__plugin_svelte-development_svelte__svelte-autofixer` (the local `svelte-mcp` when the code must not leave the machine) on every component or module you wrote, until it reports no issues; for code you review, report what it finds.
-5. **Done means checked.** When you changed code in a project, finish only when the project check reports nothing new compared with the run before your change; a review or a question reports the check result instead. The check: `npm run check`; without that script, `npx --no-install svelte-kit sync`, then `npx --no-install svelte-check --tsconfig ./tsconfig.json` in SvelteKit, or `npx --no-install svelte-check` without SvelteKit, never chained with `&&`.
+3. **Symbols through the language server.** Where something of the project is defined, used or called goes to the LSP tool first when the language server answers; Grep only for strings, route files, CSS classes, configuration, or a symbol that lives only in `.ts`/`.js` files no `.svelte` file imports, labelled as text matches.
+4. **Autofixer on all you write or review.** Run `mcp__plugin_svelte-development_svelte__svelte-autofixer` with the full code (the remote tool treats a file path as code) and `desired_svelte_version` (5, or 4 for Svelte 4 code), or the local `svelte-mcp` with the file path when the code must not leave the machine, on every component or module you wrote, until it reports no issues. In a review, run it on every component and module in scope and report what it finds; name any file you skipped and why. Before sending more than 20 files of the user's code to the remote server, ask, and offer the local `svelte-mcp`.
+5. **Done means checked.** When you change code in a project, finish only when the project check reports no error in the files you changed; a review or a question reports the check result instead. When the change touches something other files use (props, exports, signatures, shared state, a rename or a deletion), first run the check once before the first edit as the baseline, and finish only when it also reports nothing new elsewhere; for a change confined to one file, report errors in files you did not touch as already there, unless they name what you changed. Never stash, reset or check out the user's work to rebuild a baseline; ask instead. The check: `npm run check`; without that script, `npx --no-install svelte-kit sync`, then `npx --no-install svelte-check --tsconfig ./tsconfig.json` in SvelteKit, or `npx --no-install svelte-check` without SvelteKit, never chained with `&&`.
 
 ### Rules of this skill
 
@@ -153,7 +154,7 @@ npx --no-install svelte-check                    # Svelte without SvelteKit
 
 In SvelteKit, run the sync first: without it the generated types are missing and the check reports false errors.
 
-**Done** when the autofixer returns no issues with `require_another_tool_call_after_fixing` false, and the language server and the project check report nothing new.
+**Done** when the autofixer returns no issues with `require_another_tool_call_after_fixing` false, the files you changed show no language-server diagnostics, and the project check reports no error in them, and nothing new compared with the baseline when you took one (ground rule 5).
 
 **Playground link**, only after the user said yes:
 

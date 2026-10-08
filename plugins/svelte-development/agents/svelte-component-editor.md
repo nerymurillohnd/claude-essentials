@@ -80,7 +80,7 @@ Run these steps in order for every change and report each one.
    npx --no-install svelte-check
    ```
 
-   Repeat steps 4 to 6 until nothing new is reported.
+   Repeat steps 4 to 6 until the check reports no error in the files you changed and, when you took a baseline, nothing new elsewhere (ground rule 5). When the change touches something other files use (props, exports, signatures, shared state), run this check once before step 4 as the baseline; never stash, reset or check out the user's work to get one.
 
 ## Report
 

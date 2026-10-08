@@ -1,5 +1,16 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" session",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "mcp__plugin_svelte-development_svelte__.*",
@@ -58,6 +69,40 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" lsp",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Write(*.svelte)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" edit",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Write(*.svelte.[tj]s)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" edit",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(*.svelte)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" edit",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "if": "Edit(*.svelte.[tj]s)",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/skill-hint.sh\" edit",
             "timeout": 5
           }
         ]

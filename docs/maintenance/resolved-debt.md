@@ -83,3 +83,40 @@ that links back to it — don't rewrite history.
 - **Residual risk / follow-up:** Locally, on machines whose global binaries are symlinks, the skill's Bash probe still fails (DEBT-019).
 - **Related records:** DEBT-004, DEBT-013, DEBT-019.
 - **Superseded by:** none.
+
+### DEBT-004 — 2026-10-08 — `svelte-development` skills load and route the work
+
+- **Original pending record:** DEBT-004 in `pending-debt.md` (recorded 2026-10-06), "`svelte-development` skills do not trigger on their own".
+- **Resolved debt:** Skills did not load for tasks that do not name Svelte (a SvelteKit 2 route rule, a prop rename), audits were not delegated to the auditor, and the autofixer was called without `desired_svelte_version` or on part of a review.
+- **Resolution:** 0.5.0 removes the `paths` that limited activation, adds a `SessionStart` note in Svelte projects and a hint before Svelte writes, makes routing to the agents ground rule 0, and requires the Svelte version and full coverage for the autofixer.
+- **Positive verification:** CI eval run `37802833418` (PR #20, 2026-10-08, Claude Code 2.1.294, agent `claude-sonnet-5-5`, judge `claude-opus-5-5`, three runs per arm, $8.41): 11/11 cases, every one of the 33 treatment runs scored 1.00, mean delta +0.233 against +0.175 for 0.4.0 (run `37749514321`). `skill-fired` 3/3 in every case that has it, including 05 (was 1/3) and 09 (was 0/3); `proposes-migration` 3/3 (was 1/3); `checked-before-and-after` 3/3 (was 0/3); `auditor-dispatched` 3/3 (was 1/3); no autofixer abort (run `37749514321` had one).
+- **Negative verification:** the baseline arm still fails every plugin-specific grader (`skill-fired` absent, `auditor-dispatched` 0/3, `checked-before-and-after` 0/3), and the two negative cases (React, README) stay at 1.00 in both arms, so no skill loads where it should not.
+- **Owner or responsible area:** `plugins/svelte-development/`.
+- **Residual risk / follow-up:** the pre-edit hint is once per session, so a subagent's Svelte edit can use it up before the main thread edits inline; the `SessionStart` note covers the main thread.
+- **Field test before the fix (2026-10-08, 0.4.0 in a real Astro 7 + Svelte 5.57 project, Opus 5.5):** a read-only architecture audit of the product purchase island loaded `svelte-lsp-navigation` and `svelte-docs-and-autofixer` unprompted, made six successful LSP calls, ran the project's own check and proposed no SvelteKit API, but did the audit inline instead of delegating to `svelte-code-auditor`, and ran the autofixer on 2 of the 11 components it reviewed. The follow-up fix (a history-state bug the audit reproduced) was delegated to `svelte-component-editor`, written test-first, autofixed on the whole file, and the `Stop` hook ran `svelte-check` once after the edits and passed silently (fingerprint `checked-*` at 04:31; hint files for docs, check and CLI at 04:14).
+- **Related records:** DEBT-019, DEBT-020.
+- **Superseded by:** none.
+
+### DEBT-019 — 2026-10-08 — The language server is probed with an LSP call
+
+- **Original pending record:** DEBT-019 in `pending-debt.md` (recorded 2026-10-08), "The language-server probe fails inside a sandboxed Bash".
+- **Resolved debt:** The skill's step 0 ran `command -v svelteserver` in Bash, which a sandbox cannot answer for a symlinked global install, so Claude skipped a working server.
+- **Resolution:** 0.5.0 probes with `documentSymbol` on a `.svelte` file, with a warm-up before deciding, in the skill, its references and the auditor; `command -v` stays only as advice for the user's own shell.
+- **Positive verification:** CI eval run `37802833418` (PR #20, 2026-10-08, Claude Code 2.1.294, agent `claude-sonnet-5-5`, judge `claude-opus-5-5`, three runs per arm, $8.41): 11/11 cases, every one of the 33 treatment runs scored 1.00, mean delta +0.233 against +0.175 for 0.4.0 (run `37749514321`); `lsp-used` 3/3 in cases 08 and 09. A local pilot on the maintainer's macOS with nvm (the machine where the Bash probe had failed) called the LSP tool twice with the shipped `.lsp.json`.
+- **Negative verification:** the baseline arm calls no LSP tool (`lsp-used` 0/3 in 08 and 09), so the graders still tell the arms apart.
+- **Owner or responsible area:** `plugins/svelte-development/skills/svelte-lsp-navigation/`.
+- **Residual risk / follow-up:** case 08's `lsp-before-text-search` now counts only `Grep`; the maintainer accepted that change on 2026-10-08 after its first 0.5.0 failure, since its trace showed `Glob` locating the file. Without that grader, case 08's delta is +0.222.
+- **Related records:** DEBT-004, DEBT-005.
+- **Superseded by:** none.
+
+### DEBT-020 — 2026-10-08 — Review findings on the 0.4.0 skills fixed
+
+- **Original pending record:** DEBT-020 in `pending-debt.md` (recorded 2026-10-08), "Code review findings on the `svelte-development` 0.4.0 skills".
+- **Resolved debt:** `paths` narrowed activation and `src/routes/**` matched non-Svelte projects; ground rule 5 contradicted "diagnostics clean"; the docs-and-autofixer description lost the pasted-code and playground triggers.
+- **Resolution:** 0.5.0 removes `paths`; ground rule 5, the best-practices procedure, the navigation checklist and the editor agent share one finishing rule (no error in the changed files, a baseline only for changes other files use, never stash or reset the user's work); the description names pasted code and the playground link.
+- **Positive verification:** CI eval run `37802833418` (PR #20, 2026-10-08, Claude Code 2.1.294, agent `claude-sonnet-5-5`, judge `claude-opus-5-5`, three runs per arm, $8.41): 11/11 cases, every one of the 33 treatment runs scored 1.00, mean delta +0.233 against +0.175 for 0.4.0 (run `37749514321`); the skills docs read 2026-10-08 confirm `paths` limits activation; `scripts/check.py` passes with the three ground-rule copies identical.
+- **Negative verification:** the React and README negative cases stay at 1.00 in both arms with no Svelte skill loaded.
+- **Owner or responsible area:** `plugins/svelte-development/skills/`, `agents/svelte-component-editor.md`.
+- **Residual risk / follow-up:** none known.
+- **Related records:** DEBT-004.
+- **Superseded by:** none.
