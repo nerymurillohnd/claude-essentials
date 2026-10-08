@@ -16,7 +16,6 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Migrating to SvelteKit 3: the leftover search covers the whole project instead of `src`, the `sv migrate` flags for a run without a prompt are listed, and five breaking changes missing from the manual checklist are added.
 - Svelte gotchas now cover `derived_invalid_export`, `derived_references_self`, `snippet_without_render_tag`, `bind_not_bindable`, `props_invalid_value`, `each_key_duplicate` and `effect_orphan`.
 - The SvelteKit references say they are for SvelteKit 3 projects, a SvelteKit 2 project keeps `$env/*` unless it enabled explicit environment variables, and the adapter example no longer reuses the removed `ORIGIN` variable.
-
 - Without `svelteserver` on the PATH, the navigation skill checks for the server first and goes straight to labelled text search instead of retrying a tool that cannot answer; a symbol that lives only in `.ts`/`.js` files may start with text search, said to you.
 - The final check in every skill falls back to `svelte-check` (after `svelte-kit sync` in SvelteKit) when the project has no `check` script.
 - The docs-and-autofixer skill no longer promises a note after each edit that no hook sends.

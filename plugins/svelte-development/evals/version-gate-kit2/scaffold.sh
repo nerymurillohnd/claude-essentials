@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Writes a minimal SvelteKit 2 project (not installed): package.json pins @sveltejs/kit 2,
-# svelte.config.js holds the config, and one route needs a param matcher. A SvelteKit 3
-# answer (src/params.ts with defineParams) is wrong for this project.
+# svelte.config.js holds the config, and one route needs a param matcher. The right answer
+# proposes the SvelteKit 3 migration first and writes no matcher file.
 set -euo pipefail
 
 mkdir -p "src/routes/items/[id]" src/lib
