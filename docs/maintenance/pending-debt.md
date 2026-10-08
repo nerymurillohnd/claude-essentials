@@ -33,11 +33,12 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Evidence:**
   - **Confirmed facts:** In eval run `37395261454` the three trigger cases (`trigger-best-practices`, `trigger-docs-autofixer`, `trigger-lsp`) scored 0 in both arms, so the skills never triggered without an explicit request.
   - **Confirmed facts (2026-10-08):** In eval run `37719700088` (0.3.0, PR #18) the treatment arm scored `trigger-best-practices` 1.0, `trigger-docs-autofixer` 0.67 and `trigger-lsp` 1.0 (deltas +0.25, +0.33, +1.0), but the `skill-fired` indicator of `trigger-docs-autofixer` stayed 0, and task cases that do not name Svelte (`version-gate-kit2`, `tool-choice-*`, `routing-lsp-first`) kept a delta of 0. The run artifact holds no traces, so whether a skill loaded is not visible.
+  - **Confirmed facts (2026-10-08, local pilot of the rebuilt 11-case suite, one run per arm, Sonnet 5.5 agent, Opus 5.5 judge, $2.61):** a skill loaded in the treatment arm of cases 01, 04, 05, 07, 08 and 10, including requests with no file open (01, 07, 08). It did not load for the rename in 09 or the review in 11, and the review was done inline instead of by `svelte-code-auditor`. In 05 (SvelteKit 2 project) Claude loaded the skill, then wrote a SvelteKit 2 matcher and called the migration "out of scope" instead of proposing it first.
   - **Inferences:** The `description` and `when_to_use` fields did not match the phrasing users use; 0.3.1 rewrote the descriptions (what and when only) and removed `when_to_use`.
   - **Open questions:** Whether the fix belongs in the descriptions or in the hooks.
 - **Impact / risk:** The plugin's main value depends on the user naming the skill.
 - **Owner or responsible area:** `plugins/svelte-development/skills/*/SKILL.md`.
-- **Next action:** Re-measure 0.3.1 with the `run-evals` label, ideally with traces kept in the artifact, and decide on the task cases that still show no delta.
+- **Next action:** Run the rebuilt suite in CI (`run-evals`, three runs per case) and read the traces of 05, 09 and 11; fix the descriptions or rules those runs implicate.
 - **Review condition:** Closes when a CI eval run shows the trigger cases above 0 in the treatment arm.
 - **Related records:** run `37395261454` (closed draft PR #16); handoff open items.
 
@@ -47,11 +48,12 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Category:** quality (measurement)
 - **Evidence:**
   - **Confirmed facts:** Run `37395261454`: `lsp-priority` 0, `lsp-dynamic-code` 0.25, and the tool-choice cases (docs, project-check, references) delta 0. The LSP cases ran on a fixture whose `src/lib` was never committed (`.gitignore` hid it until 2026-10-06), so their zeros are not evidence about the plugin. The fixture's `src/lib` is committed since `dd7227d` (PR #17); no eval run has measured it yet.
-  - **Inferences:** The zeros may come from the fixture, the isolated `PATH` on CI, or ToolSearch not loading the LSP tool.
-  - **Open questions:** Whether `svelteserver` reaches the eval's isolated `PATH` on CI; whether the model loads the LSP tool through ToolSearch.
+  - **Confirmed facts (2026-10-08, local smoke and pilot):** ToolSearch loads the LSP tool without a grant, and the server answers: in case 09 `findReferences` returned five references. In case 08 the skill's step 0, `command -v svelteserver` in Bash, printed nothing because the Bash sandbox cannot read symlink targets outside `PATH`, so Claude skipped the language server and used labelled text search (DEBT-019).
+  - **Inferences:** The earlier zeros came from the fixture and from that probe, not from a missing grant.
+  - **Open questions:** Whether the probe also fails on CI runners, where `npm install -g` links `svelteserver` into the Node `lib/` directory.
 - **Impact / risk:** The plugin's LSP and tool-choice value is unmeasured.
 - **Owner or responsible area:** `plugins/svelte-development/evals/`, `.github/workflows/plugin-evals.yml`.
-- **Next action:** Inspect transcripts from a fresh CI eval run on the committed fixture.
+- **Next action:** Read the case 08 and 09 traces of the first CI run of the rebuilt suite; then resolve with DEBT-019.
 - **Review condition:** Closes when a rerun shows LSP and tool-choice cases with transcripts that prove the tool was called, or when the cases are removed with a recorded reason.
 - **Related records:** DEBT-004, the open items in handoff `2026-10-06-0100`.
 
@@ -139,20 +141,6 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Review condition:** Closes when the chooser shows one security entry.
 - **Related records:** `SECURITY.md`.
 
-### DEBT-013 — Open question on eval trace graders and subagent tool calls
-
-- **Status:** Pending
-- **Category:** quality (measurement)
-- **Evidence:**
-  - **Confirmed facts:** `.claude/rules/testing/plugin-evals.md` lists this as open.
-  - **Inferences:** none.
-  - **Open questions:** Whether trace graders see tool calls made inside a subagent.
-- **Impact / risk:** Trace-based scores for the auditor and editor agents may be wrong.
-- **Owner or responsible area:** `.claude/rules/testing/plugin-evals.md`.
-- **Next action:** Settle from the `editor-follows-skill` and `auditor-read-only` transcripts and record the answer.
-- **Review condition:** Closes when the rule file records the answer.
-- **Related records:** DEBT-005.
-
 ### DEBT-014 — Plugin evals ran on any labeled pull request
 
 - **Status:** Pending (fix merged on `main` as `07dfa66`; behavior on a pull request unverified)
@@ -222,3 +210,31 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Next action:** Maintainer decides; if accepted, pass the token by environment variable reference and update the rule.
 - **Review condition:** Closes on the decision and, if accepted, a driven session with an isolated configuration.
 - **Related records:** `.claude/rules/testing/drive-plugin.md`; DEBT-006, DEBT-007 (same token).
+
+### DEBT-019 — The language-server probe fails inside a sandboxed Bash
+
+- **Status:** Pending
+- **Category:** quality (plugin behavior)
+- **Evidence:**
+  - **Confirmed facts:** `svelte-lsp-navigation` step 0 runs `command -v svelteserver` before the first LSP call and skips the language server when it prints nothing. In the 2026-10-08 smoke and pilot (case 08) it printed nothing inside the eval's Bash sandbox, which reads only the directories on `PATH` and not the symlink targets in them, while the LSP server, started by Claude Code outside the sandbox, answered `findReferences` in case 09.
+  - **Inferences:** Any user who runs Bash sandboxed with a symlinked global install gets text search instead of semantic answers.
+  - **Open questions:** Whether to probe with an LSP call (`documentSymbol` on a `.svelte` file) instead of Bash.
+- **Impact / risk:** The plugin's language-server value is lost silently, and the LSP eval cases score 0 for the probe, not for the plugin.
+- **Owner or responsible area:** `plugins/svelte-development/skills/svelte-lsp-navigation/SKILL.md` (procedure step 0, rule 9).
+- **Next action:** Replace the Bash probe with an LSP call and its "No LSP server available" answer, release a patch, re-run cases 08 and 09.
+- **Review condition:** Closes when case 08 calls the LSP tool in a sandboxed run.
+- **Related records:** DEBT-005; `.claude/rules/testing/plugin-evals.md` (sandbox bullets).
+
+### DEBT-020 — Code review findings on the `svelte-development` 0.3.1 skills
+
+- **Status:** Pending (maintainer decision)
+- **Category:** quality (plugin behavior)
+- **Evidence:**
+  - **Confirmed facts:** `/code-review` of `svelte-development/activation` on 2026-10-08 reported, in the skills: ground rule 5 ("nothing new compared with the run before your change") against "diagnostics clean" in the best-practices step 6 and the navigation step 8; the `src/routes/**` path pattern, which also matches React and Solid projects and misses monorepo apps; and a docs-and-autofixer description that no longer names code pasted in the chat or the playground link.
+  - **Inferences:** The review also inferred that `paths` narrows when a skill loads; the 2026-10-08 pilot contradicts it, because skills loaded for requests with no file open (cases 01, 07, 08).
+  - **Open questions:** none.
+- **Impact / risk:** Contradictory finishing rules and over-broad activation in non-Svelte projects.
+- **Owner or responsible area:** `plugins/svelte-development/skills/*/SKILL.md`.
+- **Next action:** Maintainer decides which to fix in a patch release; add a negative eval case for a React project with `src/routes/` if the pattern stays.
+- **Review condition:** Closes when each finding is fixed or rejected with a reason.
+- **Related records:** DEBT-004, DEBT-019.

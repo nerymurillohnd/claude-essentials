@@ -59,3 +59,15 @@ that links back to it — don't rewrite history.
 - **Residual risk / follow-up:** A release that changes a rule is found only when `/cc-currency` runs.
 - **Related records:** ADR no-pinned-claude-code-version; DEBT-002.
 - **Superseded by:** none.
+
+### DEBT-013 — 2026-10-08 — Eval trace graders see a subagent's tool calls
+
+- **Original pending record:** DEBT-013 in `pending-debt.md` (recorded 2026-10-06), "Open question on eval trace graders and subagent tool calls".
+- **Resolved debt:** Nobody knew whether trace and `tool_used` graders count tool calls made inside a subagent.
+- **Resolution:** The trace of a run holds the subagent's messages, each with `parent_tool_use_id` (the `Agent` call) and `agent_id` set. `.claude/rules/testing/plugin-evals.md` records it under Evidence.
+- **Positive verification:** Local pilot of 2026-10-08 (`--keep-temp`), case `10-editor-delegation`, treatment arm: after the `Agent` call to `svelte-development:svelte-component-editor`, 13 tool calls (Read, Bash, ToolSearch, `get-documentation`, Write, `svelte-autofixer`) carry `parent_tool_use_id` and `agent_id` `ac13328bc543c4915` in `out/trace.jsonl`.
+- **Negative verification:** The main thread's own calls in the same trace carry neither field, so the two can be told apart.
+- **Owner or responsible area:** `.claude/rules/testing/plugin-evals.md`.
+- **Residual risk / follow-up:** Observed on Claude Code 2.1.294 with a background subagent; re-check if the trace format changes.
+- **Related records:** DEBT-005.
+- **Superseded by:** none.
