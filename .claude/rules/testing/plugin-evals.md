@@ -112,10 +112,9 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 - The `repo` gate scans the working tree, so delete `evals/results/` after the run.
 - Isolation: each run has a temporary home, working directory and configuration.
 - Only an allowlist of environment variables (including `PATH`) reaches the run.
-- A plugin server binary must be on the user's `PATH`.
-- To test without installing the binary on the maintainer's machine, run the suite against a scratch copy of the plugin.
-- In that copy, set the `.lsp.json` `command` to the binary's absolute path, installed with `npm install --prefix <scratchpad>/eval-tools`.
-- It works: `findReferences` answered in the 2026-10-08 pilot. Say so in the evidence.
+- A plugin server binary must be on the user's `PATH`. Install it first, then the plugin, as the code-intelligence docs prescribe ("Install the language server binary first, then the plugin, then confirm the server starts", read 2026-10-08); never remove it from the maintainer's machine to isolate a run, since each run already has its own home and configuration.
+- On a machine without the binary, run the suite against a scratch copy of the plugin whose `.lsp.json` `command` is the absolute path of a binary installed with `npm install --prefix <scratchpad>/eval-tools`. It works: `findReferences` answered in the 2026-10-08 pilot. Say so in the evidence.
+- Not yet checked locally: whether the shipped `.lsp.json` finds a global binary on `PATH` inside a run. On CI it does: case `08-lsp-where-used` called the LSP tool in 3 of 3 runs (run 37749514321, 2026-10-08).
 - Scores with real MCP servers are advisory unless the run is in an isolated environment such as a CI runner (docs, "Trust the plugin directory").
 - Full runs go to CI: apply the `run-evals` label to the pull request (ADR plugin-evals-in-ci).
 - Local runs are pilots.

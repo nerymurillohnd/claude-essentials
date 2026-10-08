@@ -38,24 +38,10 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
   - **Open questions:** Whether the fix belongs in the descriptions or in the hooks.
 - **Impact / risk:** The plugin's main value depends on the user naming the skill.
 - **Owner or responsible area:** `plugins/svelte-development/skills/*/SKILL.md`.
-- **Next action:** Run the rebuilt suite in CI (`run-evals`, three runs per case) and read the traces of 05, 09 and 11; fix the descriptions or rules those runs implicate.
+  - **Confirmed facts (2026-10-08, CI run `37749514321`, PR #19, three runs per arm, $7.75, mean delta +0.175):** case 05 proposed the SvelteKit 3 migration before writing in 1 of 3 treatment runs; case 09 ran the project check at most once instead of before and after; case 11 delegated to `svelte-code-auditor` in 1 of 3; in case 01 one treatment run called the autofixer without `desired_svelte_version` and the mock's `expect:` guard aborted it.
+- **Next action:** Decide with the maintainer which skill wording to tighten for cases 01, 05, 09 and 11, release a patch, and re-run the suite.
 - **Review condition:** Closes when a CI eval run shows the trigger cases above 0 in the treatment arm.
 - **Related records:** run `37395261454` (closed draft PR #16); handoff open items.
-
-### DEBT-005 — LSP and tool-choice eval cases show a delta of 0; cause unknown
-
-- **Status:** Pending
-- **Category:** quality (measurement)
-- **Evidence:**
-  - **Confirmed facts:** Run `37395261454`: `lsp-priority` 0, `lsp-dynamic-code` 0.25, and the tool-choice cases (docs, project-check, references) delta 0. The LSP cases ran on a fixture whose `src/lib` was never committed (`.gitignore` hid it until 2026-10-06), so their zeros are not evidence about the plugin. The fixture's `src/lib` is committed since `dd7227d` (PR #17); no eval run has measured it yet.
-  - **Confirmed facts (2026-10-08, local smoke and pilot):** ToolSearch loads the LSP tool without a grant, and the server answers: in case 09 `findReferences` returned five references. In case 08 the skill's step 0, `command -v svelteserver` in Bash, printed nothing because the Bash sandbox cannot read symlink targets outside `PATH`, so Claude skipped the language server and used labelled text search (DEBT-019).
-  - **Inferences:** The earlier zeros came from the fixture and from that probe, not from a missing grant.
-  - **Open questions:** Whether the probe also fails on CI runners, where `npm install -g` links `svelteserver` into the Node `lib/` directory.
-- **Impact / risk:** The plugin's LSP and tool-choice value is unmeasured.
-- **Owner or responsible area:** `plugins/svelte-development/evals/`, `.github/workflows/plugin-evals.yml`.
-- **Next action:** Read the case 08 and 09 traces of the first CI run of the rebuilt suite; then resolve with DEBT-019.
-- **Review condition:** Closes when a rerun shows LSP and tool-choice cases with transcripts that prove the tool was called, or when the cases are removed with a recorded reason.
-- **Related records:** DEBT-004, the open items in handoff `2026-10-06-0100`.
 
 ### DEBT-006 — `CLAUDE_CODE_OAUTH_TOKEN` disappeared without a known cause
 
@@ -217,13 +203,14 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Category:** quality (plugin behavior)
 - **Evidence:**
   - **Confirmed facts:** `svelte-lsp-navigation` step 0 runs `command -v svelteserver` before the first LSP call and skips the language server when it prints nothing. In the 2026-10-08 smoke and pilot (case 08) it printed nothing inside the eval's Bash sandbox, which reads only the directories on `PATH` and not the symlink targets in them, while the LSP server, started by Claude Code outside the sandbox, answered `findReferences` in case 09.
-  - **Inferences:** Any user who runs Bash sandboxed with a symlinked global install gets text search instead of semantic answers.
+  - **Confirmed facts (CI run `37749514321`):** on the GitHub runner the treatment arm of case 08 called the LSP tool in 3 of 3 runs, so the probe failure is specific to machines whose global binaries are symlinks outside `PATH` (nvm on macOS).
+  - **Inferences:** Any user who runs Bash sandboxed with such a symlinked global install gets text search instead of semantic answers.
   - **Open questions:** Whether to probe with an LSP call (`documentSymbol` on a `.svelte` file) instead of Bash.
 - **Impact / risk:** The plugin's language-server value is lost silently, and the LSP eval cases score 0 for the probe, not for the plugin.
 - **Owner or responsible area:** `plugins/svelte-development/skills/svelte-lsp-navigation/SKILL.md` (procedure step 0, rule 9).
 - **Next action:** Replace the Bash probe with an LSP call and its "No LSP server available" answer, release a patch, re-run cases 08 and 09.
 - **Review condition:** Closes when case 08 calls the LSP tool in a sandboxed run.
-- **Related records:** DEBT-005; `.claude/rules/testing/plugin-evals.md` (sandbox bullets).
+- **Related records:** DEBT-005 (resolved); `.claude/rules/testing/plugin-evals.md` (sandbox bullets).
 
 ### DEBT-020 — Code review findings on the `svelte-development` 0.3.1 skills
 
