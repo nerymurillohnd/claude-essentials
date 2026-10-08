@@ -67,13 +67,13 @@ class SkillHintTest(unittest.TestCase):
         )
         return result.stdout
 
-    def note(self, output: str) -> str:
-        """The additionalContext of one PreToolUse hook JSON object."""
+    def note(self, output: str, event: str = "PreToolUse") -> str:
+        """The additionalContext of one hook JSON object for `event`."""
         reply = self.tmp / "reply.json"
         _ = reply.write_text(output)
         payload = repo.as_dict(repo.load_json(reply)) or {}
         fields = repo.as_dict(payload.get("hookSpecificOutput")) or {}
-        assert fields.get("hookEventName") == "PreToolUse", payload
+        assert fields.get("hookEventName") == event, payload
         text = repo.as_str(fields.get("additionalContext"))
         assert text, payload
         return text
@@ -98,6 +98,26 @@ class SkillHintTest(unittest.TestCase):
         other.mkdir()
         _ = (other / "package.json").write_text('{"dependencies": {"react": "19"}}')
         assert self.run_hint("lsp", project=other) == ""
+
+    def test_session_note_names_the_skills_at_every_start(self) -> None:
+        first = self.note(self.run_hint("session"), event="SessionStart")
+        assert "svelte-development:svelte-best-practices" in first
+        assert "svelte-development:svelte-lsp-navigation" in first
+        assert self.run_hint("session") != "", "a resume, clear or compact needs the note again"
+
+    def test_session_note_is_silent_outside_a_svelte_project(self) -> None:
+        other = self.tmp / "other"
+        other.mkdir()
+        _ = (other / "package.json").write_text('{"dependencies": {"react": "19"}}')
+        assert self.run_hint("session", project=other) == ""
+
+    def test_session_hook_has_no_matcher(self) -> None:
+        document = repo.as_dict(repo.load_json(HOOKS)) or {}
+        hooks = repo.as_dict(document.get("hooks")) or {}
+        groups = repo.as_list(hooks.get("SessionStart")) or []
+        assert len(groups) == 1, groups
+        group = repo.as_dict(groups[0]) or {}
+        assert "matcher" not in group, "a matcher would miss some session sources, such as fork"
 
     def test_unknown_kind_is_silent(self) -> None:
         assert self.run_hint("nothing") == ""

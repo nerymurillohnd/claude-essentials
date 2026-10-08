@@ -11,6 +11,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- In a project whose `package.json` mentions `svelte`, a note at session start, resume, `/clear` and compaction names the skills and agents to use, so Claude loads them for tasks that do not mention Svelte, such as a route rule or a prop rename.
 - Before Claude writes or edits a `.svelte`, `.svelte.ts` or `.svelte.js` file, a hook reminds it, once per session, to load the best-practices skill and to hand larger changes to the component editor.
 
 ### Changed

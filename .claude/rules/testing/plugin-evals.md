@@ -55,7 +55,7 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
   - Make links in documentation excerpts absolute: the `docs` gate checks them.
   - The live server stays covered by `scripts/drive_plugin.py`.
 - Grader syntax (docs, "Grader types"): a `regex` grader takes `pattern:` in the frontmatter, a JavaScript regex; case-insensitivity goes in `flags: i`, never `(?i)`.
-- `tool_order` passes only when both tools were called. To require "no Grep before the first LSP call", use a `regex` over the trace: `^(?:(?!"name":\s*"LSP")[\s\S])*"name":\s*"(?:Grep|Glob)"` with `match: not_contains`.
+- `tool_order` passes only when both tools were called. To require "no Grep before the first LSP call", use a `regex` over the trace: `^(?:(?!"name":\s*"LSP")[\s\S])*"name":\s*"Grep"` with `match: not_contains`. Leave `Glob` out: locating a `.svelte` file by name before the first LSP call is file discovery, not text search (case 08, 2026-10-08).
 - Never match the trace for words a loaded skill contains (`npm install -g`, `svelte-kit sync`): the trace holds the skill text. Use `tool_used` with `input_match` over the tool input instead.
 - Graders that are `with-only` by default under ablation: `tool_used` on `Skill`, and every grader on `mock_calls` (observed 2026-10-08).
 - A case that edits a file holding a deliberate fixture error must accept that error fixed: the plugin's Stop hook can lead Claude to fix errors in files it touched.
