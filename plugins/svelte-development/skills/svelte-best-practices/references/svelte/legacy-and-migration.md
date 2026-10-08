@@ -7,6 +7,7 @@
 - [Runes mode and legacy mode](#runes-mode-and-legacy-mode)
 - [Replacement table](#replacement-table)
 - [Component and event changes](#component-and-event-changes)
+- [Worked example](#worked-example)
 - [Migration tooling](#migration-tooling)
 - [Behavior changes to keep in mind](#behavior-changes-to-keep-in-mind)
 - [Svelte 6 forward compatibility](#svelte-6-forward-compatibility)
@@ -70,6 +71,47 @@ export default {
 - A component using slots can receive snippets from a parent, but not the other way round: a component that uses `{@render}` cannot receive slotted content. Custom elements still use `<slot />`.
 - Classes are no longer auto-reactive: assigning `foo.value` on a plain class instance does not update the UI. Use `$state` fields.
 
+## Worked example
+
+A Svelte 4 component, input:
+
+```svelte
+<script>
+  import { createEventDispatcher } from 'svelte';
+  export let open = false;
+  export let title;
+  const dispatch = createEventDispatcher();
+  $: label = open ? 'Hide' : 'Show';
+  function toggle() {
+    open = !open;
+    dispatch('toggle', open);
+  }
+</script>
+
+<button on:click={toggle} class:active={open}>{label} {title}</button>
+{#if open}<slot />{/if}
+```
+
+Output:
+
+```svelte
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  let { open = $bindable(false), title, ontoggle, children }:
+    { open?: boolean; title: string; ontoggle?: (open: boolean) => void; children?: Snippet } = $props();
+  const label = $derived(open ? 'Hide' : 'Show');
+  function toggle() {
+    open = !open;
+    ontoggle?.(open);
+  }
+</script>
+
+<button onclick={toggle} class={[open && 'active']}>{label} {title}</button>
+{#if open}{@render children?.()}{/if}
+```
+
+Every change follows the replacement table: props from `$props()` (`$bindable` because the parent may bind `open`), a computed value with `$derived`, a callback prop instead of the dispatcher, an event attribute, a `class` array instead of `class:`, and the default slot as the `children` snippet. Run the autofixer on the result before handing it back.
+
 ## Migration tooling
 
 - Run the migration on a committed tree, so its diff can be reviewed and reverted:
@@ -108,7 +150,7 @@ export default {
 
 - Runes mode becomes the default (`runes` option docs).
 - A quoted single expression (`prop="{value}"`) will be converted to a string: write `prop={value}` now (`attribute_quoted` warns on components and custom elements).
-- `experimental.async` is removed as a flag and its behavior becomes the default, including `set_context_after_init` and the `flushSync`-in-effect restriction. Call `setContext` before the first `await`.
+- `experimental.async` is removed as a flag and its behavior becomes the default, including `set_context_after_init`. Call `setContext` before the first `await`.
 - In "a future version" (no major named): every falsy `class` value omits the attribute instead of stringifying `false`; self-closing non-void tags may become an error; Svelte's internal slot handling is removed, leaving `<slot>` as a plain DOM element.
 
 ## Fetch before writing when

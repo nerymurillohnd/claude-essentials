@@ -1,6 +1,8 @@
 # SvelteKit Routing
 
 > Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+>
+> Applies to SvelteKit 3 projects. A SvelteKit 2 project migrates first ([migrating-to-kit-3.md](migrating-to-kit-3.md)); write SvelteKit 2 code only when the user declines the migration or the request says to proceed without questions.
 
 ## Contents
 
@@ -137,7 +139,7 @@ Characters that cannot appear in a file name or have meaning to the router are w
 
 ## Generated types and route IDs
 
-`./$types` provides `PageProps`, `LayoutProps`, `PageLoad`, `PageServerLoad`, `LayoutLoad`, `LayoutServerLoad`, `Actions`, `RequestHandler` and `EntryGenerator`. `$app/types` provides app-wide types:
+`./$types` provides `PageProps`, `LayoutProps`, `ErrorProps` (new in 3.0), `PageLoad`, `PageServerLoad`, `LayoutLoad`, `LayoutServerLoad`, `Actions`, `RequestHandler` and `EntryGenerator`. `$app/types` provides app-wide types:
 
 - `RouteId` includes only routes with a `+page` or `+server` since 3.0. Use `PageRouteId` and `EndpointRouteId` to narrow, and `LayoutParams<'/id'>` for layout-only directories.
 - `Path` (renamed from `Pathname`) and `AssetPath` (renamed from `Asset`) have no leading `/` since 3.0. Only route IDs start with `/`.

@@ -1,6 +1,8 @@
 # SvelteKit Adapters and Deployment
 
 > Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+>
+> Applies to SvelteKit 3 projects. A SvelteKit 2 project migrates first ([migrating-to-kit-3.md](migrating-to-kit-3.md)); write SvelteKit 2 code only when the user declines the migration or the request says to proceed without questions.
 
 ## Contents
 
@@ -22,7 +24,7 @@
 
 Every first-party adapter requires SvelteKit 3 in these majors (confirm the current version with `npm view <package> version`):
 
-| Package | Version | Key requirement |
+| Package | First SvelteKit 3 release | Key requirement |
 | --- | --- | --- |
 | `@sveltejs/adapter-auto` | 8.0.0 |  |
 | `@sveltejs/adapter-node` | 6.0.0 | Node `>=22.17` (from Kit) |
@@ -53,13 +55,13 @@ export default defineConfig({
   plugins: [
     sveltekit({
       adapter: adapter({ precompress: true }),
-      paths: { origin: process.env.ORIGIN },
+      paths: { origin: process.env.PUBLIC_ORIGIN },
     }),
   ],
 });
 ```
 
-`vite.config.*` runs at build time, so any `process.env` value read there (such as `ORIGIN` above) must be present when you build, not only when the server starts.
+`vite.config.*` runs at build time, so any `process.env` value read there (such as `PUBLIC_ORIGIN` above) must be present when you build, not only when the server starts.
 
 Per-route settings go in the `config` page option, typed with the adapter's `Config` export. Since 3.0, a universal file's `config` wins over the server file's.
 

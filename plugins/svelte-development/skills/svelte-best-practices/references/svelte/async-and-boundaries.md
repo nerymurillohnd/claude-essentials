@@ -25,7 +25,7 @@
   - SvelteKit 3: in the `sveltekit({ ... })` plugin options in `vite.config.js` (`svelte.config.js` is no longer supported).
   - SvelteKit 2: in `svelte.config.js`.
   - Plain Vite: in the `svelte({ ... })` options of `@sveltejs/vite-plugin-svelte`, or in `svelte.config.js`.
-- With the flag on, block updates (`{#if}`, `{#each}`) run before `$effect.pre` in the same component, and `flushSync()` throws inside an effect (`flush_sync_in_effect`).
+- With the flag on, block updates (`{#if}`, `{#each}`) run before `$effect.pre` in the same component.
 
 ## Await expressions
 

@@ -4,6 +4,12 @@ Changes to the Claude Essentials catalog: plugins added, deprecated, removed or 
 
 The catalog has no version: users always receive the latest catalog, and only plugins are versioned ([Semantic Versioning](https://semver.org/spec/v2.0.0.html)). Entries are grouped by date (UTC), newest first, using the change types of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 2026-10-08
+
+### Changed
+
+- `svelte-development`: the catalog description now says SvelteKit 2 and Svelte 4 projects get a guided migration to SvelteKit 3 and Svelte 5, instead of code written for the old versions.
+
 ## 2026-10-06
 
 ### Changed

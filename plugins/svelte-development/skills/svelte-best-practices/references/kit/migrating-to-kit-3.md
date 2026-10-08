@@ -15,7 +15,7 @@
 ## Before you start
 
 - Upgrade to the latest 2.x first and fix its deprecation warnings; many 3.0 removals warn there.
-- Minimums: Node 22.17, Vite 8.0.12, `@sveltejs/vite-plugin-svelte` 7, Svelte 5.57.1 (the npm peer; the changelog mentions 5.56.4), TypeScript 6 when used, and the adapter majors listed in the adapters reference.
+- Minimums: Node 22.17, Vite 8.0.12, `@sveltejs/vite-plugin-svelte` 7, Svelte 5.57.1, TypeScript 6 when used, and the adapter majors listed in the adapters reference.
 - Commit everything; the migration rewrites many files.
 
 ## Running the migration
@@ -26,7 +26,9 @@ npx sv migrate sveltekit-3 --tasks params  # run one task (prerequisites always 
 npx sv migrate sveltekit-3 --tasks all     # run everything in one diff
 ```
 
-`sv` 1.1.0 lists 12 tasks (the CLI docs page lists only 9 of them):
+Flags for a run without a person at the prompt: `--cwd <path>` picks the project, `--no-git-check` skips the dirty-working-tree prompt, `--confirm` skips only the final confirmation (it does not choose the migration for you), `--install <package-manager>` or `--no-install` controls the dependency install.
+
+`sv` 1.1.x lists 12 tasks (checked on 1.1.1; the CLI docs page lists only 9 of them):
 
 | Task | What it does |
 | --- | --- |
@@ -111,6 +113,11 @@ Check each item after the tasks run, whether or not a task touched it:
 - Dev CORS for `static/` is handled by Vite: configure `server.cors` if you relied on `*`.
 - Adapters: upgrade to the 3.0-compatible majors; Cloudflare code must stop using `platform`; Vercel `edge` and Node 20 runtimes are gone; Netlify reads `publish` from adapter options; `adapter-cloudflare-workers` has no Kit 3 version.
 - Custom adapters: follow the migration guide's adapter API section.
+- Query parameters beginning with `x-sveltekit-` are rejected.
+- `Server` and `SSRManifest` are no longer public types.
+- `form.error` is typed `App.Error | undefined`, no longer `any`.
+- The `alias` option is deprecated; use `#` subpath imports.
+- Sourcemaps are generated and applied to stack traces; adapters must not rebundle the output destructively.
 
 ## Verifying the result
 
@@ -126,8 +133,10 @@ Check each item after the tasks run, whether or not a task touched it:
 3. Search the code for leftovers; every match needs a decision:
 
    ```sh
-   grep -rnE '\$app/stores|\$lib/|\$env/|\$service-worker|invalidateAll|pushState|replaceState|resolveRoute|checkOrigin|svelte\.config|@migration-task' src
+   grep -rnE '\$app/stores|\$lib/|\$env/|\$service-worker|invalidateAll|pushState|replaceState|resolveRoute|checkOrigin|svelte\.config|@migration-task' --exclude-dir=node_modules --exclude-dir=.svelte-kit --exclude-dir=build .
    ```
+
+   Run it from the project root over the whole tree, not only `src`: `$lib` and `svelte.config` leftovers also sit in `vite.config.*`, `tests/` and root files. Exclude `node_modules`, `.svelte-kit` and `build`.
 
 4. Deploy to a preview environment before production.
 
@@ -135,7 +144,7 @@ Check each item after the tasks run, whether or not a task touched it:
 
 - Any table row above is ambiguous for your code, or you meet a 2.x API not listed here.
 - You maintain a custom adapter, use `builder.instrument`, or ship a library with `@sveltejs/package`.
-- The `sv` version differs from 1.1.0: list its tasks again with `--tasks`.
+- The `sv` version differs from 1.1.x: list its tasks again with `--tasks`.
 
 ## Official sources
 

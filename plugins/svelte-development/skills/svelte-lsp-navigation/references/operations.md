@@ -12,6 +12,7 @@
 - [Read a type with hover](#read-a-type-with-hover)
 - [Trace callers and callees](#trace-callers-and-callees)
 - [Read diagnostics](#read-diagnostics)
+- [What the server sees in dynamic code](#what-the-server-sees-in-dynamic-code)
 - [Prove it: break something on purpose](#prove-it-break-something-on-purpose)
 - [Fetch before relying on this when](#fetch-before-relying-on-this-when)
 - [Official sources](#official-sources)
@@ -102,7 +103,7 @@ LSP findReferences  src/routes/+page.svelte 17 49   (reset in counter.reset())
 → 3 references across 3 files: counter.svelte.ts 12:3; resettable.ts 3:3; +page.svelte 17:46
 ```
 
-There is no rename operation: this list is the edit set, after checking it against the blind spots in SKILL.md.
+There is no rename operation: this list is the edit set, after checking it against the uses the server cannot see: route files, paths in strings, calls through an alias, CSS class names, and configuration or scripts.
 
 ## Read a type with hover
 
@@ -133,11 +134,27 @@ COMPLETED 177 FILES 1 ERRORS 0 WARNINGS 1 FILES_WITH_PROBLEMS
 
 That check ran in a copy of the fixture outside the plugin, with the `.example` suffix dropped from its three config files and dependencies installed (see the fixture README), through `npm run check`.
 
+## What the server sees in dynamic code
+
+Dynamic Svelte code is not a blind spot by default. Observed on this plugin's fixture:
+
+| Code | Seen | How |
+|---|---|---|
+| A component held in a variable: `let Active = $state(CounterButton)`, then `<Active />` | Yes | `findReferences` on the import lists the assignment; references of `Active` include its tag |
+| `<svelte:element this={tag}>` | Yes | `findReferences` on `tag` includes the `this={tag}` use |
+| `{#await lazy then mod}` and `<mod.default />` | Yes | `goToDefinition` on `mod` reaches the await block |
+| A function stored in an object: `{ format: formatCount }` | The alias site, yes | `findReferences` on `formatCount` lists the object property |
+| A call through that alias: `handlers.format(...)` | Not as a call of the original | `incomingCalls` lists only direct callers; check the alias's own references |
+| The path string of `import("#lib/components/X.svelte")` | No | A string, not a reference. The project check still reports a literal `import()` of a file that does not exist |
+| `import.meta.glob("./*.svelte")` patterns | No | A string pattern; the project check does not report it either, so only Grep finds it |
+
+`documentSymbol` lists every one of these constructs in a component. Run it before concluding that the server cannot see dynamic code.
+
 ## Prove it: break something on purpose
 
 A clean result proves nothing until a deliberate break has shown that the tool can see the change. Two ways, both with known results (the fixture README's "Mutations" table):
 
-**In the user's project, during a rename** (the "Procedure for a change" in SKILL.md): rename only the declaration, run the project check, and compare its error sites with the `findReferences` list. On the fixture, renaming `label` inside `CounterButton.svelte` makes the check report exactly the three `findReferences` sites above:
+**In the user's project, during a rename**: rename only the declaration, run the project check, and compare its error sites with the `findReferences` list. On the fixture, renaming `label` inside `CounterButton.svelte` makes the check report exactly the three `findReferences` sites above:
 
 ```text
 LSP findReferences  src/lib/components/CounterButton.svelte 8 5   (label in Props)
@@ -156,7 +173,7 @@ An error site that is not in the `findReferences` list is a use the language ser
 ## Fetch before relying on this when
 
 - The project uses svelte-language-server or svelte-check newer than the versions above: check the language-tools releases for changed behaviour.
-- A result contradicts what Grep shows: see "Common mistakes" in SKILL.md before trusting either.
+- A result contradicts what Grep shows: Grep also matches comments and strings, and the language server can lag SvelteKit 3; confirm with the project check before trusting either.
 
 ## Official sources
 

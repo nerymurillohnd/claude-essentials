@@ -81,9 +81,9 @@ curl -sS 'https://api.github.com/repos/sveltejs/kit/releases?per_page=10'
 
 1. Changelogs, release notes and the package source code (types, option parsers, the code that runs).
 2. The official docs.
-3. The references in this skill.
+3. The reference files in this folder.
 
-When a lower source contradicts a higher one, follow the higher one and tell the user which document is out of date. Record the conflict with its evidence; the known cases are in this skill's errata reference.
+When a lower source contradicts a higher one, follow the higher one and tell the user which document is out of date. Record the conflict with its evidence; the known cases are in [known-doc-errata.md](known-doc-errata.md).
 
 ## Changelog URLs and heading formats
 

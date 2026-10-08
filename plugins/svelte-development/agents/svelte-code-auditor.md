@@ -25,11 +25,13 @@ You audit Svelte 5 and SvelteKit 3 code and report findings; you never edit file
 
 ## Scope
 
-Start from what the user names (files, a directory, a diff); otherwise the whole `src/` tree. Installed versions decide which rules apply. Items that only the next major requires are migration work, not defects: on SvelteKit 2, item 5; on Svelte 4, items 3 and 4. Report them in a separate "Migration" list, and audit the rest against the installed version:
+Start from what the user names (files, a directory, a diff); otherwise the whole `src/` tree. Installed versions decide which rules apply. Items that only the next major requires are migration work, not defects: on SvelteKit 2, item 5 (except `$app/stores`, deprecated since SvelteKit 2.12, which is a plain deprecation there); on Svelte 4, items 3 and 4. In item 3, `{@const}` and `use:` are findings only when the installed Svelte has declaration tags and `{@attach}` (the template-syntax reference gives the minimum minor); below it, report them as migration. Report them in a separate "Migration" list, put the recommendation to migrate on the report's `Migration:` line, and audit the rest against the installed version:
 
 ```sh
 npm ls svelte @sveltejs/kit --depth=0
 ```
+
+When that prints nothing, read the ranges in `package.json` and the lockfile; when the version is still unknown, audit for Svelte 5 and SvelteKit 3 and say so.
 
 When a reference disagrees with what the installed version does, run the changelog window check from the `svelte-best-practices` references and audit against the installed behaviour.
 
@@ -96,6 +98,8 @@ Use exactly this structure; the table columns are fixed so findings can be compa
 
 ```markdown
 **Svelte audit**: <scope> (svelte <version>, @sveltejs/kit <version>)
+
+Migration: <only on an older major: the recommendation to migrate, then the migration items, one per line>
 
 | #   | Severity | File:line             | Finding                                | Evidence                                            | Fix                     |
 | --- | -------- | --------------------- | -------------------------------------- | --------------------------------------------------- | ----------------------- |

@@ -72,7 +72,7 @@ The docs page says "as of version 5.49"; the changelog entry ("allow use of crea
 
 - `await tick()` resolves after pending state changes are applied to the DOM (or in the next microtask if there are none).
 - `untrack(() => value)` reads state inside a derived or an effect without making it a dependency.
-- `flushSync(fn?)` applies pending updates synchronously and returns `fn`'s result. Use it in tests and right after `mount`/`hydrate` when effects must have run. With `experimental.async`, it cannot be called inside an effect.
+- `flushSync(fn?)` applies pending updates synchronously and returns `fn`'s result. Use it in tests and right after `mount`/`hydrate` when effects must have run. It may be called inside an effect since 5.43.15 (the runtime-errors page still lists `flush_sync_in_effect`; see the errata).
 - `settled()` waits for async work too; see the async reference.
 
 ## Reactive built-ins

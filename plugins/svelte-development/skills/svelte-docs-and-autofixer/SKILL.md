@@ -1,7 +1,7 @@
 ---
 name: svelte-docs-and-autofixer
-description: Looks up the current official Svelte, SvelteKit and Svelte CLI docs and checks Svelte code with the Svelte autofixer, through this plugin's Svelte MCP tools (get-documentation, svelte-autofixer), with raw-download and local command-line fallbacks. Use whenever Svelte code is written, changed or checked for problems, including a component pasted in the chat, and whenever an exact Svelte or SvelteKit API, rune, option or signature matters.
-when_to_use: Triggers include "is anything wrong with this component", "check this Svelte code", "how do I … in Svelte 5", "what is the SvelteKit 3 way to", "is this API current", a request for a Svelte playground link, and any reply that will contain Svelte code.
+description: Looks up the current official Svelte, SvelteKit and Svelte CLI docs and checks Svelte code with the Svelte autofixer, through this plugin's Svelte MCP tools (get-documentation, svelte-autofixer), with raw-download and local command-line fallbacks. Use when Svelte code must be checked for problems, including a component pasted in the chat, when an exact Svelte or SvelteKit API, rune, option or signature matters, or when a playground link is requested.
+when_to_use: Triggers include "is anything wrong with this component", "check this Svelte code", "how do I … in Svelte 5", "what is the SvelteKit 3 way to", "is this API current", and a request for a Svelte playground link.
 license: MIT
 metadata:
   upstream: "sveltejs/ai-tools skills/svelte-code-writer"
@@ -39,20 +39,20 @@ The default route, because each tool answers a different kind of question. Depar
 
 | The question is about | First tool | Why |
 |---|---|---|
-| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for the blind spots the `svelte-lsp-navigation` skill lists |
-| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows Svelte 4 and SvelteKit 2 |
-| Whether the project has errors | The project check (`npm run check`) | Diagnostics arrive only for files the language server has open |
+| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for what the server cannot see: route files, paths in strings, CSS classes, configuration. Without `svelteserver` on the PATH there is no LSP tool: use Grep and say they are text matches |
+| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows older Svelte and SvelteKit |
+| Whether the project has errors | The project check: `npm run check`; without a `check` script, `npx --no-install svelte-check` (after `npx --no-install svelte-kit sync` in SvelteKit) | Diagnostics arrive only for files the language server has open |
 
 ## Rules
 
 These rules hold for every later turn of the task, not only the turn that loaded this skill. The short tool names (`get-documentation`, `svelte-autofixer`, `list-sections`, `playground-link`) stand for their full names, `mcp__plugin_svelte-development_svelte__<tool>`; always call the full name.
 
 1. **Docs before code, by default.** Fetch the sections a change touches with `get-documentation` before writing it. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text. Never guess a section path: take it from the docs map.
-2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false. After each `Write` or `Edit` of a Svelte file, the plugin adds a note next to the tool result saying the autofixer has not checked the new content: that note marks the file as unchecked until you run step 4 of the procedure on it.
+2. **Autofixer after code.** Run `svelte-autofixer` on every component or module you wrote or reviewed, and repeat until it returns no issues and `require_another_tool_call_after_fixing` is false. Every `Write` or `Edit` of a Svelte file leaves it unchecked until you run step 4 of the procedure on its new content.
 3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" instead of refusing it. Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
 4. **The autofixer is not proof.** It does not type-check, does not know SvelteKit routing rules and does not run the code. Type errors come from the language server and the project check.
 5. **No WebFetch for docs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools, or `curl` for the raw text.
-6. **Source precedence.** Package changelogs, release notes and source code decide what exists at the project's version; the official docs explain usage; the `svelte-best-practices` references are the starting point and lose to both. When two sources disagree, say so in the answer; never pick one silently. The live docs describe the newest Svelte and SvelteKit: in a project on an older major (SvelteKit 2, Svelte 4), check each API against the installed version before using it.
+6. **Source precedence.** Package changelogs, release notes and source code decide what exists at the project's version; the official docs explain usage; the `svelte-best-practices` references are the starting point and lose to both. When two sources disagree, say so in the answer; never pick one silently. The live docs describe the newest Svelte and SvelteKit: on an older major, check each API against the installed version before using it.
 7. **Playground links only on request.** Offer one only for code answered in the chat, and call `playground-link` only after the user says yes; never for code written to the project's files.
 8. **Network and privacy.** Every MCP call needs network access. `svelte-autofixer` sends the code you pass to the Svelte team's server (Svelte states it does not log, store or inspect it); when the user does not want code to leave the machine, use the local command line below.
 9. **No installs without consent.** Never install `@sveltejs/mcp` or run it through `npx` without the user's confirmation.
@@ -142,11 +142,16 @@ mcp__plugin_svelte-development_svelte__svelte-autofixer
 
 It reports Svelte compiler errors and Svelte-specific mistakes: legacy syntax, effects that should be derived values, runes misuse.
 
-**Step 6, verify.** Read the diagnostics Claude Code reports after each edit of a `.svelte` file (the language server serves `.svelte` files only, so `.svelte.ts` and `.svelte.js` edits get none), then run the project check from the project root, as the `svelte-lsp-navigation` skill describes:
+**Step 6, verify.** Read the diagnostics Claude Code reports after each edit of a `.svelte` file (the language server serves `.svelte` files only, so `.svelte.ts` and `.svelte.js` edits get none), then run the project check from the project root:
 
 ```sh
-npm run check
+npm run check                                    # when package.json has a check script
+npx --no-install svelte-kit sync                 # SvelteKit, no check script: generate the types,
+npx --no-install svelte-check --tsconfig ./tsconfig.json   # then check (never chain the two with &&)
+npx --no-install svelte-check                    # Svelte without SvelteKit
 ```
+
+In SvelteKit, run the sync first: without it the generated types are missing and the check reports false errors.
 
 **Done** when the autofixer returns no issues with `require_another_tool_call_after_fixing` false, and the language server and the project check report nothing new.
 

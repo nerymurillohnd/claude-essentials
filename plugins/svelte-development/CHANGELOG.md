@@ -7,6 +7,28 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-08
+
+### Fixed
+
+- `flushSync()` inside an effect is no longer described as an error with `experimental.async`: Svelte lifted that restriction in 5.43.15, and the known-errata list now records the docs page that still shows it.
+- The component editor no longer reads "SvelteKit 2 or Svelte 4" as "no runes" in a SvelteKit 2 project on Svelte 5: the two majors are independent. Both agents and the best-practices skill also use declaration tags and `{@attach}` only when the installed Svelte has them, and read `package.json` and the lockfile when `npm ls` prints nothing.
+- Migrating to SvelteKit 3: the leftover search covers the whole project instead of `src`, the `sv migrate` flags for a run without a prompt are listed, and five breaking changes missing from the manual checklist are added.
+- Svelte gotchas now cover `derived_invalid_export`, `derived_references_self`, `snippet_without_render_tag`, `bind_not_bindable`, `props_invalid_value`, `each_key_duplicate` and `effect_orphan`.
+- The SvelteKit references say they are for SvelteKit 3 projects, a SvelteKit 2 project keeps `$env/*` unless it enabled explicit environment variables, and the adapter example no longer reuses the removed `ORIGIN` variable.
+- Without `svelteserver` on the PATH, the navigation skill checks for the server first and goes straight to labelled text search instead of retrying a tool that cannot answer; a symbol that lives only in `.ts`/`.js` files may start with text search, said to you.
+- The final check in every skill falls back to `svelte-check` (after `svelte-kit sync` in SvelteKit) when the project has no `check` script.
+- The docs-and-autofixer skill no longer promises a note after each edit that no hook sends.
+
+### Changed
+
+- **Svelte 5 and SvelteKit 3 first.** The best-practices skill now teaches current practice before anything else: it brings back the Svelte team's practices for effects and their alternatives (`{@attach}`, function bindings, `$inspect`, `createSubscriber`), `$inspect.trace`, `<svelte:window>`, `{#key}`, styling with CSS custom properties and `createContext`, and adds a short SvelteKit 3 section. Old versions take one rule instead of three, and the Svelte 4 to 5 example moved to the migration reference.
+- **Latest by default, migration proposed on older projects.** In a SvelteKit 2 or Svelte 4 project, Claude proposes the migration to SvelteKit 3 or Svelte 5 before writing, and works on the latest versions after it. It writes code for the older version only if you decline, or ask it to proceed without questions (an automated run), and says so. The component editor reports an older major back instead of editing unless its prompt settles that; the auditor opens its report with the migration recommendation. SvelteKit 1 and Svelte 3 projects are pointed to the older `sv migrate` steps.
+- A task that spans several topics reads every reference it touches, not only one.
+- The docs-and-autofixer skill loads for checking code, exact APIs and playground links, not for every reply that contains Svelte code.
+- The skills are leaner contracts. The SvelteKit 2 to 3 table and the experimental-flag table in `svelte-best-practices` now live only in their references, and the language-server table for dynamic code moved into the navigation reference. References no longer point back to a skill.
+- The README says plainly when Claude loads a skill, adds a before-and-after comparison and what the plugin costs you, and puts "only Claude Code is required" before the tool list.
+
 ## [0.2.0] - 2026-10-06
 
 ### Added

@@ -161,7 +161,7 @@ import { getContainerRenderer } from "@astrojs/svelte/container-renderer";
 
 ## Tailwind in Astro
 
-Add `@tailwindcss/vite` to `vite.plugins` in `astro.config` and import a stylesheet containing `@import "tailwindcss";` from the layout. The Tailwind reference in this skill covers the setup, `@reference` in Svelte `<style>` blocks and class detection.
+Add `@tailwindcss/vite` to `vite.plugins` in `astro.config` and import a stylesheet containing `@import "tailwindcss";` from the layout. [tailwind.md](tailwind.md) covers the setup, `@reference` in Svelte `<style>` blocks and class detection.
 
 ## Official sources
 
