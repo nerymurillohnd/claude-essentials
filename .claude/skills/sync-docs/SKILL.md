@@ -34,6 +34,6 @@ The code is the source of truth; documents follow it. Mechanical drift is caught
 
 ## Gotchas
 
-- Read documents with the Read tool: path-scoped rules in `.claude/rules/` load only on Read, Write and Edit, not on `cat`.
+- Read documents with the Read tool: path-scoped rules in `.claude/rules/` load on Read, Write and Edit and, since 2.1.293, when one file is viewed with `cat`, `head`, `tail`, `sed -n` or `grep`.
 - Never edit between `BEGIN GENERATED` and `END GENERATED`; run `scripts/sync_readmes.py`.
 - CLAUDE.md stays under 200 lines; procedures belong in skills, area facts in path-scoped rules.

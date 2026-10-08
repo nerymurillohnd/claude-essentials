@@ -1,6 +1,6 @@
 # Claude Code version and currency
 
-- Last reviewed release: 2.1.292 (2026-10-07). `/cc-currency` starts from this release and replaces it after each review.
+- Last reviewed release: 2.1.293 (2026-10-07). `/cc-currency` starts from this release and replaces it after each review.
 - The repository pins no Claude Code version: CI installs the latest release (ADR unpinned-tooling-and-shebang-interpreters) and nothing in a script, test or gate compares against a version (ADR no-pinned-claude-code-version).
 - Every fact in these rules carries its own version and date, so a stale fact is found by reading the changelog, not by a constant.
 - A plugin declares `metadata.minClaudeCodeVersion` only when it relies on a feature of a specific version.
@@ -10,6 +10,12 @@
 - A plugin with mods must declare at least 2.1.287 (`MOD_MIN_CLAUDE_CODE` in `scripts/repo.py`), a floor set by the feature, not by the repository.
 - Before touching schema, components or releases, read `llms.txt` and every changelog entry newer than the last reviewed release.
 - Validator fixes the gates rely on: names Claude Code cannot install fail (2.1.283), and a plugin was skipped when its folder also held a marketplace manifest (fixed in 2.1.289).
+- Reviewed window 2.1.293 on 2026-10-07 with `/cc-currency`: installed and latest 2.1.293, stable 2.1.285. Read in full.
+  - Relevant: path-scoped rules and nested CLAUDE.md files now also load when Claude views one file with `cat`, `head`, `tail`, `sed -n` or `grep` in Bash. The memory page still says only Read, Write and Edit (checked 2026-10-07), so the changelog is ahead of the docs. `scripts/claude_hooks.py` (`_RULES_REMINDER`) and the `sync-docs` skill said "only on Read/Edit"; both now name 2.1.293 (updated 2026-10-07 at the maintainer's request).
+  - Relevant: `claude plugin eval` no longer refuses Bash-granting runs on Macs with Docker Desktop (links under `~/.docker/bin`).
+  - Relevant: Claude Haiku 5.5 (`claude-haiku-5-5`) is the default Haiku on the Anthropic API, so the `haiku` alias of `scripts/drive_plugin.py` and its cost note (about $0.01) may shift.
+  - Mods only (`svelte-development` has none): `mock.session` in `claude plugin test`, `isDeferred` in `$.tool.register`, `agentType` in the `subagentStatusLine` payload.
+  - No other entry touches a rule.
 - Reviewed window 2.1.292 on 2026-10-07 with `/cc-currency`: installed and latest 2.1.292, stable 2.1.285. Read in full.
   - Relevant: `claude plugin install --marketplace <source>` from the shell (recorded in `.claude/rules/distribution.md`).
   - Relevant: `claude plugin test` now fails on a failed `expect` or a refused stub instead of passing silently.

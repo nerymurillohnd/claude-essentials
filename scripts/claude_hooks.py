@@ -68,7 +68,10 @@ _TRAVERSE_REASON = "A search under {root} would walk into {source} (CLAUDE.local
 _RECURSIVE_RE = re.compile(
     r"(?:^|[\s;&|(])(?:find|rg|fd|ag|tree|du|grep\s+(?:-\w*[rR]\w*|--recursive)|ls\s+-\w*R)\b"
 )
-_RULES_REMINDER = "Read repo files with Read, not cat: path-scoped rules load only on Read/Edit."
+_RULES_REMINDER = (
+    "Claude Code loads path-scoped rules on Read/Edit and, since 2.1.293, "
+    "when one file is viewed with cat, head, tail, sed -n or grep."
+)
 _FORMATTED_NOTE = "prettier reformatted {name}; re-read it before the next edit."
 
 
