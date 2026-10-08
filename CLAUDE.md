@@ -106,7 +106,7 @@ docs/                             guides and dated ADRs
 ## Current state
 
 - Open debt lives in `docs/maintenance/pending-debt.md` and closed debt in `docs/maintenance/resolved-debt.md`: read them before planning work, and record new debt there, not here.
-- The catalog on `main` holds `svelte-development` 0.4.0, merged in PR #19 (`a23f908`, 2026-10-08) and released as `svelte-development--v0.4.0` on 2026-10-08. Version 0.5.0 (activation without `paths`, routing and autofixer rules, the LSP probe; DEBT-004, DEBT-019, DEBT-020) is on `svelte-development/pay-debt`.
+- The catalog on `main` holds `svelte-development` 0.5.0, merged in PR #20 (`c76aa0f`, 2026-10-08) and released as `svelte-development--v0.5.0` on 2026-10-08 (activation without `paths`, a session-start note in Svelte projects, routing and autofixer rules, the LSP probe; it resolved DEBT-004, DEBT-019 and DEBT-020).
 - Every plugin release keeps both its signed tag and its GitHub Release (maintainer decision, 2026-10-07).
 - `svelte-development` maps only `.svelte` to `svelteserver`: `.ts` mapped to it returned empty results (2026-10-05), so TypeScript code intelligence will be its own plugin. The remote MCP server choice is recorded in `docs/sourcing-log.md`.
 - Deferred by the maintainer for `svelte-development`: a background auditor, a `svelte-audit` skill with `context: fork`, and `disallowed-tools` or a WebFetch guard.
