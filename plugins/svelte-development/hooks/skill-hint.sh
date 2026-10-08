@@ -20,7 +20,7 @@ check)
   text="${plugin}: if the skill ${plugin}:svelte-lsp-navigation is not loaded in this session, load it with the Skill tool: its project check procedure says how to read the result (the COMPLETED line, the tsconfig include, and the generated types a SvelteKit project needs first) and how to prove a rename by comparing the new errors with findReferences."
   ;;
 edit)
-  text="${plugin}: before writing Svelte code, load the skill ${plugin}:svelte-best-practices with the Skill tool if it is not loaded in this session: it holds the current Svelte 5 and SvelteKit 3 rules, the docs to fetch and the autofixer step. Unless you already are the svelte-component-editor agent, hand changes beyond a line or two to it (Agent tool, without a name)."
+  text="${plugin}: before writing Svelte code, load the skill ${plugin}:svelte-best-practices with the Skill tool if it is not loaded in this session: it holds the current Svelte 5 and SvelteKit 3 rules, the docs to fetch and the autofixer step. Unless you already are the svelte-component-editor agent, hand changes beyond a line or two to it: Agent tool with subagent_type svelte-development:svelte-component-editor and no name parameter."
   ;;
 cli)
   text="${plugin}: if the skill ${plugin}:svelte-best-practices is not loaded in this session, load it with the Skill tool: its sv CLI reference lists the current commands, add-ons and flags."

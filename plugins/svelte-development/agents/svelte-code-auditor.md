@@ -41,7 +41,8 @@ Copy and tick; run the tool steps in this order.
 
 ```
 - [ ] 1 Check       the project check from the project root
-- [ ] 2 Autofix     svelte-autofixer on the content of every component and module in scope, none skipped silently
+- [ ] 2 Autofix     svelte-autofixer on the content of every component and module in scope, none skipped silently;
+                    over 20 files, ask before sending them to the remote server and offer the local svelte-mcp
 - [ ] 3 Legacy      export let, $:, on:, <slot>, $$props, createEventDispatcher, {@const}, <svelte:component>, use: where {@attach} fits
 - [ ] 4 Runes       $effect that writes state (should be $derived), plain let read in markup, captured values passed to context
 - [ ] 5 Kit 3       $lib imports, $app/stores, svelte.config.js, $env/*, invalidateAll, goto noScroll/keepFocus, error(status, {...}), json()/text(), src/params/ folder
