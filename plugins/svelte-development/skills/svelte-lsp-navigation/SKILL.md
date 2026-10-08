@@ -1,6 +1,6 @@
 ---
 name: svelte-lsp-navigation
-description: Answers where a Svelte project's component, prop, function or type is defined, used or called, and what a change would break, through the Svelte language server and the project check. Use for "is X used", "which files break if", renames, types and checking the project for errors.
+description: Answers where a Svelte project's component, prop, function or type is defined, used or called, and what a change would break, through the Svelte language server and the project check. Use in a Svelte project for "is X used", "which files break if", renames, types and checking the project for errors.
 license: MIT
 ---
 
@@ -21,15 +21,15 @@ The contract for questions about the project's own code. The plugin starts the S
 
 ## Governance rules
 
+All of these rules hold for every later turn of the task, not only the turn that loaded this skill, whichever Svelte skill loaded first. Depart from one only for a reason you state to the user.
+
 ### Ground rules for every Svelte task
 
-They hold whichever Svelte skill loaded first, and for every later turn of the task.
-
-1. **Version first.** In a project, read `package.json` (installed `svelte` and `@sveltejs/kit`) before writing. On SvelteKit 2 or Svelte 4, propose the migration before writing; write for the older version only when the user declines or the request says to proceed without questions, and say so.
-2. **Docs before code.** Fetch the official section with `mcp__plugin_svelte-development_svelte__get-documentation` before using any Svelte or SvelteKit API, rune, option or config key; never write them from memory.
-3. **Symbols through the language server.** Where something of the project is defined, used or called goes to the LSP tool first when `svelteserver` is installed; Grep only for strings, route files, CSS classes and configuration, labelled as text matches.
-4. **Autofixer after code.** Run `mcp__plugin_svelte-development_svelte__svelte-autofixer` on every component or module you wrote or reviewed until it reports no issues.
-5. **Done means checked.** In a project, finish only when the project check is clean (`npm run check`; without that script, `npx --no-install svelte-check`, after `npx --no-install svelte-kit sync` in SvelteKit).
+1. **Version first.** In a project, find the installed `svelte` and `@sveltejs/kit` before writing (`npm ls`, else the `package.json` ranges and the lockfile). On an older major (SvelteKit 2 or earlier, Svelte 4 or earlier), propose the migration before writing; write for the older version only when the user declines or the request says to proceed without questions, and say so.
+2. **Docs before code.** Fetch the official section with `mcp__plugin_svelte-development_svelte__get-documentation` (the raw `llms.txt` when the server is unavailable) before using any Svelte or SvelteKit API, rune, option or config key; never write them from memory.
+3. **Symbols through the language server.** Where something of the project is defined, used or called goes to the LSP tool first when `svelteserver` is installed; Grep only for strings, route files, CSS classes, configuration, or a symbol that lives only in `.ts`/`.js` files no `.svelte` file imports, labelled as text matches.
+4. **Autofixer after code.** Run `mcp__plugin_svelte-development_svelte__svelte-autofixer` (the local `svelte-mcp` when the code must not leave the machine) on every component or module you wrote, until it reports no issues; for code you review, report what it finds.
+5. **Done means checked.** When you changed code in a project, finish only when the project check reports nothing new compared with the run before your change; a review or a question reports the check result instead. The check: `npm run check`; without that script, `npx --no-install svelte-kit sync`, then `npx --no-install svelte-check --tsconfig ./tsconfig.json` in SvelteKit, or `npx --no-install svelte-check` without SvelteKit, never chained with `&&`.
 
 ### Rules of this skill
 
@@ -163,7 +163,7 @@ Copy this checklist when a change touches a symbol other files use. Steps 4 to 6
                    after fixing errors, because one error can hide another
 ```
 
-**Done when** the project check ran three times (baseline, break, confirm) and the last run matches the baseline. There is no rename operation: a rename is steps 2 to 7, including the props passed to the component and destructured in `$props()`. [operations.md](references/operations.md), "Prove it", shows a worked example.
+**Done when**, for a rename, a signature change or a deletion, the project check ran at least at baseline, break and confirm, and the last run matches the baseline. There is no rename operation: a rename is steps 2 to 8, including the props passed to the component and destructured in `$props()`. [operations.md](references/operations.md), "Prove it", shows a worked example.
 
 ## Project check
 

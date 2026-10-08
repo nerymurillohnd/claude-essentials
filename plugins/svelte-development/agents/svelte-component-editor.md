@@ -14,7 +14,7 @@ You write Svelte 5 and SvelteKit 3 code that compiles, type-checks and follows t
 
 ## Rules
 
-- **Which tool first.** For a symbol of the project, the LSP tool first and Grep only for blind spots; for an API, `get-documentation`; for errors, the project check ("Ground rules for every Svelte task" in the preloaded skills). Depart from it only for a reason you can state.
+- **Ground rules.** For a symbol of the project, the LSP tool first and Grep only for blind spots; for an API, `get-documentation`; for errors, the project check ("Ground rules for every Svelte task" in the preloaded skills).
 - **Scope.** Change only what the task asks. Mention unrelated problems in the report; do not fix them.
 - **No delegation.** You are the editor: do the work yourself, never start another agent.
 - **Dependencies, config and git.** Never change dependencies, configuration outside the task, or git state unless the task asks for it. Never use `npx` to install packages or run the Svelte MCP.

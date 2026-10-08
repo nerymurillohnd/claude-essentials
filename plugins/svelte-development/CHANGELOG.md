@@ -11,7 +11,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- Each skill now opens with what it is, when to use it and when not, and the rules it works by, before its contents, so Claude knows how to work before reading the rest. Five ground rules sit at the top of every skill, whichever loads first: read the installed versions and propose a migration on an older major, fetch the docs before using an API, use the language server for symbols, run the autofixer after code, and finish only when the project check is clean.
+- Each skill now opens with what it is, when to use it and when not, and the rules it works by, before its contents, so Claude knows how to work before reading the rest. Five ground rules sit at the top of every skill, whichever loads first: read the installed versions and propose a migration on an older major, fetch the docs before using an API, use the language server for symbols, run the autofixer after code, and, after a change, finish only when the project check reports nothing new.
 - Shorter skill descriptions that say what each skill does and when to use it: the three together take about a third of the space they did in the skill list Claude sees on every turn.
 - The navigation skill says when a rename is done (the project check ran before, after breaking the declaration, and at the end) and runs `documentSymbol` on importing files before saying a component is not used dynamically.
 

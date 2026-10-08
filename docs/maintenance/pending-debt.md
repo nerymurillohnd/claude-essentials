@@ -32,11 +32,12 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Category:** quality (plugin behavior)
 - **Evidence:**
   - **Confirmed facts:** In eval run `37395261454` the three trigger cases (`trigger-best-practices`, `trigger-docs-autofixer`, `trigger-lsp`) scored 0 in both arms, so the skills never triggered without an explicit request.
-  - **Inferences:** The `description` and `when_to_use` fields do not match the phrasing users use.
+  - **Confirmed facts (2026-10-08):** In eval run `37719700088` (0.3.0, PR #18) the treatment arm scored `trigger-best-practices` 1.0, `trigger-docs-autofixer` 0.67 and `trigger-lsp` 1.0 (deltas +0.25, +0.33, +1.0), but the `skill-fired` indicator of `trigger-docs-autofixer` stayed 0, and task cases that do not name Svelte (`version-gate-kit2`, `tool-choice-*`, `routing-lsp-first`) kept a delta of 0. The run artifact holds no traces, so whether a skill loaded is not visible.
+  - **Inferences:** The `description` and `when_to_use` fields did not match the phrasing users use; 0.3.1 rewrote the descriptions (what and when only) and removed `when_to_use`.
   - **Open questions:** Whether the fix belongs in the descriptions or in the hooks.
 - **Impact / risk:** The plugin's main value depends on the user naming the skill.
 - **Owner or responsible area:** `plugins/svelte-development/skills/*/SKILL.md`.
-- **Next action:** Revise the descriptions, release a patch, and re-measure with the `run-evals` label on the PR.
+- **Next action:** Re-measure 0.3.1 with the `run-evals` label, ideally with traces kept in the artifact, and decide on the task cases that still show no delta.
 - **Review condition:** Closes when a CI eval run shows the trigger cases above 0 in the treatment arm.
 - **Related records:** run `37395261454` (closed draft PR #16); handoff open items.
 

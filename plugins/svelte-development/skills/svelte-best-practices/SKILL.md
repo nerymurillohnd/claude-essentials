@@ -24,15 +24,15 @@ The contract for writing Svelte by the current rules: Svelte 5 in runes mode and
 
 ## Governance rules
 
+All of these rules hold for every later turn of the task, not only the turn that loaded this skill, whichever Svelte skill loaded first. Depart from one only for a reason you state to the user.
+
 ### Ground rules for every Svelte task
 
-They hold whichever Svelte skill loaded first, and for every later turn of the task.
-
-1. **Version first.** In a project, read `package.json` (installed `svelte` and `@sveltejs/kit`) before writing. On SvelteKit 2 or Svelte 4, propose the migration before writing; write for the older version only when the user declines or the request says to proceed without questions, and say so.
-2. **Docs before code.** Fetch the official section with `mcp__plugin_svelte-development_svelte__get-documentation` before using any Svelte or SvelteKit API, rune, option or config key; never write them from memory.
-3. **Symbols through the language server.** Where something of the project is defined, used or called goes to the LSP tool first when `svelteserver` is installed; Grep only for strings, route files, CSS classes and configuration, labelled as text matches.
-4. **Autofixer after code.** Run `mcp__plugin_svelte-development_svelte__svelte-autofixer` on every component or module you wrote or reviewed until it reports no issues.
-5. **Done means checked.** In a project, finish only when the project check is clean (`npm run check`; without that script, `npx --no-install svelte-check`, after `npx --no-install svelte-kit sync` in SvelteKit).
+1. **Version first.** In a project, find the installed `svelte` and `@sveltejs/kit` before writing (`npm ls`, else the `package.json` ranges and the lockfile). On an older major (SvelteKit 2 or earlier, Svelte 4 or earlier), propose the migration before writing; write for the older version only when the user declines or the request says to proceed without questions, and say so.
+2. **Docs before code.** Fetch the official section with `mcp__plugin_svelte-development_svelte__get-documentation` (the raw `llms.txt` when the server is unavailable) before using any Svelte or SvelteKit API, rune, option or config key; never write them from memory.
+3. **Symbols through the language server.** Where something of the project is defined, used or called goes to the LSP tool first when `svelteserver` is installed; Grep only for strings, route files, CSS classes, configuration, or a symbol that lives only in `.ts`/`.js` files no `.svelte` file imports, labelled as text matches.
+4. **Autofixer after code.** Run `mcp__plugin_svelte-development_svelte__svelte-autofixer` (the local `svelte-mcp` when the code must not leave the machine) on every component or module you wrote, until it reports no issues; for code you review, report what it finds.
+5. **Done means checked.** When you changed code in a project, finish only when the project check reports nothing new compared with the run before your change; a review or a question reports the check result instead. The check: `npm run check`; without that script, `npx --no-install svelte-kit sync`, then `npx --no-install svelte-check --tsconfig ./tsconfig.json` in SvelteKit, or `npx --no-install svelte-check` without SvelteKit, never chained with `&&`.
 
 ### Rules of this skill
 
@@ -53,7 +53,7 @@ They hold whichever Svelte skill loaded first, and for every later turn of the t
 
 ## Who does the work
 
-Decide this before the first tool call. On an older major, settle the migration first (rule 3) and say in the agent's prompt whether the user migrated, declined, or asked to proceed without questions.
+Decide this before the first tool call. On an older major, settle the migration first (this skill's rule 3, Latest by default) and say in the agent's prompt whether the user migrated, declined, or asked to proceed without questions.
 
 | Situation | Who | How |
 |---|---|---|
@@ -105,7 +105,7 @@ For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and 
 **Context and async** ([context-lifecycle-and-reactivity-classes.md](references/svelte/context-lifecycle-and-reactivity-classes.md), [async-and-boundaries.md](references/svelte/async-and-boundaries.md))
 
 - Prefer context to state in a shared module: module state leaks between users during server rendering. Use `createContext`, which is typed, rather than `setContext`/`getContext` (the context reference gives its minimum minor; below it, keep `setContext`/`getContext`).
-- `await` in components, `hydratable` and `fork` need `compilerOptions.experimental.async`; they change between minor releases, so fetch their sections first (rule 2).
+- `await` in components, `hydratable` and `fork` need `compilerOptions.experimental.async`; they change between minor releases, so fetch their sections first (this skill's rule 2).
 
 **Avoid legacy features** ([legacy-and-migration.md](references/svelte/legacy-and-migration.md)): runes instead of implicit `let` reactivity and `$:`; `$props` instead of `export let`, `$$props`, `$$restProps`; `onclick` instead of `on:click`; snippets instead of `<slot>`, `$$slots`, `<svelte:fragment>`; `<DynamicComponent>` instead of `<svelte:component this={…}>`; `import Self from './Self.svelte'` instead of `<svelte:self>`; `$state` classes instead of stores; `{@attach}` instead of `use:`; `class` arrays instead of `class:`; `Spring`/`Tween` instead of `spring`/`tweened`; no `beforeUpdate`/`afterUpdate`, no `svelte/legacy` in new code.
 
@@ -168,7 +168,7 @@ Run these steps in order for any Svelte code you write, convert or review.
    npm ls svelte @sveltejs/kit --depth=0
    ```
 
-   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. When it prints nothing (no `node_modules`, a monorepo), read the ranges in `package.json` and the lockfile; when the version is still unknown, write for Svelte 5 and SvelteKit 3 and say so. Rule 3 decides: on an old major, propose the migration before step 2; and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
+   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. When it prints nothing (no `node_modules`, a monorepo), read the ranges in `package.json` and the lockfile; when the version is still unknown, write for Svelte 5 and SvelteKit 3 and say so. This skill's rule 3 decides: on an old major, propose the migration before step 2; and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
 2. **References.** Read every reference from [Where things are](#where-things-are) that the task touches; the practices above apply to every task.
 3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
 
@@ -189,6 +189,6 @@ Run these steps in order for any Svelte code you write, convert or review.
    npx --no-install svelte-check                    # Svelte without SvelteKit
    ```
 
-   In SvelteKit, run the sync first: without it the generated types are missing and the check reports false errors. If either reports a problem, fix it and repeat steps 5 and 6; finish only when both are clean.
+   In SvelteKit, run the sync first: without it the generated types are missing and the check reports false errors. If either reports a problem, fix it and repeat steps 5 and 6; finish only when the diagnostics are clean and the project check reports nothing new (ground rule 5).
 
 Derived from the `svelte-core-bestpractices` skill of sveltejs/ai-tools (MIT), base `6b5d0da`, and extended; see the plugin NOTICE. Not affiliated with or endorsed by the Svelte project.
