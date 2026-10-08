@@ -38,9 +38,9 @@ The default route, because each tool answers a different kind of question. Depar
 
 | The question is about | First tool | Why |
 |---|---|---|
-| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for the blind spots the `svelte-lsp-navigation` skill lists |
+| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for what the server cannot see: route files, paths in strings, CSS classes, configuration. Without `svelteserver` on the PATH there is no LSP tool: use Grep and say they are text matches |
 | How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows Svelte 4 and SvelteKit 2 |
-| Whether the project has errors | The project check (`npm run check`) | Diagnostics arrive only for files the language server has open |
+| Whether the project has errors | The project check: `npm run check`; without a `check` script, `npx --no-install svelte-check` (after `npx --no-install svelte-kit sync` in SvelteKit) | Diagnostics arrive only for files the language server has open |
 
 ## Rules for working
 
@@ -152,7 +152,7 @@ Every change follows a rule above: props from `$props()` (`$bindable` because th
 
 ## Where things are
 
-Read the one reference that matches the task; each opens with its source precedence and ends with the exact calls that fetch its official sections.
+Read every reference the task touches, each once: a route with a form action needs `routing.md`, `loading-data.md` and `forms-and-remote-functions.md`. Each opens with its source precedence and ends with the exact calls that fetch its official sections.
 
 | Reference | Read when |
 | --- | --- |
@@ -197,7 +197,7 @@ Run these steps in order for any Svelte code you write, convert or review.
    ```
 
    pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. When it prints nothing (no `node_modules`, a monorepo), read the ranges in `package.json` and the lockfile; when the version is still unknown, write for Svelte 5 and SvelteKit 3 and say so. Rule 7 decides what the installed major allows, and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
-2. **Reference.** Read the reference from [Where things are](#where-things-are) that matches the task; the code rules above apply to every task.
+2. **References.** Read every reference from [Where things are](#where-things-are) that the task touches; the code rules above apply to every task.
 3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
 
    ```text
@@ -205,9 +205,17 @@ Run these steps in order for any Svelte code you write, convert or review.
      section: ["svelte/$props", "svelte/snippet", "svelte/v5-migration-guide"]
    ```
 
-   If the tool is deferred, load it with ToolSearch (`select:mcp__plugin_svelte-development_svelte__get-documentation`); if the server is unavailable, follow the fallbacks in the `svelte-docs-and-autofixer` skill.
+   If the tool is deferred, load it with ToolSearch (`select:mcp__plugin_svelte-development_svelte__get-documentation`); if the server is unavailable, download the raw section with `curl -sS 'https://svelte.dev/docs/<area>/<slug>/llms.txt'` (the docs map lists every URL) and say the docs were not read through the server.
 4. **Write** the code by the rules and the sections. For a review, skip this step and take the code under review to step 5.
 5. **Autofix** the full code with `mcp__plugin_svelte-development_svelte__svelte-autofixer` (`code`, `desired_svelte_version` 5, or 4 for Svelte 4 code, `filename`, and `async: true` when the project enables experimental async) until it reports no issues, as the `svelte-docs-and-autofixer` skill says.
-6. **Check**, in a project: the language server diagnostics and the project check (`npm run check`), as the `svelte-lsp-navigation` skill says. If either reports a problem, fix it and repeat steps 5 and 6; finish only when both are clean.
+6. **Check**, in a project: the language server diagnostics, when `svelteserver` is installed, and the project check, from the project root:
+
+   ```sh
+   npm run check                                    # when package.json has a check script
+   npx --no-install svelte-kit sync && npx --no-install svelte-check   # SvelteKit, no check script
+   npx --no-install svelte-check                    # Svelte without SvelteKit
+   ```
+
+   In SvelteKit, run the sync first: without it the generated types are missing and the check reports false errors. If either reports a problem, fix it and repeat steps 5 and 6; finish only when both are clean.
 
 Derived from the `svelte-core-bestpractices` skill of sveltejs/ai-tools (MIT), base `6b5d0da`, and extended; see the plugin NOTICE. Not affiliated with or endorsed by the Svelte project.

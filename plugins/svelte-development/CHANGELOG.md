@@ -17,8 +17,14 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Svelte gotchas now cover `derived_invalid_export`, `derived_references_self`, `snippet_without_render_tag`, `bind_not_bindable`, `props_invalid_value`, `each_key_duplicate` and `effect_orphan`.
 - The SvelteKit references say they are for SvelteKit 3 projects, the `$env/*` advice no longer applies to a SvelteKit 2 project before 2.63, and the adapter example no longer reuses the removed `ORIGIN` variable.
 
+- Without `svelteserver` on the PATH, the navigation skill checks for the server first and goes straight to labelled text search instead of retrying a tool that cannot answer; a symbol that lives only in `.ts`/`.js` files may start with text search, said to you.
+- The final check in every skill falls back to `svelte-check` (after `svelte-kit sync` in SvelteKit) when the project has no `check` script.
+- The docs-and-autofixer skill no longer promises a note after each edit that no hook sends.
+
 ### Changed
 
+- A task that spans several topics reads every reference it touches, not only one.
+- The docs-and-autofixer skill loads for checking code, exact APIs and playground links, not for every reply that contains Svelte code.
 - The skills are leaner contracts. The SvelteKit 2 to 3 table and the experimental-flag table in `svelte-best-practices` now live only in their references, and the language-server table for dynamic code moved into the navigation reference. References no longer point back to a skill.
 - The README says plainly when Claude loads a skill, adds a before-and-after comparison and what the plugin costs you, and puts "only Claude Code is required" before the tool list.
 
