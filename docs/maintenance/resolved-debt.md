@@ -93,7 +93,8 @@ that links back to it — don't rewrite history.
 - **Negative verification:** the baseline arm still fails every plugin-specific grader (`skill-fired` absent, `auditor-dispatched` 0/3, `checked-before-and-after` 0/3), and the two negative cases (React, README) stay at 1.00 in both arms, so no skill loads where it should not.
 - **Owner or responsible area:** `plugins/svelte-development/`.
 - **Residual risk / follow-up:** the pre-edit hint is once per session, so a subagent's Svelte edit can use it up before the main thread edits inline; the `SessionStart` note covers the main thread.
-- **Related records:** DEBT-019, DEBT-020; field test in DEBT-004's last pending record (2026-10-08).
+- **Field test before the fix (2026-10-08, 0.4.0 in a real Astro 7 + Svelte 5.57 project, Opus 5.5):** a read-only architecture audit of the product purchase island loaded `svelte-lsp-navigation` and `svelte-docs-and-autofixer` unprompted, made six successful LSP calls, ran the project's own check and proposed no SvelteKit API, but did the audit inline instead of delegating to `svelte-code-auditor`, and ran the autofixer on 2 of the 11 components it reviewed. The follow-up fix (a history-state bug the audit reproduced) was delegated to `svelte-component-editor`, written test-first, autofixed on the whole file, and the `Stop` hook ran `svelte-check` once after the edits and passed silently (fingerprint `checked-*` at 04:31; hint files for docs, check and CLI at 04:14).
+- **Related records:** DEBT-019, DEBT-020.
 - **Superseded by:** none.
 
 ### DEBT-019 — 2026-10-08 — The language server is probed with an LSP call
