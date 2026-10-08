@@ -39,7 +39,7 @@ The default route, because each tool answers a different kind of question. Depar
 | The question is about | First tool | Why |
 |---|---|---|
 | A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for the blind spots listed under [Blind spots](#blind-spots) |
-| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows Svelte 4 and SvelteKit 2 |
+| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows older Svelte and SvelteKit |
 | Whether the project has errors | The project check: `npm run check`; without a `check` script, `npx --no-install svelte-check` (after `npx --no-install svelte-kit sync` in SvelteKit) | Diagnostics arrive only for files the language server has open |
 
 ## Rules

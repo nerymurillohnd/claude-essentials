@@ -1,6 +1,6 @@
 ---
 name: svelte-best-practices
-description: The Svelte 5 and SvelteKit 3 rules that training data gets wrong - runes, snippets, event attributes, declaration tags, SvelteKit 3 imports, config, environment variables, routing, loading, forms, remote functions, hooks, adapters and security - plus the Svelte CLI (sv), Astro with Svelte islands and Tailwind CSS 4, with one reference per topic. Use before writing, converting, migrating, reviewing or explaining any Svelte or SvelteKit code, including a component pasted in the chat.
+description: How to write fast, robust, modern Svelte 5 and SvelteKit 3 code - runes and reactivity, effects and their alternatives, events, snippets, styling, context, SvelteKit 3 imports, config, environment variables, routing, loading, forms, remote functions, hooks, adapters and security - plus the Svelte CLI (sv), Astro with Svelte islands and Tailwind CSS 4, with one reference per topic and a guided migration for older projects. Use before writing, reviewing, converting or explaining any Svelte or SvelteKit code, including a component pasted in the chat.
 when_to_use: Triggers include a .svelte file or snippet, "convert to Svelte 5", "migrate from Svelte 4" or "upgrade to SvelteKit 3", code with export let, $:, on:click, slot elements or createEventDispatcher, a SvelteKit route, load function, hook, form action or vite.config, sv create, sv add or sv migrate, and Svelte with Astro or Tailwind CSS.
 license: MIT
 metadata:
@@ -10,7 +10,7 @@ metadata:
 
 # Svelte 5 and SvelteKit 3 best practices
 
-This skill is the contract for writing Svelte by the current rules. It is written for **Svelte 5** and **SvelteKit 3**; the plugin README declares every major it targets under "Versions this plugin is written for", and no reference here repeats them. Most Svelte and SvelteKit code in training data is Svelte 4 or SvelteKit 2; the rules below are where it goes wrong, and each topic has a reference with the foundations, short examples and the exact official sections to fetch. The Svelte 5 rules apply to Svelte 5 projects and the SvelteKit 3 rules to SvelteKit 3 projects; rule 7 says what to do in older ones.
+This skill is the contract for writing Svelte by the current rules: **Svelte 5** in runes mode and **SvelteKit 3**. Most Svelte code in training data is older, so the practices below are where a model goes wrong; each topic has a reference with the foundations, short examples and the exact official sections to fetch.
 
 ## Contents
 
@@ -18,8 +18,8 @@ This skill is the contract for writing Svelte by the current rules. It is writte
 - [Which tool first](#which-tool-first)
 - [Rules for working](#rules-for-working)
 - [Who does the work](#who-does-the-work)
-- [Code rules that training data gets wrong](#code-rules-that-training-data-gets-wrong)
-- [SvelteKit 2 to 3 and experimental features](#sveltekit-2-to-3-and-experimental-features)
+- [Svelte 5 practices](#svelte-5-practices)
+- [SvelteKit 3 practices](#sveltekit-3-practices)
 - [Where things are](#where-things-are)
 - [Procedure](#procedure)
 
@@ -39,25 +39,23 @@ The default route, because each tool answers a different kind of question. Depar
 | The question is about | First tool | Why |
 |---|---|---|
 | A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for what the server cannot see: route files, paths in strings, CSS classes, configuration. Without `svelteserver` on the PATH there is no LSP tool: use Grep and say they are text matches |
-| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows Svelte 4 and SvelteKit 2 |
+| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows older Svelte and SvelteKit |
 | Whether the project has errors | The project check: `npm run check`; without a `check` script, `npx --no-install svelte-check` (after `npx --no-install svelte-kit sync` in SvelteKit) | Diagnostics arrive only for files the language server has open |
 
 ## Rules for working
 
 These rules hold for every later turn of the task, not only the turn that loaded this skill.
 
-1. **Never write Svelte from memory alone.** Read the reference for the topic, fetch the live sections the task touches before writing (the reference lists them), and run the autofixer after; the `svelte-docs-and-autofixer` skill has the tools. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text.
+1. **Never write Svelte from memory alone.** Read the reference for the topic, fetch the live sections the task touches before writing (the reference lists them), and run the autofixer after. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text.
 2. **Never skip the fetch when** an exact signature, option name or config key matters; the code uses an experimental feature, an adapter, environment variables, hooks or the Vite config; or what you remember disagrees with a reference, or a reference with the docs.
-3. **Check the installed version first.** It decides which rules apply (command in the [procedure](#procedure)). These references follow the latest release of each package, so they can lag what is installed: read the changelog window in [changelogs.md](references/changelogs.md) whenever a reference disagrees with what the installed version does, and in the cases that file lists.
-4. **Source precedence.** Package changelogs, release notes and source code decide what exists at the installed version; the official docs explain usage, and in any area SvelteKit 3 changed some pages still show SvelteKit 2 code ([known-doc-errata.md](references/known-doc-errata.md)); these references are the starting point and lose to both. When sources conflict, say so in the answer; never pick one silently.
-5. **No WebFetch for docs or changelogs**: WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools or `curl`, as the `svelte-docs-and-autofixer` skill says.
-6. **Runes mode in Svelte 5.** In a Svelte 5 project, new and changed code uses runes, snippets and event attributes; never mix in legacy syntax. A Svelte 4 project follows rule 7.
-7. **Migrate first, then write for the latest.** This plugin is for SvelteKit 3 and Svelte 5. In a project on SvelteKit 2 or Svelte 4, before writing any code, tell the user and propose the migration: SvelteKit 2 to 3 with [migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md), Svelte 4 to 5 with [legacy-and-migration.md](references/svelte/legacy-and-migration.md); the two majors are independent, so migrate only the one that is old. After the migration, work by the current rules. Only if the user declines, write code that works on the installed version (in SvelteKit 2, no `#lib/x.js` imports, `$app/env`, `refreshAll`, `defineParams` or options in `sveltekit({ … })`; in Svelte 4, no runes), never mix versions, and say in the answer that it is old-version code. SvelteKit 1 or Svelte 3 first need the legacy `sv migrate sveltekit-2` or `svelte-4` steps ([sv-cli.md](references/tooling/sv-cli.md)).
-8. **Project instructions decide conventions, not APIs.** The project's `CLAUDE.md`, saved memory and team conventions win over this skill on style and structure (naming, file layout, formatting). They never make an API valid that the installed version removed; when one asks for such an API, say so.
+3. **Latest by default.** Write Svelte 5 runes and SvelteKit 3, and check the installed versions first ([procedure](#procedure), step 1). On an older major, propose the migration before writing ([migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md), [legacy-and-migration.md](references/svelte/legacy-and-migration.md)); the two majors are independent. Write for the installed version only when the user declines, or when the request says to proceed without questions; then never mix versions, and say that the code is for the older version. No project, or no version found: write the latest and say so.
+4. **Source precedence.** Package changelogs, release notes and source code decide what exists at the installed version; the official docs explain usage, and some pages still show older code ([known-doc-errata.md](references/known-doc-errata.md)); these references are the starting point and lose to both. When sources conflict, say so; never pick one silently. When a reference disagrees with what the installed version does, read the changelog window in [changelogs.md](references/changelogs.md).
+5. **No WebFetch for docs or changelogs**: WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools or `curl`.
+6. **Project instructions decide conventions, not APIs.** The project's `CLAUDE.md`, saved memory and team conventions win on naming, file layout and formatting. They never make an API valid that the installed version removed; when one asks for such an API, say so.
 
 ## Who does the work
 
-Decide this before the first tool call. In a SvelteKit 2 or Svelte 4 project, settle the migration with the user first (rule 7), and say in the agent's prompt whether they migrated or declined.
+Decide this before the first tool call. On an older major, settle the migration first (rule 3) and say in the agent's prompt whether the user migrated, declined, or asked to proceed without questions.
 
 | Situation | Who | How |
 |---|---|---|
@@ -71,88 +69,64 @@ The documentation lookups and the autofixer loop then run in the agent's context
 ```text
 Agent
   subagent_type: "svelte-development:svelte-component-editor"
-  description: "Migrate TodoList to Svelte 5"
-  prompt: "Migrate src/lib/TodoList.svelte from Svelte 4 to runes mode. Keep its props and events working for its parents …"
+  description: "Add a filter to TodoList"
+  prompt: "In src/lib/TodoList.svelte, add a text filter over the items. Keep its props and callbacks working for its parents …"
 ```
 
 For an audit, use `subagent_type: "svelte-development:svelte-code-auditor"` and name the scope. Source: https://svelte.dev/docs/ai/subagent and https://svelte.dev/docs/ai/instructions.
 
-## Code rules that training data gets wrong
+## Svelte 5 practices
 
-These apply to Svelte 5 and SvelteKit 3 projects; in older ones, rule 7 decides.
+**State and derived values** ([runes.md](references/svelte/runes.md))
 
-**Runes and reactivity** ([runes.md](references/svelte/runes.md))
+- Use `$state` only for values that drive an effect, a derived or the template; everything else is a plain variable. Objects and arrays become deep proxies; for large values that are only reassigned (API responses), use `$state.raw`.
+- Compute with `$derived(expression)`, or `$derived.by(() => …)` for several statements, never with an `$effect` that writes state. Deriveds can be reassigned for optimistic UI and return objects as they are, without a proxy.
+- Treat props as values that change: anything computed from a prop is a `$derived`, not a plain `let`. Props come from a typed `$props()` destructuring; `$bindable()` marks one the parent may bind. Pass a getter (`() => count`), not the value, to a function or context that must stay live.
+- Share reactive logic with classes whose fields are `$state`, in `.svelte.ts` modules, instead of stores.
 
-- Reactive state is `$state`; a plain `let` that is reassigned does not update the template. Use `$state.raw` for large values that are only reassigned.
-- Compute with `$derived`/`$derived.by`, never with `$effect` writing to state. `$effect` is an escape hatch for side effects (DOM, timers, external libraries) and runs only in the browser.
-- Props come from `$props()` with a typed destructuring (`let { a, b }: Props = $props();`); `$bindable()` marks a prop as bindable. Passing `count` instead of `() => count` to a function or context captures the current value only.
+**Effects are an escape hatch** ([runes.md](references/svelte/runes.md), [context-lifecycle-and-reactivity-classes.md](references/svelte/context-lifecycle-and-reactivity-classes.md))
 
-**Template syntax** ([template-syntax.md](references/svelte/template-syntax.md))
+- Avoid updating state inside `$effect`. Instead: sync an external library (D3, a map) with `{@attach}`; react to user input in the event handler or with a function binding (`bind:value={get, set}`); log with `$inspect`; observe something outside Svelte with `createSubscriber`.
+- Effects run only in the browser: never wrap their body in `if (browser)`.
+- To see why something re-runs, put `$inspect.trace(label)` on the first line of the `$effect` or `$derived.by`.
 
-- Events are attributes: `onclick={…}`, not `on:click`. Components take callback props, not `createEventDispatcher`.
-- Content is passed as snippets: `{#snippet name()}` and `{@render children?.()}`, not `<slot>`.
-- Declaration tags replace `{@const}`: `{const total = $derived(a + b)}` or `{let open = $state(false)}`, anywhere in the template.
-- Prefer `{@attach}` over `use:` actions; `fromAction` wraps an existing action.
-- Declaration tags and `{@attach}` need a minimum Svelte 5 minor ([template-syntax.md](references/svelte/template-syntax.md) gives it). Below it, keep `{@const}` and `use:`.
-- `class` accepts objects and arrays; avoid the `class:` directive in new code.
-- Key every `{#each}` with a stable string or number; never key by index or a freshly built array.
+**Template** ([template-syntax.md](references/svelte/template-syntax.md))
 
-**Legacy syntax to remove** ([legacy-and-migration.md](references/svelte/legacy-and-migration.md)): `export let`, `$:`, `$$props`/`$$restProps`, `on:`, `<slot>`/`$$slots`, `<svelte:component>`, `<svelte:self>`, `beforeUpdate`/`afterUpdate`, `spring`/`tweened`, `svelte/legacy`.
+- Events are attributes: `onclick={…}`, `{onclick}` and spread props work. For `window` and `document`, use `<svelte:window onkeydown={…} />` and `<svelte:document>`, not `onMount` or `$effect`. Components take callback props, not `createEventDispatcher`.
+- Pass content as snippets: `{#snippet name(arg)}` and `{@render name(arg)}`; children arrive as the `children` snippet.
+- Key every `{#each}` with a stable unique id, never the index or a freshly built object; do not destructure an item you mutate (`bind:value={item.count}`).
+- `{#key}` destroys and recreates everything inside it: use it for transitions, not to re-run a child's logic (use `$derived` there).
+- Declaration tags replace `{@const}`: `{const total = $derived(a + b)}` or `{let open = $state(false)}`; prefer `{@attach}` over `use:` actions (`fromAction` wraps an existing one). Both need a minimum Svelte 5 minor ([template-syntax.md](references/svelte/template-syntax.md) gives it); below it, keep `{@const}` and `use:`.
+- `class` takes objects and arrays (`class={[open && 'active']}`) instead of the `class:` directive.
 
-**Server and client boundaries** ([security.md](references/kit/security.md), [hooks-errors-and-env.md](references/kit/hooks-errors-and-env.md))
+**Styling** ([styling-motion-and-elements.md](references/svelte/styling-motion-and-elements.md))
 
-- Secrets only in server code: `$app/env/private` (`$env/static/private` and friends in SvelteKit 2), `+page.server.ts`, `+server.ts`, hooks, and any module whose path has a `server` segment or `server/` directory (server-only everywhere except `src/routes` and `static` since 3.0).
-- Universal `load` runs on both sides: nothing private there. Never keep per-user data in module-level variables: they leak between users during server rendering; use `event.locals` or context.
-- `{@html}` renders unescaped markup: sanitize anything that came from a user.
+- Pass a JavaScript value to CSS with a custom property: `<div style:--columns={columns}>`, then `var(--columns)` in `<style>`.
+- Let a parent style a child with CSS custom properties (`<Child --color="red" />`). Use `:global` only when that is impossible, such as a library component, and scope it under an element of your own.
 
-**Example: a Svelte 4 component in Svelte 5.** Input:
+**Context and async** ([context-lifecycle-and-reactivity-classes.md](references/svelte/context-lifecycle-and-reactivity-classes.md), [async-and-boundaries.md](references/svelte/async-and-boundaries.md))
 
-```svelte
-<script>
-  import { createEventDispatcher } from 'svelte';
-  export let open = false;
-  export let title;
-  const dispatch = createEventDispatcher();
-  $: label = open ? 'Hide' : 'Show';
-  function toggle() {
-    open = !open;
-    dispatch('toggle', open);
-  }
-</script>
+- Prefer context to state in a shared module: module state leaks between users during server rendering. Use `createContext`, which is typed, rather than `setContext`/`getContext`.
+- `await` in components, `hydratable` and `fork` need `compilerOptions.experimental.async`; they change between minor releases, so fetch their sections first (rule 2).
 
-<button on:click={toggle} class:active={open}>{label} {title}</button>
-{#if open}<slot />{/if}
-```
+**Avoid legacy features** ([legacy-and-migration.md](references/svelte/legacy-and-migration.md)): runes instead of implicit `let` reactivity and `$:`; `$props` instead of `export let`, `$$props`, `$$restProps`; `onclick` instead of `on:click`; snippets instead of `<slot>`, `$$slots`, `<svelte:fragment>`; `<DynamicComponent>` instead of `<svelte:component this={…}>`; `import Self from './Self.svelte'` instead of `<svelte:self>`; `$state` classes instead of stores; `{@attach}` instead of `use:`; `class` arrays instead of `class:`; `Spring`/`Tween` instead of `spring`/`tweened`; no `beforeUpdate`/`afterUpdate`, no `svelte/legacy` in new code.
 
-Output:
+## SvelteKit 3 practices
 
-```svelte
-<script lang="ts">
-  import type { Snippet } from 'svelte';
-  let { open = $bindable(false), title, ontoggle, children }:
-    { open?: boolean; title: string; ontoggle?: (open: boolean) => void; children?: Snippet } = $props();
-  const label = $derived(open ? 'Hide' : 'Show');
-  function toggle() {
-    open = !open;
-    ontoggle?.(open);
-  }
-</script>
+Each line links the reference to read before relying on it.
 
-<button onclick={toggle} class={[open && 'active']}>{label} {title}</button>
-{#if open}{@render children?.()}{/if}
-```
-
-Every change follows a rule above: props from `$props()` (`$bindable` because the parent may bind `open`), a computed value with `$derived`, a callback prop instead of the dispatcher, an event attribute, a `class` array instead of `class:`, and the default slot as the `children` snippet. Run the autofixer on the result before handing it back.
-
-## SvelteKit 2 to 3 and experimental features
-
-- **Upgrading a SvelteKit 2 project:** [migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md) has the old-to-new table, the `sv migrate sveltekit-3` codemod and the manual checklist. The changes that break most often: options move into `sveltekit({ … })` in `vite.config`, `$lib` becomes `#lib/…js`, `$app/stores` becomes `$app/state`, `$env/*` becomes `$app/env/*`, and `invalidateAll()` becomes `refreshAll()`.
-- **Requirements** (Node, Vite, TypeScript, plugin and adapter majors): [project-and-config.md](references/kit/project-and-config.md) and [adapters-and-deploy.md](references/kit/adapters-and-deploy.md).
-- **Experimental features** change between minor releases: fetch the live section before writing any of them (rule 2). `await` in components, async SSR, `fork` and `hydratable` need `compilerOptions.experimental.async` ([async-and-boundaries.md](references/svelte/async-and-boundaries.md)); remote functions need `experimental.remoteFunctions` plus that flag ([forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md)). A SvelteKit 2 project keeps its configuration in `svelte.config.js`, so look the keys up there and in the live section.
+- **Config** lives in `sveltekit({ … })` in `vite.config.ts`; there is no `svelte.config.js` ([project-and-config.md](references/kit/project-and-config.md)).
+- **Imports**: `#lib/x.js` subpath imports declared in `package.json` `imports`, with the extension; server-only code sits under a `server` segment or directory ([project-and-config.md](references/kit/project-and-config.md)).
+- **Page state** comes from `$app/state` (`page`, `navigating`, `updated`); reload data with `refreshAll()` or `invalidate` ([loading-data.md](references/kit/loading-data.md)).
+- **Environment variables** are declared with `defineEnvVars` in `src/env.ts` and read from `$app/env/private` or `$app/env/public` ([hooks-errors-and-env.md](references/kit/hooks-errors-and-env.md)).
+- **Params** are matched by one `src/params.ts` with `defineParams` from `@sveltejs/kit/params` ([routing.md](references/kit/routing.md)); paths come from `resolve('blog/x')` and `asset('x.png')` ([navigation-and-options.md](references/kit/navigation-and-options.md)).
+- **Forms**: form actions are stable; remote functions (`query`, `form`, `command`, `prerender`) need `experimental.remoteFunctions` plus the async flag ([forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md)).
+- **Secrets and boundaries**: secrets only in server code (`$app/env/private`, `+page.server.ts`, `+server.ts`, hooks, `server` modules). Universal `load` runs on both sides, so nothing private there; never keep per-user data in module-level variables, use `event.locals` or context; sanitize anything passed to `{@html}` ([security.md](references/kit/security.md)).
+- **Requirements** (Node, Vite, TypeScript, adapter majors): [project-and-config.md](references/kit/project-and-config.md), [adapters-and-deploy.md](references/kit/adapters-and-deploy.md).
 
 ## Where things are
 
-Read every reference the task touches, each once: a route with a form action needs `routing.md`, `loading-data.md` and `forms-and-remote-functions.md`. Each opens with its source precedence and ends with the exact calls that fetch its official sections.
+Read every reference the task touches, each once, for anything this page does not settle: a route with a form action needs `routing.md`, `loading-data.md` and `forms-and-remote-functions.md`. Each opens with its source precedence and ends with the exact calls that fetch its official sections.
 
 | Reference | Read when |
 | --- | --- |
@@ -196,7 +170,7 @@ Run these steps in order for any Svelte code you write, convert or review.
    npm ls svelte @sveltejs/kit --depth=0
    ```
 
-   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. When it prints nothing (no `node_modules`, a monorepo), read the ranges in `package.json` and the lockfile; when the version is still unknown, write for Svelte 5 and SvelteKit 3 and say so. Rule 7 decides: on an old major, propose the migration before step 2; and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
+   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. When it prints nothing (no `node_modules`, a monorepo), read the ranges in `package.json` and the lockfile; when the version is still unknown, write for Svelte 5 and SvelteKit 3 and say so. Rule 3 decides: on an old major, propose the migration before step 2; and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
 2. **References.** Read every reference from [Where things are](#where-things-are) that the task touches; the code rules above apply to every task.
 3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
 

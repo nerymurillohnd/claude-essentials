@@ -7,6 +7,7 @@
 - [Runes mode and legacy mode](#runes-mode-and-legacy-mode)
 - [Replacement table](#replacement-table)
 - [Component and event changes](#component-and-event-changes)
+- [Worked example](#worked-example)
 - [Migration tooling](#migration-tooling)
 - [Behavior changes to keep in mind](#behavior-changes-to-keep-in-mind)
 - [Svelte 6 forward compatibility](#svelte-6-forward-compatibility)
@@ -69,6 +70,47 @@ export default {
 - Temporary bridges from `svelte/legacy`: `createClassComponent`/`asClassComponent` for the Svelte 4 class API, the `compatibility.componentApi: 4` compiler option for code you do not control, and `preventDefault`, `stopPropagation`, `once`, `self`, `trusted`, `passive`, `nonpassive`, `handlers`, `createBubbler` for modifiers. Every export of `svelte/legacy` is deprecated.
 - A component using slots can receive snippets from a parent, but not the other way round: a component that uses `{@render}` cannot receive slotted content. Custom elements still use `<slot />`.
 - Classes are no longer auto-reactive: assigning `foo.value` on a plain class instance does not update the UI. Use `$state` fields.
+
+## Worked example
+
+A Svelte 4 component, input:
+
+```svelte
+<script>
+  import { createEventDispatcher } from 'svelte';
+  export let open = false;
+  export let title;
+  const dispatch = createEventDispatcher();
+  $: label = open ? 'Hide' : 'Show';
+  function toggle() {
+    open = !open;
+    dispatch('toggle', open);
+  }
+</script>
+
+<button on:click={toggle} class:active={open}>{label} {title}</button>
+{#if open}<slot />{/if}
+```
+
+Output:
+
+```svelte
+<script lang="ts">
+  import type { Snippet } from 'svelte';
+  let { open = $bindable(false), title, ontoggle, children }:
+    { open?: boolean; title: string; ontoggle?: (open: boolean) => void; children?: Snippet } = $props();
+  const label = $derived(open ? 'Hide' : 'Show');
+  function toggle() {
+    open = !open;
+    ontoggle?.(open);
+  }
+</script>
+
+<button onclick={toggle} class={[open && 'active']}>{label} {title}</button>
+{#if open}{@render children?.()}{/if}
+```
+
+Every change follows the replacement table: props from `$props()` (`$bindable` because the parent may bind `open`), a computed value with `$derived`, a callback prop instead of the dispatcher, an event attribute, a `class` array instead of `class:`, and the default slot as the `children` snippet. Run the autofixer on the result before handing it back.
 
 ## Migration tooling
 

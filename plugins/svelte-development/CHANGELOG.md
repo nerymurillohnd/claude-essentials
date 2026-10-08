@@ -7,7 +7,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.2.1] - 2026-10-08
+## [0.3.0] - 2026-10-08
 
 ### Fixed
 
@@ -23,7 +23,8 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
-- **Migrate first, then write for the latest.** In a SvelteKit 2 or Svelte 4 project, Claude now proposes the migration to SvelteKit 3 or Svelte 5 before writing any code, and works on the latest versions after it. It writes code for the old version only if you decline the migration, and says so. The component editor reports an old major back instead of editing, and the auditor opens its report with the migration recommendation. SvelteKit 1 and Svelte 3 projects are pointed to the older `sv migrate` steps.
+- **Svelte 5 and SvelteKit 3 first.** The best-practices skill now teaches current practice before anything else: it brings back the Svelte team's practices for effects and their alternatives (`{@attach}`, function bindings, `$inspect`, `createSubscriber`), `$inspect.trace`, `<svelte:window>`, `{#key}`, styling with CSS custom properties and `createContext`, and adds a short SvelteKit 3 section. Old versions take one rule instead of three, and the Svelte 4 to 5 example moved to the migration reference.
+- **Latest by default, migration proposed on older projects.** In a SvelteKit 2 or Svelte 4 project, Claude proposes the migration to SvelteKit 3 or Svelte 5 before writing, and works on the latest versions after it. It writes code for the older version only if you decline, or ask it to proceed without questions (an automated run), and says so. The component editor reports an older major back instead of editing unless its prompt settles that; the auditor opens its report with the migration recommendation. SvelteKit 1 and Svelte 3 projects are pointed to the older `sv migrate` steps.
 - A task that spans several topics reads every reference it touches, not only one.
 - The docs-and-autofixer skill loads for checking code, exact APIs and playground links, not for every reply that contains Svelte code.
 - The skills are leaner contracts. The SvelteKit 2 to 3 table and the experimental-flag table in `svelte-best-practices` now live only in their references, and the language-server table for dynamic code moved into the navigation reference. References no longer point back to a skill.

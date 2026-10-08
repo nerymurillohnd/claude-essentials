@@ -40,7 +40,7 @@ The default route, because each tool answers a different kind of question. Depar
 | The question is about | First tool | Why |
 |---|---|---|
 | A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for what the server cannot see: route files, paths in strings, CSS classes, configuration. Without `svelteserver` on the PATH there is no LSP tool: use Grep and say they are text matches |
-| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows Svelte 4 and SvelteKit 2 |
+| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows older Svelte and SvelteKit |
 | Whether the project has errors | The project check: `npm run check`; without a `check` script, `npx --no-install svelte-check` (after `npx --no-install svelte-kit sync` in SvelteKit) | Diagnostics arrive only for files the language server has open |
 
 ## Rules
@@ -52,7 +52,7 @@ These rules hold for every later turn of the task, not only the turn that loaded
 3. **Pass code, never a path.** The remote autofixer treats a file path as code and answers "no issues" instead of refusing it. Read the file and pass its full content as `code`; `filename` is the bare file name (`Counter.svelte`), never a path.
 4. **The autofixer is not proof.** It does not type-check, does not know SvelteKit routing rules and does not run the code. Type errors come from the language server and the project check.
 5. **No WebFetch for docs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools, or `curl` for the raw text.
-6. **Source precedence.** Package changelogs, release notes and source code decide what exists at the project's version; the official docs explain usage; the `svelte-best-practices` references are the starting point and lose to both. When two sources disagree, say so in the answer; never pick one silently. The live docs describe the newest Svelte and SvelteKit: in a project on an older major (SvelteKit 2, Svelte 4), check each API against the installed version before using it.
+6. **Source precedence.** Package changelogs, release notes and source code decide what exists at the project's version; the official docs explain usage; the `svelte-best-practices` references are the starting point and lose to both. When two sources disagree, say so in the answer; never pick one silently. The live docs describe the newest Svelte and SvelteKit: on an older major, check each API against the installed version before using it.
 7. **Playground links only on request.** Offer one only for code answered in the chat, and call `playground-link` only after the user says yes; never for code written to the project's files.
 8. **Network and privacy.** Every MCP call needs network access. `svelte-autofixer` sends the code you pass to the Svelte team's server (Svelte states it does not log, store or inspect it); when the user does not want code to leave the machine, use the local command line below.
 9. **No installs without consent.** Never install `@sveltejs/mcp` or run it through `npx` without the user's confirmation.

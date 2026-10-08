@@ -12,8 +12,9 @@ Derived files, all rewritten, corrected and extended for this plugin:
   skills/svelte-best-practices/SKILL.md
       from skills/svelte-core-bestpractices/SKILL.md (itself the Svelte
       "Best practices" docs page); renamed, rewritten as a contract (rules,
-      delegation, references map, procedure with explicit tool calls) and
-      extended with SvelteKit 3, the Svelte CLI, Astro and Tailwind CSS.
+      delegation, references map, procedure with explicit tool calls),
+      keeping its Svelte 5 practice sections, and extended with SvelteKit 3,
+      the Svelte CLI, Astro and Tailwind CSS.
   skills/svelte-best-practices/references/svelte/template-syntax.md
       from references/attach.md, bind.md, each.md, render.md, snippet.md
   skills/svelte-best-practices/references/svelte/async-and-boundaries.md
