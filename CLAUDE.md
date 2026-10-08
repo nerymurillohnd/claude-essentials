@@ -110,4 +110,4 @@ docs/                             guides and dated ADRs
 - Every plugin release keeps both its signed tag and its GitHub Release (maintainer decision, 2026-10-07).
 - `svelte-development` maps only `.svelte` to `svelteserver`: `.ts` mapped to it returned empty results (2026-10-05), so TypeScript code intelligence will be its own plugin. The remote MCP server choice is recorded in `docs/sourcing-log.md`.
 - Deferred by the maintainer for `svelte-development`: a background auditor, a `svelte-audit` skill with `context: fork`, and `disallowed-tools` or a WebFetch guard.
-- Awaiting my decision outside the ledger: refining the user-level Python rule, which lives outside this repository. Ledger items that need my decision: DEBT-010, DEBT-011, DEBT-017, DEBT-018 and DEBT-020.
+- Awaiting my decision outside the ledger: refining the user-level Python rule, which lives outside this repository. Ledger items that need my decision: DEBT-010, DEBT-011, DEBT-017 and DEBT-018.
