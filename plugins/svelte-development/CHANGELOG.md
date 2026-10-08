@@ -7,12 +7,6 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.4.1] - 2026-10-08
-
-### Changed
-
-- The eval suite no longer aborts a whole run when Claude calls the Svelte autofixer without `desired_svelte_version` or with a file path as code: two graders score those mistakes instead, as the real server would reject only that call.
-
 ## [0.4.0] - 2026-10-08
 
 ### Added
@@ -25,6 +19,7 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - Shorter skill descriptions that say what each skill does and when to use it: the three together take about a third of the space they did in the skill list Claude sees on every turn.
 - The eval suite shipped in `evals/` is rebuilt: 11 cases from a pasted component to the agents, with the Svelte MCP tools answered by mocks so a run gives the same result on any machine. Claude Code does not read it while you work.
 - The navigation skill says when a rename is done (the project check ran before, after breaking the declaration, and at the end) and runs `documentSymbol` on importing files before saying a component is not used dynamically.
+- The eval suite no longer aborts a whole run when Claude calls the Svelte autofixer without `desired_svelte_version` or with a file path as code: two graders score those mistakes instead, as the real server would reject only that call.
 
 ## [0.3.0] - 2026-10-08
 
