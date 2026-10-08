@@ -7,6 +7,21 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-08
+
+### Fixed
+
+- `flushSync()` inside an effect is no longer described as an error with `experimental.async`: Svelte lifted that restriction in 5.43.15, and the known-errata list now records the docs page that still shows it.
+- The component editor no longer reads "SvelteKit 2 or Svelte 4" as "no runes" in a SvelteKit 2 project on Svelte 5: the two majors are independent. Both agents and the best-practices skill also use declaration tags and `{@attach}` only when the installed Svelte has them, and read `package.json` and the lockfile when `npm ls` prints nothing.
+- Migrating to SvelteKit 3: the leftover search covers the whole project instead of `src`, the `sv migrate` flags for a run without a prompt are listed, and five breaking changes missing from the manual checklist are added.
+- Svelte gotchas now cover `derived_invalid_export`, `derived_references_self`, `snippet_without_render_tag`, `bind_not_bindable`, `props_invalid_value`, `each_key_duplicate` and `effect_orphan`.
+- The SvelteKit references say they are for SvelteKit 3 projects, the `$env/*` advice no longer applies to a SvelteKit 2 project before 2.63, and the adapter example no longer reuses the removed `ORIGIN` variable.
+
+### Changed
+
+- The skills are leaner contracts. The SvelteKit 2 to 3 table and the experimental-flag table in `svelte-best-practices` now live only in their references, and the language-server table for dynamic code moved into the navigation reference. References no longer point back to a skill.
+- The README says plainly when Claude loads a skill, adds a before-and-after comparison and what the plugin costs you, and puts "only Claude Code is required" before the tool list.
+
 ## [0.2.0] - 2026-10-06
 
 ### Added

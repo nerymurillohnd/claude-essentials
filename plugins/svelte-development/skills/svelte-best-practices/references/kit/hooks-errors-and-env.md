@@ -1,6 +1,8 @@
 # SvelteKit Hooks, Errors, Environment and Service Workers
 
 > Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+>
+> Applies to SvelteKit 3 projects. In an installed SvelteKit 2, write what that version supports and offer the migration ([migrating-to-kit-3.md](migrating-to-kit-3.md)).
 
 ## Contents
 
@@ -149,7 +151,7 @@ import { PUBLIC_ANALYTICS_ID } from "$app/env/public";
 - `schema` takes a Standard Schema or a function returning the value (or throwing). Invalid values stop the app from starting or building. Without a schema, a variable must be set but may be empty. Public dynamic values must be devalue-serializable.
 - `defineEnvVars` and the `EnvVarConfig` types live in `@sveltejs/kit/env` since 3.0 (they were in `@sveltejs/kit/hooks`).
 - `.env` and `.env.local` are loaded during development and build; `env.dir` changes the directory.
-- `$env/static/private`, `$env/static/public`, `$env/dynamic/private`, `$env/dynamic/public` and `$app/environment` remain as deprecated aliases until Kit 4. Do not write them in code.
+- `$env/static/private`, `$env/static/public`, `$env/dynamic/private`, `$env/dynamic/public` and `$app/environment` remain as deprecated aliases until Kit 4. In a SvelteKit 3 project, do not write them in new code; a SvelteKit 2 project before 2.63 has no `$app/env/*`, so keep them there.
 
 ## Build and runtime flags
 

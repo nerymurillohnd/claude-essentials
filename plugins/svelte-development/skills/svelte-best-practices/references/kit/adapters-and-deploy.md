@@ -1,6 +1,8 @@
 # SvelteKit Adapters and Deployment
 
 > Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+>
+> Applies to SvelteKit 3 projects. In an installed SvelteKit 2, write what that version supports and offer the migration ([migrating-to-kit-3.md](migrating-to-kit-3.md)).
 
 ## Contents
 
@@ -30,7 +32,7 @@ Every first-party adapter requires SvelteKit 3 in these majors (confirm the curr
 | `@sveltejs/adapter-static` | 4.0.0 |  |
 | `@sveltejs/adapter-cloudflare` | 8.0.0 | peer `wrangler ^4.118.0` |
 | `@sveltejs/adapter-vercel` | 7.0.0 | runtimes `nodejs22.x`, `nodejs24.x`, `bun1.x` |
-| `@sveltejs/adapter-netlify` | 7.0.0 | Netlify CLI 17.31.0 or later |
+| `@sveltejs/adapter-netlify` | 7.0.x | Netlify CLI 17.31.0 or later |
 
 `@sveltejs/adapter-cloudflare-workers` is deprecated on npm; its last release (2.9.0) peers on `@sveltejs/kit ^2.0.0`, so there is no Kit 3 version. Migrate to `adapter-cloudflare`.
 
@@ -53,13 +55,13 @@ export default defineConfig({
   plugins: [
     sveltekit({
       adapter: adapter({ precompress: true }),
-      paths: { origin: process.env.ORIGIN },
+      paths: { origin: process.env.PUBLIC_ORIGIN },
     }),
   ],
 });
 ```
 
-`vite.config.*` runs at build time, so any `process.env` value read there (such as `ORIGIN` above) must be present when you build, not only when the server starts.
+`vite.config.*` runs at build time, so any `process.env` value read there (such as `PUBLIC_ORIGIN` above) must be present when you build, not only when the server starts.
 
 Per-route settings go in the `config` page option, typed with the adapter's `Config` export. Since 3.0, a universal file's `config` wins over the server file's.
 

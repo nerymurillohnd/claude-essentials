@@ -108,7 +108,7 @@ export default {
 
 - Runes mode becomes the default (`runes` option docs).
 - A quoted single expression (`prop="{value}"`) will be converted to a string: write `prop={value}` now (`attribute_quoted` warns on components and custom elements).
-- `experimental.async` is removed as a flag and its behavior becomes the default, including `set_context_after_init` and the `flushSync`-in-effect restriction. Call `setContext` before the first `await`.
+- `experimental.async` is removed as a flag and its behavior becomes the default, including `set_context_after_init`. Call `setContext` before the first `await`.
 - In "a future version" (no major named): every falsy `class` value omits the attribute instead of stringifying `false`; self-closing non-void tags may become an error; Svelte's internal slot handling is removed, leaving `<slot>` as a plain DOM element.
 
 ## Fetch before writing when

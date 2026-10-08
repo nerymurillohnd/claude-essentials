@@ -9,6 +9,7 @@
 - [Server rendering and hydration](#server-rendering-and-hydration)
 - [Styling and motion](#styling-and-motion)
 - [Build and tooling](#build-and-tooling)
+- [Markup errors the compiler does not catch](#markup-errors-the-compiler-does-not-catch)
 - [Looking up a warning or error code](#looking-up-a-warning-or-error-code)
 - [Fetch before writing when](#fetch-before-writing-when)
 - [Official sources](#official-sources)
@@ -35,6 +36,7 @@
 11. **Stale deriveds (`derived_inert`).** A `$derived` created inside an effect stops updating when that effect is destroyed. Create it outside, or inside `$effect.root`.
 12. **Captured initial values (`state_referenced_locally`).** `setContext('count', count)` or `const label = type === 'a' ? ... : ...` at setup reads the value once. Use `$derived`, or pass a getter or a proxy.
 13. **Exported reassigned state.** A `.svelte.js` module cannot `export let x = $state(...)` and reassign `x`: importers get the internal signal. Export a proxy object and mutate it, or export getter functions.
+    A `$derived` cannot be exported from a module at all (`derived_invalid_export`, a compile error): export a function that returns its value. A derived that reads itself fails with `derived_references_self`.
 
 ## Server rendering and hydration
 
@@ -52,6 +54,13 @@
 19. **Custom element props must be declared.** With `let props = $props()`, Svelte cannot know which properties to expose on the element. Destructure every prop or list it in the `customElement.props` option, and never name a prop starting with `on`.
 20. **TypeScript beyond types needs a preprocessor.** Enums, constructor parameter properties with modifiers, and non-standard syntax fail in `<script lang="ts">` without `vitePreprocess({ script: true })`. Prefer union types or `as const` objects to enums.
 21. **Project-wide `runes: true` also hits `node_modules`.** It forces runes mode on library components written in legacy syntax. Since 5.54 make `runes` a function of `{ filename }`, or use `dynamicCompileOptions` in `@sveltejs/vite-plugin-svelte`.
+
+## Markup errors the compiler does not catch
+
+22. **Snippet without `{@render}` (`snippet_without_render_tag`).** `{snippet}` renders the snippet's code as text. Write `{@render snippet()}`.
+23. **Binding to a prop that is not bindable (`bind_not_bindable`).** The child must declare `let { value = $bindable() } = $props()`. `bind:value={undefined}` fails with `props_invalid_value` when the child gives the prop a fallback.
+24. **Duplicate keys (`each_key_duplicate`).** A keyed `{#each}` throws when two items share a key. Key by a unique id.
+25. **Runes outside an owner (`effect_orphan`).** `$effect` and similar runes run only during component initialisation or inside another effect. In a callback or module, wrap the work in `$effect.root`.
 
 ## Looking up a warning or error code
 

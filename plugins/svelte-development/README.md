@@ -2,7 +2,7 @@
 
 <!-- BEGIN GENERATED: header -->
 
-[![version: 0.2.0](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md) [![category: development](https://img.shields.io/badge/category-development-informational)](https://github.com/nerymurillohnd/claude-essentials/blob/main/README.md#categories) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![skills: 3](https://img.shields.io/badge/skills-3-blueviolet)](#-components) [![agents: 2](https://img.shields.io/badge/agents-2-blueviolet)](#-components) [![hooks: 3](https://img.shields.io/badge/hooks-3-blueviolet)](#-components) [![mcp servers: 1](https://img.shields.io/badge/mcp%20servers-1-blueviolet)](#-components) [![lsp servers: 1](https://img.shields.io/badge/lsp%20servers-1-blueviolet)](#-components) [![runs code: yes, reviewed](https://img.shields.io/badge/runs%20code-yes%2C%20reviewed-yellow)](#-permissions)
+[![version: 0.2.1](https://img.shields.io/badge/version-0.2.1-blue)](CHANGELOG.md) [![category: development](https://img.shields.io/badge/category-development-informational)](https://github.com/nerymurillohnd/claude-essentials/blob/main/README.md#categories) [![Claude Code: ≥ 2.1.289](https://img.shields.io/badge/Claude%20Code-%E2%89%A5%202.1.289-orange)](https://code.claude.com/docs) [![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![CI](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml/badge.svg)](https://github.com/nerymurillohnd/claude-essentials/actions/workflows/validate.yml) [![skills: 3](https://img.shields.io/badge/skills-3-blueviolet)](#-components) [![agents: 2](https://img.shields.io/badge/agents-2-blueviolet)](#-components) [![hooks: 3](https://img.shields.io/badge/hooks-3-blueviolet)](#-components) [![mcp servers: 1](https://img.shields.io/badge/mcp%20servers-1-blueviolet)](#-components) [![lsp servers: 1](https://img.shields.io/badge/lsp%20servers-1-blueviolet)](#-components) [![runs code: yes, reviewed](https://img.shields.io/badge/runs%20code-yes%2C%20reviewed-yellow)](#-permissions)
 
 Svelte 5 and SvelteKit 3 development that also respects SvelteKit 2 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools.
 
@@ -25,6 +25,20 @@ Most Svelte code a model has seen is Svelte 4 and SvelteKit 2, so it writes `exp
 - 🏷️ **Writes for _your_ installed versions.** A SvelteKit 2 project gets SvelteKit 2 code and an offer to migrate — never a mix.
 - 🔎 **Asks the language server, not Grep,** for symbols, references and callers.
 
+**The difference in one component**
+
+|                    | Svelte 4 habits, without the plugin                                | Svelte 5, with the plugin                                         |
+| ------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Props and state    | `export let open = false;` and `$: label = open ? 'Hide' : 'Show'` | `let { open = $bindable(false) } = $props();` and `$derived(...)` |
+| Events and content | `on:click`, `createEventDispatcher`, `<slot />`                    | `onclick`, a callback prop, `{@render children?.()}`              |
+| SvelteKit          | `$app/stores`, `$lib/x`, `svelte.config.js`                        | `$app/state`, `#lib/x.js`, options in `vite.config` (SvelteKit 3) |
+
+**What it costs you**
+
+- **Tools to install first:** the Svelte language server and `svelte-check` in your project (see [Prerequisites](#-prerequisites)). Without them the skills and the Svelte MCP tools still work; code intelligence and the end-of-turn check do not.
+- **Time at the end of a turn:** after Svelte edits, the plugin runs your project's own `svelte-check` over the whole project (up to 5 minutes), without a permission prompt.
+- **Code that leaves your machine:** code passed to the Svelte autofixer goes to the Svelte team's server. See [Permissions](#-permissions) to keep it local.
+
 **Built on the Svelte team's own AI tools**
 
 |              |                                                                                                                                                                                  |
@@ -40,7 +54,7 @@ _Not affiliated with or endorsed by the Svelte project._
 
 | Situation                                          | What the plugin does                                                                                                                                                                                                                                                                | Result                                                                                                            |
 | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| You ask for a new component or route               | Fetches the current Svelte and SvelteKit sections, writes runes and SvelteKit 3 code, runs the autofixer, the language server and the project check until all are clean                                                                                                             | Code that compiles and type-checks against Svelte 5.57 and SvelteKit 3                                            |
+| You ask for a new component or route               | Fetches the current Svelte and SvelteKit sections, writes runes and SvelteKit 3 code, runs the autofixer, the language server and the project check until all are clean                                                                                                             | Code that compiles and type-checks against the Svelte and SvelteKit versions your project has installed           |
 | You paste a component and ask what is wrong        | Runs the Svelte autofixer on it and checks the current docs                                                                                                                                                                                                                         | Each problem with the rule behind it and the fix                                                                  |
 | Your project is still on SvelteKit 2 or Svelte 4   | Writes code for the installed version and says where SvelteKit 3 or Svelte 5 would differ                                                                                                                                                                                           | Code that runs on your project today, and a migration offer instead of a mix of versions                          |
 | You upgrade a SvelteKit 2 project                  | Explains the breaking changes, runs or reviews `sv migrate sveltekit-3`, and fixes what the codemod leaves in `MIGRATION_TASKS.md`                                                                                                                                                  | A project on SvelteKit 3 with `#lib`, `$app/state` and the config in `vite.config`                                |
@@ -71,9 +85,11 @@ Not installed, or older than the minimum? Follow the [setup guide](https://code.
 | Astro, with Svelte islands | 7         |
 | Tailwind CSS               | 4         |
 
-This table is the single declaration: no skill, agent or reference inside the plugin repeats it, and none of them carries a verification date. A version number appears inside the plugin only where the number is the fact being taught — the release that added or removed an API, a minimum that carries a security fix, a peer range — and then in one reference that the others link to. On an older major the plugin writes for what your project has installed and offers the migration, instead of mixing versions.
+This table is the single declaration of the majors: skills and agents name Svelte 5 and SvelteKit 3 only in their names and descriptions, so Claude can match a request to them, and none of them carries a verification date. A version number appears inside the plugin only where the number is the fact being taught — the release that added or removed an API, a minimum that carries a security fix, a peer range — and then in one reference that the others link to. On an older major the plugin writes for what your project has installed and offers the migration, instead of mixing versions.
 
 ### Tools
+
+> **Only Claude Code is required.** Without the tools below the plugin still loads: the skills and the Svelte MCP tools work. The tools add code intelligence for `.svelte` files and the end-of-turn project check.
 
 In the order you install them, before the plugin:
 
@@ -113,7 +129,6 @@ Then:
 
 - **Session already open?** Run `/reload-plugins` after installing — `/reload-plugins --force` if the LSP tool was never loaded in it.
 - **MCP server:** remote (`https://mcp.svelte.dev/mcp`). It needs network access and nothing installed.
-- **No `svelteserver`?** The plugin still loads: the skills and the MCP tools work.
 - **`.ts` and `.js` code intelligence** needs a TypeScript language server plugin, which this one does not include.
 
 ## ⚡ Installation
@@ -144,7 +159,7 @@ claude plugin install svelte-development@claude-essentials
 
 ## 🚀 Usage
 
-The skills load on their own when a task matches; you can also call them directly.
+Claude loads a skill when your request matches its description. To be certain, name it, for example `/svelte-development:svelte-best-practices`, or ask for an agent by name.
 
 **Create a component or a route**
 

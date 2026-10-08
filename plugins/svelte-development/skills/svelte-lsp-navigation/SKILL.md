@@ -21,7 +21,6 @@ This skill is the contract for questions about the project's own code. The plugi
 - [Procedure for a symbol question](#procedure-for-a-symbol-question)
 - [Procedure for a change](#procedure-for-a-change)
 - [Project check](#project-check)
-- [What the server sees in dynamic code](#what-the-server-sees-in-dynamic-code)
 - [Blind spots](#blind-spots)
 
 ## When to use it
@@ -195,22 +194,6 @@ npx --no-install svelte-check
 
 - Useful flags: `--threshold error`, `--fail-on-warnings`, `--compiler-warnings <code>:ignore|error`, `--diagnostic-sources "svelte,ts"`, `--tsgo` (TypeScript 7, experimental).
 
-## What the server sees in dynamic code
-
-Dynamic Svelte code is not a blind spot by default. Observed on this plugin's fixture:
-
-| Code | Seen | How |
-|---|---|---|
-| A component held in a variable: `let Active = $state(CounterButton)`, then `<Active />` | Yes | `findReferences` on the import lists the assignment; references of `Active` include its tag |
-| `<svelte:element this={tag}>` | Yes | `findReferences` on `tag` includes the `this={tag}` use |
-| `{#await lazy then mod}` and `<mod.default />` | Yes | `goToDefinition` on `mod` reaches the await block |
-| A function stored in an object: `{ format: formatCount }` | The alias site, yes | `findReferences` on `formatCount` lists the object property |
-| A call through that alias: `handlers.format(...)` | Not as a call of the original | `incomingCalls` lists only direct callers; check the alias's own references |
-| The path string of `import("#lib/components/X.svelte")` | No | A string, not a reference. The project check still reports a literal `import()` of a file that does not exist |
-| `import.meta.glob("./*.svelte")` patterns | No | A string pattern; the project check does not report it either, so only Grep finds it |
-
-`documentSymbol` lists every one of these constructs in a component. Run it before concluding that the server cannot see dynamic code.
-
 ## Blind spots
 
 Uses the server cannot see, because they live in strings, file names or configuration. Grep for them, alongside the LSP results, before a rename or delete:
@@ -220,5 +203,7 @@ Uses the server cannot see, because they live in strings, file names or configur
 - **Calls through an alias**: callers of `obj.fn()` when `fn` was stored in an object; follow the alias with `findReferences`.
 - **Strings and attributes**: CSS class names (including Tailwind classes in `class` objects and arrays), `data-sveltekit-*` attributes.
 - **Configuration and scripts**: `vite.config`, `package.json` scripts and `imports`, `svelte-check --ignore` lists, CI files.
+
+Dynamic Svelte code is not a blind spot by default: a component held in a variable, `<svelte:element this={tag}>` and `{#await}` blocks are seen. Run `documentSymbol` and `findReferences` before concluding that the server cannot see it; [operations.md](references/operations.md) lists what is and is not seen.
 
 Sources: the Claude Code LSP tool (its runtime schema and observed results), https://code.claude.com/docs/en/plugins/code-intelligence, https://code.claude.com/docs/en/plugins-reference (plugin agents are named `<plugin>:<agent>`), svelte-check `src/options.ts` (machine output when `CLAUDECODE=1`).

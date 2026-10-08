@@ -26,6 +26,7 @@
 | Mounting a component with context through a wrapper works "as of version 5.49" | Using `createContext` when instantiating components programmatically arrived in 5.50.0 | `svelte/llms.txt` L4823; svelte CHANGELOG `## 5.50.0` ("allow use of createContext when instantiating components programmatically") |
 | `transformError` for server error boundaries is available "since 5.51" | Error boundaries on the server, which `transformError` feeds, arrived in 5.53.0; 5.51.0 has no such entry | `svelte/llms.txt` L4158; svelte CHANGELOG `## 5.53.0` ("allow error boundaries to work on the server"), `## 5.51.0` |
 | The `fork` reference ("Available since 5.42") does not mention any requirement | `fork(...)` throws unless `compilerOptions.experimental.async` is `true` | `svelte/llms.txt` L7911; `batch.js` calls `e.experimental_async_required('fork')` (L1403 at commit `7c2fcdae`); error text at `svelte/llms.txt` L16439 |
+| The runtime-errors page lists `flush_sync_in_effect`: `flushSync()` cannot be called inside an effect | The restriction was lifted in 5.43.15; `flushSync` in `reactivity/batch.js` throws nothing for it | svelte CHANGELOG `## 5.43.15` ("lift 'flushSync cannot be called in effects' restriction (#17139)") |
 
 ## SvelteKit docs
 

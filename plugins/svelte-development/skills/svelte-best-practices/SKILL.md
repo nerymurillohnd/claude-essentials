@@ -19,8 +19,7 @@ This skill is the contract for writing Svelte by the current rules. It is writte
 - [Rules for working](#rules-for-working)
 - [Who does the work](#who-does-the-work)
 - [Code rules that training data gets wrong](#code-rules-that-training-data-gets-wrong)
-- [SvelteKit 2 to 3: what changed](#sveltekit-2-to-3-what-changed)
-- [Experimental features](#experimental-features)
+- [SvelteKit 2 to 3 and experimental features](#sveltekit-2-to-3-and-experimental-features)
 - [Where things are](#where-things-are)
 - [Procedure](#procedure)
 
@@ -47,11 +46,11 @@ The default route, because each tool answers a different kind of question. Depar
 
 These rules hold for every later turn of the task, not only the turn that loaded this skill.
 
-1. **Never write Svelte from memory alone.** Read the reference for the topic, fetch the live sections the task touches before writing (the reference lists them), and run the autofixer after (the `svelte-docs-and-autofixer` skill). Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text.
+1. **Never write Svelte from memory alone.** Read the reference for the topic, fetch the live sections the task touches before writing (the reference lists them), and run the autofixer after; the `svelte-docs-and-autofixer` skill has the tools. Skip the fetch only when the change uses no Svelte or SvelteKit API, such as copy, CSS values or markup text.
 2. **Never skip the fetch when** an exact signature, option name or config key matters; the code uses an experimental feature, an adapter, environment variables, hooks or the Vite config; or what you remember disagrees with a reference, or a reference with the docs.
 3. **Check the installed version first.** It decides which rules apply (command in the [procedure](#procedure)). These references follow the latest release of each package, so they can lag what is installed: read the changelog window in [changelogs.md](references/changelogs.md) whenever a reference disagrees with what the installed version does, and in the cases that file lists.
 4. **Source precedence.** Package changelogs, release notes and source code decide what exists at the installed version; the official docs explain usage, and in any area SvelteKit 3 changed some pages still show SvelteKit 2 code ([known-doc-errata.md](references/known-doc-errata.md)); these references are the starting point and lose to both. When sources conflict, say so in the answer; never pick one silently.
-5. **No WebFetch for docs or changelogs.** WebFetch, like any web-fetch tool, returns a truncated summary. Use the MCP tools or `curl` for the raw text.
+5. **No WebFetch for docs or changelogs**: it returns a truncated summary. Use the MCP tools or `curl`, as the `svelte-docs-and-autofixer` skill says.
 6. **Runes mode in Svelte 5.** In a Svelte 5 project, new and changed code uses runes, snippets and event attributes; never mix in legacy syntax. A Svelte 4 project follows rule 7.
 7. **Write for the installed major, never the next one.** The SvelteKit 3 rules apply only when `@sveltejs/kit` 3 is installed, and the runes rules only when `svelte` 5 is. In a SvelteKit 2 project, `#lib/x.js` imports, `$app/env`, `refreshAll`, `defineParams` and options in `sveltekit({ … })` do not exist yet: write code that works on the installed version, say that the live docs describe SvelteKit 3, and offer the migration ([migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md)) instead of mixing versions. A Svelte 4 project likewise has no runes; offer the Svelte 5 migration ([legacy-and-migration.md](references/svelte/legacy-and-migration.md)) unless the task is that migration.
 8. **Project instructions decide conventions, not APIs.** The project's `CLAUDE.md`, saved memory and team conventions win over this skill on style and structure (naming, file layout, formatting). They never make an API valid that the installed version removed; when one asks for such an API, say so.
@@ -92,9 +91,10 @@ These apply to Svelte 5 and SvelteKit 3 projects; in older ones, rule 7 decides.
 
 - Events are attributes: `onclick={…}`, not `on:click`. Components take callback props, not `createEventDispatcher`.
 - Content is passed as snippets: `{#snippet name()}` and `{@render children?.()}`, not `<slot>`.
-- `{@const}` is legacy since 5.56: use declaration tags, `{const total = $derived(a + b)}` or `{let open = $state(false)}`, anywhere in the template.
-- Prefer `{@attach}` (5.29) over `use:` actions; `fromAction` wraps an existing action.
-- `class` accepts objects and arrays (5.16); avoid the `class:` directive in new code.
+- Declaration tags replace `{@const}`: `{const total = $derived(a + b)}` or `{let open = $state(false)}`, anywhere in the template.
+- Prefer `{@attach}` over `use:` actions; `fromAction` wraps an existing action.
+- Declaration tags and `{@attach}` need a minimum Svelte 5 minor ([template-syntax.md](references/svelte/template-syntax.md) gives it). Below it, keep `{@const}` and `use:`.
+- `class` accepts objects and arrays; avoid the `class:` directive in new code.
 - Key every `{#each}` with a stable string or number; never key by index or a freshly built array.
 
 **Legacy syntax to remove** ([legacy-and-migration.md](references/svelte/legacy-and-migration.md)): `export let`, `$:`, `$$props`/`$$restProps`, `on:`, `<slot>`/`$$slots`, `<svelte:component>`, `<svelte:self>`, `beforeUpdate`/`afterUpdate`, `spring`/`tweened`, `svelte/legacy`.
@@ -144,39 +144,11 @@ Output:
 
 Every change follows a rule above: props from `$props()` (`$bindable` because the parent may bind `open`), a computed value with `$derived`, a callback prop instead of the dispatcher, an event attribute, a `class` array instead of `class:`, and the default slot as the `children` snippet. Run the autofixer on the result before handing it back.
 
-## SvelteKit 2 to 3: what changed
+## SvelteKit 2 to 3 and experimental features
 
-Full table and the `sv migrate sveltekit-3` codemod: [migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md). The changes that break most often:
-
-| SvelteKit 2 | SvelteKit 3 |
-| --- | --- |
-| `svelte.config.js` | Options in `sveltekit({ … })` in `vite.config.ts`; a leftover `svelte.config.js` is silently ignored |
-| `import x from '$lib/x'` | `import x from '#lib/x.js'` with `"imports": { "#lib": …, "#lib/*": "./src/lib/*" }` in `package.json`; the extension is required |
-| `$app/stores` (`$page`) | `$app/state` (`page`), removed in 3.0 |
-| `$env/static/private` and friends | `$app/env/private` / `$app/env/public` with `defineEnvVars` in `src/env.ts` (`$env/*` deprecated) |
-| `$app/environment` | `$app/env` |
-| `invalidateAll()` | `refreshAll()` |
-| `goto(url, { noScroll, keepFocus, replaceState })` | `goto(url, { reset, replace })`; `goto` rejects URLs outside the app |
-| `base`, `assets`, `resolveRoute` from `$app/paths` | `resolve('blog/x')`, `asset('x.png')` (no leading slash) |
-| `src/params/*.ts` matchers | One `src/params.ts`: `export const params = defineParams({ … })` from `@sveltejs/kit/params` |
-| `error(404, { message })` | `error(404, 'Not found', { … })` |
-| `json()` / `text()` | `Response.json()` / `new Response()` |
-| `csrf.checkOrigin`, `prerender.origin`, adapter-node `ORIGIN` | `csrf.trustedOrigins`, `paths.origin` |
-| `$service-worker` | `$app/env` (`version`), `$app/manifest`, `$app/paths` |
-
-Requirements: Node 22.17+, Vite 8, Svelte 5, TypeScript 6 when TypeScript is used, `@sveltejs/vite-plugin-svelte` 7, and the 3.0 adapter majors (auto 8, node 6, static 4, cloudflare 8, vercel 7, netlify 7, bun 1). The exact peer ranges and engines are in [project-and-config.md](references/kit/project-and-config.md) and are not repeated here.
-
-## Experimental features
-
-They change between minor releases: fetch the live section before writing any of them (rule 2).
-
-| Feature | Enable |
-| --- | --- |
-| `await` in components, `$effect.pending`, async SSR, `fork`, `hydratable` | `compilerOptions.experimental.async` (in `sveltekit({ compilerOptions })`); `fork` and `hydratable` throw `experimental_async_required` without it |
-| Remote functions (`query`, `query.batch`, `query.live`, `form`, `command`, `prerender`) | `experimental.remoteFunctions` in `sveltekit({ … })` plus the async flag above; `*.remote.ts` files error without it |
-| Fork preloads | `experimental.forkPreloads` |
-
-Details: [async-and-boundaries.md](references/svelte/async-and-boundaries.md) and [forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md). A SvelteKit 2 project keeps its configuration in `svelte.config.js`, so look the keys up there and in the live section, not in this table.
+- **Upgrading a SvelteKit 2 project:** [migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md) has the old-to-new table, the `sv migrate sveltekit-3` codemod and the manual checklist. The changes that break most often: options move into `sveltekit({ … })` in `vite.config`, `$lib` becomes `#lib/…js`, `$app/stores` becomes `$app/state`, `$env/*` becomes `$app/env/*`, and `invalidateAll()` becomes `refreshAll()`.
+- **Requirements** (Node, Vite, TypeScript, plugin and adapter majors): [project-and-config.md](references/kit/project-and-config.md) and [adapters-and-deploy.md](references/kit/adapters-and-deploy.md).
+- **Experimental features** change between minor releases: fetch the live section before writing any of them (rule 2). `await` in components, async SSR, `fork` and `hydratable` need `compilerOptions.experimental.async` ([async-and-boundaries.md](references/svelte/async-and-boundaries.md)); remote functions need `experimental.remoteFunctions` plus that flag ([forms-and-remote-functions.md](references/kit/forms-and-remote-functions.md)). A SvelteKit 2 project keeps its configuration in `svelte.config.js`, so look the keys up there and in the live section.
 
 ## Where things are
 
@@ -201,8 +173,8 @@ Read the one reference that matches the task; each opens with its source precede
 | [kit/security.md](references/kit/security.md) | CSRF, origins, redirects, secrets, CSP, required security releases |
 | [kit/migrating-to-kit-3.md](references/kit/migrating-to-kit-3.md) | Upgrading a SvelteKit 2 project |
 | [tooling/sv-cli.md](references/tooling/sv-cli.md) | `sv create`, `sv add`, `sv check`, `sv migrate`, Prettier, testing add-ons |
-| [integrations/astro.md](references/integrations/astro.md) | Svelte components inside an Astro 7 site |
-| [integrations/tailwind.md](references/integrations/tailwind.md) | Tailwind CSS 4 with SvelteKit or Astro |
+| [integrations/astro.md](references/integrations/astro.md) | Svelte components inside an Astro site |
+| [integrations/tailwind.md](references/integrations/tailwind.md) | Tailwind CSS with SvelteKit or Astro |
 | [docs-map.md](references/docs-map.md) | Choosing which official section to fetch |
 | [changelogs.md](references/changelogs.md) | The project's version is newer than a reference, or behaviour differs from the docs |
 | [known-doc-errata.md](references/known-doc-errata.md) | Before copying a docs example in an area SvelteKit 3 changed |
@@ -224,7 +196,7 @@ Run these steps in order for any Svelte code you write, convert or review.
    npm ls svelte @sveltejs/kit --depth=0
    ```
 
-   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. Rule 7 decides what the installed major allows, and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
+   pnpm: `pnpm why svelte`; yarn: `yarn why svelte`. When it prints nothing (no `node_modules`, a monorepo), read the ranges in `package.json` and the lockfile; when the version is still unknown, write for Svelte 5 and SvelteKit 3 and say so. Rule 7 decides what the installed major allows, and [changelogs.md](references/changelogs.md) says when to read the changelog window. With no project, write for Svelte 5 and SvelteKit 3 and say so in the answer.
 2. **Reference.** Read the reference from [Where things are](#where-things-are) that matches the task; the code rules above apply to every task.
 3. **Live sections**, in one call, with the paths from the reference's "Official sources" or the docs map:
 

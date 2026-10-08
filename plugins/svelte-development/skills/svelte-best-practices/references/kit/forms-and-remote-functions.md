@@ -1,6 +1,8 @@
 # SvelteKit Form Actions and Remote Functions
 
 > Precedence: the SvelteKit changelog and source code win over the docs, and the docs win over this file. Before relying on an exact signature, fetch the live section (see "Official sources").
+>
+> Applies to SvelteKit 3 projects. In an installed SvelteKit 2, write what that version supports and offer the migration ([migrating-to-kit-3.md](migrating-to-kit-3.md)).
 
 ## Contents
 
