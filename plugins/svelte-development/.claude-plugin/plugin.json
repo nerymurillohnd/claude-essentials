@@ -1,7 +1,7 @@
 {
   "name": "svelte-development",
   "displayName": "Svelte Development",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Svelte 5 and SvelteKit 3 development, with a guided migration for SvelteKit 2 and Svelte 4 projects: current best practices, docs lookup and autofixer, language-server navigation with renames proven by the project check, an editor and an auditor agent, a svelte-check of your changes before Claude stops, and the Svelte MCP and language servers, built on the Svelte team's AI tools.",
   "author": {
     "name": "Claude Essentials maintainers"

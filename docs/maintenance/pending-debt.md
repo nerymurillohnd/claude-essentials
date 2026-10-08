@@ -34,7 +34,7 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
   - **Confirmed facts:** In eval run `37395261454` the three trigger cases (`trigger-best-practices`, `trigger-docs-autofixer`, `trigger-lsp`) scored 0 in both arms, so the skills never triggered without an explicit request.
   - **Confirmed facts (2026-10-08):** In eval run `37719700088` (0.3.0, PR #18) the treatment arm scored `trigger-best-practices` 1.0, `trigger-docs-autofixer` 0.67 and `trigger-lsp` 1.0 (deltas +0.25, +0.33, +1.0), but the `skill-fired` indicator of `trigger-docs-autofixer` stayed 0, and task cases that do not name Svelte (`version-gate-kit2`, `tool-choice-*`, `routing-lsp-first`) kept a delta of 0. The run artifact holds no traces, so whether a skill loaded is not visible.
   - **Confirmed facts (2026-10-08, local pilot of the rebuilt 11-case suite, one run per arm, Sonnet 5.5 agent, Opus 5.5 judge, $2.61):** a skill loaded in the treatment arm of cases 01, 04, 05, 07, 08 and 10, including requests with no file open (01, 07, 08). It did not load for the rename in 09 or the review in 11, and the review was done inline instead of by `svelte-code-auditor`. In 05 (SvelteKit 2 project) Claude loaded the skill, then wrote a SvelteKit 2 matcher and called the migration "out of scope" instead of proposing it first.
-  - **Inferences:** The `description` and `when_to_use` fields did not match the phrasing users use; 0.3.1 rewrote the descriptions (what and when only) and removed `when_to_use`.
+  - **Inferences:** The `description` and `when_to_use` fields did not match the phrasing users use; 0.4.0 rewrote the descriptions (what and when only) and removed `when_to_use`.
   - **Open questions:** Whether the fix belongs in the descriptions or in the hooks.
 - **Impact / risk:** The plugin's main value depends on the user naming the skill.
 - **Owner or responsible area:** `plugins/svelte-development/skills/*/SKILL.md`.
@@ -212,7 +212,7 @@ Recorded 2026-10-06 from the session handoff `2026-10-06-0100` (sha `84dee5`), t
 - **Review condition:** Closes when case 08 calls the LSP tool in a sandboxed run.
 - **Related records:** DEBT-005 (resolved); `.claude/rules/testing/plugin-evals.md` (sandbox bullets).
 
-### DEBT-020 — Code review findings on the `svelte-development` 0.3.1 skills
+### DEBT-020 — Code review findings on the `svelte-development` 0.4.0 skills
 
 - **Status:** Pending (maintainer decision)
 - **Category:** quality (plugin behavior)

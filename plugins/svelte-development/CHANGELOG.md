@@ -7,12 +7,15 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-## [0.3.1] - 2026-10-08
+## [0.4.0] - 2026-10-08
+
+### Added
+
+- The best-practices and navigation skills declare `paths` for `.svelte`, `.svelte.ts`, `.svelte.js` and `src/routes` files, so Claude Code can load them when Claude works with those files, not only when the request matches a description.
 
 ### Changed
 
 - Each skill now opens with what it is, when to use it and when not, and the rules it works by, before its contents, so Claude knows how to work before reading the rest. Five ground rules sit at the top of every skill, whichever loads first: read the installed versions and propose a migration on an older major, fetch the docs before using an API, use the language server for symbols, run the autofixer after code, and, after a change, finish only when the project check reports nothing new.
-- The best-practices and navigation skills declare `paths` for `.svelte`, `.svelte.ts`, `.svelte.js` and `src/routes` files, so Claude Code can load them when Claude works with those files, not only when the request matches a description.
 - Shorter skill descriptions that say what each skill does and when to use it: the three together take about a third of the space they did in the skill list Claude sees on every turn.
 - The eval suite shipped in `evals/` is rebuilt: 11 cases from a pasted component to the agents, with the Svelte MCP tools answered by mocks so a run gives the same result on any machine. Claude Code does not read it while you work.
 - The navigation skill says when a rename is done (the project check ran before, after breaking the declaration, and at the end) and runs `documentSymbol` on importing files before saying a component is not used dynamically.
