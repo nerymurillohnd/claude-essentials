@@ -47,7 +47,8 @@ How to design and run `claude plugin eval` suites for this marketplace's plugins
 - Mock every MCP tool a case can call (ADR pinned-eval-models-and-mocked-mcp).
   - Put suite-wide mocks in `evals/mocks/<server>/<tool>.md`, and a case's own in `<case>/mocks/`.
   - Use `fixed` mocks without `{{…}}` substitutions: the `repo` gate rejects them in plugin files.
-  - Guard arguments the plugin must get right with `expect:`; a violation aborts the run with score 0.
+  - Use `expect:` only for an argument whose mistake the real server could not recover from; a violation aborts the whole run with score 0 and skips every grader.
+  - Measure recoverable argument mistakes with a scored `tool_used` grader on the tool's JSON input (`min: 0`, `max: 0`, `input_match` on the bad shape): CI run 37749514321 aborted a case-01 run over a missing `desired_svelte_version`, which the real server rejects as one failed call.
   - Use `error: true` for an unavailable server.
   - Save the server's real `tools/list` result as `_tools.json`.
   - A mocked tool needs no `allowed_tools` entry and no grant; a tool without a mock does not exist in the run.

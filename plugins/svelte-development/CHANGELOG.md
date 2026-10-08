@@ -7,6 +7,12 @@ and plugin versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-08
+
+### Changed
+
+- The eval suite no longer aborts a whole run when Claude calls the Svelte autofixer without `desired_svelte_version` or with a file path as code: two graders score those mistakes instead, as the real server would reject only that call.
+
 ## [0.4.0] - 2026-10-08
 
 ### Added
