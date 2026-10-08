@@ -1,5 +1,5 @@
 ---
-description: A Svelte 4 to Svelte 5 migration request must load svelte-best-practices.
+description: A Svelte 4 to Svelte 5 conversion of code pasted in the chat, with no project files, must still load svelte-best-practices (the skill's paths frontmatter must not stop it).
 runs: 2
 max_turns: 15
 allowed_tools: [Read, Glob, Grep, Skill]

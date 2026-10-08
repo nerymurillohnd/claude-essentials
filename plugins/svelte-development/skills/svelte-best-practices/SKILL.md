@@ -1,6 +1,11 @@
 ---
 name: svelte-best-practices
 description: Writes, reviews and explains Svelte 5 and SvelteKit 3 code by current practice (runes, snippets, events, routes, load, forms, env, config) and migrates SvelteKit 2 or Svelte 4 projects. Use for any task that writes or changes Svelte or SvelteKit code, including a pasted component, a route or a param matcher.
+paths:
+  - "**/*.svelte"
+  - "**/*.svelte.ts"
+  - "**/*.svelte.js"
+  - "src/routes/**"
 license: MIT
 metadata:
   upstream: "sveltejs/ai-tools skills/svelte-core-bestpractices"

@@ -1,6 +1,11 @@
 ---
 name: svelte-lsp-navigation
 description: Answers where a Svelte project's component, prop, function or type is defined, used or called, and what a change would break, through the Svelte language server and the project check. Use in a Svelte project for "is X used", "which files break if", renames, types and checking the project for errors.
+paths:
+  - "**/*.svelte"
+  - "**/*.svelte.ts"
+  - "**/*.svelte.js"
+  - "src/routes/**"
 license: MIT
 ---
 

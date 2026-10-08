@@ -159,7 +159,7 @@ claude plugin install svelte-development@claude-essentials
 
 ## 🚀 Usage
 
-Claude loads a skill when your request matches its description. To be certain, name it, for example `/svelte-development:svelte-best-practices`, or ask for an agent by name.
+Claude loads a skill when your request matches its description, and the best-practices and navigation skills also load when Claude works with `.svelte` files or `src/routes`. To be certain, name it, for example `/svelte-development:svelte-best-practices`, or ask for an agent by name.
 
 **Create a component or a route**
 
