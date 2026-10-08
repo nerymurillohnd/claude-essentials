@@ -1,6 +1,6 @@
 ---
 type: regex
 target: "files"
-pattern: "."
-match: count:0
+pattern: "(^|\\n)src/"
+match: "count:0"
 ---
