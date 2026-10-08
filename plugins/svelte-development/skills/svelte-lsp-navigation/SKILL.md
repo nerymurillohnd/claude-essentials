@@ -1,29 +1,16 @@
 ---
 name: svelte-lsp-navigation
-description: Answers questions about the project's own Svelte code by symbol, through Claude Code's LSP tool and the Svelte language server - where a component, prop or function is defined and used, who calls it, what type it has, a component's outline, diagnostics after edits - plus the project check with the project's svelte-check. Use in a Svelte or SvelteKit project whenever a task needs exact symbol locations, the impact of a change, type information or proof that the project has no errors, before reaching for Grep.
-when_to_use: Triggers include "where is this component used", "which files call", "is this function dead", "rename this prop everywhere", "list every place that would change", "what type is", "why does this type fail" and "check the project for errors".
+description: Answers where a Svelte project's component, prop, function or type is defined, used or called, and what a change would break, through the Svelte language server and the project check. Use for "is X used", "which files break if", renames, types and checking the project for errors.
 license: MIT
 ---
 
 # Svelte LSP navigation
 
-This skill is the contract for questions about the project's own code. The plugin starts the Svelte language server (`svelteserver --stdio`) for `.svelte` files; it answers by symbol, not by text, so it sees through imports, re-exports, `#lib` aliases and TypeScript inside `<script lang="ts">`. Grep matches strings and also hits comments, so it is the fallback, not the first tool.
+## Overview
 
-## Contents
+The contract for questions about the project's own code. The plugin starts the Svelte language server (`svelteserver --stdio`) for `.svelte` files; it answers by symbol, not by text, so it sees through imports, re-exports, `#lib` aliases and TypeScript inside `<script lang="ts">`. Grep matches strings and also hits comments, so it is the fallback, not the first tool. The project check proves a change across every file.
 
-- [When to use it](#when-to-use-it)
-- [Which tool first](#which-tool-first)
-- [Rules](#rules)
-- [Gotchas](#gotchas)
-- [Who does the work](#who-does-the-work)
-- [Where things are](#where-things-are)
-- [Calling the LSP tool](#calling-the-lsp-tool)
-- [Procedure for a symbol question](#procedure-for-a-symbol-question)
-- [Procedure for a change](#procedure-for-a-change)
-- [Project check](#project-check)
-- [Blind spots](#blind-spots)
-
-## When to use it
+## When to use it and when not
 
 | Use it | Do not use it |
 |---|---|
@@ -32,21 +19,21 @@ This skill is the contract for questions about the project's own code. The plugi
 | Reading an inferred type, or a long component's outline | For text that is not a symbol (route paths, CSS classes): Grep, per [blind spots](#blind-spots) |
 | Proving the project has no type or Svelte errors after a change | |
 
-## Which tool first
+## Governance rules
 
-The default route, because each tool answers a different kind of question. Depart from it when the project gives a reason, and say why.
+### Ground rules for every Svelte task
 
-| The question is about | First tool | Why |
-|---|---|---|
-| A symbol of this project: where it is defined or used, who calls it, its type, what a change breaks | The LSP tool: `documentSymbol` or `workspaceSymbol`, then `findReferences`, `goToDefinition`, `hover`, `incomingCalls` | It answers by symbol, through imports and aliases. Grep matches text and a whole-file Read spends context: Grep follows only for the blind spots listed under [Blind spots](#blind-spots) |
-| How a Svelte or SvelteKit API works at the installed version | `mcp__plugin_svelte-development_svelte__get-documentation` | Training data shows older Svelte and SvelteKit |
-| Whether the project has errors | The project check: `npm run check`; without a `check` script, `npx --no-install svelte-check` (after `npx --no-install svelte-kit sync` in SvelteKit) | Diagnostics arrive only for files the language server has open |
+They hold whichever Svelte skill loaded first, and for every later turn of the task.
 
-## Rules
+1. **Version first.** In a project, read `package.json` (installed `svelte` and `@sveltejs/kit`) before writing. On SvelteKit 2 or Svelte 4, propose the migration before writing; write for the older version only when the user declines or the request says to proceed without questions, and say so.
+2. **Docs before code.** Fetch the official section with `mcp__plugin_svelte-development_svelte__get-documentation` before using any Svelte or SvelteKit API, rune, option or config key; never write them from memory.
+3. **Symbols through the language server.** Where something of the project is defined, used or called goes to the LSP tool first when `svelteserver` is installed; Grep only for strings, route files, CSS classes and configuration, labelled as text matches.
+4. **Autofixer after code.** Run `mcp__plugin_svelte-development_svelte__svelte-autofixer` on every component or module you wrote or reviewed until it reports no issues.
+5. **Done means checked.** In a project, finish only when the project check is clean (`npm run check`; without that script, `npx --no-install svelte-check`, after `npx --no-install svelte-kit sync` in SvelteKit).
 
-These rules hold for every later turn of the task, not only the turn that loaded this skill.
+### Rules of this skill
 
-1. **LSP first for every symbol question** ([Which tool first](#which-tool-first)). The first code-navigation call is an LSP call, never Grep or a whole-file Read. Two exceptions, both stated to the user: the server is not installed (step 0 of the [procedure](#procedure-for-a-symbol-question)), or the symbol lives only in `.ts`/`.js` files that no `.svelte` file imports, so there is no `.svelte` position to start from; then Grep comes first and its results are text matches.
+1. **LSP first for every symbol question** (ground rule 3). The first code-navigation call is an LSP call, never Grep or a whole-file Read. Two exceptions, both stated to the user: the server is not installed (step 0 of the [procedure](#procedure-for-a-symbol-question)), or the symbol lives only in `.ts`/`.js` files that no `.svelte` file imports, so there is no `.svelte` position to start from; then Grep comes first and its results are text matches.
 2. **Start every call from a `.svelte` file.** The plugin maps only `.svelte` to the Svelte server. A call on a `.ts`, `.js`, `.svelte.ts` or `.svelte.js` file returns `No LSP server available for file type: .ts`; that is configuration, not a crash. From a `.svelte` position the server still finds definitions and references inside those files. Never map `.ts` to the Svelte server to work around this: it returns empty results for TypeScript files and hides their symbols; to start from TypeScript files the user installs a TypeScript language server.
 3. **Load the tool before calling it.** The LSP tool may be deferred; a call without its loaded schema fails with invalid parameters (observed: eight failed calls in a row). Load it with ToolSearch first.
 4. **Warm up before giving up, when the server is installed.** An error or an empty result is retried as the [procedure](#procedure-for-a-symbol-question) says, up to three attempts per question, before any fallback. A missing server is not retried.
@@ -59,13 +46,23 @@ These rules hold for every later turn of the task, not only the turn that loaded
    - **Project check** (nothing reported after a change that must break): the cause is almost always in the project, not in svelte-check. In a SvelteKit project, run `npx --no-install svelte-kit sync` and check again, because missing generated types hide errors (a project on Svelte alone has no sync to run); read the last line, `COMPLETED <n> FILES …`, and confirm the edited file is inside the tsconfig `include` (SvelteKit 3 projects extend `$app/tsconfig`, SvelteKit 2 projects `./.svelte-kit/tsconfig.json`); confirm that `npm run check` really runs svelte-check (read the script in `package.json`); in a monorepo, run it from the app folder.
 10. **No installs without consent.** Never install `svelte-language-server`, `sv` or any package; tell the user what is missing.
 
-## Gotchas
+### Gotchas
 
 - The server needs `svelteserver` on the user's PATH (`npm install -g svelte-language-server`, done by the user) and TypeScript in the project.
 - The server's workspace is the directory Claude Code was started in. In a monorepo whose Svelte app lives in a subfolder, results that ignore the app's `tsconfig` or `vite.config` may come from a session started at the repository root (not tested on a monorepo); tell the user, and run the project check from the app folder.
 - The plugin restarts a crashed server up to three times, and a request the server never answers fails after 60 seconds (Claude Code's default); after that, ask the user to run `/reload-plugins`.
 - Cloud sessions do not start plugin language servers: use the project check there.
 - The language server and svelte-check lag SvelteKit 3, so some results are wrong rather than missing. Issues to re-check in `sveltejs/language-tools` before citing them: moving, creating or deleting route files can crash the server (#3108); config reading from `vite.config` can be wrong (#3080); type arguments on `$props()` make destructured props `any` (#3124); TypeScript 7 crashes svelte-check without `--tsgo` (#3063). If results look wrong after such changes, ask the user to run `/reload-plugins` and confirm with the project check.
+
+## Contents
+
+- [Who does the work](#who-does-the-work)
+- [Where things are](#where-things-are)
+- [Calling the LSP tool](#calling-the-lsp-tool)
+- [Procedure for a symbol question](#procedure-for-a-symbol-question)
+- [Procedure for a change](#procedure-for-a-change)
+- [Project check](#project-check)
+- [Blind spots](#blind-spots)
 
 ## Who does the work
 
@@ -133,7 +130,7 @@ Run these in order and do not skip a step:
 3. **Ask** the question: `findReferences`, `goToDefinition`, `hover` or `incomingCalls` at that position.
 4. **Warm up if it fails.** On an error or an empty result: `documentSymbol` on the file (opens it and confirms the position), `hover` at the position (confirms the symbol), then repeat step 3. Stop after three attempts on the same question.
 5. **Fall back, and say so.** Only after step 0, 1 or 4 fails: tell the user the language server is not answering and why, if the error says. Then use the project check for diagnostics, Grep for locations (stating they are text matches), or the Svelte MCP docs tools for API questions.
-6. **Add the blind spots.** Before answering "unused" or listing an edit set, Grep the bare name for the [blind spots](#blind-spots).
+6. **Add the blind spots.** Before answering "unused" or listing an edit set, Grep the bare name for the [blind spots](#blind-spots). Before saying a component is not used dynamically, run `documentSymbol` on each file that imports it: the server sees components held in variables, `<svelte:element>` and `{#await}` blocks.
 7. **Answer with this default structure**, so the user can tell semantic results from text matches; drop the lines that do not apply:
 
    ```markdown
@@ -166,7 +163,7 @@ Copy this checklist when a change touches a symbol other files use. Steps 4 to 6
                    after fixing errors, because one error can hide another
 ```
 
-There is no rename operation: a rename is steps 2 to 7, including the props passed to the component and destructured in `$props()`. [operations.md](references/operations.md), "Prove it", shows a worked example.
+**Done when** the project check ran three times (baseline, break, confirm) and the last run matches the baseline. There is no rename operation: a rename is steps 2 to 7, including the props passed to the component and destructured in `$props()`. [operations.md](references/operations.md), "Prove it", shows a worked example.
 
 ## Project check
 
