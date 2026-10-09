@@ -1,5 +1,13 @@
 {
   "permissions": {
+    "allow": ["mcp__plugin_context7_context7__*", "mcp__github__*"],
+    "deny": [
+      "Bash(git commit *--no-gpg-sign*)",
+      "Bash(git commit *--no-verify*)",
+      "Bash(git -c commit.gpgsign=false *)",
+      "Bash(git -c tag.gpgsign=false *)",
+      "Bash(git push *--force*)"
+    ],
     "ask": [
       "Bash(git push *)",
       "Bash(git remote add *)",
@@ -31,17 +39,7 @@
       "mcp__github__add_*",
       "mcp__github__*_write",
       "mcp__github__request_copilot_review"
-    ],
-    "deny": [
-      "Bash(git commit *--no-gpg-sign*)",
-      "Bash(git commit *--no-verify*)",
-      "Bash(git -c commit.gpgsign=false *)",
-      "Bash(git -c tag.gpgsign=false *)",
-      "Bash(git push *--force*)"
     ]
-  },
-  "worktree": {
-    "baseRef": "head"
   },
   "hooks": {
     "SessionStart": [
@@ -105,5 +103,8 @@
         ]
       }
     ]
+  },
+  "worktree": {
+    "baseRef": "head"
   }
 }
