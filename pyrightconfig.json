@@ -1,4 +1,0 @@
-{
-  "include": ["scripts", "tests"],
-  "extraPaths": ["scripts"]
-}
