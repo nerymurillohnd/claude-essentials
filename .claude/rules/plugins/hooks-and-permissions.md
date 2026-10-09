@@ -15,6 +15,7 @@ paths:
 - The same applies when the hook's tool input cannot be serialized to JSON.
 - A hook that runs and fails (any exit code other than 2, invalid JSON) is a non-blocking error, and the call proceeds.
 - Only exit 2 or a blocking decision blocks.
+- Since 2.1.295, `onFailure: "block"` on a command or HTTP hook blocks the action when the hook cannot start, times out or exits with an unexpected code (changelog only; the hooks page does not document it, checked 2026-10-08). Use it only for a guard whose failure must stop the call, never for a hint.
 - Synchronous hooks that launched background processes hung until the 2.1.285 fix.
 - Auto mode is the default permission mode for interactive sessions without configuration (2.1.284).
 - With `allowManagedPermissionRulesOnly`, skills from third-party marketplaces lose their `allowed-tools` (2.1.284).

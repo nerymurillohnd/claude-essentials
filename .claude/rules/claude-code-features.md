@@ -33,6 +33,7 @@ paths:
   - A plugin agent there is untested.
   - A named Agent call can start an agent-team teammate.
   - A teammate gets none of the definition's preloaded `skills`.
+  - Since 2.1.295, a subagent preloads at most 32 skills from its `skills` field, each once; with the Skill tool it can still invoke the rest.
   - Plugin agents should load their skills themselves when they are missing.
   - Plugin skills should delegate without a `name`.
   - A subagent's model resolves in this order: the call's `model`, the definition's `model` (`inherit` is the session model), `CLAUDE_CODE_SUBAGENT_MODEL`, then the session model.

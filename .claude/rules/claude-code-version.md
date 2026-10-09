@@ -1,6 +1,6 @@
 # Claude Code version and currency
 
-- Last reviewed release: 2.1.294 (2026-10-08). `/cc-currency` starts from this release and replaces it after each review.
+- Last reviewed release: 2.1.295 (2026-10-08). `/cc-currency` starts from this release and replaces it after each review.
 - The repository pins no Claude Code version: CI installs the latest release (ADR unpinned-tooling-and-shebang-interpreters) and nothing in a script, test or gate compares against a version (ADR no-pinned-claude-code-version).
 - Every fact in these rules carries its own version and date, so a stale fact is found by reading the changelog, not by a constant.
 - A plugin declares `metadata.minClaudeCodeVersion` only when it relies on a feature of a specific version.
@@ -10,6 +10,13 @@
 - A plugin with mods must declare at least 2.1.287 (`MOD_MIN_CLAUDE_CODE` in `scripts/repo.py`), a floor set by the feature, not by the repository.
 - Before touching schema, components or releases, read `llms.txt` and every changelog entry newer than the last reviewed release.
 - Validator fixes the gates rely on: names Claude Code cannot install fail (2.1.283), and a plugin was skipped when its folder also held a marketplace manifest (fixed in 2.1.289).
+- Reviewed window 2.1.295 on 2026-10-08 with `/cc-currency`: installed and latest 2.1.295, stable 2.1.286. Read in full.
+  - Relevant: `onFailure: "block"` for command and HTTP hooks (`.claude/rules/plugins/hooks-and-permissions.md`); changelog only, the hooks page does not document it yet.
+  - Relevant: subagents preload at most 32 skills (`.claude/rules/claude-code-features.md`); `svelte-development` agents preload 3 each.
+  - Relevant: `validate` advice for a README with no install line, and `marketplace add` refusing uninstallable names (`.claude/rules/claude-cli.md`); `svelte-development` gets no advice.
+  - Fixes that confirm shipped shapes: an async SessionStart hook's context re-added on resume, multi-line async hook JSON ignored, a skill's `allowed-tools` and `effort` dropped in `-p` runs. `svelte-development` hooks are synchronous and its skills set neither field.
+  - Mods only (`svelte-development` has none): `$.ui.notify`, `Button` children, hooks module error messages, `claude plugin test` with `session.append`, generated type files no longer written into a `--plugin-dir` plugin.
+  - No other entry touches a rule.
 - Reviewed window 2.1.294 on 2026-10-08 with `/cc-currency`: installed 2.1.294 (the npm `next` tag), latest 2.1.293, stable 2.1.285. Read in full.
   - Two entries, both about `prompt` and `agent` hooks written as instructions (blocking, and judging Stop and SubagentStop). `svelte-development` runs only `command` hooks, so no rule changes.
   - The plugin eval facts observed on this release (sandbox reads, `--judge-model` default, subagent calls in the trace) are in `.claude/rules/testing/plugin-evals.md`.
