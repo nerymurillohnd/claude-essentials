@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Use [the ADR template](../../templates/adr/ADR_YYYY-MM-DD_decision-slug.md) when an important decision for Claude Essentials needs a record. Save the record in [decisions/](decisions) as `ADR_YYYY-MM-DD_<decision-slug>.md`. The date is the registration date and the slug is lowercase kebab-case, so the file list shows what was decided and when without opening a record.
+Use the adr template when an important decision for Claude Essentials needs a record. Save the record in [decisions/](decisions) as `ADR_YYYY-MM-DD_<decision-slug>.md`. The date is the registration date and the slug is lowercase kebab-case, so the file list shows what was decided and when without opening a record.
 
 ## Create a record
 
